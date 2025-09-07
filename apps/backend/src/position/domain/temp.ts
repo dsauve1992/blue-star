@@ -5,6 +5,13 @@ import { StopPrice } from './value-objects/stopPrice';
 import { PortfolioId } from './value-objects/portfolioId';
 import { PositionId } from './value-objects/positionId';
 import { IsoTimestamp } from './value-objects/isoTimestamp';
+import { ChronologyError, InvariantError, StateError } from './errors';
+import {
+  BuyEvent,
+  PositionEvent,
+  SellEvent,
+  StopLossEvent,
+} from './positionEvent';
 
 // =====================================================
 // Method Argument Types
@@ -49,41 +56,6 @@ export enum Action {
   SELL = 'SELL',
   STOP_LOSS = 'STOP_LOSS', // modifies unified stop level
 }
-
-interface BaseEvent {
-  ts: IsoTimestamp; // ISO-8601
-  portfolioId: PortfolioId;
-  instrument: Ticker; // use Ticker value object
-  note?: string; // optional human context
-}
-
-export interface BuyEvent extends BaseEvent {
-  action: Action.BUY;
-  qty: Quantity; // use Quantity value object
-  price: Price; // use Price value object
-}
-
-export interface SellEvent extends BaseEvent {
-  action: Action.SELL;
-  qty: Quantity; // use Quantity value object
-  price: Price; // use Price value object
-}
-
-export interface StopLossEvent extends BaseEvent {
-  action: Action.STOP_LOSS;
-  stop: StopPrice; // use StopPrice value object
-}
-
-export type PositionEvent = BuyEvent | SellEvent | StopLossEvent;
-
-// =====================================================
-// Domain Errors
-// =====================================================
-
-export class DomainError extends Error {}
-export class ChronologyError extends DomainError {}
-export class StateError extends DomainError {}
-export class InvariantError extends DomainError {}
 
 // =====================================================
 // Aggregate Root: Position
