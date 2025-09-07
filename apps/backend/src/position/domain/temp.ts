@@ -54,25 +54,25 @@ export enum Action {
 interface BaseEvent {
   ts: IsoTimestamp; // ISO-8601
   portfolioId: PortfolioId;
-  instrument: string; // stored string; use Ticker for inputs
+  instrument: Ticker; // use Ticker value object
   note?: string; // optional human context
 }
 
 export interface BuyEvent extends BaseEvent {
   action: Action.BUY;
-  qty: number; // > 0 (validated by entity)
-  price: number; // > 0
+  qty: Quantity; // use Quantity value object
+  price: Price; // use Price value object
 }
 
 export interface SellEvent extends BaseEvent {
   action: Action.SELL;
-  qty: number; // > 0 (validated by entity)
-  price: number; // > 0
+  qty: Quantity; // use Quantity value object
+  price: Price; // use Price value object
 }
 
 export interface StopLossEvent extends BaseEvent {
   action: Action.STOP_LOSS;
-  stop: number; // > 0
+  stop: StopPrice; // use StopPrice value object
 }
 
 export type PositionEvent = BuyEvent | SellEvent | StopLossEvent;
@@ -108,9 +108,9 @@ export class Position {
       action: Action.BUY,
       ts: args.ts,
       portfolioId: args.portfolioId,
-      instrument: args.instrument.value,
-      qty: args.qty.value,
-      price: args.price.value,
+      instrument: args.instrument,
+      qty: args.qty,
+      price: args.price,
       note: args.note,
     };
 
@@ -119,7 +119,7 @@ export class Position {
       args.portfolioId,
       args.instrument,
       [e],
-      e.qty,
+      e.qty.value,
       false,
     );
   }
@@ -132,7 +132,7 @@ export class Position {
       throw new InvariantError('Position must start with a BUY event');
     }
     const portfolioId = first.portfolioId;
-    const instrument = Ticker.of(first.instrument);
+    const instrument = first.instrument;
 
     // Apply events with integrity checks
     let qty = 0;
@@ -140,7 +140,10 @@ export class Position {
     let prevTs = '';
     for (const e of events) {
       // identity checks
-      if (e.portfolioId !== portfolioId || e.instrument !== instrument.value) {
+      if (
+        e.portfolioId !== portfolioId ||
+        e.instrument.value !== instrument.value
+      ) {
         throw new InvariantError('Event identity mismatch within position');
       }
       // chronology (non-decreasing)
@@ -152,18 +155,21 @@ export class Position {
       prevTs = e.ts;
 
       if (e.action === Action.BUY) {
-        if (e.qty <= 0) throw new InvariantError('BUY qty must be > 0');
-        if (e.price <= 0) throw new InvariantError('BUY price must be > 0');
+        if (e.qty.value <= 0) throw new InvariantError('BUY qty must be > 0');
+        if (e.price.value <= 0)
+          throw new InvariantError('BUY price must be > 0');
         if (closed) throw new StateError('Cannot BUY after position is closed');
-        qty += e.qty;
+        qty += e.qty.value;
       } else if (e.action === Action.SELL) {
-        if (e.qty <= 0) throw new InvariantError('SELL qty must be > 0');
-        if (e.price <= 0) throw new InvariantError('SELL price must be > 0');
-        if (e.qty > qty) throw new StateError('SELL exceeds current quantity');
-        qty -= e.qty;
+        if (e.qty.value <= 0) throw new InvariantError('SELL qty must be > 0');
+        if (e.price.value <= 0)
+          throw new InvariantError('SELL price must be > 0');
+        if (e.qty.value > qty)
+          throw new StateError('SELL exceeds current quantity');
+        qty -= e.qty.value;
         if (qty === 0) closed = true;
       } else if (e.action === Action.STOP_LOSS) {
-        if (e.stop <= 0) {
+        if (e.stop.value <= 0) {
           throw new InvariantError('Stop must be > 0');
         }
         // no qty change
@@ -191,13 +197,13 @@ export class Position {
       action: Action.BUY,
       ts: args.ts,
       portfolioId: this.portfolioId,
-      instrument: this.instrument.value,
-      qty: args.qty.value,
-      price: args.price.value,
+      instrument: this.instrument,
+      qty: args.qty,
+      price: args.price,
       note: args.note,
     };
     this._events.push(e);
-    this._currentQty += e.qty;
+    this._currentQty += e.qty.value;
   }
 
   /** Append a SELL (partial or full). Full sell will close the position. */
@@ -213,13 +219,13 @@ export class Position {
       action: Action.SELL,
       ts: args.ts,
       portfolioId: this.portfolioId,
-      instrument: this.instrument.value,
-      qty: args.qty.value,
-      price: args.price.value,
+      instrument: this.instrument,
+      qty: args.qty,
+      price: args.price,
       note: args.note,
     };
     this._events.push(e);
-    this._currentQty -= e.qty;
+    this._currentQty -= e.qty.value;
     if (this._currentQty === 0) this._closed = true;
   }
 
@@ -231,8 +237,8 @@ export class Position {
       action: Action.STOP_LOSS,
       ts: args.ts,
       portfolioId: this.portfolioId,
-      instrument: this.instrument.value,
-      stop: args.stop.value,
+      instrument: this.instrument,
+      stop: args.stop,
       note: args.note,
     };
     this._events.push(e);
@@ -260,7 +266,7 @@ export class Position {
   get latestStop(): number | undefined {
     for (let i = this._events.length - 1; i >= 0; i--) {
       const e = this._events[i];
-      if (e.action === Action.STOP_LOSS) return e.stop;
+      if (e.action === Action.STOP_LOSS) return e.stop.value;
     }
     return undefined;
   }
