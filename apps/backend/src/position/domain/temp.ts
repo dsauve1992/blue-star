@@ -155,24 +155,14 @@ export class Position {
       prevTs = e.ts;
 
       if (e.action === Action.BUY) {
-        if (e.qty.value <= 0) throw new InvariantError('BUY qty must be > 0');
-        if (e.price.value <= 0)
-          throw new InvariantError('BUY price must be > 0');
         if (closed) throw new StateError('Cannot BUY after position is closed');
         qty += e.qty.value;
       } else if (e.action === Action.SELL) {
-        if (e.qty.value <= 0) throw new InvariantError('SELL qty must be > 0');
-        if (e.price.value <= 0)
-          throw new InvariantError('SELL price must be > 0');
         if (e.qty.value > qty)
           throw new StateError('SELL exceeds current quantity');
         qty -= e.qty.value;
         if (qty === 0) closed = true;
       } else if (e.action === Action.STOP_LOSS) {
-        if (e.stop.value <= 0) {
-          throw new InvariantError('Stop must be > 0');
-        }
-        // no qty change
         if (closed) throw new StateError('Cannot modify stop after close');
       }
     }
@@ -186,8 +176,6 @@ export class Position {
       closed,
     );
   }
-
-  // ------------ Behavior (only what the entity *is* + safe append) ------------
 
   /** Append a BUY inside this episode. */
   buy(args: BuyArgs): void {
