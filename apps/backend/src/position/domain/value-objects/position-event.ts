@@ -1,10 +1,10 @@
-import { IsoTimestamp } from './value-objects/isoTimestamp';
-import { PortfolioId } from './value-objects/portfolioId';
-import { Ticker } from './value-objects/ticker';
-import { Quantity } from './value-objects/quantity';
-import { Price } from './value-objects/price';
-import { StopPrice } from './value-objects/stopPrice';
-import { Action } from './position';
+import { IsoTimestamp } from './iso-timestamp';
+import { PortfolioId } from './portfolio-id';
+import { Ticker } from './ticker';
+import { Quantity } from './quantity';
+import { Price } from './price';
+import { StopPrice } from './stop-price';
+import { Action } from '../entities/position';
 
 interface BaseEvent {
   ts: IsoTimestamp;
