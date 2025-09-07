@@ -2,10 +2,9 @@ import { Ticker } from './value-objects/ticker';
 import { Quantity } from './value-objects/quantity';
 import { Price } from './value-objects/price';
 import { StopPrice } from './value-objects/stopPrice';
-
-export type PortfolioId = string;
-export type PositionId = number;
-export type IsoTimestamp = string;
+import { PortfolioId } from './value-objects/portfolioId';
+import { PositionId } from './value-objects/positionId';
+import { IsoTimestamp } from './value-objects/isoTimestamp';
 
 // =====================================================
 // Method Argument Types
@@ -137,17 +136,17 @@ export class Position {
     // Apply events with integrity checks
     let qty = 0;
     let closed = false;
-    let prevTs = '';
+    let prevTs: IsoTimestamp | undefined;
     for (const e of events) {
       // identity checks
       if (
-        e.portfolioId !== portfolioId ||
+        e.portfolioId.value !== portfolioId.value ||
         e.instrument.value !== instrument.value
       ) {
         throw new InvariantError('Event identity mismatch within position');
       }
       // chronology (non-decreasing)
-      if (prevTs && new Date(e.ts).getTime() < new Date(prevTs).getTime()) {
+      if (prevTs && e.ts.toDate().getTime() < prevTs.toDate().getTime()) {
         throw new ChronologyError(
           'Events must be chronological (non-decreasing)',
         );
@@ -267,8 +266,10 @@ export class Position {
 
   private ensureChronology(ts: IsoTimestamp): void {
     const last = this._events[this._events.length - 1]?.ts;
-    if (last && new Date(ts).getTime() < new Date(last).getTime()) {
-      throw new ChronologyError(`Timestamp ${ts} precedes last event ${last}`);
+    if (last && ts.toDate().getTime() < last.toDate().getTime()) {
+      throw new ChronologyError(
+        `Timestamp ${ts.value} precedes last event ${last.value}`,
+      );
     }
   }
 }
