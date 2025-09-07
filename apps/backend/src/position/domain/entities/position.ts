@@ -6,7 +6,12 @@ import { PortfolioId } from '../value-objects/portfolio-id';
 import { PositionId } from '../value-objects/position-id';
 import { IsoTimestamp } from '../value-objects/iso-timestamp';
 import { ChronologyError, InvariantError, StateError } from '../domain-errors';
-import { BuyEvent, PositionEvent, SellEvent, StopLossEvent, } from '../value-objects/position-event';
+import {
+  BuyEvent,
+  PositionEvent,
+  SellEvent,
+  StopLossEvent,
+} from '../value-objects/position-event';
 
 export interface OpenPositionArgs {
   positionId: PositionId;
@@ -205,6 +210,18 @@ export class Position {
       if (e.action === Action.STOP_LOSS) return e.stop.value;
     }
     return undefined;
+  }
+
+  get initialBuyEvent(): BuyEvent {
+    if (this._events.length === 0) {
+      throw new InvariantError('Position has no events');
+    }
+    const firstEvent = this._events[0];
+    if (firstEvent.action !== Action.BUY) {
+      throw new InvariantError('First event must be a BUY event');
+    }
+
+    return firstEvent;
   }
 
   private ensureActive(): void {
