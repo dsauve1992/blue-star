@@ -13,10 +13,6 @@ import {
   StopLossEvent,
 } from './positionEvent';
 
-// =====================================================
-// Method Argument Types
-// =====================================================
-
 export interface OpenPositionArgs {
   positionId: PositionId;
   portfolioId: PortfolioId;
@@ -47,19 +43,11 @@ export interface SetStopArgs {
   note?: string;
 }
 
-// =====================================================
-// Domain Events (inside a Position episode)
-// =====================================================
-
 export enum Action {
   BUY = 'BUY',
   SELL = 'SELL',
-  STOP_LOSS = 'STOP_LOSS', // modifies unified stop level
+  STOP_LOSS = 'STOP_LOSS',
 }
-
-// =====================================================
-// Aggregate Root: Position
-// =====================================================
 
 export class Position {
   private constructor(
@@ -67,11 +55,9 @@ export class Position {
     public readonly portfolioId: PortfolioId,
     public readonly instrument: Ticker,
     private _events: PositionEvent[],
-    private _currentQty: number, // derived as we apply events
-    private _closed: boolean, // true iff qty reached 0 at some point
+    private _currentQty: number,
+    private _closed: boolean,
   ) {}
-
-  // ------------ Factories ------------
 
   /** Start a new position with the first BUY from flat. */
   static open(args: OpenPositionArgs): Position {
@@ -97,7 +83,7 @@ export class Position {
 
   static fromEvents(positionId: PositionId, events: PositionEvent[]): Position {
     if (events.length === 0) throw new InvariantError('Empty event stream');
-    // Ensure first event is BUY and all (portfolio,instrument) match
+
     const first = events[0];
     if (first.action !== Action.BUY) {
       throw new InvariantError('Position must start with a BUY event');
@@ -105,19 +91,17 @@ export class Position {
     const portfolioId = first.portfolioId;
     const instrument = first.instrument;
 
-    // Apply events with integrity checks
     let qty = 0;
     let closed = false;
     let prevTs: IsoTimestamp | undefined;
     for (const e of events) {
-      // identity checks
       if (
         e.portfolioId.value !== portfolioId.value ||
         e.instrument.value !== instrument.value
       ) {
         throw new InvariantError('Event identity mismatch within position');
       }
-      // chronology (non-decreasing)
+
       if (prevTs && e.ts.toDate().getTime() < prevTs.toDate().getTime()) {
         throw new ChronologyError(
           'Events must be chronological (non-decreasing)',
@@ -203,8 +187,6 @@ export class Position {
     this._events.push(e);
   }
 
-  // ------------ Derived state (read-only) ------------
-
   get id(): PositionId {
     return this.positionId;
   }
@@ -229,8 +211,6 @@ export class Position {
     }
     return undefined;
   }
-
-  // ------------ Internal guards ------------
 
   private ensureActive(): void {
     if (this._closed) throw new StateError('Position is closed');

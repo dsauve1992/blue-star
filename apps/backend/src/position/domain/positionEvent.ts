@@ -4,30 +4,30 @@ import { Ticker } from './value-objects/ticker';
 import { Quantity } from './value-objects/quantity';
 import { Price } from './value-objects/price';
 import { StopPrice } from './value-objects/stopPrice';
-import { Action } from './temp';
+import { Action } from './position';
 
 interface BaseEvent {
-  ts: IsoTimestamp; // ISO-8601
+  ts: IsoTimestamp;
   portfolioId: PortfolioId;
-  instrument: Ticker; // use Ticker value object
-  note?: string; // optional human context
+  instrument: Ticker;
+  note?: string;
 }
 
 export interface BuyEvent extends BaseEvent {
   action: Action.BUY;
-  qty: Quantity; // use Quantity value object
-  price: Price; // use Price value object
+  qty: Quantity;
+  price: Price;
 }
 
 export interface SellEvent extends BaseEvent {
   action: Action.SELL;
-  qty: Quantity; // use Quantity value object
-  price: Price; // use Price value object
+  qty: Quantity;
+  price: Price;
 }
 
 export interface StopLossEvent extends BaseEvent {
   action: Action.STOP_LOSS;
-  stop: StopPrice; // use StopPrice value object
+  stop: StopPrice;
 }
 
 export type PositionEvent = BuyEvent | SellEvent | StopLossEvent;
