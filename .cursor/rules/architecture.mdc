@@ -1,0 +1,245 @@
+---
+description: Blue Star Architecture Guidelines - DDD and Clean Architecture principles
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+alwaysApply: true
+---
+
+# Blue Star - Architecture Guidelines
+
+## Core Principles
+
+### Domain-Driven Design (DDD)
+- Domain entities and value objects contain ONLY business logic
+- NO dependencies on external concerns (infrastructure, frameworks, persistence)
+- Repository interfaces belong in domain layer
+- Value objects enforce business invariants with validation at construction
+- Use factory methods: `PositionId.new()`, `Ticker.of()`, `Price.of()`
+- All domain concepts as value objects, no primitive obsession
+
+### Clean Architecture Layers
+```
+Domain Layer (entities, value-objects, repositories interfaces)
+    ↑
+Application Layer (use-cases)
+    ↑
+Infrastructure Layer (repository implementations)
+    ↑
+Presentation Layer (controllers)
+```
+
+### CQRS Pattern
+- Separate read and write repositories
+- Write Repository: `getById()` throws errors, used by use cases
+- Read Repository: Comprehensive data retrieval (findById, findAll, search, count), used by queries
+- Write side focuses on business invariants
+- Read side focuses on data retrieval without business logic
+
+## File Organization Rules
+
+### Directory Structure
+```
+domain/
+├── entities/           # Aggregate roots (.entity.ts)
+├── value-objects/      # Value objects (kebab-case.ts)
+└── repositories/       # Repository interfaces (.interface.ts)
+
+use-cases/              # Application services (.use-case.ts)
+infrastructure/         # External concerns
+├── repositories/       # Repository implementations (.repository.ts)
+```
+
+### File Naming Conventions
+- Entities: `position.entity.ts`
+- Value Objects: `kebab-case.ts` (e.g., `position-id.ts`)
+- Interfaces: `kebab-case.interface.ts`
+- Use Cases: `kebab-case.use-case.ts`
+- Repositories: `kebab-case.repository.ts`
+
+## Code Patterns
+
+### Value Object Pattern
+```typescript
+export class Price {
+  private constructor(public readonly value: number) {}
+  
+  static of(n: number): Price {
+    if (!Number.isFinite(n) || n <= 0) {
+      throw new Error(`Price must be > 0: ${n}`);
+    }
+    return new Price(n);
+  }
+}
+```
+
+### Use Case Pattern
+```typescript
+@Injectable()
+export class OpenPositionUseCase {
+  constructor(
+    @Inject(POSITION_WRITE_REPOSITORY)
+    private readonly positionWriteRepository: PositionWriteRepository,
+  ) {}
+
+  async execute(request: OpenPositionRequestDto): Promise<OpenPositionResponseDto> {
+    // Orchestrate domain operations, no business logic here
+  }
+}
+```
+
+### Repository Pattern
+```typescript
+// Write Repository (throws if not found)
+export interface PositionWriteRepository {
+  save(position: Position): Promise<Position>;
+  getById(positionId: PositionId): Promise<Position>;
+}
+
+// Read Repository (comprehensive data retrieval, no business logic)
+export interface PositionReadRepository {
+  findById(positionId: PositionId): Promise<Position | null>;
+  findAll(): Promise<Position[]>;
+  findByPortfolioId(portfolioId: PortfolioId): Promise<Position[]>;
+  search(filters: PositionFilters, pagination?: PaginationOptions): Promise<PaginatedResult<Position>>;
+  count(filters?: PositionFilters): Promise<number>;
+}
+```
+
+## TypeScript Rules
+
+### Imports
+- Use `import type` for interfaces used in decorators
+- Import value objects from domain layer
+- Import repository interfaces from domain layer
+
+### DTOs
+- Use value objects in DTOs, not primitives
+- Request DTOs should contain domain value objects
+- Response DTOs should contain domain value objects
+
+### Error Handling
+- Use domain errors: `InvariantError`, `StateError`, `ChronologyError`
+- Fail-fast approach for business rule violations
+- Global error handling in domain layer
+
+## NestJS Integration
+
+### Dependency Injection
+- Use string tokens for interfaces: `POSITION_WRITE_REPOSITORY`
+- Use `@Injectable()` decorators for concrete implementations
+- Bind interfaces to implementations in modules
+- Use `@Inject()` for interface injection
+
+### Module Structure
+```typescript
+@Module({
+  providers: [
+    UseCase,
+    {
+      provide: REPOSITORY_TOKEN,
+      useClass: RepositoryImplementation,
+    },
+  ],
+})
+```
+
+## Code Quality Standards
+
+### TypeScript
+- Strict typing throughout
+- No `any` types
+- Explicit typing everywhere
+- Use `import type` for decorator parameters
+
+### ESLint/Prettier
+- Follow existing ESLint rules
+- Use Prettier formatting
+- No compilation errors or warnings
+- Consistent indentation and spacing
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Primitive obsession - use value objects instead of strings/numbers
+- ❌ Anemic domain models - entities should have behavior
+- ❌ Business logic in controllers - should be in use cases
+- ❌ Direct database access - use repository interfaces
+- ❌ Mixed read/write concerns - separate repositories
+- ❌ Tight coupling - depend on abstractions, not concretions
+- ❌ God classes - single responsibility principle
+
+## Development Workflow
+
+### Implementation Order
+1. Domain layer first (entities, value objects, errors)
+2. Repository interfaces in domain
+3. Use cases (application layer)
+4. Infrastructure implementations
+5. Controllers (presentation layer)
+
+### When Creating New Features
+1. Start with domain value objects
+2. Create repository interfaces in domain
+3. Implement use case with value object DTOs
+4. Create infrastructure repository implementation
+5. Wire up in NestJS module
+6. Create controller endpoint
+
+### Code Review Checklist
+- [ ] Domain logic in domain layer only
+- [ ] Value objects used instead of primitives
+- [ ] Proper error handling with domain errors
+- [ ] Repository interfaces in domain layer
+- [ ] Use cases orchestrate, don't contain business logic
+- [ ] Type safety maintained throughout
+- [ ] ESLint/Prettier compliance
+- [ ] Clear naming conventions followed
+- [ ] CQRS pattern maintained (separate read/write)
+
+## Security & Performance
+
+### Security
+- Use UUID-based IDs (PositionId.new())
+- Value object validation prevents invalid data
+- Domain-driven validation at boundaries
+
+### Performance
+- Promise-based async operations
+- Efficient data structures (Maps for lookups)
+- Minimal database queries
+
+## Testing Guidelines
+
+### Unit Tests
+- Test domain logic in isolation
+- Mock repository interfaces
+- Test value object validation
+- Test use case orchestration
+
+### Integration Tests
+- Test repository implementations
+- Test use case with real repositories
+- Test controller endpoints
+
+## Common Tasks
+
+### Adding New Value Object
+1. Create in `domain/value-objects/`
+2. Add validation in constructor
+3. Add factory method `static of()`
+4. Use kebab-case naming
+5. Add to domain exports
+
+### Adding New Use Case
+1. Create in `use-cases/`
+2. Define DTOs with value objects
+3. Inject write repository
+4. Orchestrate domain operations
+5. Map to response DTO
+
+### Adding New Repository
+1. Create interface in `domain/repositories/`
+2. Implement in `infrastructure/repositories/`
+3. Register in NestJS module
+4. Use appropriate read/write pattern
+
+Remember: Always maintain architectural boundaries, use value objects instead of primitives, and follow the established patterns for consistency.
