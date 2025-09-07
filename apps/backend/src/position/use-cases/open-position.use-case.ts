@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { Position } from '../domain/entities/position';
 import { PositionId } from '../domain/value-objects/position-id';
 import { PortfolioId } from '../domain/value-objects/portfolio-id';
@@ -6,7 +6,8 @@ import { Ticker } from '../domain/value-objects/ticker';
 import { Quantity } from '../domain/value-objects/quantity';
 import { Price } from '../domain/value-objects/price';
 import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
-import { PositionRepository } from '../domain/repositories/position.repository.interface';
+import type { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
+import { POSITION_WRITE_REPOSITORY } from '../position.module';
 
 export interface OpenPositionRequestDto {
   portfolioId: PortfolioId;
@@ -29,12 +30,14 @@ export interface OpenPositionResponseDto {
 
 @Injectable()
 export class OpenPositionUseCase {
-  constructor(private readonly positionRepository: PositionRepository) {}
+  constructor(
+    @Inject(POSITION_WRITE_REPOSITORY)
+    private readonly positionWriteRepository: PositionWriteRepository,
+  ) {}
 
   async execute(
     request: OpenPositionRequestDto,
   ): Promise<OpenPositionResponseDto> {
-    // Generate new position ID
     const positionId = PositionId.new();
 
     // Create new position using domain factory
@@ -49,7 +52,7 @@ export class OpenPositionUseCase {
     });
 
     // Save position
-    const savedPosition = await this.positionRepository.save(position);
+    const savedPosition = await this.positionWriteRepository.save(position);
 
     // Convert domain entity to response DTO
     return this.mapToResponseDto(savedPosition);
