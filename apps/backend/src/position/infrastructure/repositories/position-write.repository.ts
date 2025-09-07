@@ -10,9 +10,9 @@ export class InMemoryPositionWriteRepository
 {
   private positions: Map<string, Position> = new Map();
 
-  save(position: Position): Promise<Position> {
+  save(position: Position): Promise<void> {
     this.positions.set(position.id.value, position);
-    return Promise.resolve(position);
+    return Promise.resolve();
   }
 
   getById(positionId: PositionId): Promise<Position> {

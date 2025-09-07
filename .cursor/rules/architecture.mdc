@@ -91,7 +91,7 @@ export class OpenPositionUseCase {
 ```typescript
 // Write Repository (throws if not found)
 export interface PositionWriteRepository {
-  save(position: Position): Promise<Position>;
+  save(position: Position): Promise<void>;
   getById(positionId: PositionId): Promise<Position>;
 }
 

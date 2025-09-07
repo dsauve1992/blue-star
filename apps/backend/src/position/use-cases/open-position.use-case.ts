@@ -52,10 +52,10 @@ export class OpenPositionUseCase {
     });
 
     // Save position
-    const savedPosition = await this.positionWriteRepository.save(position);
+    await this.positionWriteRepository.save(position);
 
     // Convert domain entity to response DTO
-    return this.mapToResponseDto(savedPosition);
+    return this.mapToResponseDto(position);
   }
 
   private mapToResponseDto(position: Position): OpenPositionResponseDto {
