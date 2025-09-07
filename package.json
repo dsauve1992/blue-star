@@ -4,7 +4,7 @@
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",
-    "dev:backend": "turbo run start:dev --filter=backend",
+    "dev:backend": "turbo run dev --filter=backend",
     "dev:frontend": "turbo run dev --filter=frontend",
     "dev:all": "turbo run dev --parallel",
     "lint": "turbo run lint",
