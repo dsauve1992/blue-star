@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { PositionController } from './position.controller';
+import { PositionController } from './api/position.controller';
 import { OpenPositionUseCase } from './use-cases/open-position.use-case';
 import { InMemoryPositionWriteRepository } from './infrastructure/repositories/position-write.repository';
 

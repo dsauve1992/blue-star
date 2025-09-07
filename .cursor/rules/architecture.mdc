@@ -24,7 +24,7 @@ Application Layer (use-cases)
     ↑
 Infrastructure Layer (repository implementations)
     ↑
-Presentation Layer (controllers)
+API Layer (controllers, endpoints)
 ```
 
 ### CQRS Pattern
@@ -46,6 +46,7 @@ domain/
 use-cases/              # Application services (.use-case.ts)
 infrastructure/         # External concerns
 ├── repositories/       # Repository implementations (.repository.ts)
+api/                    # API layer (controllers, endpoints)
 ```
 
 ### File Naming Conventions
@@ -174,7 +175,7 @@ export interface PositionReadRepository {
 2. Repository interfaces in domain
 3. Use cases (application layer)
 4. Infrastructure implementations
-5. Controllers (presentation layer)
+5. API controllers (API layer)
 
 ### When Creating New Features
 1. Start with domain value objects
@@ -182,7 +183,7 @@ export interface PositionReadRepository {
 3. Implement use case with value object DTOs
 4. Create infrastructure repository implementation
 5. Wire up in NestJS module
-6. Create controller endpoint
+6. Create API controller endpoint
 
 ### Code Review Checklist
 - [ ] Domain logic in domain layer only

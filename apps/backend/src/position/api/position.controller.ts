@@ -3,12 +3,12 @@ import {
   OpenPositionRequestDto,
   OpenPositionResponseDto,
   OpenPositionUseCase,
-} from './use-cases/open-position.use-case';
-import { PortfolioId } from './domain/value-objects/portfolio-id';
-import { Ticker } from './domain/value-objects/ticker';
-import { Quantity } from './domain/value-objects/quantity';
-import { Price } from './domain/value-objects/price';
-import { IsoTimestamp } from './domain/value-objects/iso-timestamp';
+} from '../use-cases/open-position.use-case';
+import { PortfolioId } from '../domain/value-objects/portfolio-id';
+import { Ticker } from '../domain/value-objects/ticker';
+import { Quantity } from '../domain/value-objects/quantity';
+import { Price } from '../domain/value-objects/price';
+import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 
 @Controller('positions')
 export class PositionController {
