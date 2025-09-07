@@ -1,12 +1,12 @@
-import {Ticker} from '../value-objects/ticker';
-import {Quantity} from '../value-objects/quantity';
-import {Price} from '../value-objects/price';
-import {StopPrice} from '../value-objects/stop-price';
-import {PortfolioId} from '../value-objects/portfolio-id';
-import {PositionId} from '../value-objects/position-id';
-import {IsoTimestamp} from '../value-objects/iso-timestamp';
-import {ChronologyError, InvariantError, StateError} from '../domain-errors';
-import {BuyEvent, PositionEvent, SellEvent, StopLossEvent,} from '../value-objects/position-event';
+import { Ticker } from '../value-objects/ticker';
+import { Quantity } from '../value-objects/quantity';
+import { Price } from '../value-objects/price';
+import { StopPrice } from '../value-objects/stop-price';
+import { PortfolioId } from '../value-objects/portfolio-id';
+import { PositionId } from '../value-objects/position-id';
+import { IsoTimestamp } from '../value-objects/iso-timestamp';
+import { ChronologyError, InvariantError, StateError } from '../domain-errors';
+import { BuyEvent, PositionEvent, SellEvent, StopLossEvent, } from '../value-objects/position-event';
 
 export interface OpenPositionArgs {
   positionId: PositionId;
