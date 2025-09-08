@@ -20,12 +20,6 @@ export interface OpenPositionRequestDto {
 
 export interface OpenPositionResponseDto {
   positionId: PositionId;
-  portfolioId: PortfolioId;
-  instrument: Ticker;
-  quantity: number;
-  price: number;
-  timestamp: IsoTimestamp;
-  note?: string;
 }
 
 @Injectable()
@@ -54,21 +48,9 @@ export class OpenPositionUseCase {
     // Save position
     await this.positionWriteRepository.save(position);
 
-    // Convert domain entity to response DTO
-    return this.mapToResponseDto(position);
-  }
-
-  private mapToResponseDto(position: Position): OpenPositionResponseDto {
-    const initialBuyEvent = position.initialBuyEvent;
-
+    // Return only the position ID
     return {
       positionId: position.id,
-      portfolioId: position.portfolioId,
-      instrument: position.instrument,
-      quantity: position.currentQty,
-      price: initialBuyEvent.price.value,
-      timestamp: initialBuyEvent.ts,
-      note: initialBuyEvent.note,
     };
   }
 }

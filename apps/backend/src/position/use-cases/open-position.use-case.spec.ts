@@ -5,6 +5,7 @@ import {
 } from './open-position.use-case';
 import { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
 import { POSITION_WRITE_REPOSITORY } from '../position.module';
+import { Action, Position } from '../domain/entities/position';
 import { PositionId } from '../domain/value-objects/position-id';
 import { PortfolioId } from '../domain/value-objects/portfolio-id';
 import { Ticker } from '../domain/value-objects/ticker';
@@ -37,7 +38,7 @@ describe('OpenPositionUseCase', () => {
   });
 
   describe('execute', () => {
-    it('should successfully open a position and return the created position details', async () => {
+    it('should create and save a position with the correct data and return the position ID', async () => {
       const expectedUuid = 'test-uuid-123';
 
       jest
@@ -55,22 +56,29 @@ describe('OpenPositionUseCase', () => {
 
       const result = await useCase.execute(request);
 
-      expect(mockPositionWriteRepository.save).toHaveBeenCalledWith(
-        expect.objectContaining({
-          positionId: PositionId.of(expectedUuid),
-          portfolioId: request.portfolioId,
-          instrument: request.instrument,
-        }),
+      const expectedPosition = Position.fromEvents(
+        PositionId.of(expectedUuid),
+        [
+          {
+            action: Action.BUY,
+            ts: request.timestamp,
+            portfolioId: request.portfolioId,
+            instrument: request.instrument,
+            qty: request.quantity,
+            price: request.price,
+            note: request.note,
+          },
+        ],
       );
 
+      // Assert - Verify the mutation was called with exact data
+      expect(mockPositionWriteRepository.save).toHaveBeenCalledWith(
+        expectedPosition,
+      );
+
+      // Assert - Verify the return value
       expect(result).toEqual({
         positionId: PositionId.of(expectedUuid),
-        portfolioId: request.portfolioId,
-        instrument: request.instrument,
-        quantity: request.quantity.value,
-        price: request.price.value,
-        timestamp: request.timestamp,
-        note: request.note,
       });
     });
   });
