@@ -1,0 +1,326 @@
+---
+description: Blue Star Testing Guidelines - Unit Testing Rules and Best Practices
+globs: ["**/*.spec.ts", "**/*.test.ts", "**/jest.setup.ts"]
+alwaysApply: true
+---
+
+# Blue Star - Testing Guidelines
+
+## Core Principles
+
+### Test Self-Containment
+- Any relevant information for a test must be declared in the test itself or at least as near as possible of the test itself
+- Mock values and test data should be visible and understandable within the test
+- Avoid relying on global state without local context
+
+### Focus on the Right Concerns
+- Test use case orchestration, not implementation details
+- Mock dependencies, not concrete implementations
+- Focus on mutations for write use cases, not return values
+
+### Precision and Clarity
+- Use exact assertions instead of loose matching
+- Make test intent clear through descriptive names and structure
+- Prefer explicit over implicit test behavior
+
+## Unit Testing Rules
+
+### 1. Test Structure
+
+#### Arrange-Act-Assert Pattern
+```typescript
+it('should create and save a position with the correct data', async () => {
+  // Arrange - Declare test data locally
+  const expectedUuid = 'test-uuid-123';
+  jest.spyOn(UuidGeneratorService, 'generate').mockReturnValue(expectedUuid);
+  
+  const request: OpenPositionRequestDto = {
+    portfolioId: PortfolioId.of('portfolio-123'),
+    instrument: Ticker.of('AAPL'),
+    // ... other properties
+  };
+
+  // Act
+  const result = await useCase.execute(request);
+
+  // Assert - Verify exact mutations and return values
+  expect(mockRepository.save).toHaveBeenCalledWith(expectedPosition);
+  expect(result).toEqual({ positionId: PositionId.of(expectedUuid) });
+});
+```
+
+#### Test Naming Conventions
+- Use descriptive, behavior-focused names
+- Include the expected outcome in the test name
+- Examples:
+  - ✅ `should create and save a position with the correct data`
+  - ✅ `should return position ID after successful creation`
+  - ❌ `should work correctly`
+  - ❌ `test open position`
+
+### 2. Mocking Strategy
+
+#### Mock Dependencies, Not Implementation
+```typescript
+// ✅ Good - Mock the interface
+let mockPositionWriteRepository: jest.Mocked<PositionWriteRepository>;
+
+// ❌ Bad - Mock concrete implementation
+let mockInMemoryRepository: jest.Mocked<InMemoryPositionWriteRepository>;
+```
+
+#### Global vs Local Mocking
+```typescript
+// Global setup (jest.setup.ts) - For common mocks
+jest.mock('./src/position/domain/services/uuid-generator.service', () => ({
+  UuidGeneratorService: {
+    generate: jest.fn().mockReturnValue('default-uuid'),
+  },
+}));
+
+// Local override - For test-specific values
+const expectedUuid = 'test-uuid-123';
+jest.spyOn(UuidGeneratorService, 'generate').mockReturnValue(expectedUuid);
+```
+
+#### Mock Setup Best Practices
+```typescript
+beforeEach(async () => {
+  // Create mock repository
+  mockPositionWriteRepository = {
+    save: jest.fn().mockResolvedValue(undefined),
+    getById: jest.fn(),
+  };
+
+  const module: TestingModule = await Test.createTestingModule({
+    providers: [
+      UseCase,
+      {
+        provide: REPOSITORY_TOKEN,
+        useValue: mockPositionWriteRepository,
+      },
+    ],
+  }).compile();
+
+  useCase = module.get<UseCase>(UseCase);
+});
+```
+
+### 3. Write Use Case Testing
+
+#### Focus on Mutations
+```typescript
+// ✅ Good - Test what gets saved
+expect(mockPositionWriteRepository.save).toHaveBeenCalledWith(expectedPosition);
+
+// ❌ Bad - Test complex return value mapping
+expect(result).toEqual({
+  positionId: expectedPosition.id,
+  portfolioId: expectedPosition.portfolioId,
+  instrument: expectedPosition.instrument,
+  // ... many more fields
+});
+```
+
+#### Exact Data Assertions
+```typescript
+// ✅ Good - Exact Position object
+const expectedPosition = Position.fromEvents(
+  PositionId.of(expectedUuid),
+  [
+    {
+      action: Action.BUY,
+      ts: request.timestamp,
+      portfolioId: request.portfolioId,
+      instrument: request.instrument,
+      qty: request.quantity,
+      price: request.price,
+      note: request.note,
+    },
+  ],
+);
+expect(mockRepository.save).toHaveBeenCalledWith(expectedPosition);
+
+// ❌ Bad - Loose matching
+expect(mockRepository.save).toHaveBeenCalledWith(
+  expect.objectContaining({
+    positionId: PositionId.of(expectedUuid),
+    portfolioId: request.portfolioId,
+  }),
+);
+```
+
+### 4. Assertion Best Practices
+
+#### Use Precise Jest Matchers
+```typescript
+// ✅ Good - Single precise assertion
+expect(mockRepository.save).toHaveBeenNthCalledWith(1, expectedPosition);
+
+// ❌ Bad - Multiple separate assertions
+expect(mockRepository.save).toHaveBeenCalledTimes(1);
+expect(mockRepository.save).toHaveBeenCalledWith(expectedPosition);
+```
+
+#### Test Return Values Appropriately
+```typescript
+// ✅ Good - Test essential return data only
+expect(result).toEqual({
+  positionId: PositionId.of(expectedUuid),
+});
+
+// ❌ Bad - Test complex return value mapping
+expect(result).toEqual({
+  positionId: expectedPosition.id,
+  portfolioId: expectedPosition.portfolioId,
+  instrument: expectedPosition.instrument,
+  quantity: expectedPosition.currentQty,
+  price: expectedPosition.initialBuyEvent.price.value,
+  timestamp: expectedPosition.initialBuyEvent.ts,
+  note: expectedPosition.initialBuyEvent.note,
+});
+```
+
+### 5. Domain-Driven Testing
+
+#### Use Domain Value Objects
+```typescript
+// ✅ Good - Use domain value objects
+const request: OpenPositionRequestDto = {
+  portfolioId: PortfolioId.of('portfolio-123'),
+  instrument: Ticker.of('AAPL'),
+  quantity: Quantity.of(100),
+  price: Price.of(150.5),
+  timestamp: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
+  note: 'Initial position',
+};
+
+// ❌ Bad - Use primitives
+const request = {
+  portfolioId: 'portfolio-123',
+  instrument: 'AAPL',
+  quantity: 100,
+  price: 150.5,
+  timestamp: '2024-01-15T10:30:00.000Z',
+  note: 'Initial position',
+};
+```
+
+#### Explicit Event Declaration
+```typescript
+// ✅ Good - Explicit event stream
+const expectedPosition = Position.fromEvents(
+  PositionId.of(expectedUuid),
+  [
+    {
+      action: Action.BUY,
+      ts: request.timestamp,
+      portfolioId: request.portfolioId,
+      instrument: request.instrument,
+      qty: request.quantity,
+      price: request.price,
+      note: request.note,
+    },
+  ],
+);
+
+// ❌ Bad - Using factory method that hides events
+const expectedPosition = Position.open({
+  positionId: PositionId.of(expectedUuid),
+  portfolioId: request.portfolioId,
+  instrument: request.instrument,
+  ts: request.timestamp,
+  qty: request.quantity,
+  price: request.price,
+  note: request.note,
+});
+```
+
+## ESLint Configuration
+
+### Disable Problematic Rules Globally
+```javascript
+// eslint.config.mjs
+rules: {
+  '@typescript-eslint/unbound-method': 'off' // Jest patterns trigger this incorrectly
+}
+```
+
+### Don't Use Line-by-Line Disables
+```typescript
+// ❌ Bad - Line-by-line disable
+expect(mock.save).toHaveBeenCalledWith(data); // eslint-disable-line @typescript-eslint/unbound-method
+
+// ✅ Good - Global rule configuration
+// Rule disabled in eslint.config.mjs
+expect(mock.save).toHaveBeenCalledWith(data);
+```
+
+## Test File Organization
+
+### File Naming
+- Test files: `*.spec.ts` (unit tests)
+- E2E tests: `*.e2e-spec.ts`
+- Setup files: `jest.setup.ts`
+
+### Import Organization
+```typescript
+// 1. Testing framework imports
+import { Test, TestingModule } from '@nestjs/testing';
+
+// 2. Use case imports
+import { OpenPositionRequestDto, OpenPositionUseCase } from './open-position.use-case';
+
+// 3. Domain imports
+import { Position, Action } from '../domain/entities/position';
+import { PositionId } from '../domain/value-objects/position-id';
+// ... other domain imports
+
+// 4. Infrastructure imports
+import { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
+import { POSITION_WRITE_REPOSITORY } from '../position.module';
+```
+
+## Common Patterns
+
+### Testing Write Use Cases
+1. **Arrange**: Set up request data and mock return values
+2. **Act**: Execute the use case
+3. **Assert**: Verify exact mutations and minimal return values
+
+### Testing Read Use Cases
+1. **Arrange**: Set up mock data and query parameters
+2. **Act**: Execute the use case
+3. **Assert**: Verify returned data matches expected format
+
+### Testing Error Scenarios
+1. **Arrange**: Set up conditions that trigger the error
+2. **Act**: Execute the use case
+3. **Assert**: Verify the correct error is thrown
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Test implementation details instead of behavior
+- ❌ Use `expect.objectContaining()` when exact matching is possible
+- ❌ Mock concrete classes instead of interfaces
+- ❌ Test complex return value mapping in write use cases
+- ❌ Use global test data without local context
+- ❌ Disable ESLint rules line-by-line instead of globally
+- ❌ Test return values extensively in write use cases
+- ❌ Use primitive values instead of domain value objects
+
+## Quality Checklist
+
+### Before Committing Tests
+- [ ] Test data is declared locally and clearly
+- [ ] Mock dependencies, not implementations
+- [ ] Use exact assertions, not loose matching
+- [ ] Focus on mutations for write use cases
+- [ ] Test names are descriptive and behavior-focused
+- [ ] Domain value objects are used consistently
+- [ ] ESLint passes without line-by-line disables
+- [ ] Code is formatted with Prettier
+- [ ] Test follows Arrange-Act-Assert pattern
+
+Remember: Tests should be **readable**, **maintainable**, **precise**, and **focused on the right concerns**!

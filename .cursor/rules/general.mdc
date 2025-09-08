@@ -1,0 +1,154 @@
+---
+description: Blue Star General Development Rules and Guidelines
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx", "**/*.json", "**/*.md"]
+alwaysApply: true
+---
+
+# Blue Star - General Development Rules
+
+## Core Principles
+
+### Expert-Level Communication
+- Treat the user as an expert developer
+- Assume deep understanding of software engineering concepts
+- Provide concise, technical solutions without over-explanation
+- Focus on implementation details and best practices
+
+### Code Clarity Through Structure
+- Write self-documenting code that doesn't require comments
+- Use clear, descriptive names for variables, functions, and classes
+- Structure code logically to make intent obvious
+- Prefer explicit code over commented code
+
+## Code Quality Standards
+
+### Self-Documenting Code
+```typescript
+// ❌ Bad - Requires comment to understand
+const d = new Date(); // Current date
+const q = 100; // Quantity
+
+// ✅ Good - Self-explanatory
+const currentDate = new Date();
+const quantity = Quantity.of(100);
+```
+
+### Clear Intent Through Naming
+```typescript
+// ❌ Bad - Unclear purpose
+function process(data) {
+  // Process the data
+  return data.map(x => x.value);
+}
+
+// ✅ Good - Clear purpose from name
+function extractValuesFromPositions(positions: Position[]) {
+  return positions.map(position => position.currentQty);
+}
+```
+
+### Logical Structure
+```typescript
+// ❌ Bad - Mixed concerns
+function handleRequest(req) {
+  const data = validate(req); // Validation
+  const result = process(data); // Processing
+  save(result); // Persistence
+  return format(result); // Formatting
+}
+
+// ✅ Good - Separated concerns
+function handleRequest(req: Request): Response {
+  const validatedData = validateRequest(req);
+  const processedData = processBusinessLogic(validatedData);
+  await persistData(processedData);
+  return formatResponse(processedData);
+}
+```
+
+## Exception Cases for Comments
+
+### Only comment when absolutely necessary:
+
+1. **Complex Business Logic**
+```typescript
+// Complex financial calculation that requires domain knowledge
+// Formula: ((currentPrice - entryPrice) / entryPrice) * 100
+const percentageGain = ((currentPrice - entryPrice) / entryPrice) * 100;
+```
+
+2. **Non-Obvious Workarounds**
+```typescript
+// Workaround for Jest unbound-method rule with mock functions
+// This rule incorrectly flags Jest mock method calls
+expect(mockRepository.save).toHaveBeenCalledWith(expectedData);
+```
+
+3. **Performance-Critical Sections**
+```typescript
+// Hot path: This function is called thousands of times per second
+// Avoid object allocation in this loop
+for (let i = 0; i < items.length; i++) {
+  processItem(items[i]);
+}
+```
+
+4. **External API Constraints**
+```typescript
+// API requires snake_case but we use camelCase internally
+const apiPayload = {
+  position_id: position.id.value,
+  current_qty: position.currentQty,
+};
+```
+
+## Development Approach
+
+### Expert-Level Assumptions
+- Assume familiarity with TypeScript, NestJS, and Domain-Driven Design
+- Provide solutions without basic concept explanations
+- Focus on implementation patterns and architectural decisions
+- Use technical terminology without simplification
+
+### Code-First Communication
+- Show code examples rather than explaining concepts
+- Demonstrate patterns through implementation
+- Let the code structure convey the design intent
+- Use type definitions to express contracts clearly
+
+### Minimal Documentation
+- Prefer code over comments
+- Use meaningful names over explanatory text
+- Structure code to be self-evident
+- Only document the "why" when the "what" is not obvious
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Add comments for obvious code
+- ❌ Over-explain basic programming concepts
+- ❌ Use vague or generic names
+- ❌ Mix multiple concerns in single functions
+- ❌ Write code that requires comments to understand
+- ❌ Assume the user needs basic explanations
+
+### What TO Do
+- ✅ Write self-documenting code
+- ✅ Use descriptive, intention-revealing names
+- ✅ Separate concerns clearly
+- ✅ Let code structure show intent
+- ✅ Assume expert-level understanding
+- ✅ Focus on implementation quality
+
+## Quality Checklist
+
+### Before Committing Code
+- [ ] Code is self-documenting without comments
+- [ ] Names clearly express intent
+- [ ] Functions have single responsibility
+- [ ] No obvious code is commented
+- [ ] Complex logic is broken into clear steps
+- [ ] Type definitions express contracts clearly
+- [ ] Code structure makes flow obvious
+
+Remember: **Code is the documentation** - make it clear, concise, and expert-level!
