@@ -183,5 +183,37 @@ describe('OpenPositionUseCase', () => {
 
       expect(mockPositionWriteRepository.save).toHaveBeenCalledTimes(2);
     });
+
+    describe('input validation', () => {
+      it('should throw error for invalid portfolio ID', () => {
+        expect(() => {
+          PortfolioId.of(''); // Invalid empty ID
+        }).toThrow('PortfolioId cannot be empty');
+      });
+
+      it('should throw error for invalid ticker', () => {
+        expect(() => {
+          Ticker.of(''); // Invalid empty ticker
+        }).toThrow('Invalid ticker');
+      });
+
+      it('should throw error for invalid quantity', () => {
+        expect(() => {
+          Quantity.of(0); // Invalid zero quantity
+        }).toThrow('Quantity must be positive integer');
+      });
+
+      it('should throw error for invalid price', () => {
+        expect(() => {
+          Price.of(-50.0); // Invalid negative price
+        }).toThrow('Price must be > 0');
+      });
+
+      it('should throw error for invalid timestamp format', () => {
+        expect(() => {
+          IsoTimestamp.of('invalid-timestamp'); // Invalid format
+        }).toThrow('Invalid ISO timestamp');
+      });
+    });
   });
 });
