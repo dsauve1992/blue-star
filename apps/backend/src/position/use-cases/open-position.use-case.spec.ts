@@ -81,5 +81,107 @@ describe('OpenPositionUseCase', () => {
         positionId: PositionId.of(expectedUuid),
       });
     });
+
+    it('should create and save a position without a note', async () => {
+      const expectedUuid = 'test-uuid-456';
+
+      jest
+        .spyOn(UuidGeneratorService, 'generate')
+        .mockReturnValue(expectedUuid);
+
+      const request: OpenPositionRequestDto = {
+        portfolioId: PortfolioId.of('portfolio-456'),
+        instrument: Ticker.of('MSFT'),
+        quantity: Quantity.of(50),
+        price: Price.of(300.0),
+        timestamp: IsoTimestamp.of('2024-01-16T14:30:00.000Z'),
+      };
+
+      const result = await useCase.execute(request);
+
+      const expectedPosition = Position.fromEvents(
+        PositionId.of(expectedUuid),
+        [
+          {
+            action: Action.BUY,
+            ts: request.timestamp,
+            portfolioId: request.portfolioId,
+            instrument: request.instrument,
+            qty: request.quantity,
+            price: request.price,
+            note: undefined,
+          },
+        ],
+      );
+
+      expect(mockPositionWriteRepository.save).toHaveBeenCalledWith(
+        expectedPosition,
+      );
+
+      expect(result).toEqual({
+        positionId: PositionId.of(expectedUuid),
+      });
+    });
+
+    it('should handle repository save failure', async () => {
+      const expectedUuid = 'test-uuid-789';
+      const saveError = new Error('Database connection failed');
+
+      jest
+        .spyOn(UuidGeneratorService, 'generate')
+        .mockReturnValue(expectedUuid);
+
+      mockPositionWriteRepository.save.mockRejectedValue(saveError);
+
+      const request: OpenPositionRequestDto = {
+        portfolioId: PortfolioId.of('portfolio-789'),
+        instrument: Ticker.of('GOOGL'),
+        quantity: Quantity.of(25),
+        price: Price.of(2500.0),
+        timestamp: IsoTimestamp.of('2024-01-17T09:15:00.000Z'),
+        note: 'High-value position',
+      };
+
+      await expect(useCase.execute(request)).rejects.toThrow(saveError);
+
+      expect(mockPositionWriteRepository.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('should generate different UUIDs for different positions', async () => {
+      const firstUuid = 'first-uuid-123';
+      const secondUuid = 'second-uuid-456';
+
+      jest
+        .spyOn(UuidGeneratorService, 'generate')
+        .mockReturnValueOnce(firstUuid)
+        .mockReturnValueOnce(secondUuid);
+
+      const firstRequest: OpenPositionRequestDto = {
+        portfolioId: PortfolioId.of('portfolio-1'),
+        instrument: Ticker.of('AAPL'),
+        quantity: Quantity.of(100),
+        price: Price.of(150.0),
+        timestamp: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+      };
+
+      const secondRequest: OpenPositionRequestDto = {
+        portfolioId: PortfolioId.of('portfolio-2'),
+        instrument: Ticker.of('TSLA'),
+        quantity: Quantity.of(50),
+        price: Price.of(200.0),
+        timestamp: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
+      };
+
+      const firstResult = await useCase.execute(firstRequest);
+      const secondResult = await useCase.execute(secondRequest);
+
+      expect(firstResult.positionId.value).toBe(firstUuid);
+      expect(secondResult.positionId.value).toBe(secondUuid);
+      expect(firstResult.positionId.value).not.toBe(
+        secondResult.positionId.value,
+      );
+
+      expect(mockPositionWriteRepository.save).toHaveBeenCalledTimes(2);
+    });
   });
 });
