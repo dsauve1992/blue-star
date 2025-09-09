@@ -71,12 +71,10 @@ describe('OpenPositionUseCase', () => {
         ],
       );
 
-      // Assert - Verify the mutation was called with exact data
       expect(mockPositionWriteRepository.save).toHaveBeenCalledWith(
         expectedPosition,
       );
 
-      // Assert - Verify the return value
       expect(result).toEqual({
         positionId: PositionId.of(expectedUuid),
       });
@@ -187,31 +185,31 @@ describe('OpenPositionUseCase', () => {
     describe('input validation', () => {
       it('should throw error for invalid portfolio ID', () => {
         expect(() => {
-          PortfolioId.of(''); // Invalid empty ID
+          PortfolioId.of('');
         }).toThrow('PortfolioId cannot be empty');
       });
 
       it('should throw error for invalid ticker', () => {
         expect(() => {
-          Ticker.of(''); // Invalid empty ticker
+          Ticker.of('');
         }).toThrow('Invalid ticker');
       });
 
       it('should throw error for invalid quantity', () => {
         expect(() => {
-          Quantity.of(0); // Invalid zero quantity
+          Quantity.of(0);
         }).toThrow('Quantity must be positive integer');
       });
 
       it('should throw error for invalid price', () => {
         expect(() => {
-          Price.of(-50.0); // Invalid negative price
+          Price.of(-50.0);
         }).toThrow('Price must be > 0');
       });
 
       it('should throw error for invalid timestamp format', () => {
         expect(() => {
-          IsoTimestamp.of('invalid-timestamp'); // Invalid format
+          IsoTimestamp.of('invalid-timestamp');
         }).toThrow('Invalid ISO timestamp');
       });
     });

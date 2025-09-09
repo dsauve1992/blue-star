@@ -34,7 +34,6 @@ export class OpenPositionUseCase {
   ): Promise<OpenPositionResponseDto> {
     const positionId = PositionId.new();
 
-    // Create new position using domain factory
     const position = Position.open({
       positionId,
       portfolioId: request.portfolioId,
@@ -45,10 +44,8 @@ export class OpenPositionUseCase {
       note: request.note,
     });
 
-    // Save position
     await this.positionWriteRepository.save(position);
 
-    // Return only the position ID
     return {
       positionId: position.id,
     };
