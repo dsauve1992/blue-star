@@ -32,10 +32,7 @@ export class OpenPositionUseCase {
   async execute(
     request: OpenPositionRequestDto,
   ): Promise<OpenPositionResponseDto> {
-    const positionId = PositionId.new();
-
     const position = Position.open({
-      positionId,
       portfolioId: request.portfolioId,
       instrument: request.instrument,
       ts: request.timestamp,

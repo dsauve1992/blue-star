@@ -6,15 +6,9 @@ import { PortfolioId } from '../value-objects/portfolio-id';
 import { PositionId } from '../value-objects/position-id';
 import { IsoTimestamp } from '../value-objects/iso-timestamp';
 import { ChronologyError, InvariantError, StateError } from '../domain-errors';
-import {
-  BuyEvent,
-  PositionEvent,
-  SellEvent,
-  StopLossEvent,
-} from '../value-objects/position-event';
+import { BuyEvent, PositionEvent, SellEvent, StopLossEvent, } from '../value-objects/position-event';
 
 export interface OpenPositionArgs {
-  positionId: PositionId;
   portfolioId: PortfolioId;
   instrument: Ticker;
   ts: IsoTimestamp;
@@ -61,6 +55,8 @@ export class Position {
 
   /** Start a new position with the first BUY from flat. */
   static open(args: OpenPositionArgs): Position {
+    const positionId = PositionId.new();
+
     const e: BuyEvent = {
       action: Action.BUY,
       ts: args.ts,
@@ -72,7 +68,7 @@ export class Position {
     };
 
     return new Position(
-      args.positionId,
+      positionId,
       args.portfolioId,
       args.instrument,
       [e],
