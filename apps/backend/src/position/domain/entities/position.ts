@@ -4,11 +4,18 @@ import { Price } from '../value-objects/price';
 import { StopPrice } from '../value-objects/stop-price';
 import { PortfolioId } from '../value-objects/portfolio-id';
 import { PositionId } from '../value-objects/position-id';
+import { UserId } from '../value-objects/user-id';
 import { IsoTimestamp } from '../value-objects/iso-timestamp';
 import { ChronologyError, InvariantError, StateError } from '../domain-errors';
-import { BuyEvent, PositionEvent, SellEvent, StopLossEvent, } from '../value-objects/position-event';
+import {
+  BuyEvent,
+  PositionEvent,
+  SellEvent,
+  StopLossEvent,
+} from '../value-objects/position-event';
 
 export interface OpenPositionArgs {
+  userId: UserId;
   portfolioId: PortfolioId;
   instrument: Ticker;
   ts: IsoTimestamp;
@@ -46,6 +53,7 @@ export enum Action {
 export class Position {
   private constructor(
     public readonly positionId: PositionId,
+    public readonly userId: UserId,
     public readonly portfolioId: PortfolioId,
     public readonly instrument: Ticker,
     private _events: PositionEvent[],
@@ -69,6 +77,7 @@ export class Position {
 
     return new Position(
       positionId,
+      args.userId,
       args.portfolioId,
       args.instrument,
       [e],
@@ -77,7 +86,11 @@ export class Position {
     );
   }
 
-  static fromEvents(positionId: PositionId, events: PositionEvent[]): Position {
+  static fromEvents(
+    positionId: PositionId,
+    userId: UserId,
+    events: PositionEvent[],
+  ): Position {
     if (events.length === 0) throw new InvariantError('Empty event stream');
 
     const first = events[0];
@@ -120,6 +133,7 @@ export class Position {
 
     return new Position(
       positionId,
+      userId,
       portfolioId,
       instrument,
       [...events],

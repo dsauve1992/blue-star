@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Position } from '../domain/entities/position';
 import { PositionId } from '../domain/value-objects/position-id';
+import { UserId } from '../domain/value-objects/user-id';
 import { PortfolioId } from '../domain/value-objects/portfolio-id';
 import { Ticker } from '../domain/value-objects/ticker';
 import { Quantity } from '../domain/value-objects/quantity';
@@ -10,6 +11,7 @@ import type { PositionWriteRepository } from '../domain/repositories/position-wr
 import { POSITION_WRITE_REPOSITORY } from '../position.module';
 
 export interface OpenPositionRequestDto {
+  userId: UserId;
   portfolioId: PortfolioId;
   instrument: Ticker;
   quantity: Quantity;
@@ -33,6 +35,7 @@ export class OpenPositionUseCase {
     request: OpenPositionRequestDto,
   ): Promise<OpenPositionResponseDto> {
     const position = Position.open({
+      userId: request.userId,
       portfolioId: request.portfolioId,
       instrument: request.instrument,
       ts: request.timestamp,

@@ -7,6 +7,7 @@ import { PositionWriteRepository } from '../domain/repositories/position-write.r
 import { POSITION_WRITE_REPOSITORY } from '../position.module';
 import { Action, Position } from '../domain/entities/position';
 import { PositionId } from '../domain/value-objects/position-id';
+import { UserId } from '../domain/value-objects/user-id';
 import { PortfolioId } from '../domain/value-objects/portfolio-id';
 import { Ticker } from '../domain/value-objects/ticker';
 import { Quantity } from '../domain/value-objects/quantity';
@@ -40,12 +41,14 @@ describe('OpenPositionUseCase', () => {
   describe('execute', () => {
     it('should create and save a position with the correct data and return the position ID', async () => {
       const expectedUuid = 'test-uuid-123';
+      const userId = UserId.of('user-123');
 
       jest
         .spyOn(UuidGeneratorService, 'generate')
         .mockReturnValue(expectedUuid);
 
       const request: OpenPositionRequestDto = {
+        userId,
         portfolioId: PortfolioId.of('portfolio-123'),
         instrument: Ticker.of('AAPL'),
         quantity: Quantity.of(100),
@@ -58,6 +61,7 @@ describe('OpenPositionUseCase', () => {
 
       const expectedPosition = Position.fromEvents(
         PositionId.of(expectedUuid),
+        userId,
         [
           {
             action: Action.BUY,
@@ -82,12 +86,14 @@ describe('OpenPositionUseCase', () => {
 
     it('should create and save a position without a note', async () => {
       const expectedUuid = 'test-uuid-456';
+      const userId = UserId.of('user-456');
 
       jest
         .spyOn(UuidGeneratorService, 'generate')
         .mockReturnValue(expectedUuid);
 
       const request: OpenPositionRequestDto = {
+        userId,
         portfolioId: PortfolioId.of('portfolio-456'),
         instrument: Ticker.of('MSFT'),
         quantity: Quantity.of(50),
@@ -99,6 +105,7 @@ describe('OpenPositionUseCase', () => {
 
       const expectedPosition = Position.fromEvents(
         PositionId.of(expectedUuid),
+        userId,
         [
           {
             action: Action.BUY,
@@ -123,6 +130,7 @@ describe('OpenPositionUseCase', () => {
 
     it('should handle repository save failure', async () => {
       const expectedUuid = 'test-uuid-789';
+      const userId = UserId.of('user-789');
       const saveError = new Error('Database connection failed');
 
       jest
@@ -132,6 +140,7 @@ describe('OpenPositionUseCase', () => {
       mockPositionWriteRepository.save.mockRejectedValue(saveError);
 
       const request: OpenPositionRequestDto = {
+        userId,
         portfolioId: PortfolioId.of('portfolio-789'),
         instrument: Ticker.of('GOOGL'),
         quantity: Quantity.of(25),
@@ -148,6 +157,7 @@ describe('OpenPositionUseCase', () => {
     it('should generate different UUIDs for different positions', async () => {
       const firstUuid = 'first-uuid-123';
       const secondUuid = 'second-uuid-456';
+      const userId = UserId.of('user-123');
 
       jest
         .spyOn(UuidGeneratorService, 'generate')
@@ -155,6 +165,7 @@ describe('OpenPositionUseCase', () => {
         .mockReturnValueOnce(secondUuid);
 
       const firstRequest: OpenPositionRequestDto = {
+        userId,
         portfolioId: PortfolioId.of('portfolio-1'),
         instrument: Ticker.of('AAPL'),
         quantity: Quantity.of(100),
@@ -163,6 +174,7 @@ describe('OpenPositionUseCase', () => {
       };
 
       const secondRequest: OpenPositionRequestDto = {
+        userId,
         portfolioId: PortfolioId.of('portfolio-2'),
         instrument: Ticker.of('TSLA'),
         quantity: Quantity.of(50),
@@ -211,6 +223,12 @@ describe('OpenPositionUseCase', () => {
         expect(() => {
           IsoTimestamp.of('invalid-timestamp');
         }).toThrow('Invalid ISO timestamp');
+      });
+
+      it('should throw error for invalid user ID', () => {
+        expect(() => {
+          UserId.of('');
+        }).toThrow('UserId cannot be empty');
       });
     });
   });
