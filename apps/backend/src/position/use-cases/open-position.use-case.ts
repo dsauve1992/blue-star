@@ -8,10 +8,10 @@ import { Quantity } from '../domain/value-objects/quantity';
 import { Price } from '../domain/value-objects/price';
 import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 import type { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
+import type { AuthContext } from '../domain/auth/auth-context.interface';
 import { POSITION_WRITE_REPOSITORY } from '../position.module';
 
 export interface OpenPositionRequestDto {
-  userId: UserId;
   portfolioId: PortfolioId;
   instrument: Ticker;
   quantity: Quantity;
@@ -33,9 +33,10 @@ export class OpenPositionUseCase {
 
   async execute(
     request: OpenPositionRequestDto,
+    authContext: AuthContext,
   ): Promise<OpenPositionResponseDto> {
     const position = Position.open({
-      userId: request.userId,
+      userId: authContext.userId,
       portfolioId: request.portfolioId,
       instrument: request.instrument,
       ts: request.timestamp,

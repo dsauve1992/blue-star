@@ -1,5 +1,3 @@
-import { UuidGeneratorService } from '../services/uuid-generator.service';
-
 export class UserId {
   private constructor(public readonly value: string) {}
 
@@ -7,7 +5,7 @@ export class UserId {
     if (!id || id.trim().length === 0) {
       throw new Error(`UserId cannot be empty: ${id}`);
     }
-    return new UserId(UuidGeneratorService.generate());
+    return new UserId(id.trim());
   }
 
   toString() {
