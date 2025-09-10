@@ -1,39 +1,35 @@
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
-import { Strategy } from 'passport-custom';
-import { KindeService } from './kinde.service';
+import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserId } from '../position/domain/value-objects/user-id';
 
+interface JwtPayload {
+  sub: string;
+  email?: string;
+  given_name?: string;
+  family_name?: string;
+}
+
 @Injectable()
-export class JwtStrategy extends PassportStrategy(Strategy, 'jwt') {
-  constructor(private readonly kindeService: KindeService) {
-    super();
+export class JwtStrategy extends PassportStrategy(Strategy) {
+  constructor() {
+    super({
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      ignoreExpiration: false,
+      secretOrKey: process.env.JWT_SECRET || 'default-secret-for-development',
+    });
   }
 
-  async validate(req: any): Promise<any> {
-    const authHeader = req.headers.authorization;
-
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
-      throw new UnauthorizedException('No token provided');
+  validate(payload: JwtPayload) {
+    if (!payload || !payload.sub) {
+      throw new Error('Invalid token payload');
     }
 
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
-
-    try {
-      const user = await this.kindeService.verifyToken(token);
-
-      if (!user || !user.id) {
-        throw new UnauthorizedException('Invalid token payload');
-      }
-
-      return {
-        userId: UserId.of(user.id),
-        email: user.email,
-        givenName: user.given_name,
-        familyName: user.family_name,
-      };
-    } catch (error) {
-      throw new UnauthorizedException('Token verification failed');
-    }
+    return {
+      userId: UserId.of(payload.sub),
+      email: payload.email,
+      givenName: payload.given_name,
+      familyName: payload.family_name,
+    };
   }
 }

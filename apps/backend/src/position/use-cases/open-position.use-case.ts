@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Position } from '../domain/entities/position';
 import { PositionId } from '../domain/value-objects/position-id';
-import { UserId } from '../domain/value-objects/user-id';
 import { PortfolioId } from '../domain/value-objects/portfolio-id';
 import { Ticker } from '../domain/value-objects/ticker';
 import { Quantity } from '../domain/value-objects/quantity';

@@ -10,7 +10,7 @@ import { Quantity } from '../domain/value-objects/quantity';
 import { Price } from '../domain/value-objects/price';
 import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 import type { AuthContext } from '../domain/auth/auth-context.interface';
-import type { AuthenticatedUser } from '../../auth/current-user.decorator';
+import type { AuthenticatedRequest } from '../../auth/types/request.interface';
 
 @Controller('positions')
 export class PositionController {
@@ -27,9 +27,9 @@ export class PositionController {
       timestamp: string;
       note?: string;
     },
-    @Req() req: any,
+    @Req() req: AuthenticatedRequest,
   ): Promise<OpenPositionResponseDto> {
-    const user: AuthenticatedUser = req.user;
+    const user = req.user;
     const authContext: AuthContext = {
       userId: user.userId,
     };
