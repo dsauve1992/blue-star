@@ -140,6 +140,29 @@ const apiPayload = {
 - ✅ Assume expert-level understanding
 - ✅ Focus on implementation quality
 
+## Development Workflow
+
+### Fast Feedback Loop
+- Make small, incremental changes
+- Test after each change (TypeScript, ESLint, unit tests)
+- Verify functionality before proceeding to next change
+- Never make multiple changes without testing in between
+
+### Quality Gates
+After every change, run:
+```bash
+npx tsc --noEmit  # TypeScript type checking
+npm run lint      # ESLint validation
+npm run test      # Unit tests
+```
+
+### Change Validation Process
+1. Make single logical change
+2. Run quality gates
+3. Fix any issues immediately
+4. Verify change works as expected
+5. Proceed to next change
+
 ## Quality Checklist
 
 ### Before Committing Code
@@ -150,5 +173,9 @@ const apiPayload = {
 - [ ] Complex logic is broken into clear steps
 - [ ] Type definitions express contracts clearly
 - [ ] Code structure makes flow obvious
+- [ ] TypeScript compiles without errors
+- [ ] ESLint passes without warnings
+- [ ] All tests pass
+- [ ] Change has been tested incrementally
 
 Remember: **Code is the documentation** - make it clear, concise, and expert-level!

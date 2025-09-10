@@ -281,6 +281,37 @@ import { PositionWriteRepository } from '../domain/repositories/position-write.r
 import { POSITION_WRITE_REPOSITORY } from '../position.module';
 ```
 
+## Test Coverage Requirements
+
+### Every Use Case Must Have Tests For:
+1. **Happy Path**: Normal successful execution
+2. **Edge Cases**: Boundary conditions and limits
+3. **Error Validation**: Invalid inputs and business rule violations
+4. **Authorization**: User ownership validation (if applicable)
+
+### Test Categories
+
+#### Happy Path Tests
+- Test successful execution with valid inputs
+- Verify correct mutations and return values
+- Test with different valid input combinations
+
+#### Edge Case Tests
+- Test boundary conditions (min/max values)
+- Test with optional parameters (undefined, null)
+- Test with edge case data (empty strings, zero values)
+
+#### Error Validation Tests
+- Test invalid input data
+- Test business rule violations
+- Test authorization failures
+- Test domain constraint violations
+
+#### Authorization Tests
+- Test user can access own resources
+- Test user cannot access other users' resources
+- Test proper error messages for unauthorized access
+
 ## Common Patterns
 
 ### Testing Write Use Cases
@@ -297,6 +328,22 @@ import { POSITION_WRITE_REPOSITORY } from '../position.module';
 1. **Arrange**: Set up conditions that trigger the error
 2. **Act**: Execute the use case
 3. **Assert**: Verify the correct error is thrown
+
+### Testing Authorization
+```typescript
+it('should throw error when user tries to access another user\'s position', async () => {
+  // Arrange
+  const otherUserPosition = Position.fromEvents(/* ... */);
+  mockRepository.getById.mockResolvedValue(otherUserPosition);
+  
+  const request = { positionId: PositionId.of('test-id') };
+  const authContext = { userId: UserId.of('different-user') };
+  
+  // Act & Assert
+  await expect(useCase.execute(request, authContext))
+    .rejects.toThrow('User does not own this resource');
+});
+```
 
 ## Anti-Patterns to Avoid
 

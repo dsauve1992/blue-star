@@ -81,9 +81,28 @@ export class OpenPositionUseCase {
     private readonly positionWriteRepository: PositionWriteRepository,
   ) {}
 
-  async execute(request: OpenPositionRequestDto): Promise<OpenPositionResponseDto> {
-    // Orchestrate domain operations, no business logic here
+  async execute(
+    request: OpenPositionRequestDto,
+    authContext: AuthContext,
+  ): Promise<OpenPositionResponseDto> {
+    // 1. Validate user owns the resource (if applicable)
+    // 2. Orchestrate domain operations, no business logic here
+    // 3. Return response DTO
   }
+}
+```
+
+### Authorization Pattern
+Every use case must validate user ownership:
+```typescript
+async execute(request: RequestDto, authContext: AuthContext): Promise<ResponseDto> {
+  // For operations on existing resources, validate ownership
+  const resource = await this.repository.getById(request.resourceId);
+  if (resource.userId.value !== authContext.userId.value) {
+    throw new UnauthorizedError('User does not own this resource');
+  }
+  
+  // Proceed with business logic
 }
 ```
 
