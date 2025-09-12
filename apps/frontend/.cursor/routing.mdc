@@ -1,0 +1,57 @@
+# Frontend Routing Rules
+
+## Module-Based Organization
+
+### Routing Module Structure
+- All routing functionality in `src/routing/` module
+- Centralized route management and navigation
+- Direct imports from specific files (no index.ts)
+- Separation of concerns from other modules
+
+### Route Configuration
+- Define all routes in `src/routing/routes.config.ts`
+- Use `RouteConfig` interface for type safety
+- Include route metadata: path, label, protection status, navigation visibility
+- Single source of truth for route definitions
+
+### Route Properties
+```typescript
+interface RouteConfig {
+  path: string;
+  label: string;
+  isProtected: boolean;
+  showInNavigation: boolean;
+}
+```
+
+### Route Generation
+- Use `generateRoutes()` utility to create route components
+- Automatically handle protected vs public routes
+- Map route paths to components in `componentMap`
+- Filter out invalid routes
+
+### Navigation Integration
+- Use `getNavigationRoutes(isAuthenticated)` for dynamic navigation
+- Filter routes based on authentication state
+- Respect `showInNavigation` property
+- Single function for both public and protected navigation
+
+### Component Organization
+- Keep route components in appropriate directories
+- Use consistent import patterns
+- Map all components in `routeGenerator.tsx`
+- Handle missing components gracefully
+
+### Benefits
+- Single source of truth for route definitions
+- Type-safe route configuration
+- Automatic route protection
+- Consistent navigation behavior
+- Easy to add/remove routes
+- No duplication of route logic
+
+### Usage Patterns
+- Add new routes to `routes.config.ts`
+- Update `componentMap` in `routeGenerator.tsx`
+- Navigation automatically updates
+- Route protection handled automatically

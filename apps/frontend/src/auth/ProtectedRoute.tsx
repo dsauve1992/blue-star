@@ -1,26 +1,31 @@
-import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
-import { Navigate, useLocation } from 'react-router';
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { Navigate, Route, type RouteProps, useLocation } from "react-router";
 
-interface ProtectedRouteProps {
-  children: React.ReactNode;
-}
-
-export function ProtectedRoute({ children }: ProtectedRouteProps) {
+export function ProtectedRoute({ path, element }: RouteProps) {
   const { isAuthenticated, isLoading } = useKindeAuth();
   const location = useLocation();
 
   if (isLoading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner">Loading...</div>
-      </div>
+      <Route
+        path={path}
+        element={
+          <div className="loading-container">
+            <div className="loading-spinner">Loading...</div>
+          </div>
+        }
+      />
     );
   }
 
   if (!isAuthenticated) {
-    // Redirect to login with the current location as state
-    return <Navigate to="/login" state={{ from: location }} replace />;
+    return (
+      <Route
+        path={path}
+        element={<Navigate to="/login" state={{ from: location }} replace />}
+      />
+    );
   }
 
-  return <>{children}</>;
+  return <Route path={path} element={element} />;
 }

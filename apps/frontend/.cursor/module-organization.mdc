@@ -1,0 +1,67 @@
+# Frontend Module Organization Rules
+
+## Module-Based Architecture
+
+### Core Principle
+- Organize code by functional modules, not by file type
+- Each module should have a clear responsibility
+- Modules should be self-contained with minimal external dependencies
+- Import directly from specific files (no index.ts)
+
+### Module Structure
+```
+src/
+├── routing/           # Routing module
+│   ├── routes.config.ts
+│   ├── routeGenerator.tsx
+│   └── Navigation.tsx
+├── auth/             # Authentication module
+│   ├── AuthProvider.tsx
+│   ├── ProtectedRoute.tsx
+│   └── Login.tsx
+├── assets/           # Global assets (not a module)
+├── App.tsx          # Root component
+├── main.tsx         # Entry point
+└── vite-env.d.ts    # TypeScript declarations
+```
+
+### Module Guidelines
+
+#### Module Boundaries
+- Each module should have a single responsibility
+- Modules should not depend on each other unless necessary
+- Use dependency injection for cross-module communication
+- Keep module interfaces clean and minimal
+
+#### Module Exports
+- Import directly from specific files
+- Export only what's needed by other modules
+- Use named exports for better tree-shaking
+- Avoid default exports unless necessary
+- Keep internal implementation details private
+
+#### Module Dependencies
+- Prefer composition over inheritance
+- Use React Context for shared state
+- Pass dependencies as props when possible
+- Avoid circular dependencies
+
+### Non-Module Folders
+
+#### Global Assets (`src/assets/`)
+- Static files like images, icons, fonts
+- Not organized as a module
+- Imported directly when needed
+
+#### Root Files
+- `App.tsx` - Root component, orchestrates modules
+- `main.tsx` - Application entry point
+- `vite-env.d.ts` - TypeScript environment declarations
+- `App.css` - Global styles
+
+### Benefits
+- Clear separation of concerns
+- Easier to maintain and test
+- Better code organization
+- Reduced coupling between features
+- Easier to add new features

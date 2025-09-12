@@ -1,19 +1,12 @@
 import { Link, useLocation } from "react-router";
 import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { getNavigationRoutes } from "./routes.config";
 
 export default function Navigation() {
   const location = useLocation();
   const { isAuthenticated, logout, user } = useKindeAuth();
 
-  const publicNavItems = [{ path: "/", label: "Home" }];
-
-  const protectedNavItems = [
-    { path: "/dashboard", label: "Dashboard" },
-    { path: "/profile", label: "Profile" },
-    { path: "/settings", label: "Settings" },
-  ];
-
-  const navItems = isAuthenticated ? protectedNavItems : publicNavItems;
+  const navItems = getNavigationRoutes(isAuthenticated);
 
   const handleLogout = () => {
     logout();
