@@ -5,8 +5,6 @@ interface AuthProviderProps {
   children: React.ReactNode;
 }
 
-console.log("Kinde Config:", kindeConfig);
-
 export function AuthProvider({ children }: AuthProviderProps) {
   return (
     <KindeProvider
