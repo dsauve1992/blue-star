@@ -19,30 +19,31 @@ const componentMap = {
 } as const;
 
 export function generateRoutes() {
-  return routes.map((route) => {
-    const Component = componentMap[route.path as keyof typeof componentMap];
-    
-    if (!Component) {
-      console.warn(`No component found for route: ${route.path}`);
-      return null;
-    }
+  return routes
+    .map((route) => {
+      const Component = componentMap[route.path as keyof typeof componentMap];
 
-    if (route.isProtected) {
+      if (!Component) {
+        console.warn(`No component found for route: ${route.path}`);
+      }
+
+      if (route.isProtected) {
+        return (
+          <Route
+            key={route.path}
+            path={route.path}
+            element={
+              <ProtectedRoute>
+                <Component />
+              </ProtectedRoute>
+            }
+          />
+        );
+      }
+
       return (
-        <ProtectedRoute
-          key={route.path}
-          path={route.path}
-          element={<Component />}
-        />
+        <Route key={route.path} path={route.path} element={<Component />} />
       );
-    }
-
-    return (
-      <Route
-        key={route.path}
-        path={route.path}
-        element={<Component />}
-      />
-    );
-  }).filter(Boolean);
+    })
+    .filter(Boolean);
 }
