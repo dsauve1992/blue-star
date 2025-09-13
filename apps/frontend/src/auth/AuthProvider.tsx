@@ -12,6 +12,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
       domain={kindeConfig.domain}
       redirectUri={kindeConfig.redirectUri}
       logoutUri={kindeConfig.logoutUri}
+      audience={kindeConfig.audience}
       useInsecureForRefreshToken={import.meta.env.NODE_ENV === "development"}
     >
       {children}

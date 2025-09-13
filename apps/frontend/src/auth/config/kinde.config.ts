@@ -6,4 +6,5 @@ export const kindeConfig = {
   domain: import.meta.env.VITE_KINDE_DOMAIN,
   redirectUri: import.meta.env.VITE_KINDE_REDIRECT_URI,
   logoutUri: import.meta.env.VITE_KINDE_LOGOUT_URI,
+  audience: import.meta.env.VITE_KINDE_AUDIENCE,
 };
