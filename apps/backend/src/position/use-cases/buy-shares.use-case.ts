@@ -5,7 +5,7 @@ import { Price } from '../domain/value-objects/price';
 import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 import type { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
 import type { AuthContext } from '../domain/auth/auth-context.interface';
-import { POSITION_WRITE_REPOSITORY } from '../position.module';
+import { POSITION_WRITE_REPOSITORY } from '../constants/tokens';
 
 export interface BuySharesRequestDto {
   positionId: PositionId;

@@ -5,21 +5,20 @@ import { SetStopLossUseCase } from './use-cases/set-stop-loss.use-case';
 import { SellSharesUseCase } from './use-cases/sell-shares.use-case';
 import { BuySharesUseCase } from './use-cases/buy-shares.use-case';
 import { InMemoryPositionWriteRepository } from './infrastructure/repositories/position-write.repository';
-
-export const POSITION_WRITE_REPOSITORY = 'POSITION_WRITE_REPOSITORY';
+import { POSITION_WRITE_REPOSITORY } from './constants/tokens';
 
 @Module({
   imports: [],
   controllers: [PositionController],
   providers: [
-    OpenPositionUseCase,
-    SetStopLossUseCase,
-    SellSharesUseCase,
-    BuySharesUseCase,
     {
       provide: POSITION_WRITE_REPOSITORY,
       useClass: InMemoryPositionWriteRepository,
     },
+    OpenPositionUseCase,
+    SetStopLossUseCase,
+    SellSharesUseCase,
+    BuySharesUseCase,
   ],
 })
 export class PositionModule {}
