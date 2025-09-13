@@ -1,6 +1,6 @@
 import * as React from "react"
-import { Card, CardContent } from "./card"
-import { cn, formatCurrency, formatPercentage, getChangeColor } from "./utils"
+import { Card, CardContent } from "src/design-system/card"
+import { cn, formatCurrency, formatPercentage, getChangeColor } from "src/design-system/utils"
 import { TrendingUp, TrendingDown, Minus } from "lucide-react"
 
 interface MetricCardProps {

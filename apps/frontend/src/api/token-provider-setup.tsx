@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
-import { apiClient } from './api-instance';
+import { apiClient } from 'src/api/api-instance';
 
 interface TokenProviderSetupProps {
   children: React.ReactNode;

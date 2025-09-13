@@ -1,5 +1,5 @@
-import { Button } from "./button";
-import { useTheme } from "./theme-provider";
+import { Button } from "src/design-system/button";
+import { useTheme } from "src/design-system/theme-provider";
 import { Sun, Moon } from "lucide-react";
 import { motion } from "framer-motion";
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { cn } from "./utils";
+import { cn } from "src/design-system/utils";
 
 const Separator = React.forwardRef<
   HTMLDivElement,

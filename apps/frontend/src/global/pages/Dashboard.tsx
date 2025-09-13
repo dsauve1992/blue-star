@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from "../../design-system";
+import { Card, CardContent, CardHeader, CardTitle } from "src/design-system";
 
 export default function Dashboard() {
   return (

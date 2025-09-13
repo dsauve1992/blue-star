@@ -1,11 +1,11 @@
 import { Outlet, Route, Routes } from "react-router";
-import { AuthProvider } from "./auth/AuthProvider";
-import { ThemeProvider } from "./design-system/theme-provider";
-import { TokenProviderSetup } from "./api/token-provider-setup";
-import "./App.css";
-import Navigation from "./routing/Navigation";
-import { generateRoutes } from "./routing/routeGenerator";
-import { AnimatedLayout } from "./design-system/animated-layout";
+import { AuthProvider } from "src/auth/AuthProvider";
+import { ThemeProvider } from "src/design-system/theme-provider";
+import { TokenProviderSetup } from "src/api/token-provider-setup";
+import "src/App.css";
+import Navigation from "src/routing/Navigation";
+import { generateRoutes } from "src/routing/routeGenerator";
+import { AnimatedLayout } from "src/design-system/animated-layout";
 
 function Layout() {
   return (
