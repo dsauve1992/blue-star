@@ -1,5 +1,5 @@
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
-import { Navigate, useLocation } from "react-router";
+import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { Navigate, useLocation } from 'react-router';
 
 interface ProtectedRouteProps {
   children: React.ReactElement;

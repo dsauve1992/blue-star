@@ -9,20 +9,25 @@
   * {
     box-sizing: border-box;
   }
-  
-  html, body {
+
+  html,
+  body {
     margin: 0;
     padding: 0;
   }
-  
+
   * {
     @apply border-slate-700 dark:border-slate-700;
   }
-  
+
   body {
     @apply bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-50 font-sans;
-    font-feature-settings: "rlig" 1, "calt" 1;
-    transition: background-color 0.3s ease, color 0.3s ease;
+    font-feature-settings:
+      'rlig' 1,
+      'calt' 1;
+    transition:
+      background-color 0.3s ease,
+      color 0.3s ease;
     margin: 0;
     padding: 0;
   }
@@ -30,31 +35,36 @@
   #root {
     @apply w-full;
   }
-  
-  h1, h2, h3, h4, h5, h6 {
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
     @apply font-semibold tracking-tight;
   }
-  
+
   h1 {
     @apply text-4xl lg:text-5xl;
   }
-  
+
   h2 {
     @apply text-3xl lg:text-4xl;
   }
-  
+
   h3 {
     @apply text-2xl lg:text-3xl;
   }
-  
+
   h4 {
     @apply text-xl lg:text-2xl;
   }
-  
+
   h5 {
     @apply text-lg lg:text-xl;
   }
-  
+
   h6 {
     @apply text-base lg:text-lg;
   }
@@ -65,35 +75,35 @@
     @apply min-h-screen flex flex-col bg-white dark:bg-slate-900;
     transition: background-color 0.3s ease;
   }
-  
+
   .main-content {
     @apply flex-1 p-6 max-w-7xl mx-auto w-full;
   }
-  
+
   .trading-grid {
     @apply grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6;
   }
-  
+
   .chart-container {
     @apply bg-slate-800 rounded-lg border border-slate-700 p-6;
   }
-  
+
   .metric-grid {
     @apply grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4;
   }
-  
+
   .positions-table {
     @apply w-full border-collapse;
   }
-  
+
   .positions-table th {
     @apply text-left text-sm font-medium text-slate-300 px-4 py-3 border-b border-slate-700;
   }
-  
+
   .positions-table td {
     @apply text-sm text-slate-50 px-4 py-3 border-b border-slate-700;
   }
-  
+
   .positions-table tr:hover {
     @apply bg-slate-700;
   }
@@ -103,16 +113,16 @@
   .text-gradient {
     @apply bg-gradient-to-r from-blue-400 to-blue-600 bg-clip-text text-transparent;
   }
-  
+
   .animate-pulse-slow {
     animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
-  
+
   .scrollbar-hide {
     -ms-overflow-style: none;
     scrollbar-width: none;
   }
-  
+
   .scrollbar-hide::-webkit-scrollbar {
     display: none;
   }

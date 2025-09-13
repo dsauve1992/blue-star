@@ -7,41 +7,41 @@ export interface RouteConfig {
 
 export const routes: RouteConfig[] = [
   {
-    path: "/",
-    label: "Home",
+    path: '/',
+    label: 'Home',
     isProtected: false,
     showInNavigation: true,
   },
   {
-    path: "/login",
-    label: "Login",
+    path: '/login',
+    label: 'Login',
     isProtected: false,
     showInNavigation: false,
   },
   {
-    path: "/dashboard",
-    label: "Dashboard",
+    path: '/dashboard',
+    label: 'Dashboard',
     isProtected: true,
     showInNavigation: true,
   },
   {
-    path: "/profile",
-    label: "Profile",
+    path: '/profile',
+    label: 'Profile',
     isProtected: true,
     showInNavigation: true,
   },
   {
-    path: "/settings",
-    label: "Settings",
+    path: '/settings',
+    label: 'Settings',
     isProtected: true,
     showInNavigation: true,
   },
 ];
 
 export const getPublicRoutes = () => routes.filter(route => !route.isProtected);
-export const getProtectedRoutes = () => routes.filter(route => route.isProtected);
-export const getNavigationRoutes = (isAuthenticated: boolean) => 
-  routes.filter(route => 
-    route.showInNavigation && 
-    (!route.isProtected || isAuthenticated)
+export const getProtectedRoutes = () =>
+  routes.filter(route => route.isProtected);
+export const getNavigationRoutes = (isAuthenticated: boolean) =>
+  routes.filter(
+    route => route.showInNavigation && (!route.isProtected || isAuthenticated)
   );

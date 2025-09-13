@@ -65,8 +65,8 @@ export const staggerItem = {
 // Fade in animation for cards and components
 export const fadeInUp = {
   hidden: { opacity: 0, y: 30 },
-  show: { 
-    opacity: 1, 
+  show: {
+    opacity: 1,
     y: 0,
   },
 };
@@ -74,8 +74,8 @@ export const fadeInUp = {
 // Slide in from right for navigation
 export const slideInRight = {
   hidden: { opacity: 0, x: 30 },
-  show: { 
-    opacity: 1, 
+  show: {
+    opacity: 1,
     x: 0,
   },
 };
@@ -83,8 +83,8 @@ export const slideInRight = {
 // Scale in animation for modals and overlays
 export const scaleIn = {
   hidden: { opacity: 0, scale: 0.8 },
-  show: { 
-    opacity: 1, 
+  show: {
+    opacity: 1,
     scale: 1,
   },
 };

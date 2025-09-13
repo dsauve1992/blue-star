@@ -1,6 +1,6 @@
-import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "react-router";
-import type { ReactNode } from "react";
+import { motion, AnimatePresence } from 'framer-motion';
+import { useLocation } from 'react-router';
+import type { ReactNode } from 'react';
 
 interface AnimatedLayoutProps {
   children: ReactNode;
@@ -25,8 +25,8 @@ const pageVariants = {
 };
 
 const pageTransition = {
-  type: "tween" as const,
-  ease: "easeOut" as const,
+  type: 'tween' as const,
+  ease: 'easeOut' as const,
   duration: 0.3,
 };
 
@@ -43,9 +43,9 @@ export function AnimatedLayout({ children }: AnimatedLayoutProps) {
         variants={pageVariants}
         transition={pageTransition}
         className="min-h-screen"
-        style={{ 
+        style={{
           willChange: 'transform, opacity',
-          backfaceVisibility: 'hidden'
+          backfaceVisibility: 'hidden',
         }}
       >
         {children}

@@ -1,5 +1,5 @@
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
-import { Navigate, useLocation } from "react-router";
+import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { Navigate, useLocation } from 'react-router';
 
 export default function Login() {
   const { login, isAuthenticated, isLoading } = useKindeAuth();
@@ -15,14 +15,14 @@ export default function Login() {
 
   if (isAuthenticated) {
     // Redirect to the page they were trying to access, or dashboard
-    const from = location.state?.from?.pathname || "/dashboard";
+    const from = location.state?.from?.pathname || '/dashboard';
     return <Navigate to={from} replace />;
   }
 
   const handleLogin = () => {
     login({
       state: {
-        redirectTo: location.state?.from?.pathname || "/dashboard",
+        redirectTo: location.state?.from?.pathname || '/dashboard',
       },
     });
   };
