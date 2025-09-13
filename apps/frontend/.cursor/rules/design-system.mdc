@@ -1,0 +1,247 @@
+# Blue Star - Design System Rules
+
+## Core Design Principles
+
+### Professional Trading Platform Aesthetic
+- **Data-focused design** with clear hierarchy and readability
+- **High contrast** for financial data accuracy and accessibility
+- **Minimal distractions** to focus on trading decisions
+- **Consistent spacing** and alignment throughout the application
+- **Professional color palette** suitable for financial applications
+
+### Modern UI/UX Standards
+- **Clean, minimal interface** with purposeful white space
+- **Consistent component behavior** across all interactions
+- **Smooth animations** that enhance rather than distract
+- **Responsive design** that works on all device sizes
+- **Accessibility-first** approach with proper ARIA labels and keyboard navigation
+
+## Color System
+
+### Primary Colors
+```typescript
+primary: {
+  50: '#eff6ff',   // Lightest blue
+  500: '#3b82f6',  // Main blue
+  600: '#2563eb',  // Hover state
+  900: '#1e3a8a',  // Darkest blue
+}
+```
+
+### Semantic Colors
+- **Success**: Green variants for positive values, gains, completed actions
+- **Danger**: Red variants for losses, errors, destructive actions
+- **Warning**: Amber variants for alerts, pending states, cautions
+- **Muted**: Gray variants for secondary text, disabled states
+
+### Theme Support
+- **Light Mode**: Clean whites with subtle grays, dark text
+- **Dark Mode**: Rich dark backgrounds (slate-900/800), light text
+- **Smooth transitions** between themes (0.3s duration)
+- **Consistent contrast ratios** across both themes
+
+## Typography
+
+### Font Families
+- **Primary**: Inter (sans-serif) - Modern, readable, professional
+- **Monospace**: JetBrains Mono - For financial data, code, numbers
+
+### Font Scale
+```css
+text-xs: 0.75rem    /* 12px - Small labels, captions */
+text-sm: 0.875rem   /* 14px - Body text, form labels */
+text-base: 1rem     /* 16px - Default body text */
+text-lg: 1.125rem   /* 18px - Large body text */
+text-xl: 1.25rem    /* 20px - Small headings */
+text-2xl: 1.5rem    /* 24px - Medium headings */
+text-3xl: 1.875rem  /* 30px - Large headings */
+```
+
+### Font Weights
+- **Light (300)**: Subtle text, secondary information
+- **Regular (400)**: Default body text
+- **Medium (500)**: Form labels, navigation items
+- **Semibold (600)**: Card titles, important text
+- **Bold (700)**: Main headings, critical information
+
+## Component Guidelines
+
+### Button Component
+```typescript
+// Variants
+default: "Primary actions, main CTAs"
+outline: "Secondary actions, form buttons"
+ghost: "Subtle actions, icon buttons"
+destructive: "Delete, remove actions"
+success: "Confirm, save actions"
+warning: "Caution actions"
+
+// Sizes
+sm: "Compact interfaces, dense layouts"
+default: "Standard buttons"
+lg: "Prominent actions, mobile-friendly"
+```
+
+### Card Component
+- **Consistent padding**: 6 units (1.5rem) for content
+- **Subtle borders**: 1px with theme-appropriate colors
+- **Rounded corners**: 6px (md) for modern look
+- **Shadow system**: Different levels for hierarchy
+- **Hover states**: Subtle elevation increase
+
+### Input Component
+- **Consistent height**: 40px (h-10) for standard inputs
+- **Clear focus states**: Primary color ring, border transition
+- **Error states**: Red border and text for validation
+- **Success states**: Green border for confirmed inputs
+- **Placeholder styling**: Muted color, clear hierarchy
+
+### Badge Component
+- **Semantic colors**: Match the action/status they represent
+- **Rounded pills**: Full border radius for modern look
+- **Small text**: xs size for compact display
+- **High contrast**: Ensure readability in both themes
+
+## Layout System
+
+### Spacing Scale
+```css
+space-1: 0.25rem   /* 4px - Tight spacing */
+space-2: 0.5rem    /* 8px - Small spacing */
+space-3: 0.75rem   /* 12px - Medium spacing */
+space-4: 1rem      /* 16px - Standard spacing */
+space-6: 1.5rem    /* 24px - Large spacing */
+space-8: 2rem      /* 32px - Extra large spacing */
+```
+
+### Grid System
+- **Mobile-first**: Start with single column, expand to multi-column
+- **Consistent gutters**: 24px (space-6) between grid items
+- **Responsive breakpoints**: sm (640px), md (768px), lg (1024px), xl (1280px)
+- **Flexible layouts**: Use CSS Grid and Flexbox appropriately
+
+### Container Sizes
+- **Max width**: 1280px (7xl) for main content
+- **Padding**: 24px (px-6) on mobile, 32px (px-8) on desktop
+- **Centered**: Auto margins for horizontal centering
+
+## Animation Guidelines
+
+### Transition Timing
+- **Fast interactions**: 150ms (buttons, toggles)
+- **Standard transitions**: 300ms (theme changes, page transitions)
+- **Slow animations**: 500ms (complex state changes)
+
+### Easing Functions
+- **ease-out**: Default for most animations (feels natural)
+- **ease-in-out**: For reversible animations
+- **cubic-bezier**: Custom curves for specific effects
+
+### Animation Principles
+- **Purposeful**: Every animation should have a clear purpose
+- **Consistent**: Use the same timing and easing across similar elements
+- **Accessible**: Respect `prefers-reduced-motion` setting
+- **Performance**: Use transform and opacity for smooth 60fps animations
+
+## Accessibility Standards
+
+### Color Contrast
+- **AA compliance**: Minimum 4.5:1 for normal text
+- **AAA compliance**: 7:1 for important text when possible
+- **Focus indicators**: Clear, high-contrast focus rings
+
+### Keyboard Navigation
+- **Tab order**: Logical, predictable tab sequence
+- **Focus management**: Clear focus indicators
+- **Keyboard shortcuts**: Standard shortcuts where appropriate
+
+### Screen Reader Support
+- **Semantic HTML**: Use proper heading hierarchy
+- **ARIA labels**: Descriptive labels for interactive elements
+- **Live regions**: Announce dynamic content changes
+
+## Component Usage Rules
+
+### Do's
+- ✅ Use design system components consistently
+- ✅ Follow the established color and spacing patterns
+- ✅ Implement proper loading and error states
+- ✅ Ensure all interactive elements have hover/focus states
+- ✅ Test components in both light and dark themes
+- ✅ Use semantic HTML elements appropriately
+
+### Don'ts
+- ❌ Create custom components without checking the design system first
+- ❌ Use arbitrary colors outside the defined palette
+- ❌ Skip accessibility considerations
+- ❌ Create inconsistent spacing or sizing
+- ❌ Use animations without clear purpose
+- ❌ Ignore responsive design principles
+
+## File Organization
+
+### Design System Structure
+```
+src/design-system/
+├── index.ts              # Main exports
+├── utils.ts              # Utility functions
+├── theme-provider.tsx    # Theme context
+├── theme-toggle.tsx      # Theme switcher
+├── button.tsx            # Button component
+├── card.tsx              # Card components
+├── input.tsx             # Input component
+├── label.tsx             # Label component
+├── badge.tsx             # Badge component
+├── alert.tsx             # Alert components
+├── loading-spinner.tsx   # Loading component
+├── metric-card.tsx       # Specialized metric card
+├── page-transition.tsx   # Animation utilities
+└── animated-layout.tsx   # Layout animations
+```
+
+### Import Guidelines
+```typescript
+// Preferred: Import from main index
+import { Button, Card, Input } from '@/design-system';
+
+// Avoid: Individual component imports
+import { Button } from '@/design-system/button';
+```
+
+## Theme Configuration
+
+### Tailwind Dark Mode
+- **Class-based**: Uses `dark:` prefix for dark mode styles
+- **Automatic**: Theme provider manages document class
+- **Consistent**: All components support both themes
+
+### Custom Properties
+- **CSS variables**: For dynamic theming if needed
+- **Consistent naming**: Use semantic names, not color names
+- **Fallbacks**: Always provide fallback values
+
+## Performance Considerations
+
+### Bundle Size
+- **Tree shaking**: Only import used components
+- **Minimal dependencies**: Keep design system lightweight
+- **Code splitting**: Lazy load heavy components when possible
+
+### Runtime Performance
+- **Efficient animations**: Use transform and opacity
+- **Debounced interactions**: Prevent excessive re-renders
+- **Memoization**: Use React.memo for expensive components
+
+## Testing Guidelines
+
+### Visual Testing
+- **Both themes**: Test all components in light and dark modes
+- **Responsive**: Test on different screen sizes
+- **States**: Test hover, focus, active, disabled states
+
+### Accessibility Testing
+- **Keyboard navigation**: Ensure all interactive elements are accessible
+- **Screen readers**: Test with actual screen reader software
+- **Color contrast**: Use tools to verify contrast ratios
+
+Remember: The design system is the foundation of our application's visual identity. Consistency and quality are paramount for a professional trading platform.
