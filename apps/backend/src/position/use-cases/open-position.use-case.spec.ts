@@ -4,7 +4,7 @@ import {
   OpenPositionUseCase,
 } from './open-position.use-case';
 import { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
-import { POSITION_WRITE_REPOSITORY } from '../position.module';
+import { POSITION_WRITE_REPOSITORY } from '../constants/tokens';
 import { Action, Position } from '../domain/entities/position';
 import { PositionId } from '../domain/value-objects/position-id';
 import { UserId } from '../domain/value-objects/user-id';

@@ -13,8 +13,8 @@ import { Price } from '../domain/value-objects/price';
 import { StopPrice } from '../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 import { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
-import { POSITION_WRITE_REPOSITORY } from '../position.module';
 import type { AuthContext } from '../domain/auth/auth-context.interface';
+import { POSITION_WRITE_REPOSITORY } from '../constants/tokens';
 
 describe('SetStopLossUseCase', () => {
   let useCase: SetStopLossUseCase;

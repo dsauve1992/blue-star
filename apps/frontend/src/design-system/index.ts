@@ -1,5 +1,5 @@
 // Core Components
-export { Button, buttonVariants } from './button';
+export { Button } from './button';
 export {
   Card,
   CardContent,
@@ -8,27 +8,21 @@ export {
   CardHeader,
   CardTitle,
 } from './card';
-export { Input, inputVariants } from './input';
-export { Label, labelVariants } from './label';
-export { Badge, badgeVariants } from './badge';
+export { Input } from './input';
+export { Label } from './label';
+export { Badge } from './badge';
 export { Separator } from './separator';
 export { Alert, AlertTitle, AlertDescription, AlertIcon } from './alert';
-export { LoadingSpinner, spinnerVariants } from './loading-spinner';
+export { LoadingSpinner } from './loading-spinner';
 export { MetricCard } from './metric-card';
 
 // Layout & Animation
-export {
-  PageTransition,
-  staggerContainer,
-  staggerItem,
-  fadeInUp,
-  slideInRight,
-  scaleIn,
-} from './page-transition';
+export { PageTransition } from './page-transition';
 export { AnimatedLayout } from './animated-layout';
 
 // Theme
-export { ThemeProvider, useTheme } from './theme-provider';
+export { ThemeProvider } from './theme-provider';
+export { useTheme } from './use-theme';
 export { ThemeToggle } from './theme-toggle';
 
 // Utils
