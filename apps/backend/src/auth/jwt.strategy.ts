@@ -29,23 +29,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         rateLimit: true,
         jwksRequestsPerMinute: 5,
       }),
-      audience: kindeConfig.clientId,
+      // Note: Kinde tokens often have empty audience arrays, so we rely on issuer validation
       issuer: `https://${kindeConfig.domain}`,
     });
   }
 
   validate(payload: JwtPayload) {
-    console.log(payload);
-
     if (!payload || !payload.sub) {
       throw new Error('Invalid token payload');
     }
 
-    // Validate audience and issuer
-    if (payload.aud !== kindeConfig.clientId) {
-      throw new Error('Invalid token audience');
-    }
-
+    // Validate issuer (audience validation removed for Kinde compatibility)
     if (payload.iss !== `https://${kindeConfig.domain}`) {
       throw new Error('Invalid token issuer');
     }
