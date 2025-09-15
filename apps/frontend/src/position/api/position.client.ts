@@ -1,52 +1,94 @@
-import { apiClient } from "../../global/api/api-instance.ts";
-import { ApiResponse } from "../../global/api/types.ts";
-import {
-  Position,
-  CreatePositionRequest,
-  UpdatePositionRequest,
-} from "./position.types.ts";
+import { apiClient } from "../../global/api/api-instance";
+
+export interface OpenPositionRequest {
+  portfolioId: string;
+  instrument: string;
+  quantity: number;
+  price: number;
+  timestamp: string;
+  note?: string;
+}
+
+export interface OpenPositionResponse {
+  positionId: string;
+}
+
+export interface SetStopLossRequest {
+  stopPrice: number;
+  timestamp: string;
+  note?: string;
+}
+
+export interface SetStopLossResponse {
+  positionId: string;
+}
+
+export interface SellSharesRequest {
+  quantity: number;
+  price: number;
+  timestamp: string;
+  note?: string;
+}
+
+export interface SellSharesResponse {
+  positionId: string;
+  remainingQuantity: number;
+  isClosed: boolean;
+}
+
+export interface BuySharesRequest {
+  quantity: number;
+  price: number;
+  timestamp: string;
+  note?: string;
+}
+
+export interface BuySharesResponse {
+  positionId: string;
+  totalQuantity: number;
+}
 
 export class PositionClient {
-  static async getPositions(): Promise<ApiResponse<Position[]>> {
-    return apiClient.get<Position[]>("/positions");
+  async openPosition(
+    request: OpenPositionRequest,
+  ): Promise<OpenPositionResponse> {
+    const response = await apiClient.post<
+      OpenPositionResponse,
+      OpenPositionRequest
+    >("/positions", request);
+    return response.data;
   }
 
-  static async getPosition(id: string): Promise<ApiResponse<Position>> {
-    return apiClient.get<Position>(`/positions/${id}`);
-  }
-
-  static async createPosition(
-    data: CreatePositionRequest,
-  ): Promise<ApiResponse<Position>> {
-    return apiClient.post<Position>("/positions", data);
-  }
-
-  static async updatePosition(
-    id: string,
-    data: UpdatePositionRequest,
-  ): Promise<ApiResponse<Position>> {
-    return apiClient.patch<Position>(`/positions/${id}`, data);
-  }
-
-  static async deletePosition(id: string): Promise<ApiResponse<void>> {
-    return apiClient.delete<void>(`/positions/${id}`);
-  }
-
-  static async buyShares(
+  async setStopLoss(
     positionId: string,
-    quantity: number,
-  ): Promise<ApiResponse<Position>> {
-    return apiClient.post<Position>(`/positions/${positionId}/buy`, {
-      quantity,
-    });
+    request: SetStopLossRequest,
+  ): Promise<SetStopLossResponse> {
+    const response = await apiClient.put<
+      SetStopLossResponse,
+      SetStopLossRequest
+    >(`/positions/${positionId}/stop-loss`, request);
+    return response.data;
   }
 
-  static async sellShares(
+  async sellShares(
     positionId: string,
-    quantity: number,
-  ): Promise<ApiResponse<Position>> {
-    return apiClient.post<Position>(`/positions/${positionId}/sell`, {
-      quantity,
-    });
+    request: SellSharesRequest,
+  ): Promise<SellSharesResponse> {
+    const response = await apiClient.put<SellSharesResponse, SellSharesRequest>(
+      `/positions/${positionId}/sell`,
+      request,
+    );
+    return response.data;
+  }
+
+  async buyShares(
+    positionId: string,
+    request: BuySharesRequest,
+  ): Promise<BuySharesResponse> {
+    const response = await apiClient.put<BuySharesResponse, BuySharesRequest>(
+      `/positions/${positionId}/buy`,
+      request,
+    );
+    return response.data;
   }
 }
