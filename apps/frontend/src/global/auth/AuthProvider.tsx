@@ -1,5 +1,5 @@
 import { KindeProvider } from "@kinde-oss/kinde-auth-react";
-import { kindeConfig } from "src/auth/config/kinde.config";
+import { kindeConfig } from "./config/kinde.config";
 
 interface AuthProviderProps {
   children: React.ReactNode;

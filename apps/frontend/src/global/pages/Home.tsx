@@ -1,5 +1,5 @@
-import { Button } from "src/design-system/button";
-import { Card, CardContent } from "src/design-system/card";
+import { Button } from "../design-system/button";
+import { Card, CardContent } from "../design-system/card";
 import { 
   TrendingUp, 
   BarChart3, 

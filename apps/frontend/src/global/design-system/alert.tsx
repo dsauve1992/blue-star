@@ -1,6 +1,6 @@
 import * as React from "react";
 import { cva, type VariantProps } from "class-variance-authority";
-import { cn } from "src/design-system/utils";
+import { cn } from "./utils";
 import { AlertTriangle, CheckCircle, Info, XCircle } from "lucide-react";
 
 const alertVariants = cva(

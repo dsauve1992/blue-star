@@ -1,13 +1,13 @@
 import { Route } from "react-router";
-import { ProtectedRoute } from "src/auth/ProtectedRoute";
-import { routes } from "src/routing/routes.config";
+import { ProtectedRoute } from "../auth/ProtectedRoute";
+import { routes } from "./routes.config";
 
 // Import all page components
-import Home from "src/global/pages/Home";
-import Login from "src/auth/Login";
-import Dashboard from "src/global/pages/Dashboard";
-import Profile from "src/global/pages/Profile";
-import Settings from "src/global/pages/Settings";
+import Home from "../pages/Home";
+import Login from "../auth/Login";
+import Dashboard from "../pages/Dashboard";
+import Profile from "../pages/Profile";
+import Settings from "../pages/Settings";
 
 // Map of path to component
 const componentMap = {

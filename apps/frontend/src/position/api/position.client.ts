@@ -1,5 +1,5 @@
-import { apiClient } from "../../api/api-instance.ts";
-import { ApiResponse } from "../../api/types.ts";
+import { apiClient } from "../../global/api/api-instance.ts";
+import { ApiResponse } from "../../global/api/types.ts";
 import {
   Position,
   CreatePositionRequest,

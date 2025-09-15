@@ -1,8 +1,8 @@
 import { Link, useLocation } from "react-router";
 import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
-import { getNavigationRoutes } from "src/routing/routes.config";
-import { Button } from "src/design-system/button";
-import { ThemeToggle } from "src/design-system/theme-toggle";
+import { getNavigationRoutes } from "./routes.config";
+import { Button } from "../design-system/button";
+import { ThemeToggle } from "../design-system/theme-toggle";
 import { TrendingUp, User, LogOut } from "lucide-react";
 import { motion } from "framer-motion";
 

@@ -1,4 +1,4 @@
-import { ApiClient } from 'src/api/api-client';
+import { ApiClient } from './api-client';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000';
 

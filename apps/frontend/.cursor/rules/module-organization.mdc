@@ -7,31 +7,75 @@
 - Each module should have a clear responsibility
 - Modules should be self-contained with minimal external dependencies
 - Import directly from specific files (no index.ts)
+- Separate global modules from domain-specific modules
 
 ### Module Structure
 ```
 src/
-├── routing/           # Routing module
-│   ├── routes.config.ts
-│   ├── routeGenerator.tsx
-│   └── Navigation.tsx
-├── auth/             # Authentication module
-│   ├── AuthProvider.tsx
-│   ├── ProtectedRoute.tsx
-│   └── Login.tsx
+├── global/           # Global modules (shared across the app)
+│   ├── auth/         # Authentication module
+│   │   ├── AuthProvider.tsx
+│   │   ├── ProtectedRoute.tsx
+│   │   ├── Login.tsx
+│   │   └── config/
+│   │       └── kinde.config.ts
+│   ├── design-system/ # UI components and utilities
+│   │   ├── button.tsx
+│   │   ├── card.tsx
+│   │   ├── input.tsx
+│   │   ├── theme-provider.tsx
+│   │   ├── utils.ts
+│   │   └── index.ts
+│   ├── api/          # API client and types
+│   │   ├── api-client.ts
+│   │   ├── api-instance.ts
+│   │   ├── types.ts
+│   │   └── token-provider-setup.tsx
+│   ├── routing/      # Navigation and routing
+│   │   ├── routes.config.ts
+│   │   ├── routeGenerator.tsx
+│   │   └── Navigation.tsx
+│   └── pages/        # Global page components
+│       ├── Home.tsx
+│       ├── Dashboard.tsx
+│       ├── Profile.tsx
+│       └── Settings.tsx
+├── position/         # Domain-specific modules
+│   └── api/
+│       ├── position.client.ts
+│       └── position.types.ts
 ├── assets/           # Global assets (not a module)
 ├── App.tsx          # Root component
 ├── main.tsx         # Entry point
 └── vite-env.d.ts    # TypeScript declarations
 ```
 
+### Global Package Structure
+
+#### Global Modules (`src/global/`)
+- **Purpose**: Shared utilities and components used across the entire application
+- **Scope**: Cross-cutting concerns that don't belong to specific domains
+- **Examples**: Authentication, UI components, API client, routing, global pages
+
+#### Domain-Specific Modules (`src/[domain]/`)
+- **Purpose**: Business logic and components specific to a particular domain
+- **Scope**: Self-contained modules that can be developed independently
+- **Examples**: Position management, user profiles, specific features
+
 ### Module Guidelines
 
 #### Module Boundaries
 - Each module should have a single responsibility
-- Modules should not depend on each other unless necessary
+- Global modules should not depend on domain-specific modules
+- Domain modules can depend on global modules
 - Use dependency injection for cross-module communication
 - Keep module interfaces clean and minimal
+
+#### Import Patterns
+- **Global modules**: Import from `src/global/[module]/[file]`
+- **Domain modules**: Import from `src/[domain]/[module]/[file]`
+- **Within global modules**: Use relative imports (`./file` or `../module/file`)
+- **Cross-domain**: Avoid direct imports between domain modules
 
 #### Module Exports
 - Import directly from specific files
@@ -45,6 +89,7 @@ src/
 - Use React Context for shared state
 - Pass dependencies as props when possible
 - Avoid circular dependencies
+- Global modules should be dependency-free or have minimal dependencies
 
 ### Non-Module Folders
 
@@ -60,8 +105,10 @@ src/
 - `App.css` - Global styles
 
 ### Benefits
-- Clear separation of concerns
-- Easier to maintain and test
-- Better code organization
-- Reduced coupling between features
-- Easier to add new features
+- **Clear separation of concerns**: Global utilities vs domain-specific logic
+- **Better maintainability**: Easier to find and update shared components
+- **Improved testability**: Isolated modules with clear boundaries
+- **Reduced coupling**: Global modules don't depend on domain modules
+- **Scalable architecture**: Easy to add new domains without affecting global modules
+- **Consistent patterns**: Clear import patterns and module organization
+- **Reusability**: Global modules can be easily shared across domains
