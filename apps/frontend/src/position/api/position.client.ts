@@ -48,7 +48,33 @@ export interface BuySharesResponse {
   totalQuantity: number;
 }
 
+export interface Position {
+  positionId: string;
+  userId: string;
+  portfolioId: string;
+  instrument: string;
+  currentQty: number;
+  isClosed: boolean;
+  events: Array<{
+    action: string;
+    ts: string;
+    qty?: number;
+    price?: number;
+    stop?: number;
+    note?: string;
+  }>;
+}
+
+export interface GetPositionsResponse {
+  positions: Position[];
+}
+
 export class PositionClient {
+  async getPositions(): Promise<GetPositionsResponse> {
+    const response = await apiClient.get<GetPositionsResponse>('/positions');
+    return response.data;
+  }
+
   async openPosition(
     request: OpenPositionRequest,
   ): Promise<OpenPositionResponse> {

@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post, Put, Req } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Req } from '@nestjs/common';
 import {
   OpenPositionRequestDto,
   OpenPositionResponseDto,
@@ -20,6 +20,10 @@ import {
   BuySharesResponseDto,
   BuySharesUseCase,
 } from '../use-cases/buy-shares.use-case';
+import {
+  GetPositionsResponseDto,
+  GetPositionsUseCase,
+} from '../use-cases/get-positions.use-case';
 import { PortfolioId } from '../domain/value-objects/portfolio-id';
 import { Ticker } from '../domain/value-objects/ticker';
 import { Quantity } from '../domain/value-objects/quantity';
@@ -37,7 +41,20 @@ export class PositionController {
     private readonly setStopLossUseCase: SetStopLossUseCase,
     private readonly sellSharesUseCase: SellSharesUseCase,
     private readonly buySharesUseCase: BuySharesUseCase,
+    private readonly getPositionsUseCase: GetPositionsUseCase,
   ) {}
+
+  @Get()
+  async getPositions(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<GetPositionsResponseDto> {
+    const user = req.user;
+    const authContext: AuthContext = {
+      userId: user.userId,
+    };
+
+    return this.getPositionsUseCase.execute(authContext);
+  }
 
   @Post()
   async openPosition(
