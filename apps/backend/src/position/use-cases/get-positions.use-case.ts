@@ -1,6 +1,5 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Position } from '../domain/entities/position';
-import { UserId } from '../domain/value-objects/user-id';
 import type { PositionReadRepository } from '../domain/repositories/position-read.repository.interface';
 import type { AuthContext } from '../domain/auth/auth-context.interface';
 import { POSITION_READ_REPOSITORY } from '../constants/tokens';

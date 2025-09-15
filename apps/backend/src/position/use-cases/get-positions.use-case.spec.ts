@@ -42,36 +42,28 @@ describe('GetPositionsUseCase', () => {
       const authContext: AuthContext = { userId };
 
       const mockPositions = [
-        Position.fromEvents(
-          PositionId.of('position-1'),
-          userId,
-          [
-            {
-              action: Action.BUY,
-              ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
-              portfolioId: PortfolioId.of('portfolio-123'),
-              instrument: Ticker.of('AAPL'),
-              qty: Quantity.of(100),
-              price: Price.of(150.0),
-              note: 'Initial position',
-            },
-          ],
-        ),
-        Position.fromEvents(
-          PositionId.of('position-2'),
-          userId,
-          [
-            {
-              action: Action.BUY,
-              ts: IsoTimestamp.of('2024-01-16T14:30:00.000Z'),
-              portfolioId: PortfolioId.of('portfolio-123'),
-              instrument: Ticker.of('MSFT'),
-              qty: Quantity.of(50),
-              price: Price.of(300.0),
-              note: 'Microsoft position',
-            },
-          ],
-        ),
+        Position.fromEvents(PositionId.of('position-1'), userId, [
+          {
+            action: Action.BUY,
+            ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+            portfolioId: PortfolioId.of('portfolio-123'),
+            instrument: Ticker.of('AAPL'),
+            qty: Quantity.of(100),
+            price: Price.of(150.0),
+            note: 'Initial position',
+          },
+        ]),
+        Position.fromEvents(PositionId.of('position-2'), userId, [
+          {
+            action: Action.BUY,
+            ts: IsoTimestamp.of('2024-01-16T14:30:00.000Z'),
+            portfolioId: PortfolioId.of('portfolio-123'),
+            instrument: Ticker.of('MSFT'),
+            qty: Quantity.of(50),
+            price: Price.of(300.0),
+            note: 'Microsoft position',
+          },
+        ]),
       ];
 
       mockPositionReadRepository.findByUserId.mockResolvedValue(mockPositions);
@@ -107,7 +99,9 @@ describe('GetPositionsUseCase', () => {
       const authContext: AuthContext = { userId };
       const repositoryError = new Error('Database connection failed');
 
-      mockPositionReadRepository.findByUserId.mockRejectedValue(repositoryError);
+      mockPositionReadRepository.findByUserId.mockRejectedValue(
+        repositoryError,
+      );
 
       await expect(useCase.execute(authContext)).rejects.toThrow(
         repositoryError,
@@ -125,39 +119,31 @@ describe('GetPositionsUseCase', () => {
       const authContext2: AuthContext = { userId: user2Id };
 
       const user1Positions = [
-        Position.fromEvents(
-          PositionId.of('position-1'),
-          user1Id,
-          [
-            {
-              action: Action.BUY,
-              ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
-              portfolioId: PortfolioId.of('portfolio-1'),
-              instrument: Ticker.of('AAPL'),
-              qty: Quantity.of(100),
-              price: Price.of(150.0),
-              note: 'User 1 position',
-            },
-          ],
-        ),
+        Position.fromEvents(PositionId.of('position-1'), user1Id, [
+          {
+            action: Action.BUY,
+            ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+            portfolioId: PortfolioId.of('portfolio-1'),
+            instrument: Ticker.of('AAPL'),
+            qty: Quantity.of(100),
+            price: Price.of(150.0),
+            note: 'User 1 position',
+          },
+        ]),
       ];
 
       const user2Positions = [
-        Position.fromEvents(
-          PositionId.of('position-2'),
-          user2Id,
-          [
-            {
-              action: Action.BUY,
-              ts: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
-              portfolioId: PortfolioId.of('portfolio-2'),
-              instrument: Ticker.of('TSLA'),
-              qty: Quantity.of(50),
-              price: Price.of(200.0),
-              note: 'User 2 position',
-            },
-          ],
-        ),
+        Position.fromEvents(PositionId.of('position-2'), user2Id, [
+          {
+            action: Action.BUY,
+            ts: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
+            portfolioId: PortfolioId.of('portfolio-2'),
+            instrument: Ticker.of('TSLA'),
+            qty: Quantity.of(50),
+            price: Price.of(200.0),
+            note: 'User 2 position',
+          },
+        ]),
       ];
 
       mockPositionReadRepository.findByUserId
