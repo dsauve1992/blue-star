@@ -1,0 +1,329 @@
+---
+description: Blue Star Frontend API Integration Guidelines - API client patterns and backend integration
+globs: ["apps/frontend/**/*.ts", "apps/frontend/**/*.tsx"]
+alwaysApply: true
+---
+
+# Blue Star - Frontend API Integration Guidelines
+
+## Core Principles
+
+### API Client Consistency
+- API client methods MUST mirror backend controller endpoints exactly
+- Use consistent error handling across all API calls
+- Maintain type safety from backend to frontend
+- Follow established patterns for request/response mapping
+
+### Type Safety
+- Frontend types MUST match backend response structure
+- Use proper TypeScript interfaces for all API contracts
+- Validate API responses match expected types
+- Handle type mismatches gracefully
+
+## API Client Patterns
+
+### Client Structure
+```typescript
+// api/module.client.ts
+import { apiClient } from '../../global/api/api-instance';
+import type { ApiResponse } from '../../global/api/types';
+
+export class ModuleClient {
+  async getItems(): Promise<GetItemsResponse> {
+    const response = await apiClient.get<GetItemsResponse>('/items');
+    return response.data;
+  }
+
+  async createItem(request: CreateItemRequest): Promise<CreateItemResponse> {
+    const response = await apiClient.post<CreateItemResponse, CreateItemRequest>(
+      '/items',
+      request
+    );
+    return response.data;
+  }
+}
+```
+
+### Type Definitions
+```typescript
+// api/module.types.ts
+export interface GetItemsResponse {
+  items: Item[];
+  total: number;
+}
+
+export interface CreateItemRequest {
+  name: string;
+  description: string;
+  category: string;
+}
+
+export interface CreateItemResponse {
+  item: Item;
+  message: string;
+}
+```
+
+## Error Handling
+
+### Consistent Error Types
+```typescript
+// global/api/types.ts
+export interface ApiError {
+  message: string;
+  status: number;
+  code?: string;
+}
+
+// In API client
+try {
+  const result = await moduleClient.createItem(request);
+  return result;
+} catch (error) {
+  if (error instanceof ApiError) {
+    throw new Error(`Failed to create item: ${error.message}`);
+  }
+  throw new Error('An unexpected error occurred');
+}
+```
+
+### Error Handling in Components
+```typescript
+export function ItemForm() {
+  const createItemMutation = useCreateItem();
+  
+  const handleSubmit = async (formData: CreateItemRequest) => {
+    try {
+      await createItemMutation.mutateAsync(formData);
+      // Success handling
+    } catch (error) {
+      // Error handling - show user-friendly message
+      console.error('Failed to create item:', error);
+    }
+  };
+}
+```
+
+## Authentication Integration
+
+### Auth Context Usage
+```typescript
+// In API client methods
+export class ModuleClient {
+  async getItems(authContext: AuthContext): Promise<GetItemsResponse> {
+    const response = await apiClient.get<GetItemsResponse>('/items', {
+      headers: {
+        'Authorization': `Bearer ${authContext.token}`,
+      },
+    });
+    return response.data;
+  }
+}
+```
+
+### Hook Integration
+```typescript
+// In custom hooks
+export function useItems() {
+  const { user } = useKindeAuth();
+  
+  return useQuery({
+    queryKey: MODULE_QUERY_KEYS.lists(),
+    queryFn: () => moduleClient.getItems({ token: user?.accessToken }),
+    enabled: !!user?.accessToken,
+  });
+}
+```
+
+## Data Flow Patterns
+
+### Read Operations
+```typescript
+// 1. Component calls hook
+const { data, isLoading, error } = useItems();
+
+// 2. Hook calls API client
+export function useItems() {
+  return useQuery({
+    queryKey: MODULE_QUERY_KEYS.lists(),
+    queryFn: () => moduleClient.getItems(),
+  });
+}
+
+// 3. API client makes HTTP request
+async getItems(): Promise<GetItemsResponse> {
+  const response = await apiClient.get<GetItemsResponse>('/items');
+  return response.data;
+}
+```
+
+### Write Operations
+```typescript
+// 1. Component calls mutation hook
+const createItemMutation = useCreateItem();
+
+// 2. Hook calls API client and invalidates queries
+export function useCreateItem() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (request: CreateItemRequest) => moduleClient.createItem(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MODULE_QUERY_KEYS.all });
+    },
+  });
+}
+```
+
+## Request/Response Mapping
+
+### Backend to Frontend Mapping
+```typescript
+// Backend DTO (uses domain value objects)
+export interface OpenPositionRequestDto {
+  portfolioId: PortfolioId;
+  instrument: Ticker;
+  quantity: Quantity;
+  price: Price;
+  timestamp: IsoTimestamp;
+  note?: string;
+}
+
+// Frontend Request (uses primitives for API communication)
+export interface OpenPositionRequest {
+  portfolioId: string;
+  instrument: string;
+  quantity: number;
+  price: number;
+  timestamp: string;
+  note?: string;
+}
+
+// Mapping function
+function mapToApiRequest(dto: OpenPositionRequestDto): OpenPositionRequest {
+  return {
+    portfolioId: dto.portfolioId.value,
+    instrument: dto.instrument.value,
+    quantity: dto.quantity.value,
+    price: dto.price.value,
+    timestamp: dto.timestamp.value,
+    note: dto.note,
+  };
+}
+```
+
+## Testing API Integration
+
+### Mocking API Client
+```typescript
+// In component tests
+jest.mock('../api/module.client', () => ({
+  ModuleClient: jest.fn().mockImplementation(() => ({
+    getItems: jest.fn().mockResolvedValue({ items: mockItems }),
+    createItem: jest.fn().mockResolvedValue({ item: mockItem }),
+  })),
+}));
+```
+
+### Testing Error Scenarios
+```typescript
+it('should handle API errors gracefully', async () => {
+  const mockError = new Error('API Error');
+  jest.spyOn(moduleClient, 'getItems').mockRejectedValue(mockError);
+  
+  render(<ItemList />);
+  
+  await waitFor(() => {
+    expect(screen.getByText('Failed to load items')).toBeInTheDocument();
+  });
+});
+```
+
+## Performance Optimization
+
+### Query Configuration
+```typescript
+export function useItems() {
+  return useQuery({
+    queryKey: MODULE_QUERY_KEYS.lists(),
+    queryFn: () => moduleClient.getItems(),
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    cacheTime: 10 * 60 * 1000, // 10 minutes
+    retry: (failureCount, error) => {
+      // Don't retry on 4xx errors
+      if (error && typeof error === 'object' && 'status' in error) {
+        const status = (error as { status: number }).status;
+        if (status >= 400 && status < 500) {
+          return false;
+        }
+      }
+      return failureCount < 3;
+    },
+  });
+}
+```
+
+### Optimistic Updates
+```typescript
+export function useCreateItem() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (request: CreateItemRequest) => moduleClient.createItem(request),
+    onMutate: async (newItem) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: MODULE_QUERY_KEYS.lists() });
+      
+      // Snapshot previous value
+      const previousItems = queryClient.getQueryData(MODULE_QUERY_KEYS.lists());
+      
+      // Optimistically update
+      queryClient.setQueryData(MODULE_QUERY_KEYS.lists(), (old: any) => ({
+        ...old,
+        items: [...old.items, newItem],
+      }));
+      
+      return { previousItems };
+    },
+    onError: (err, newItem, context) => {
+      // Rollback on error
+      queryClient.setQueryData(MODULE_QUERY_KEYS.lists(), context?.previousItems);
+    },
+    onSettled: () => {
+      // Always refetch after error or success
+      queryClient.invalidateQueries({ queryKey: MODULE_QUERY_KEYS.lists() });
+    },
+  });
+}
+```
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Direct API calls in components
+- ❌ Inconsistent error handling
+- ❌ Missing type safety
+- ❌ Not handling loading states
+- ❌ Hardcoded API endpoints
+- ❌ Not invalidating queries after mutations
+
+### What TO Do
+- ✅ Use custom hooks for API calls
+- ✅ Consistent error handling patterns
+- ✅ Full type safety
+- ✅ Proper loading and error states
+- ✅ Centralized API client
+- ✅ Automatic query invalidation
+
+## Quality Checklist
+
+### Before Committing API Integration Code
+- [ ] API client methods mirror backend endpoints
+- [ ] TypeScript types match backend contracts
+- [ ] Error handling is consistent and user-friendly
+- [ ] Loading states are handled appropriately
+- [ ] Queries are properly invalidated after mutations
+- [ ] Authentication is properly integrated
+- [ ] Tests cover both success and error scenarios
+
+Remember: **Consistency**, **type safety**, and **proper error handling** are essential for reliable API integration!

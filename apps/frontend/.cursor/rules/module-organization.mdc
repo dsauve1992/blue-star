@@ -1,3 +1,9 @@
+---
+description: Blue Star Frontend Module Organization Rules - Module-based architecture and file structure
+globs: ["apps/frontend/**/*.ts", "apps/frontend/**/*.tsx"]
+alwaysApply: true
+---
+
 # Frontend Module Organization Rules
 
 ## Module-Based Architecture

@@ -1,0 +1,262 @@
+---
+description: Blue Star Frontend Component Patterns - React component organization and best practices
+globs: ["apps/frontend/**/*.tsx", "apps/frontend/**/*.ts"]
+alwaysApply: true
+---
+
+# Blue Star - Frontend Component Patterns
+
+## Core Principles
+
+### Component Organization
+- Components MUST be organized by feature/module
+- Use clear, descriptive component names
+- Separate concerns: presentation, logic, and data fetching
+- Follow the established design system patterns
+
+### File Structure
+```
+module-name/
+├── components/             # Reusable components
+│   ├── ComponentName.tsx  # Main component
+│   ├── ComponentName.test.tsx  # Tests
+│   └── index.ts           # Exports
+├── pages/                  # Page-level components
+├── hooks/                  # Custom hooks
+└── types/                  # TypeScript types
+```
+
+## Component Patterns
+
+### Functional Components with Hooks
+```typescript
+import { useState, useEffect } from 'react';
+import { useModuleItems } from '../hooks/use-module-items';
+
+interface ComponentProps {
+  title: string;
+  onItemSelect?: (item: Item) => void;
+}
+
+export function ComponentName({ title, onItemSelect }: ComponentProps) {
+  const { data, isLoading, error } = useModuleItems();
+  
+  if (isLoading) return <LoadingSpinner />;
+  if (error) return <ErrorMessage error={error} />;
+  
+  return (
+    <div className="component-container">
+      <h2>{title}</h2>
+      {/* Component content */}
+    </div>
+  );
+}
+```
+
+### Custom Hooks Pattern
+```typescript
+// hooks/use-module-items.ts
+export function useModuleItems() {
+  return useQuery({
+    queryKey: MODULE_QUERY_KEYS.lists(),
+    queryFn: () => moduleClient.getItems(),
+  });
+}
+
+// Component uses the hook
+export function ItemList() {
+  const { data, isLoading, error } = useModuleItems();
+  // Component logic
+}
+```
+
+## Design System Integration
+
+### Using Design System Components
+```typescript
+import { Button, Card, Input, Alert } from '../../global/design-system';
+
+export function ItemForm() {
+  return (
+    <Card className="p-6">
+      <Input placeholder="Enter item name" />
+      <Button variant="primary">Save Item</Button>
+    </Card>
+  );
+}
+```
+
+### Consistent Styling
+- Use Tailwind CSS classes consistently
+- Follow the established color palette and spacing
+- Use design system components when available
+- Maintain responsive design principles
+
+## State Management
+
+### Local State
+```typescript
+const [isOpen, setIsOpen] = useState(false);
+const [formData, setFormData] = useState(initialFormData);
+```
+
+### Server State
+```typescript
+// Use React Query for server state
+const { data, isLoading, error } = useQuery({
+  queryKey: ['items'],
+  queryFn: fetchItems,
+});
+```
+
+### Form State
+```typescript
+const [formData, setFormData] = useState({
+  name: '',
+  email: '',
+});
+
+const handleInputChange = (field: string, value: string) => {
+  setFormData(prev => ({ ...prev, [field]: value }));
+};
+```
+
+## Error Handling
+
+### Error Boundaries
+```typescript
+export function ErrorBoundary({ children }: { children: React.ReactNode }) {
+  return (
+    <ErrorBoundaryProvider>
+      {children}
+    </ErrorBoundaryProvider>
+  );
+}
+```
+
+### Component Error Handling
+```typescript
+export function ItemList() {
+  const { data, isLoading, error } = useItems();
+  
+  if (error) {
+    return (
+      <Alert variant="destructive">
+        Failed to load items. Please try again.
+      </Alert>
+    );
+  }
+  
+  // Rest of component
+}
+```
+
+## Loading States
+
+### Loading Patterns
+```typescript
+export function ItemList() {
+  const { data, isLoading } = useItems();
+  
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+  
+  return (
+    <div>
+      {data?.items.map(item => (
+        <ItemCard key={item.id} item={item} />
+      ))}
+    </div>
+  );
+}
+```
+
+## TypeScript Patterns
+
+### Component Props
+```typescript
+interface ComponentProps {
+  title: string;
+  items: Item[];
+  onItemClick?: (item: Item) => void;
+  className?: string;
+}
+
+export function ComponentName({ 
+  title, 
+  items, 
+  onItemClick,
+  className 
+}: ComponentProps) {
+  // Component implementation
+}
+```
+
+### Event Handlers
+```typescript
+const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
+  e.preventDefault();
+  // Handle form submission
+};
+
+const handleItemClick = (item: Item) => {
+  onItemClick?.(item);
+};
+```
+
+## Testing Patterns
+
+### Component Testing
+```typescript
+import { render, screen, fireEvent } from '@testing-library/react';
+import { ComponentName } from './ComponentName';
+
+describe('ComponentName', () => {
+  it('should render with correct title', () => {
+    render(<ComponentName title="Test Title" />);
+    expect(screen.getByText('Test Title')).toBeInTheDocument();
+  });
+  
+  it('should handle item click', () => {
+    const onItemClick = jest.fn();
+    render(<ComponentName onItemClick={onItemClick} />);
+    // Test implementation
+  });
+});
+```
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Mixing data fetching logic in components
+- ❌ Using inline styles instead of Tailwind classes
+- ❌ Not handling loading and error states
+- ❌ Creating overly complex components
+- ❌ Not using TypeScript properly
+- ❌ Hardcoding values that should be configurable
+
+### What TO Do
+- ✅ Use custom hooks for data fetching
+- ✅ Follow design system patterns
+- ✅ Handle all loading and error states
+- ✅ Keep components focused and simple
+- ✅ Use proper TypeScript types
+- ✅ Make components configurable through props
+
+## Quality Checklist
+
+### Before Committing Component Code
+- [ ] Component follows established patterns
+- [ ] TypeScript types are properly defined
+- [ ] Loading and error states are handled
+- [ ] Design system components are used when available
+- [ ] Component is testable and has tests
+- [ ] Props are properly documented
+- [ ] Component is responsive and accessible
+
+Remember: **Consistency**, **reusability**, and **maintainability** are key to great React components!

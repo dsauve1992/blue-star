@@ -1,3 +1,9 @@
+---
+description: Blue Star Design System Rules - Professional trading platform aesthetic and UI/UX standards
+globs: ["apps/frontend/**/*.tsx", "apps/frontend/**/*.ts", "apps/frontend/**/*.css"]
+alwaysApply: true
+---
+
 # Blue Star - Design System Rules
 
 ## Core Design Principles
