@@ -71,12 +71,8 @@ export class ApiClient {
   async get<T>(
     url: string,
     config?: ApiRequestConfig,
-  ): Promise<ApiResponse<T>> {
-    const response = await this.client.get<ApiResponse<T>>(
-      url,
-      this.buildAxiosConfig(config),
-    );
-    return response.data;
+  ): Promise<AxiosResponse<T>> {
+    return this.client.get<T>(url, this.buildAxiosConfig(config));
   }
 
   async post<T, R>(

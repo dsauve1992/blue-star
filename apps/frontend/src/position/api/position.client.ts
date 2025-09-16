@@ -71,7 +71,8 @@ export interface GetPositionsResponse {
 
 export class PositionClient {
   async getPositions(): Promise<GetPositionsResponse> {
-    const response = await apiClient.get<GetPositionsResponse>('/positions');
+    const response = await apiClient.get<GetPositionsResponse>("/positions");
+
     return response.data;
   }
 

@@ -1,13 +1,15 @@
-import { usePositions } from '../hooks/use-positions';
-import { Card } from '../../global/design-system/card';
-import { Badge } from '../../global/design-system/badge';
-import { Button } from '../../global/design-system/button';
-import { LoadingSpinner } from '../../global/design-system/loading-spinner';
-import { Alert } from '../../global/design-system/alert';
-import { TrendingUp, TrendingDown, Shield } from 'lucide-react';
+import { usePositions } from "../hooks/use-positions";
+import { Card } from "src/global/design-system";
+import { Badge } from "src/global/design-system";
+import { Button } from "src/global/design-system";
+import { LoadingSpinner } from "src/global/design-system";
+import { Alert } from "src/global/design-system";
+import { TrendingUp, TrendingDown, Shield } from "lucide-react";
 
 export function PositionList() {
   const { data, isLoading, error } = usePositions();
+
+  console.log("Positions Data:", data);
 
   if (isLoading) {
     return (
@@ -19,7 +21,7 @@ export function PositionList() {
 
   if (error) {
     return (
-      <Alert variant="destructive">
+      <Alert variant="danger">
         Failed to load positions. Please try again.
       </Alert>
     );
@@ -50,14 +52,14 @@ export function PositionList() {
                   {position.instrument}
                 </span>
                 <Badge
-                  variant={position.isClosed ? 'secondary' : 'default'}
+                  variant={position.isClosed ? "secondary" : "default"}
                   className={
                     position.isClosed
-                      ? 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200'
-                      : 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200'
+                      ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+                      : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
                   }
                 >
-                  {position.isClosed ? 'Closed' : 'Open'}
+                  {position.isClosed ? "Closed" : "Open"}
                 </Badge>
               </div>
               <div className="text-sm text-slate-600 dark:text-slate-400">
@@ -89,7 +91,7 @@ export function PositionList() {
               </div>
             </div>
           </div>
-          
+
           {position.events.length > 0 && (
             <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
               <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
