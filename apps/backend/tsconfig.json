@@ -24,5 +24,11 @@
     "removeComments": true,
     "allowJs": true,
     "resolveJsonModule": true
-  }
+  },
+  "exclude": [
+    "migrations/**/*.js",
+    "migrations/sqls/**/*.sql",
+    "dist/**/*",
+    "node_modules/**/*"
+  ]
 }

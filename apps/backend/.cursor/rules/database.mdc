@@ -1,0 +1,305 @@
+---
+description: Blue Star Database & Migration Rules - PostgreSQL implementation patterns and migration guidelines
+globs: ["**/*.ts", "**/*.js", "**/*.sql", "**/migrations/**", "**/database.json", "**/docker-compose.yml"]
+alwaysApply: true
+---
+
+# Blue Star - Database & Migration Rules
+
+## Core Principles
+
+### Database-First Architecture
+- Use PostgreSQL as the primary database
+- Implement direct SQL queries without ORM
+- Support both individual environment variables and DATABASE_URL
+- Use connection pooling for production readiness
+- Implement proper transaction support
+
+### Migration-Driven Development
+- Use `db-migrate` with SQL files exclusively
+- Version all database schema changes
+- Test both up and down migrations
+- Document schema changes clearly
+- Support rollback scenarios
+
+## Database Implementation Patterns
+
+### PostgreSQL Integration
+```typescript
+// Use pg library for direct SQL queries
+import { Pool } from 'pg';
+
+// Implement connection pooling
+const pool = new Pool({
+  host: process.env.DB_HOST || 'localhost',
+  port: parseInt(process.env.DB_PORT || '5432'),
+  user: process.env.DB_USER || 'blue_star_user',
+  password: process.env.DB_PASSWORD || 'blue_star_password',
+  database: process.env.DB_NAME || 'blue_star_db',
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  max: 20,
+  idleTimeoutMillis: 30000,
+  connectionTimeoutMillis: 2000,
+});
+```
+
+### Database Configuration
+```typescript
+// Support both individual variables and DATABASE_URL
+export function getDatabaseConfig() {
+  if (process.env.DATABASE_URL) {
+    const url = new URL(process.env.DATABASE_URL);
+    return {
+      host: url.hostname,
+      port: parseInt(url.port) || 5432,
+      user: url.username,
+      password: url.password,
+      database: url.pathname.slice(1),
+      ssl: url.protocol === 'postgresql:' ? { rejectUnauthorized: false } : false,
+    };
+  }
+  
+  return {
+    host: process.env.DB_HOST || 'localhost',
+    port: parseInt(process.env.DB_PORT || '5432'),
+    user: process.env.DB_USER || 'blue_star_user',
+    password: process.env.DB_PASSWORD || 'blue_star_password',
+    database: process.env.DB_NAME || 'blue_star_db',
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  };
+}
+```
+
+## Migration System
+
+### Migration Commands
+```bash
+# Create new migration with SQL files
+npx db-migrate create --env dev migration-name --sql-file
+
+# Run migrations
+npx db-migrate up --env dev
+
+# Rollback migrations
+npx db-migrate down --env dev
+
+# Check migration status
+npx db-migrate check --env dev
+```
+
+### SQL Migration Patterns
+```sql
+-- Up migration example
+CREATE TABLE IF NOT EXISTS positions (
+    id UUID PRIMARY KEY,
+    user_id VARCHAR(255) NOT NULL,
+    portfolio_id UUID NOT NULL,
+    instrument VARCHAR(10) NOT NULL,
+    current_qty INTEGER NOT NULL DEFAULT 0,
+    closed BOOLEAN NOT NULL DEFAULT FALSE,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+
+-- Down migration example
+DROP TABLE IF EXISTS positions;
+```
+
+## Schema Design Principles
+
+### ID Types
+- Use VARCHAR(255) for both domain and external IDs
+
+### Event Sourcing Pattern
+```sql
+-- Store all changes as events
+CREATE TABLE IF NOT EXISTS position_events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    position_id VARCHAR(255) NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
+    action VARCHAR(20) NOT NULL CHECK (action IN ('BUY', 'SELL', 'STOP_LOSS')),
+    timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
+    portfolio_id VARCHAR(255) NOT NULL,
+    instrument VARCHAR(10) NOT NULL,
+    quantity INTEGER,
+    price DECIMAL(15,4),
+    stop_price DECIMAL(15,4),
+    note TEXT,
+    created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT NOW()
+);
+```
+
+### Performance Optimization
+```sql
+-- Create indexes for better performance
+CREATE INDEX IF NOT EXISTS idx_positions_user_id ON positions(user_id);
+CREATE INDEX IF NOT EXISTS idx_positions_portfolio_id ON positions(portfolio_id);
+CREATE INDEX IF NOT EXISTS idx_positions_instrument ON positions(instrument);
+CREATE INDEX IF NOT EXISTS idx_positions_closed ON positions(closed);
+CREATE INDEX IF NOT EXISTS idx_position_events_position_id ON position_events(position_id);
+CREATE INDEX IF NOT EXISTS idx_position_events_timestamp ON position_events(timestamp);
+CREATE INDEX IF NOT EXISTS idx_position_events_action ON position_events(action);
+```
+
+## Repository Implementation Patterns
+
+### Event Sourcing Reconstruction
+```typescript
+// Reconstruct entity state from event stream
+private mapRowToPosition(row: DatabaseRow): Position {
+  const events = row.events.map(eventRow => {
+    const baseEvent = {
+      action: eventRow.action as Action,
+      ts: IsoTimestamp.of(eventRow.timestamp),
+      portfolioId: PortfolioId.of(eventRow.portfolio_id),
+      instrument: Ticker.of(eventRow.instrument),
+      note: eventRow.note,
+    };
+
+    if (eventRow.action === Action.BUY || eventRow.action === Action.SELL) {
+      return {
+        ...baseEvent,
+        qty: Quantity.of(eventRow.quantity),
+        price: Price.of(eventRow.price),
+      } as BuySellEvent;
+    } else if (eventRow.action === Action.STOP_LOSS) {
+      return {
+        ...baseEvent,
+        stop: Price.of(eventRow.stop_price),
+      } as StopLossEvent;
+    }
+
+    throw new Error(`Unknown event action: ${eventRow.action}`);
+  });
+
+  return Position.fromEvents(
+    PositionId.of(row.id),
+    events
+  );
+}
+```
+
+### Database Row Interface
+```typescript
+// Define clear interfaces for database results
+interface DatabaseRow {
+  id: string;
+  user_id: string;
+  portfolio_id: string;
+  instrument: string;
+  current_qty: number;
+  closed: boolean;
+  created_at: string;
+  updated_at: string;
+  events: EventRow[];
+}
+
+interface EventRow {
+  id: string;
+  position_id: string;
+  action: string;
+  timestamp: string;
+  portfolio_id: string;
+  instrument: string;
+  quantity: number | null;
+  price: number | null;
+  stop_price: number | null;
+  note: string | null;
+  created_at: string;
+}
+```
+
+## Generated Files Handling
+
+### ESLint Configuration
+```javascript
+// Ignore generated migration files
+export default tseslint.config(
+  {
+    ignores: [
+      'eslint.config.mjs',
+      'migrations/**/*.js',
+      'migrations/sqls/**/*.sql',
+      'dist/**/*',
+      'node_modules/**/*'
+    ],
+  },
+  // ... rest of config
+);
+```
+
+### TypeScript Configuration
+```json
+{
+  "compilerOptions": {
+    // ... existing options
+  },
+  "exclude": [
+    "migrations/**/*.js",
+    "migrations/sqls/**/*.sql",
+    "dist/**/*",
+    "node_modules/**/*"
+  ]
+}
+```
+
+## Error Handling Patterns
+
+### Database Service Errors
+```typescript
+// Use domain-specific error types
+export class DatabaseConnectionError extends Error {
+  constructor(message: string) {
+    super(`Database connection failed: ${message}`);
+    this.name = 'DatabaseConnectionError';
+  }
+}
+
+export class DatabaseQueryError extends Error {
+  constructor(message: string) {
+    super(`Database query failed: ${message}`);
+    this.name = 'DatabaseQueryError';
+  }
+}
+```
+
+### Repository Error Handling
+```typescript
+// Handle database errors gracefully
+async save(position: Position): Promise<void> {
+  try {
+    await this.databaseService.query('BEGIN');
+    
+    // Save position and events
+    await this.databaseService.query('COMMIT');
+  } catch (error) {
+    await this.databaseService.query('ROLLBACK');
+    throw new DatabaseQueryError(`Failed to save position: ${error.message}`);
+  }
+}
+```
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Don't use ORM when direct SQL is requested
+- ❌ Don't assume external IDs are UUIDs
+- ❌ Don't manually edit generated migration files
+- ❌ Don't ignore generated files in linting/type checking
+- ❌ Don't use JavaScript migrations when SQL is preferred
+- ❌ Don't hardcode database connection details
+- ❌ Don't skip proper error handling in repositories
+- ❌ Don't forget to test both up and down migrations
+- ❌ Don't skip proper indexing for performance
+
+### What TO Do
+- ✅ Use SQL files for migrations
+- ✅ Support external auth system ID formats
+- ✅ Ignore generated files in linting/type checking
+- ✅ Use proper connection pooling
+- ✅ Implement event sourcing for audit trails
+- ✅ Use transactions for data consistency
+- ✅ Document design decisions clearly
+- ✅ Test migration rollbacks
+- ✅ Create proper indexes for performance
+
+Remember: **Database changes are permanent** - test thoroughly and document clearly!
