@@ -5,13 +5,13 @@ import { SetStopLossUseCase } from './use-cases/set-stop-loss.use-case';
 import { SellSharesUseCase } from './use-cases/sell-shares.use-case';
 import { BuySharesUseCase } from './use-cases/buy-shares.use-case';
 import { GetPositionsUseCase } from './use-cases/get-positions.use-case';
-import { PostgresPositionWriteRepository } from './infrastructure/repositories/postgres-position-write.repository';
-import { PostgresPositionReadRepository } from './infrastructure/repositories/postgres-position-read.repository';
 import {
   POSITION_WRITE_REPOSITORY,
   POSITION_READ_REPOSITORY,
 } from './constants/tokens';
 import { DatabaseModule } from '../config/database.module';
+import { InMemoryPositionWriteRepository } from './infrastructure/repositories/position-write.repository';
+import { InMemoryPositionReadRepository } from './infrastructure/repositories/position-read.repository';
 
 @Module({
   imports: [DatabaseModule],
@@ -19,11 +19,11 @@ import { DatabaseModule } from '../config/database.module';
   providers: [
     {
       provide: POSITION_WRITE_REPOSITORY,
-      useClass: PostgresPositionWriteRepository,
+      useClass: InMemoryPositionWriteRepository,
     },
     {
       provide: POSITION_READ_REPOSITORY,
-      useClass: PostgresPositionReadRepository,
+      useClass: InMemoryPositionReadRepository,
     },
     OpenPositionUseCase,
     SetStopLossUseCase,
