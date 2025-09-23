@@ -17,4 +17,3 @@ export class StartupService implements OnModuleInit {
     }
   }
 }
-

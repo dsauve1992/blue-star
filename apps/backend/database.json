@@ -11,7 +11,7 @@
   "test": {
     "driver": "pg",
     "host": "localhost",
-    "port": 5432,
+    "port": 5433,
     "user": "blue_star_user",
     "password": "blue_star_password",
     "database": "blue_star_test_db",

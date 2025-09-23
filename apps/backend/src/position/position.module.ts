@@ -10,8 +10,8 @@ import {
   POSITION_READ_REPOSITORY,
 } from './constants/tokens';
 import { DatabaseModule } from '../config/database.module';
-import { InMemoryPositionWriteRepository } from './infrastructure/repositories/position-write.repository';
-import { InMemoryPositionReadRepository } from './infrastructure/repositories/position-read.repository';
+import { PositionWriteRepository } from './infrastructure/repositories/position-write.repository';
+import { PositionReadRepository } from './infrastructure/repositories/position-read.repository';
 
 @Module({
   imports: [DatabaseModule],
@@ -19,11 +19,11 @@ import { InMemoryPositionReadRepository } from './infrastructure/repositories/po
   providers: [
     {
       provide: POSITION_WRITE_REPOSITORY,
-      useClass: InMemoryPositionWriteRepository,
+      useClass: PositionWriteRepository,
     },
     {
       provide: POSITION_READ_REPOSITORY,
-      useClass: InMemoryPositionReadRepository,
+      useClass: PositionReadRepository,
     },
     OpenPositionUseCase,
     SetStopLossUseCase,
