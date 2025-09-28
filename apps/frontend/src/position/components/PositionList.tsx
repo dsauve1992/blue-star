@@ -1,5 +1,11 @@
 import { usePositions } from "../hooks/use-positions";
-import { Alert, Badge, Button, Card, LoadingSpinner } from "src/global/design-system";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  LoadingSpinner,
+} from "src/global/design-system";
 import { Shield, TrendingDown, TrendingUp } from "lucide-react";
 
 export function PositionList() {
