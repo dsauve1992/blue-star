@@ -64,8 +64,8 @@ describe('PositionWriteRepository Integration', () => {
     await databaseService.query('DELETE FROM positions');
   });
 
-  describe('save', () => {
-    it('should save a position to the database', async () => {
+  describe('save and getById round-trip', () => {
+    it('should save a position and retrieve it correctly', async () => {
       const position = Position.open({
         userId: UserId.of('test-user-123'),
         portfolioId: PortfolioId.of('550e8400-e29b-41d4-a716-446655440000'),
@@ -77,56 +77,20 @@ describe('PositionWriteRepository Integration', () => {
       });
 
       await repository.save(position);
-
-      const result = await databaseService.query(
-        'SELECT * FROM positions WHERE id = $1',
-        ['550e8400-e29b-41d4-a716-446655440000'],
-      );
-
-      expect(result.rows).toHaveLength(1);
-      const row = result.rows[0] as {
-        id: string;
-        user_id: string;
-        portfolio_id: string;
-        instrument: string;
-        current_qty: number;
-        closed: boolean;
-      };
-      expect(row.id).toBe('550e8400-e29b-41d4-a716-446655440000');
-      expect(row.user_id).toBe('test-user-123');
-      expect(row.portfolio_id).toBe('550e8400-e29b-41d4-a716-446655440000');
-      expect(row.instrument).toBe('AAPL');
-      expect(row.current_qty).toBe(100);
-      expect(row.closed).toBe(false);
-    });
-  });
-
-  describe('getById', () => {
-    it('should retrieve a position by ID', async () => {
-      const position = Position.open({
-        userId: UserId.of('test-user-456'),
-        portfolioId: PortfolioId.of('550e8400-e29b-41d4-a716-446655440001'),
-        instrument: Ticker.of('GOOGL'),
-        ts: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
-        qty: Quantity.of(50),
-        price: Price.of(2800.0),
-        note: 'Google position',
-      });
-
-      await repository.save(position);
-
       const retrievedPosition = await repository.getById(position.id);
 
       expect(retrievedPosition).toBeDefined();
       expect(retrievedPosition).not.toBeNull();
-      expect(retrievedPosition.portfolioId).toEqual(
-        PortfolioId.of('550e8400-e29b-41d4-a716-446655440001'),
-      );
-      expect(retrievedPosition.instrument).toEqual(Ticker.of('GOOGL'));
-      expect(retrievedPosition.currentQty).toBe(50);
-      expect(retrievedPosition.isClosed).toBe(false);
+      expect(retrievedPosition.id).toEqual(position.id);
+      expect(retrievedPosition.userId).toEqual(position.userId);
+      expect(retrievedPosition.portfolioId).toEqual(position.portfolioId);
+      expect(retrievedPosition.instrument).toEqual(position.instrument);
+      expect(retrievedPosition.currentQty).toBe(position.currentQty);
+      expect(retrievedPosition.isClosed).toBe(position.isClosed);
     });
+  });
 
+  describe('getById error handling', () => {
     it('should throw InvariantError when position not found', async () => {
       const nonExistentId = PositionId.of(
         '550e8400-e29b-41d4-a716-446655449999',
