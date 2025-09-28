@@ -7,18 +7,16 @@ import { PositionWriteRepository as IPositionWriteRepository } from '../../domai
 import { InvariantError } from '../../domain/domain-errors';
 import { Action } from '../../domain/entities/position';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
-import { PortfolioId } from '../../domain/value-objects/portfolio-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
 import { StopPrice } from '../../domain/value-objects/stop-price';
-import { UuidGeneratorService } from '../../domain/services/uuid-generator.service';
+import { UuidGeneratorService } from '../../../shared/services/uuid-generator.service';
 import { PositionEvent } from '../../domain/value-objects/position-event';
 
 interface DatabaseRow {
   id: string;
   user_id: string;
-  portfolio_id: string;
   instrument: string;
   current_qty: number;
   closed: boolean;
@@ -32,7 +30,6 @@ interface EventRow {
   position_id: string;
   action: string;
   timestamp: string;
-  portfolio_id: string;
   instrument: string;
   quantity: number | null;
   price: number | null;
@@ -48,11 +45,10 @@ export class PositionWriteRepository implements IPositionWriteRepository {
   async save(position: Position): Promise<void> {
     await this.databaseService.transaction(async (client) => {
       const positionQuery = `
-        INSERT INTO positions (id, user_id, portfolio_id, instrument, current_qty, closed, created_at, updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+        INSERT INTO positions (id, user_id, instrument, current_qty, closed, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
         ON CONFLICT (id) DO UPDATE SET
           user_id = EXCLUDED.user_id,
-          portfolio_id = EXCLUDED.portfolio_id,
           instrument = EXCLUDED.instrument,
           current_qty = EXCLUDED.current_qty,
           closed = EXCLUDED.closed,
@@ -62,7 +58,6 @@ export class PositionWriteRepository implements IPositionWriteRepository {
       await client.query(positionQuery, [
         position.id.value,
         position.userId.value,
-        position.portfolioId.value,
         position.instrument.value,
         position.currentQty,
         position.isClosed,
@@ -75,9 +70,9 @@ export class PositionWriteRepository implements IPositionWriteRepository {
       for (const event of position.events) {
         const eventQuery = `
           INSERT INTO position_events (
-            id, position_id, action, timestamp, portfolio_id, instrument,
+            id, position_id, action, timestamp, instrument,
             quantity, price, stop_price, note, created_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
         `;
 
         const eventId = UuidGeneratorService.generate();
@@ -98,7 +93,6 @@ export class PositionWriteRepository implements IPositionWriteRepository {
             position.id.value,
             event.action,
             event.ts.value,
-            event.portfolioId.value,
             event.instrument.value,
             quantity,
             price,
@@ -123,7 +117,6 @@ export class PositionWriteRepository implements IPositionWriteRepository {
       SELECT 
         p.id,
         p.user_id,
-        p.portfolio_id,
         p.instrument,
         p.current_qty,
         p.closed,
@@ -136,7 +129,6 @@ export class PositionWriteRepository implements IPositionWriteRepository {
               'position_id', pe.position_id,
               'action', pe.action,
               'timestamp', pe.timestamp,
-              'portfolio_id', pe.portfolio_id,
               'instrument', pe.instrument,
               'quantity', pe.quantity,
               'price', pe.price,
@@ -150,7 +142,7 @@ export class PositionWriteRepository implements IPositionWriteRepository {
       FROM positions p
       LEFT JOIN position_events pe ON p.id = pe.position_id
       WHERE p.id = $1
-      GROUP BY p.id, p.user_id, p.portfolio_id, p.instrument, p.current_qty, p.closed, p.created_at, p.updated_at
+      GROUP BY p.id, p.user_id, p.instrument, p.current_qty, p.closed, p.created_at, p.updated_at
     `;
 
     const result = await this.databaseService.query(query, [positionId.value]);
@@ -170,7 +162,6 @@ export class PositionWriteRepository implements IPositionWriteRepository {
       const baseEvent = {
         action,
         ts: IsoTimestamp.of(new Date(eventRow.timestamp).toISOString()),
-        portfolioId: PortfolioId.of(eventRow.portfolio_id),
         instrument: Ticker.of(eventRow.instrument),
         note: eventRow.note,
       };

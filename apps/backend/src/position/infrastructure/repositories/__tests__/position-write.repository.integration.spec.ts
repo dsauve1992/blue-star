@@ -7,12 +7,11 @@ import { PositionWriteRepository as PostgresPositionWriteRepository } from '../p
 import { Position } from '../../../domain/entities/position';
 import { PositionId } from '../../../domain/value-objects/position-id';
 import { UserId } from '../../../domain/value-objects/user-id';
-import { PortfolioId } from '../../../domain/value-objects/portfolio-id';
 import { Ticker } from '../../../domain/value-objects/ticker';
 import { Quantity } from '../../../domain/value-objects/quantity';
 import { Price } from '../../../domain/value-objects/price';
 import { IsoTimestamp } from '../../../domain/value-objects/iso-timestamp';
-import { UuidGeneratorService } from '../../../domain/services/uuid-generator.service';
+import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 import { InvariantError } from '../../../domain/domain-errors';
 
 describe('PositionWriteRepository Integration', () => {
@@ -68,7 +67,6 @@ describe('PositionWriteRepository Integration', () => {
     it('should save a position and retrieve it correctly', async () => {
       const position = Position.open({
         userId: UserId.of('test-user-123'),
-        portfolioId: PortfolioId.of('550e8400-e29b-41d4-a716-446655440000'),
         instrument: Ticker.of('AAPL'),
         ts: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
         qty: Quantity.of(100),
@@ -83,7 +81,6 @@ describe('PositionWriteRepository Integration', () => {
       expect(retrievedPosition).not.toBeNull();
       expect(retrievedPosition.id).toEqual(position.id);
       expect(retrievedPosition.userId).toEqual(position.userId);
-      expect(retrievedPosition.portfolioId).toEqual(position.portfolioId);
       expect(retrievedPosition.instrument).toEqual(position.instrument);
       expect(retrievedPosition.currentQty).toBe(position.currentQty);
       expect(retrievedPosition.isClosed).toBe(position.isClosed);

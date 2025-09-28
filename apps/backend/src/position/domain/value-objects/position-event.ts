@@ -1,5 +1,4 @@
 import { IsoTimestamp } from './iso-timestamp';
-import { PortfolioId } from './portfolio-id';
 import { Ticker } from './ticker';
 import { Quantity } from './quantity';
 import { Price } from './price';
@@ -8,7 +7,6 @@ import { Action } from '../entities/position';
 
 interface BaseEvent {
   ts: IsoTimestamp;
-  portfolioId: PortfolioId;
   instrument: Ticker;
   note?: string;
 }

@@ -1,1 +1,1 @@
-jest.mock('./src/position/domain/services/uuid-generator.service');
+jest.mock('./src/shared/services/uuid-generator.service');

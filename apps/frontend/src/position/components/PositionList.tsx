@@ -64,9 +64,6 @@ export function PositionList() {
                   {position.isClosed ? "Closed" : "Open"}
                 </Badge>
               </div>
-              <div className="text-sm text-slate-600 dark:text-slate-400">
-                Portfolio: {position.portfolioId}
-              </div>
             </div>
             <div className="flex items-center space-x-4">
               <div className="text-right">

@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { Position } from '../domain/entities/position';
 import type { PositionReadRepository } from '../domain/repositories/position-read.repository.interface';
-import type { AuthContext } from '../domain/auth/auth-context.interface';
+import type { AuthContext } from '../../auth/auth-context.interface';
 import { POSITION_READ_REPOSITORY } from '../constants/tokens';
 
 export interface GetPositionsResponseDto {

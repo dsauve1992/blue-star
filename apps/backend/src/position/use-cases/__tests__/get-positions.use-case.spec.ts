@@ -5,12 +5,11 @@ import { POSITION_READ_REPOSITORY } from '../../constants/tokens';
 import { Action, Position } from '../../domain/entities/position';
 import { PositionId } from '../../domain/value-objects/position-id';
 import { UserId } from '../../domain/value-objects/user-id';
-import { PortfolioId } from '../../domain/value-objects/portfolio-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
-import type { AuthContext } from '../../domain/auth/auth-context.interface';
+import type { AuthContext } from '../../../auth/auth-context.interface';
 
 describe('GetPositionsUseCase', () => {
   let useCase: GetPositionsUseCase;
@@ -46,7 +45,6 @@ describe('GetPositionsUseCase', () => {
           {
             action: Action.BUY,
             ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
-            portfolioId: PortfolioId.of('portfolio-123'),
             instrument: Ticker.of('AAPL'),
             qty: Quantity.of(100),
             price: Price.of(150.0),
@@ -57,7 +55,6 @@ describe('GetPositionsUseCase', () => {
           {
             action: Action.BUY,
             ts: IsoTimestamp.of('2024-01-16T14:30:00.000Z'),
-            portfolioId: PortfolioId.of('portfolio-123'),
             instrument: Ticker.of('MSFT'),
             qty: Quantity.of(50),
             price: Price.of(300.0),
@@ -123,7 +120,6 @@ describe('GetPositionsUseCase', () => {
           {
             action: Action.BUY,
             ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
-            portfolioId: PortfolioId.of('portfolio-1'),
             instrument: Ticker.of('AAPL'),
             qty: Quantity.of(100),
             price: Price.of(150.0),
@@ -137,7 +133,6 @@ describe('GetPositionsUseCase', () => {
           {
             action: Action.BUY,
             ts: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
-            portfolioId: PortfolioId.of('portfolio-2'),
             instrument: Ticker.of('TSLA'),
             qty: Quantity.of(50),
             price: Price.of(200.0),
@@ -175,7 +170,6 @@ describe('GetPositionsUseCase', () => {
           {
             action: Action.BUY,
             ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
-            portfolioId: PortfolioId.of('portfolio-123'),
             instrument: Ticker.of('AAPL'),
             qty: Quantity.of(100),
             price: Price.of(150.0),
@@ -184,7 +178,6 @@ describe('GetPositionsUseCase', () => {
           {
             action: Action.BUY,
             ts: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
-            portfolioId: PortfolioId.of('portfolio-123'),
             instrument: Ticker.of('AAPL'),
             qty: Quantity.of(50),
             price: Price.of(155.0),

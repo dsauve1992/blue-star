@@ -1,12 +1,11 @@
 import { Body, Controller, Get, Param, Post, Put, Req } from '@nestjs/common';
-import { PortfolioId } from '../domain/value-objects/portfolio-id';
 import { Ticker } from '../domain/value-objects/ticker';
 import { Quantity } from '../domain/value-objects/quantity';
 import { Price } from '../domain/value-objects/price';
 import { StopPrice } from '../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 import { PositionId } from '../domain/value-objects/position-id';
-import type { AuthContext } from '../domain/auth/auth-context.interface';
+import type { AuthContext } from '../../auth/auth-context.interface';
 import type { AuthenticatedRequest } from '../../auth/types/request.interface';
 import { PositionApiMapper } from './position-api.mapper';
 import {
@@ -62,7 +61,6 @@ export class PositionController {
   async openPosition(
     @Body()
     body: {
-      portfolioId: string;
       instrument: string;
       quantity: number;
       price: number;
@@ -77,7 +75,6 @@ export class PositionController {
     };
 
     const request: OpenPositionRequestDto = {
-      portfolioId: PortfolioId.of(body.portfolioId),
       instrument: Ticker.of(body.instrument),
       quantity: Quantity.of(body.quantity),
       price: Price.of(body.price),

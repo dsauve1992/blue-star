@@ -8,13 +8,12 @@ import { POSITION_WRITE_REPOSITORY } from '../../constants/tokens';
 import { Action, Position } from '../../domain/entities/position';
 import { PositionId } from '../../domain/value-objects/position-id';
 import { UserId } from '../../domain/value-objects/user-id';
-import { PortfolioId } from '../../domain/value-objects/portfolio-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
-import { UuidGeneratorService } from '../../domain/services/uuid-generator.service';
-import type { AuthContext } from '../../domain/auth/auth-context.interface';
+import { UuidGeneratorService } from '../../../shared/services/uuid-generator.service';
+import type { AuthContext } from '../../../auth/auth-context.interface';
 
 describe('OpenPositionUseCase', () => {
   let useCase: OpenPositionUseCase;
@@ -50,7 +49,6 @@ describe('OpenPositionUseCase', () => {
         .mockReturnValue(expectedUuid);
 
       const request: OpenPositionRequestDto = {
-        portfolioId: PortfolioId.of('portfolio-123'),
         instrument: Ticker.of('AAPL'),
         quantity: Quantity.of(100),
         price: Price.of(150.5),
@@ -67,7 +65,6 @@ describe('OpenPositionUseCase', () => {
           {
             action: Action.BUY,
             ts: request.timestamp,
-            portfolioId: request.portfolioId,
             instrument: request.instrument,
             qty: request.quantity,
             price: request.price,
@@ -95,7 +92,6 @@ describe('OpenPositionUseCase', () => {
         .mockReturnValue(expectedUuid);
 
       const request: OpenPositionRequestDto = {
-        portfolioId: PortfolioId.of('portfolio-456'),
         instrument: Ticker.of('MSFT'),
         quantity: Quantity.of(50),
         price: Price.of(300.0),
@@ -111,7 +107,6 @@ describe('OpenPositionUseCase', () => {
           {
             action: Action.BUY,
             ts: request.timestamp,
-            portfolioId: request.portfolioId,
             instrument: request.instrument,
             qty: request.quantity,
             price: request.price,
@@ -142,7 +137,6 @@ describe('OpenPositionUseCase', () => {
       mockPositionWriteRepository.save.mockRejectedValue(saveError);
 
       const request: OpenPositionRequestDto = {
-        portfolioId: PortfolioId.of('portfolio-789'),
         instrument: Ticker.of('GOOGL'),
         quantity: Quantity.of(25),
         price: Price.of(2500.0),
@@ -169,7 +163,6 @@ describe('OpenPositionUseCase', () => {
         .mockReturnValueOnce(secondUuid);
 
       const firstRequest: OpenPositionRequestDto = {
-        portfolioId: PortfolioId.of('portfolio-1'),
         instrument: Ticker.of('AAPL'),
         quantity: Quantity.of(100),
         price: Price.of(150.0),
@@ -177,7 +170,6 @@ describe('OpenPositionUseCase', () => {
       };
 
       const secondRequest: OpenPositionRequestDto = {
-        portfolioId: PortfolioId.of('portfolio-2'),
         instrument: Ticker.of('TSLA'),
         quantity: Quantity.of(50),
         price: Price.of(200.0),
@@ -197,12 +189,6 @@ describe('OpenPositionUseCase', () => {
     });
 
     describe('input validation', () => {
-      it('should throw error for invalid portfolio ID', () => {
-        expect(() => {
-          PortfolioId.of('');
-        }).toThrow('PortfolioId cannot be empty');
-      });
-
       it('should throw error for invalid ticker', () => {
         expect(() => {
           Ticker.of('');

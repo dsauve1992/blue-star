@@ -1,4 +1,4 @@
-import { UserId } from '../value-objects/user-id';
+import { UserId } from '../position/domain/value-objects/user-id';
 
 export interface AuthContext {
   userId: UserId;

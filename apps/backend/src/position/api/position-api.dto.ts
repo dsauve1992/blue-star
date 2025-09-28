@@ -1,6 +1,5 @@
 export interface PositionApiDto {
   id: string;
-  portfolioId: string;
   instrument: string;
   currentQty: number;
   isClosed: boolean;

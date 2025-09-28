@@ -6,7 +6,6 @@ import { UserId } from '../../domain/value-objects/user-id';
 import { PositionReadRepository as IPositionReadRepository } from '../../domain/repositories/position-read.repository.interface';
 import { Action } from '../../domain/entities/position';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
-import { PortfolioId } from '../../domain/value-objects/portfolio-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
@@ -21,7 +20,6 @@ import {
 interface DatabaseRow {
   id: string;
   user_id: string;
-  portfolio_id: string;
   instrument: string;
   current_qty: number;
   closed: boolean;
@@ -35,7 +33,6 @@ interface EventRow {
   position_id: string;
   action: string;
   timestamp: string;
-  portfolio_id: string;
   instrument: string;
   quantity: number | null;
   price: number | null;
@@ -53,7 +50,6 @@ export class PositionReadRepository implements IPositionReadRepository {
       SELECT 
         p.id,
         p.user_id,
-        p.portfolio_id,
         p.instrument,
         p.current_qty,
         p.closed,
@@ -66,7 +62,6 @@ export class PositionReadRepository implements IPositionReadRepository {
               'position_id', pe.position_id,
               'action', pe.action,
               'timestamp', pe.timestamp,
-              'portfolio_id', pe.portfolio_id,
               'instrument', pe.instrument,
               'quantity', pe.quantity,
               'price', pe.price,
@@ -80,7 +75,7 @@ export class PositionReadRepository implements IPositionReadRepository {
       FROM positions p
       LEFT JOIN position_events pe ON p.id = pe.position_id
       WHERE p.id = $1
-      GROUP BY p.id, p.user_id, p.portfolio_id, p.instrument, p.current_qty, p.closed, p.created_at, p.updated_at
+      GROUP BY p.id, p.user_id, p.instrument, p.current_qty, p.closed, p.created_at, p.updated_at
     `;
 
     const result = await this.databaseService.query(query, [positionId.value]);
@@ -97,7 +92,6 @@ export class PositionReadRepository implements IPositionReadRepository {
       SELECT 
         p.id,
         p.user_id,
-        p.portfolio_id,
         p.instrument,
         p.current_qty,
         p.closed,
@@ -110,7 +104,6 @@ export class PositionReadRepository implements IPositionReadRepository {
               'position_id', pe.position_id,
               'action', pe.action,
               'timestamp', pe.timestamp,
-              'portfolio_id', pe.portfolio_id,
               'instrument', pe.instrument,
               'quantity', pe.quantity,
               'price', pe.price,
@@ -124,7 +117,7 @@ export class PositionReadRepository implements IPositionReadRepository {
       FROM positions p
       LEFT JOIN position_events pe ON p.id = pe.position_id
       WHERE p.user_id = $1
-      GROUP BY p.id, p.user_id, p.portfolio_id, p.instrument, p.current_qty, p.closed, p.created_at, p.updated_at
+      GROUP BY p.id, p.user_id, p.instrument, p.current_qty, p.closed, p.created_at, p.updated_at
       ORDER BY p.created_at DESC
     `;
 
@@ -137,7 +130,6 @@ export class PositionReadRepository implements IPositionReadRepository {
       SELECT 
         p.id,
         p.user_id,
-        p.portfolio_id,
         p.instrument,
         p.current_qty,
         p.closed,
@@ -150,7 +142,6 @@ export class PositionReadRepository implements IPositionReadRepository {
               'position_id', pe.position_id,
               'action', pe.action,
               'timestamp', pe.timestamp,
-              'portfolio_id', pe.portfolio_id,
               'instrument', pe.instrument,
               'quantity', pe.quantity,
               'price', pe.price,
@@ -163,7 +154,7 @@ export class PositionReadRepository implements IPositionReadRepository {
         ) as events
       FROM positions p
       LEFT JOIN position_events pe ON p.id = pe.position_id
-      GROUP BY p.id, p.user_id, p.portfolio_id, p.instrument, p.current_qty, p.closed, p.created_at, p.updated_at
+      GROUP BY p.id, p.user_id, p.instrument, p.current_qty, p.closed, p.created_at, p.updated_at
       ORDER BY p.created_at DESC
     `;
 
@@ -177,7 +168,6 @@ export class PositionReadRepository implements IPositionReadRepository {
       const baseEvent = {
         action,
         ts: IsoTimestamp.of(new Date(eventRow.timestamp).toISOString()),
-        portfolioId: PortfolioId.of(eventRow.portfolio_id),
         instrument: Ticker.of(eventRow.instrument),
         note: eventRow.note,
       };

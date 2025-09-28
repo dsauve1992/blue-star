@@ -2,7 +2,6 @@ import { Ticker } from '../value-objects/ticker';
 import { Quantity } from '../value-objects/quantity';
 import { Price } from '../value-objects/price';
 import { StopPrice } from '../value-objects/stop-price';
-import { PortfolioId } from '../value-objects/portfolio-id';
 import { PositionId } from '../value-objects/position-id';
 import { UserId } from '../value-objects/user-id';
 import { IsoTimestamp } from '../value-objects/iso-timestamp';
@@ -16,7 +15,6 @@ import {
 
 export interface OpenPositionArgs {
   userId: UserId;
-  portfolioId: PortfolioId;
   instrument: Ticker;
   ts: IsoTimestamp;
   qty: Quantity;
@@ -54,7 +52,6 @@ export class Position {
   private constructor(
     public readonly positionId: PositionId,
     public readonly userId: UserId,
-    public readonly portfolioId: PortfolioId,
     public readonly instrument: Ticker,
     private _events: PositionEvent[],
     private _currentQty: number,
@@ -68,7 +65,6 @@ export class Position {
     const e: BuyEvent = {
       action: Action.BUY,
       ts: args.ts,
-      portfolioId: args.portfolioId,
       instrument: args.instrument,
       qty: args.qty,
       price: args.price,
@@ -78,7 +74,6 @@ export class Position {
     return new Position(
       positionId,
       args.userId,
-      args.portfolioId,
       args.instrument,
       [e],
       e.qty.value,
@@ -97,18 +92,14 @@ export class Position {
     if (first.action !== Action.BUY) {
       throw new InvariantError('Position must start with a BUY event');
     }
-    const portfolioId = first.portfolioId;
     const instrument = first.instrument;
 
     let qty = 0;
     let closed = false;
     let prevTs: IsoTimestamp | undefined;
     for (const e of events) {
-      if (
-        e.portfolioId.value !== portfolioId.value ||
-        e.instrument.value !== instrument.value
-      ) {
-        throw new InvariantError('Event identity mismatch within position');
+      if (e.instrument.value !== instrument.value) {
+        throw new InvariantError('Event instrument mismatch within position');
       }
 
       if (prevTs && e.ts.toDate().getTime() < prevTs.toDate().getTime()) {
@@ -134,7 +125,6 @@ export class Position {
     return new Position(
       positionId,
       userId,
-      portfolioId,
       instrument,
       [...events],
       qty,
@@ -149,7 +139,6 @@ export class Position {
     const e: BuyEvent = {
       action: Action.BUY,
       ts: args.ts,
-      portfolioId: this.portfolioId,
       instrument: this.instrument,
       qty: args.qty,
       price: args.price,
@@ -171,7 +160,6 @@ export class Position {
     const e: SellEvent = {
       action: Action.SELL,
       ts: args.ts,
-      portfolioId: this.portfolioId,
       instrument: this.instrument,
       qty: args.qty,
       price: args.price,
@@ -189,7 +177,6 @@ export class Position {
     const e: StopLossEvent = {
       action: Action.STOP_LOSS,
       ts: args.ts,
-      portfolioId: this.portfolioId,
       instrument: this.instrument,
       stop: args.stop,
       note: args.note,

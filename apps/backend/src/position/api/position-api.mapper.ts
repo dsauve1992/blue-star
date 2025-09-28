@@ -19,7 +19,6 @@ export class PositionApiMapper {
   mapPositionToApiDto(position: Position): PositionApiDto {
     return {
       id: position.id.value,
-      portfolioId: position.portfolioId.value,
       instrument: position.instrument.value,
       currentQty: position.currentQty,
       isClosed: position.isClosed,

@@ -6,14 +6,13 @@ import {
 import { Action, Position } from '../../domain/entities/position';
 import { PositionId } from '../../domain/value-objects/position-id';
 import { UserId } from '../../domain/value-objects/user-id';
-import { PortfolioId } from '../../domain/value-objects/portfolio-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
 import { StopPrice } from '../../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
 import { PositionWriteRepository } from '../../domain/repositories/position-write.repository.interface';
-import type { AuthContext } from '../../domain/auth/auth-context.interface';
+import type { AuthContext } from '../../../auth/auth-context.interface';
 import { POSITION_WRITE_REPOSITORY } from '../../constants/tokens';
 
 describe('SetStopLossUseCase', () => {
@@ -47,7 +46,6 @@ describe('SetStopLossUseCase', () => {
         {
           action: Action.BUY,
           ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
-          portfolioId: PortfolioId.of('portfolio-123'),
           instrument: Ticker.of('AAPL'),
           qty: Quantity.of(100),
           price: Price.of(150.0),
@@ -90,7 +88,6 @@ describe('SetStopLossUseCase', () => {
         {
           action: Action.BUY,
           ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
-          portfolioId: PortfolioId.of('portfolio-123'),
           instrument: Ticker.of('AAPL'),
           qty: Quantity.of(100),
           price: Price.of(150.0),
@@ -128,7 +125,6 @@ describe('SetStopLossUseCase', () => {
         {
           action: Action.BUY,
           ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
-          portfolioId: PortfolioId.of('portfolio-123'),
           instrument: Ticker.of('AAPL'),
           qty: Quantity.of(100),
           price: Price.of(150.0),

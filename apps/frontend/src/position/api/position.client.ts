@@ -1,7 +1,6 @@
 import { apiClient } from "../../global/api/api-instance";
 
 export interface OpenPositionRequest {
-  portfolioId: string;
   instrument: string;
   quantity: number;
   price: number;
@@ -51,7 +50,6 @@ export interface BuySharesResponse {
 export interface Position {
   id: string;
   userId: string;
-  portfolioId: string;
   instrument: string;
   currentQty: number;
   isClosed: boolean;
