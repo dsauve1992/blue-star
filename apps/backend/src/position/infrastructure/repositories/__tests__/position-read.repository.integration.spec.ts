@@ -1,13 +1,13 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseService } from '../../../config/database.service';
-import { DatabaseModule } from '../../../config/database.module';
-import { PositionReadRepository } from '../../domain/repositories/position-read.repository.interface';
-import { PositionReadRepository as PostgresPositionReadRepository } from './position-read.repository';
-import { PositionId } from '../../domain/value-objects/position-id';
-import { PortfolioId } from '../../domain/value-objects/portfolio-id';
-import { Ticker } from '../../domain/value-objects/ticker';
-import { UuidGeneratorService } from '../../domain/services/uuid-generator.service';
+import { DatabaseService } from '../../../../config/database.service';
+import { DatabaseModule } from '../../../../config/database.module';
+import { PositionReadRepository } from '../../../domain/repositories/position-read.repository.interface';
+import { PositionReadRepository as PostgresPositionReadRepository } from '../position-read.repository';
+import { PositionId } from '../../../domain/value-objects/position-id';
+import { PortfolioId } from '../../../domain/value-objects/portfolio-id';
+import { Ticker } from '../../../domain/value-objects/ticker';
+import { UuidGeneratorService } from '../../../domain/services/uuid-generator.service';
 
 describe('PositionReadRepository Integration', () => {
   let module: TestingModule;

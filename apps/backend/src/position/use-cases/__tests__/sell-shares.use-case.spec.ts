@@ -2,18 +2,18 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   SellSharesRequestDto,
   SellSharesUseCase,
-} from './sell-shares.use-case';
-import { Position, Action } from '../domain/entities/position';
-import { PositionId } from '../domain/value-objects/position-id';
-import { UserId } from '../domain/value-objects/user-id';
-import { PortfolioId } from '../domain/value-objects/portfolio-id';
-import { Ticker } from '../domain/value-objects/ticker';
-import { Quantity } from '../domain/value-objects/quantity';
-import { Price } from '../domain/value-objects/price';
-import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
-import { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
-import type { AuthContext } from '../domain/auth/auth-context.interface';
-import { POSITION_WRITE_REPOSITORY } from '../constants/tokens';
+} from '../sell-shares.use-case';
+import { Action, Position } from '../../domain/entities/position';
+import { PositionId } from '../../domain/value-objects/position-id';
+import { UserId } from '../../domain/value-objects/user-id';
+import { PortfolioId } from '../../domain/value-objects/portfolio-id';
+import { Ticker } from '../../domain/value-objects/ticker';
+import { Quantity } from '../../domain/value-objects/quantity';
+import { Price } from '../../domain/value-objects/price';
+import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
+import { PositionWriteRepository } from '../../domain/repositories/position-write.repository.interface';
+import type { AuthContext } from '../../domain/auth/auth-context.interface';
+import { POSITION_WRITE_REPOSITORY } from '../../constants/tokens';
 
 describe('SellSharesUseCase', () => {
   let useCase: SellSharesUseCase;

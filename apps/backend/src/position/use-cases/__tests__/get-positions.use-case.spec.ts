@@ -1,16 +1,16 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { GetPositionsUseCase } from './get-positions.use-case';
-import { PositionReadRepository } from '../domain/repositories/position-read.repository.interface';
-import { POSITION_READ_REPOSITORY } from '../constants/tokens';
-import { Position, Action } from '../domain/entities/position';
-import { PositionId } from '../domain/value-objects/position-id';
-import { UserId } from '../domain/value-objects/user-id';
-import { PortfolioId } from '../domain/value-objects/portfolio-id';
-import { Ticker } from '../domain/value-objects/ticker';
-import { Quantity } from '../domain/value-objects/quantity';
-import { Price } from '../domain/value-objects/price';
-import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
-import type { AuthContext } from '../domain/auth/auth-context.interface';
+import { GetPositionsUseCase } from '../get-positions.use-case';
+import { PositionReadRepository } from '../../domain/repositories/position-read.repository.interface';
+import { POSITION_READ_REPOSITORY } from '../../constants/tokens';
+import { Action, Position } from '../../domain/entities/position';
+import { PositionId } from '../../domain/value-objects/position-id';
+import { UserId } from '../../domain/value-objects/user-id';
+import { PortfolioId } from '../../domain/value-objects/portfolio-id';
+import { Ticker } from '../../domain/value-objects/ticker';
+import { Quantity } from '../../domain/value-objects/quantity';
+import { Price } from '../../domain/value-objects/price';
+import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
+import type { AuthContext } from '../../domain/auth/auth-context.interface';
 
 describe('GetPositionsUseCase', () => {
   let useCase: GetPositionsUseCase;

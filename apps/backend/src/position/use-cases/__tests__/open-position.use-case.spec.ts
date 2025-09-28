@@ -2,19 +2,19 @@ import { Test, TestingModule } from '@nestjs/testing';
 import {
   OpenPositionRequestDto,
   OpenPositionUseCase,
-} from './open-position.use-case';
-import { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
-import { POSITION_WRITE_REPOSITORY } from '../constants/tokens';
-import { Action, Position } from '../domain/entities/position';
-import { PositionId } from '../domain/value-objects/position-id';
-import { UserId } from '../domain/value-objects/user-id';
-import { PortfolioId } from '../domain/value-objects/portfolio-id';
-import { Ticker } from '../domain/value-objects/ticker';
-import { Quantity } from '../domain/value-objects/quantity';
-import { Price } from '../domain/value-objects/price';
-import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
-import { UuidGeneratorService } from '../domain/services/uuid-generator.service';
-import type { AuthContext } from '../domain/auth/auth-context.interface';
+} from '../open-position.use-case';
+import { PositionWriteRepository } from '../../domain/repositories/position-write.repository.interface';
+import { POSITION_WRITE_REPOSITORY } from '../../constants/tokens';
+import { Action, Position } from '../../domain/entities/position';
+import { PositionId } from '../../domain/value-objects/position-id';
+import { UserId } from '../../domain/value-objects/user-id';
+import { PortfolioId } from '../../domain/value-objects/portfolio-id';
+import { Ticker } from '../../domain/value-objects/ticker';
+import { Quantity } from '../../domain/value-objects/quantity';
+import { Price } from '../../domain/value-objects/price';
+import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
+import { UuidGeneratorService } from '../../domain/services/uuid-generator.service';
+import type { AuthContext } from '../../domain/auth/auth-context.interface';
 
 describe('OpenPositionUseCase', () => {
   let useCase: OpenPositionUseCase;
