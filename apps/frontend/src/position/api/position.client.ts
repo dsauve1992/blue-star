@@ -49,7 +49,7 @@ export interface BuySharesResponse {
 }
 
 export interface Position {
-  positionId: string;
+  id: string;
   userId: string;
   portfolioId: string;
   instrument: string;
@@ -57,7 +57,7 @@ export interface Position {
   isClosed: boolean;
   events: Array<{
     action: string;
-    ts: string;
+    timestamp: string;
     qty?: number;
     price?: number;
     stop?: number;

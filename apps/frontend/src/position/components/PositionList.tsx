@@ -1,10 +1,6 @@
 import { usePositions } from "../hooks/use-positions";
-import { Card } from "src/global/design-system";
-import { Badge } from "src/global/design-system";
-import { Button } from "src/global/design-system";
-import { LoadingSpinner } from "src/global/design-system";
-import { Alert } from "src/global/design-system";
-import { TrendingUp, TrendingDown, Shield } from "lucide-react";
+import { Alert, Badge, Button, Card, LoadingSpinner } from "src/global/design-system";
+import { Shield, TrendingDown, TrendingUp } from "lucide-react";
 
 export function PositionList() {
   const { data, isLoading, error } = usePositions();
@@ -44,7 +40,7 @@ export function PositionList() {
   return (
     <div className="space-y-4">
       {data.positions.map((position) => (
-        <Card key={position.positionId} className="p-6">
+        <Card key={position.id} className="p-6">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
@@ -70,9 +66,6 @@ export function PositionList() {
               <div className="text-right">
                 <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
                   {position.currentQty} shares
-                </div>
-                <div className="text-sm text-slate-600 dark:text-slate-400">
-                  Position ID: {position.positionId.slice(0, 8)}...
                 </div>
               </div>
               <div className="flex space-x-2">
@@ -109,7 +102,7 @@ export function PositionList() {
                       {event.stop && ` (stop: $${event.stop})`}
                     </span>
                     <span className="text-slate-500 dark:text-slate-500">
-                      {new Date(event.ts).toLocaleDateString()}
+                      {new Date(event.timestamp).toLocaleDateString()}
                     </span>
                   </div>
                 ))}
