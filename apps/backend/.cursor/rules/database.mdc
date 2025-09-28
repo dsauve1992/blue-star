@@ -22,54 +22,6 @@ alwaysApply: true
 - Document schema changes clearly
 - Support rollback scenarios
 
-## Database Implementation Patterns
-
-### PostgreSQL Integration
-```typescript
-// Use pg library for direct SQL queries
-import { Pool } from 'pg';
-
-// Implement connection pooling
-const pool = new Pool({
-  host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
-  user: process.env.DB_USER || 'blue_star_user',
-  password: process.env.DB_PASSWORD || 'blue_star_password',
-  database: process.env.DB_NAME || 'blue_star_db',
-  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
-```
-
-### Database Configuration
-```typescript
-// Support both individual variables and DATABASE_URL
-export function getDatabaseConfig() {
-  if (process.env.DATABASE_URL) {
-    const url = new URL(process.env.DATABASE_URL);
-    return {
-      host: url.hostname,
-      port: parseInt(url.port) || 5432,
-      user: url.username,
-      password: url.password,
-      database: url.pathname.slice(1),
-      ssl: url.protocol === 'postgresql:' ? { rejectUnauthorized: false } : false,
-    };
-  }
-  
-  return {
-    host: process.env.DB_HOST || 'localhost',
-    port: parseInt(process.env.DB_PORT || '5432'),
-    user: process.env.DB_USER || 'blue_star_user',
-    password: process.env.DB_PASSWORD || 'blue_star_password',
-    database: process.env.DB_NAME || 'blue_star_db',
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  };
-}
-```
-
 ## Migration System
 
 ### Migration Commands
@@ -108,17 +60,18 @@ DROP TABLE IF EXISTS positions;
 ## Schema Design Principles
 
 ### ID Types
-- Use VARCHAR(255) for both domain and external IDs
+- Use UUID for internal IDs
+- Use VARCHAR(255) for external IDs
 
 ### Event Sourcing Pattern
 ```sql
 -- Store all changes as events
 CREATE TABLE IF NOT EXISTS position_events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    position_id VARCHAR(255) NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
+    position_id UUID NOT NULL REFERENCES positions(id) ON DELETE CASCADE,
     action VARCHAR(20) NOT NULL CHECK (action IN ('BUY', 'SELL', 'STOP_LOSS')),
     timestamp TIMESTAMP WITH TIME ZONE NOT NULL,
-    portfolio_id VARCHAR(255) NOT NULL,
+    portfolio_id UUID NOT NULL,
     instrument VARCHAR(10) NOT NULL,
     quantity INTEGER,
     price DECIMAL(15,4),
@@ -209,38 +162,6 @@ interface EventRow {
 ```
 
 ## Generated Files Handling
-
-### ESLint Configuration
-```javascript
-// Ignore generated migration files
-export default tseslint.config(
-  {
-    ignores: [
-      'eslint.config.mjs',
-      'migrations/**/*.js',
-      'migrations/sqls/**/*.sql',
-      'dist/**/*',
-      'node_modules/**/*'
-    ],
-  },
-  // ... rest of config
-);
-```
-
-### TypeScript Configuration
-```json
-{
-  "compilerOptions": {
-    // ... existing options
-  },
-  "exclude": [
-    "migrations/**/*.js",
-    "migrations/sqls/**/*.sql",
-    "dist/**/*",
-    "node_modules/**/*"
-  ]
-}
-```
 
 ## Error Handling Patterns
 

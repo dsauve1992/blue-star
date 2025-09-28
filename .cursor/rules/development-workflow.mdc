@@ -20,121 +20,6 @@ alwaysApply: true
 - All tests MUST pass
 - Code MUST follow established patterns
 
-## Feature Development Order
-
-### 1. Backend Domain Layer
-```typescript
-// Start with domain objects
-domain/
-├── entities/           # Business entities
-├── value-objects/      # Value objects with validation
-├── repositories/       # Repository interfaces
-└── domain-errors.ts    # Domain-specific errors
-```
-
-**Checklist:**
-- [ ] Domain objects have proper validation
-- [ ] Value objects enforce business invariants
-- [ ] Repository interfaces are well-defined
-- [ ] Domain errors are comprehensive
-
-### 2. Backend Use Cases
-```typescript
-// Implement business logic
-use-cases/
-├── create-item.use-case.ts
-├── get-items.use-case.ts
-└── update-item.use-case.ts
-```
-
-**Checklist:**
-- [ ] Use cases orchestrate, don't contain business logic
-- [ ] Proper error handling and validation
-- [ ] Authorization checks where needed
-- [ ] Comprehensive tests written
-
-### 3. Backend Infrastructure
-```typescript
-// Implement external concerns
-infrastructure/
-├── repositories/       # Repository implementations
-└── services/          # External service integrations
-```
-
-**Checklist:**
-- [ ] Repository implementations work correctly
-- [ ] External services are properly integrated
-- [ ] Error handling for external dependencies
-- [ ] Tests for infrastructure components
-
-### 4. Backend API Layer
-```typescript
-// Expose endpoints
-api/
-├── item.controller.ts
-└── item.module.ts
-```
-
-**Checklist:**
-- [ ] Controllers map HTTP requests to use cases
-- [ ] Proper request/response DTOs
-- [ ] Error handling and status codes
-- [ ] Module configuration is complete
-
-### 5. Frontend API Client
-```typescript
-// Create API client
-api/
-├── item.client.ts
-└── item.types.ts
-```
-
-**Checklist:**
-- [ ] API client methods mirror backend endpoints
-- [ ] TypeScript types match backend DTOs
-- [ ] Error handling is consistent
-- [ ] Request/response mapping is correct
-
-### 6. Frontend React Query Hooks
-```typescript
-// Create data fetching hooks
-hooks/
-├── use-items.ts
-└── constants/
-    └── query-keys.ts
-```
-
-**Checklist:**
-- [ ] Query keys are module-specific
-- [ ] Hooks follow established patterns
-- [ ] Mutations properly invalidate queries
-- [ ] Error handling is user-friendly
-
-### 7. Frontend Components
-```typescript
-// Build UI components
-components/
-├── ItemList.tsx
-├── ItemForm.tsx
-└── pages/
-    └── Items.tsx
-```
-
-**Checklist:**
-- [ ] Components use custom hooks
-- [ ] Loading and error states are handled
-- [ ] User interactions work correctly
-- [ ] Styling follows design system
-
-### 8. Integration Testing
-```typescript
-// Test complete feature
-- [ ] End-to-end data flow works
-- [ ] Error scenarios are handled
-- [ ] Authentication works correctly
-- [ ] UI updates reflect data changes
-```
-
 ## Quality Gates
 
 ### After Every Change
@@ -172,18 +57,13 @@ npm test                  # Unit tests (if applicable)
 - Test error handling end-to-end
 - Validate authentication and authorization
 
-### Manual Testing
-- Test user interactions
-- Verify UI responsiveness
-- Check error messages and loading states
-- Validate data persistence
-
 ## Code Review Process
 
 ### Self-Review Checklist
 - [ ] Code follows established patterns
 - [ ] All tests pass
 - [ ] No linting errors
+- [ ] No comments or console logs
 - [ ] TypeScript compilation succeeds
 - [ ] Error handling is comprehensive
 - [ ] Performance considerations addressed
@@ -205,16 +85,6 @@ npm test                  # Unit tests (if applicable)
 4. Run quality gates after each step
 5. Create pull request when complete
 6. Address review feedback
-7. Merge when approved
-
-### Fixing Bug
-1. Create bug fix branch
-2. Reproduce the issue
-3. Write test that fails
-4. Fix the issue
-5. Verify test passes
-6. Run quality gates
-7. Create pull request
 
 ### Refactoring
 1. Ensure comprehensive test coverage
@@ -241,38 +111,11 @@ npm test                  # Unit tests (if applicable)
 - ✅ Follow established patterns
 - ✅ Keep code in working state
 
-## Emergency Procedures
-
-### When Tests Fail
-1. Don't panic
-2. Read error messages carefully
-3. Check recent changes
-4. Revert if necessary
-5. Fix incrementally
-6. Verify fix works
-
-### When Build Breaks
-1. Check TypeScript errors
-2. Fix compilation issues
-3. Run linting
-4. Fix all issues
-5. Verify build succeeds
-6. Test functionality
-
-### When Integration Fails
-1. Check API contracts
-2. Verify type consistency
-3. Test data flow manually
-4. Check authentication
-5. Fix issues incrementally
-6. Verify end-to-end functionality
-
 ## Success Metrics
 
 ### Code Quality
 - Zero TypeScript compilation errors
 - Zero ESLint warnings
-- 100% test coverage for new code
 - All tests passing
 
 ### Development Velocity
@@ -284,7 +127,6 @@ npm test                  # Unit tests (if applicable)
 ### Maintainability
 - Clear, readable code
 - Consistent patterns
-- Good test coverage
 - Minimal technical debt
 
 Remember: **Quality first**, **test frequently**, and **maintain working state** at all times!

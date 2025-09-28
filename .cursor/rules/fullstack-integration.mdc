@@ -9,7 +9,7 @@ alwaysApply: true
 ## Core Principles
 
 ### Contract Consistency
-- Backend DTOs MUST use domain value objects
+- Usecase request/response DTOs MUST use domain value objects
 - Frontend types MUST match backend response structure exactly
 - API client methods MUST mirror controller endpoints
 - Use consistent naming conventions between backend and frontend
@@ -95,20 +95,6 @@ export interface ApiError {
 - Include proper HTTP status codes
 - Provide meaningful error messages
 
-### Frontend Error Handling
-```typescript
-// Consistent error handling in API client
-try {
-  const result = await moduleClient.createItem(request);
-  return result;
-} catch (error) {
-  if (error instanceof ApiError) {
-    throw new Error(`Failed to create item: ${error.message}`);
-  }
-  throw new Error('An unexpected error occurred');
-}
-```
-
 ## Authentication Integration
 
 ### Backend Auth Context
@@ -167,12 +153,6 @@ const result = await useCase.execute(request, authContext);
 - Test component behavior with different data states
 - Verify error handling and loading states
 - Test React Query integration
-
-### Integration Testing
-- Test complete data flow from frontend to backend
-- Verify type consistency across the stack
-- Test error propagation and handling
-- Validate authentication and authorization
 
 ## Development Workflow
 
