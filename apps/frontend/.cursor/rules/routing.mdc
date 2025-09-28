@@ -1,3 +1,9 @@
+---
+description: Blue Star Frontend Routing Rules - Navigation and routing patterns
+globs: ["apps/frontend/**/*.tsx", "apps/frontend/**/*.ts"]
+alwaysApply: true
+---
+
 # Frontend Routing Rules
 
 ## Module-Based Organization

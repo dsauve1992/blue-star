@@ -1,0 +1,141 @@
+---
+description: Blue Star Frontend React Query Guidelines - Module organization and query patterns
+globs: ["apps/frontend/**/*.ts", "apps/frontend/**/*.tsx"]
+alwaysApply: true
+---
+
+# Blue Star - Frontend React Query Guidelines
+
+## Core Principles
+
+### Query Keys Organization
+- Query keys MUST be module-specific, not global
+- Each module owns its own query keys in `constants/query-keys.ts`
+- Use hierarchical structure: `all` → `lists` → `list(filters)` → `details` → `detail(id)`
+- Export query keys through module's `constants/index.ts`
+
+### Module Encapsulation
+- Modules MUST be self-contained for query management
+- No cross-module dependencies on query key implementations
+- Shared query patterns go in `global/` directory only if truly cross-cutting
+
+## Query Key Patterns
+
+### Standard Structure
+```typescript
+export const MODULE_QUERY_KEYS = {
+  all: ['module-name'] as const,
+  lists: () => [...MODULE_QUERY_KEYS.all, 'list'] as const,
+  list: (filters: Record<string, unknown>) => [...MODULE_QUERY_KEYS.lists(), filters] as const,
+  details: () => [...MODULE_QUERY_KEYS.all, 'detail'] as const,
+  detail: (id: string) => [...MODULE_QUERY_KEYS.details(), id] as const,
+} as const;
+```
+
+### Usage Examples
+```typescript
+// In hooks
+queryKey: MODULE_QUERY_KEYS.lists()
+
+// In mutations
+queryClient.invalidateQueries({ queryKey: MODULE_QUERY_KEYS.all })
+
+// For specific items
+queryKey: MODULE_QUERY_KEYS.detail(itemId)
+```
+
+## Hook Patterns
+
+### Query Hooks
+```typescript
+export function useModuleItems() {
+  return useQuery({
+    queryKey: MODULE_QUERY_KEYS.lists(),
+    queryFn: () => moduleClient.getItems(),
+  });
+}
+```
+
+### Mutation Hooks
+```typescript
+export function useCreateItem() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (request: CreateItemRequest) => moduleClient.createItem(request),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MODULE_QUERY_KEYS.all });
+    },
+  });
+}
+```
+
+## File Organization
+
+### Module Structure
+```
+module-name/
+├── api/                    # API client and types
+├── components/             # React components
+├── constants/              # Module-specific constants
+│   ├── query-keys.ts      # React Query keys
+│   └── index.ts           # Constants exports
+├── hooks/                  # React Query hooks
+├── pages/                  # Page components
+└── types/                  # TypeScript types (if needed)
+```
+
+### Import Patterns
+```typescript
+// In hooks file
+import { MODULE_QUERY_KEYS } from '../constants';
+
+// In components
+import { useModuleItems, useCreateItem } from '../hooks/use-module';
+```
+
+## Best Practices
+
+### Query Configuration
+- Use consistent stale time and cache time across similar queries
+- Configure retry logic appropriately (no retry on 4xx errors)
+- Disable refetch on window focus for better UX
+
+### Mutation Patterns
+- Always invalidate related queries after successful mutations
+- Use optimistic updates when appropriate
+- Handle loading and error states consistently
+
+### Error Handling
+- Use consistent error types across the application
+- Display user-friendly error messages
+- Log errors appropriately for debugging
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Global query keys that span multiple modules
+- ❌ Hardcoded query key strings in components
+- ❌ Forgetting to invalidate queries after mutations
+- ❌ Mixing query logic in components instead of custom hooks
+- ❌ Not handling loading and error states
+
+### What TO Do
+- ✅ Module-specific query key constants
+- ✅ Custom hooks for all query operations
+- ✅ Consistent invalidation patterns
+- ✅ Proper error handling and loading states
+- ✅ Type-safe query key management
+
+## Quality Checklist
+
+### Before Committing React Query Code
+- [ ] Query keys are module-specific and properly structured
+- [ ] All queries use custom hooks, not direct useQuery calls
+- [ ] Mutations properly invalidate related queries
+- [ ] Error handling is consistent and user-friendly
+- [ ] Loading states are handled appropriately
+- [ ] TypeScript types are properly defined
+- [ ] No hardcoded query key strings
+
+Remember: **Module encapsulation**, **type safety**, and **consistent patterns** are key to maintainable React Query code!

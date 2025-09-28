@@ -1,0 +1,398 @@
+---
+description: Blue Star Repository Integration tests Rules
+globs: ["**/*.ts", "**/*.tsx", "**/*.js", "**/*.jsx"]
+alwaysApply: true
+---
+
+# Blue Star - Integration Testing Rules
+
+## Core Principles
+
+### Test-Driven Development (TDD)
+- Follow Red-Green-Refactor cycle religiously
+- Write ONE failing test first (Red)
+- Make it pass with minimal implementation (Green)
+- Refactor and improve (Refactor)
+- Never write multiple tests without making current one pass
+
+### Repository Interface Focus
+- Test repository contract behavior, not implementation details
+- Focus on what the repository does, not how it does it
+- Respect domain boundaries and value object abstractions
+- Test database integration, not domain logic
+
+## File Organization
+
+### File Naming Conventions
+```
+*.integration.spec.ts    # Integration test files
+*.spec.ts               # Unit test files
+```
+
+### Test Structure
+```typescript
+describe('RepositoryName Integration', () => {
+  let module: TestingModule;
+  let repository: RepositoryInterface;
+  let databaseService: DatabaseService;
+
+  beforeAll(async () => {
+    // Database configuration
+    // Module setup
+    // Service initialization
+  });
+
+  afterAll(async () => {
+    // Cleanup
+  });
+
+  beforeEach(async () => {
+    // Test isolation
+    // Database cleanup
+  });
+
+  describe('methodName', () => {
+    it('should describe expected behavior', async () => {
+      // Arrange-Act-Assert pattern
+    });
+  });
+});
+```
+
+## Database Integration Rules
+
+### Test Database Setup
+```typescript
+beforeAll(async () => {
+  // Environment configuration
+  process.env.DB_HOST = 'localhost';
+  process.env.DB_PORT = '5433'; // Test database port
+  process.env.DB_USERNAME = 'blue_star_user';
+  process.env.DB_PASSWORD = 'blue_star_password';
+  process.env.DB_DATABASE = 'blue_star_test_db';
+  process.env.DB_SSL = 'false';
+
+  // Module setup
+  module = await Test.createTestingModule({
+    imports: [ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
+    providers: [
+      {
+        provide: 'REPOSITORY_TOKEN',
+        useClass: RepositoryImplementation,
+      },
+    ],
+  }).compile();
+
+  // Service initialization
+  repository = module.get<RepositoryInterface>('REPOSITORY_TOKEN');
+  databaseService = module.get<DatabaseService>(DatabaseService);
+  await databaseService.onModuleInit();
+});
+```
+
+### Test Isolation
+```typescript
+beforeEach(async () => {
+  // Clean database state
+  await databaseService.query('DELETE FROM position_events');
+  await databaseService.query('DELETE FROM positions');
+  
+  // Reset mocks
+  jest.clearAllMocks();
+});
+```
+
+### Database Configuration Requirements
+- Use separate test database
+- Ensure Docker Compose test database is running
+- Run migrations before tests
+- Configure via environment variables
+- Initialize database service manually in tests
+
+## Value Object Testing Rules
+
+### Proper Value Object Comparisons
+```typescript
+// ✅ Good - Compare value objects with other value objects
+expect(retrievedPosition.portfolioId).toEqual(PortfolioId.of('expected-id'));
+expect(retrievedPosition.instrument).toEqual(Ticker.of('AAPL'));
+
+// ❌ Bad - Expose value object internals
+expect(retrievedPosition.portfolioId.value).toBe('expected-id');
+```
+
+### Domain Abstraction Respect
+- Never access `.value` properties in tests
+- Use domain value objects for all comparisons
+- Test business behavior, not data structure
+- Respect value object encapsulation
+
+## Type Safety Rules
+
+### Database Result Typing
+```typescript
+// ✅ Good - Explicit type assertion
+const row = result.rows[0] as {
+  id: string;
+  user_id: string;
+  portfolio_id: string;
+  instrument: string;
+  current_qty: number;
+  closed: boolean;
+};
+
+// ❌ Bad - Unsafe access to any values
+expect(result.rows[0].id).toBe('expected-id');
+```
+
+### Repository Implementation Typing
+- Define proper interfaces for database rows
+- Use type assertions for database query results
+- Avoid `any` types in production code
+- Import required types explicitly
+
+### Interface Definitions
+```typescript
+interface DatabaseRow {
+  id: string;
+  user_id: string;
+  portfolio_id: string;
+  instrument: string;
+  current_qty: number;
+  closed: boolean;
+  created_at: string;
+  updated_at: string;
+  events: EventRow[];
+}
+
+interface EventRow {
+  id: string;
+  position_id: string;
+  action: string;
+  timestamp: string;
+  portfolio_id: string;
+  instrument: string;
+  quantity: number | null;
+  price: number | null;
+  stop_price: number | null;
+  note: string | null;
+  created_at: string;
+}
+```
+
+## Test Data Management
+
+### UUID Management
+```typescript
+// Mock UUID generator for predictable test data
+jest.spyOn(UuidGeneratorService, 'generate').mockReturnValue('test-uuid-123');
+
+// Use different UUIDs for different test files
+// File 1: '550e8400-e29b-41d4-a716-446655440000'
+// File 2: '550e8400-e29b-41d4-a716-446655440100'
+```
+
+### Test Data Isolation
+- Use unique identifiers per test
+- Clean up after each test
+- Avoid shared state between tests
+- Mock external dependencies consistently
+
+## Assertion Patterns
+
+### Repository Behavior Testing
+```typescript
+// ✅ Good - Test repository behavior
+expect(retrievedPosition).toBeDefined();
+expect(retrievedPosition).not.toBeNull();
+expect(retrievedPosition.currentQty).toBe(50);
+expect(retrievedPosition.isClosed).toBe(false);
+
+// ❌ Bad - Test implementation details
+expect(retrievedPosition.id.value).toBe('expected-id');
+```
+
+### Error Testing
+```typescript
+// Test proper error handling
+await expect(repository.getById(nonExistentId)).rejects.toThrow(InvariantError);
+await expect(repository.getById(nonExistentId)).rejects.toThrow(
+  'Position with ID expected-id not found'
+);
+```
+
+### Database Verification
+```typescript
+// Verify data persistence
+const result = await databaseService.query(
+  'SELECT * FROM positions WHERE id = $1',
+  ['expected-id']
+);
+expect(result.rows).toHaveLength(1);
+const row = result.rows[0] as DatabaseRowType;
+expect(row.id).toBe('expected-id');
+```
+
+## Event Sourcing Considerations
+
+### Event Data Setup
+```typescript
+// Insert position
+await databaseService.query(
+  'INSERT INTO positions (id, user_id, portfolio_id, instrument, current_qty, closed, created_at, updated_at) VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())',
+  [positionId, userId, portfolioId, 'AAPL', 100, false]
+);
+
+// Insert events
+await databaseService.query(
+  'INSERT INTO position_events (id, position_id, action, timestamp, portfolio_id, instrument, quantity, price, stop_price, note, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, NOW())',
+  [eventId, positionId, 'BUY', '2024-01-15T10:30:00.000Z', portfolioId, 'AAPL', 100, 150.5, null, 'Test position']
+);
+```
+
+### Event Reconstruction Testing
+- Test that events are properly retrieved from database
+- Verify event reconstruction works correctly
+- Ensure position state is properly derived from events
+
+## Quality Gates
+
+### Before Committing Integration Tests
+- [ ] TypeScript compilation passes: `npx tsc --noEmit`
+- [ ] ESLint validation passes: `npm run lint`
+- [ ] All integration tests pass: `npm test -- --testPathPatterns="*integration"`
+- [ ] Tests follow TDD principles (one test at a time)
+- [ ] Value object comparisons use `.toEqual()` with other value objects
+- [ ] No exposure of value object internals (`.value` properties)
+- [ ] Proper type safety throughout
+- [ ] Test isolation and cleanup
+
+### Test Quality Checklist
+- [ ] Test follows Arrange-Act-Assert pattern
+- [ ] Test name describes expected behavior
+- [ ] Test focuses on repository interface, not implementation
+- [ ] Value objects are compared properly
+- [ ] No value object internals are exposed
+- [ ] Database is properly configured for testing
+- [ ] Test data is isolated and unique
+- [ ] External dependencies are mocked appropriately
+- [ ] Type safety is maintained throughout
+- [ ] Error scenarios are tested
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Write multiple tests without making each one pass first
+- ❌ Test implementation details instead of behavior
+- ❌ Expose value object internals in assertions
+- ❌ Use `any` types without proper type assertions
+- ❌ Skip test isolation and cleanup
+- ❌ Test complex entity behavior instead of repository interface
+- ❌ Use hardcoded values that could cause conflicts
+- ❌ Mix unit test concerns with integration test concerns
+- ❌ Test domain logic in integration tests
+- ❌ Skip proper error handling tests
+
+### What TO Do
+- ✅ Follow Red-Green-Refactor cycle religiously
+- ✅ Test repository interface behavior
+- ✅ Use proper value object comparisons
+- ✅ Maintain type safety throughout
+- ✅ Ensure test isolation and cleanup
+- ✅ Focus on one test at a time
+- ✅ Use descriptive test names that explain behavior
+- ✅ Test database integration thoroughly
+- ✅ Mock external dependencies appropriately
+- ✅ Test both success and error scenarios
+
+## Common Integration Test Patterns
+
+### Save Operation Test
+```typescript
+it('should save a position to the database', async () => {
+  // Arrange
+  const position = Position.open({
+    userId: UserId.of('test-user-123'),
+    portfolioId: PortfolioId.of('550e8400-e29b-41d4-a716-446655440000'),
+    instrument: Ticker.of('AAPL'),
+    ts: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
+    qty: Quantity.of(100),
+    price: Price.of(150.5),
+    note: 'Test position',
+  });
+
+  // Act
+  await repository.save(position);
+
+  // Assert - Verify persistence
+  const result = await databaseService.query(
+    'SELECT * FROM positions WHERE id = $1',
+    ['550e8400-e29b-41d4-a716-446655440000']
+  );
+  expect(result.rows).toHaveLength(1);
+  const row = result.rows[0] as DatabaseRowType;
+  expect(row.id).toBe('550e8400-e29b-41d4-a716-446655440000');
+});
+```
+
+### Retrieve Operation Test
+```typescript
+it('should retrieve a position by ID', async () => {
+  // Arrange
+  const position = Position.open({ /* ... */ });
+  await repository.save(position);
+
+  // Act
+  const retrievedPosition = await repository.getById(position.id);
+
+  // Assert - Test repository behavior
+  expect(retrievedPosition).toBeDefined();
+  expect(retrievedPosition).not.toBeNull();
+  expect(retrievedPosition.portfolioId).toEqual(PortfolioId.of('expected-id'));
+  expect(retrievedPosition.instrument).toEqual(Ticker.of('AAPL'));
+  expect(retrievedPosition.currentQty).toBe(100);
+  expect(retrievedPosition.isClosed).toBe(false);
+});
+```
+
+### Error Handling Test
+```typescript
+it('should throw InvariantError when position not found', async () => {
+  // Arrange
+  const nonExistentId = PositionId.of('550e8400-e29b-41d4-a716-446655449999');
+
+  // Act & Assert
+  await expect(repository.getById(nonExistentId)).rejects.toThrow(InvariantError);
+  await expect(repository.getById(nonExistentId)).rejects.toThrow(
+    'Position with ID 550e8400-e29b-41d4-a716-446655449999 not found'
+  );
+});
+```
+
+## Integration Test Best Practices
+
+### Test Organization
+- Group tests by repository method
+- Use descriptive test names that explain behavior
+- Keep tests focused and single-purpose
+- Maintain consistent test structure
+
+### Data Management
+- Use predictable test data
+- Ensure test isolation
+- Clean up after each test
+- Use unique identifiers to avoid conflicts
+
+### Error Testing
+- Test all error scenarios
+- Verify proper error types and messages
+- Test both expected and unexpected errors
+- Ensure proper error handling
+
+### Performance Considerations
+- Use efficient database queries
+- Minimize test execution time
+- Clean up resources properly
+- Avoid unnecessary database operations
+
+Remember: **Integration tests should verify that the repository correctly implements its interface contract with the database, not test the internal workings of domain entities or value objects!**

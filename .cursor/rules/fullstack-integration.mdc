@@ -1,0 +1,204 @@
+---
+description: Blue Star Full-Stack Integration Guidelines - Backend-frontend contract and integration patterns
+globs: ["apps/backend/**/*.ts", "apps/frontend/**/*.ts", "apps/frontend/**/*.tsx"]
+alwaysApply: true
+---
+
+# Blue Star - Full-Stack Integration Guidelines
+
+## Core Principles
+
+### Contract Consistency
+- Usecase request/response DTOs MUST use domain value objects
+- Frontend types MUST match backend response structure exactly
+- API client methods MUST mirror controller endpoints
+- Use consistent naming conventions between backend and frontend
+
+### Type Safety
+- Maintain end-to-end type safety from database to UI
+- Use shared type definitions where possible
+- Validate API responses match expected types
+
+## Backend-Frontend Contract
+
+### API Client Patterns
+```typescript
+// Frontend API client should mirror backend controller exactly
+export class ModuleClient {
+  async getItems(): Promise<GetItemsResponse> {
+    const response = await apiClient.get<GetItemsResponse>('/items');
+    return response.data;
+  }
+
+  async createItem(request: CreateItemRequest): Promise<CreateItemResponse> {
+    const response = await apiClient.post<CreateItemResponse, CreateItemRequest>(
+      '/items',
+      request
+    );
+    return response.data;
+  }
+}
+```
+
+### Type Mapping
+```typescript
+// Backend DTOs use domain value objects
+export interface OpenPositionRequestDto {
+  portfolioId: PortfolioId;
+  instrument: Ticker;
+  quantity: Quantity;
+  price: Price;
+  timestamp: IsoTimestamp;
+  note?: string;
+}
+
+// Frontend types use primitives for API communication
+export interface OpenPositionRequest {
+  portfolioId: string;
+  instrument: string;
+  quantity: number;
+  price: number;
+  timestamp: string;
+  note?: string;
+}
+```
+
+## API Design Patterns
+
+### Endpoint Naming
+- Use RESTful conventions: `GET /items`, `POST /items`, `PUT /items/:id`
+- Be consistent with HTTP methods and status codes
+- Use clear, descriptive endpoint paths
+
+### Request/Response Structure
+```typescript
+// Consistent response wrapper
+export interface ApiResponse<T> {
+  data: T;
+  message?: string;
+  success: boolean;
+}
+
+// Consistent error structure
+export interface ApiError {
+  message: string;
+  status: number;
+  code?: string;
+}
+```
+
+## Error Handling
+
+### Backend Error Patterns
+- Use domain-specific error types
+- Return consistent error responses
+- Include proper HTTP status codes
+- Provide meaningful error messages
+
+## Authentication Integration
+
+### Backend Auth Context
+```typescript
+// Consistent auth context across all use cases
+export interface AuthContext {
+  userId: UserId;
+}
+
+// Every use case validates user ownership
+async execute(request: RequestDto, authContext: AuthContext): Promise<ResponseDto> {
+  const resource = await this.repository.getById(request.resourceId);
+  if (resource.userId.value !== authContext.userId.value) {
+    throw new UnauthorizedError('User does not own this resource');
+  }
+  // ... proceed with business logic
+}
+```
+
+### Frontend Auth Integration
+```typescript
+// Use auth context in API calls
+const { user } = useKindeAuth();
+const authContext = { userId: user.userId };
+
+// Pass auth context to use cases
+const result = await useCase.execute(request, authContext);
+```
+
+## Data Flow Patterns
+
+### Read Operations
+1. Frontend calls API client method
+2. API client makes HTTP request to backend
+3. Backend use case queries read repository
+4. Response flows back through API client
+5. React Query caches and manages state
+
+### Write Operations
+1. Frontend calls mutation hook
+2. Hook calls API client method
+3. API client makes HTTP request to backend
+4. Backend use case validates and saves data
+5. React Query invalidates and refetches related queries
+
+## Testing Integration
+
+### Backend Testing
+- Test use cases with real domain objects
+- Mock repository interfaces, not implementations
+- Test authorization and validation logic
+- Verify proper error handling
+
+### Frontend Testing
+- Mock API client methods
+- Test component behavior with different data states
+- Verify error handling and loading states
+- Test React Query integration
+
+## Development Workflow
+
+### Adding New Features
+1. **Backend First**: Create domain objects, use cases, and API endpoints
+2. **Frontend Types**: Define TypeScript interfaces matching backend DTOs
+3. **API Client**: Create client methods mirroring backend endpoints
+4. **React Query**: Create hooks for data fetching and mutations
+5. **Components**: Build UI components using the hooks
+6. **Integration**: Test complete feature end-to-end
+
+### Code Review Checklist
+- [ ] Backend DTOs use domain value objects
+- [ ] Frontend types match backend response structure
+- [ ] API client methods mirror controller endpoints
+- [ ] Error handling is consistent across the stack
+- [ ] Authentication is properly integrated
+- [ ] Type safety is maintained end-to-end
+- [ ] Tests cover both backend and frontend integration
+
+## Anti-Patterns to Avoid
+
+### What NOT to Do
+- ❌ Inconsistent naming between backend and frontend
+- ❌ Direct database access from frontend
+- ❌ Bypassing the API client in components
+- ❌ Inconsistent error handling patterns
+- ❌ Missing authentication checks
+- ❌ Type mismatches between layers
+
+### What TO Do
+- ✅ Consistent API contracts
+- ✅ Type-safe data flow
+- ✅ Proper error handling and user feedback
+- ✅ Authentication at every layer
+- ✅ Clear separation of concerns
+- ✅ Comprehensive testing
+
+## Quality Gates
+
+### Before Deploying Integration
+- [ ] All TypeScript types are consistent
+- [ ] API contracts are properly defined
+- [ ] Error handling works end-to-end
+- [ ] Authentication is properly integrated
+- [ ] Tests cover integration scenarios
+- [ ] No type mismatches or runtime errors
+
+Remember: **Consistency**, **type safety**, and **proper error handling** are essential for reliable full-stack integration!

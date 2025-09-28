@@ -36,6 +36,12 @@ export const routes: RouteConfig[] = [
     isProtected: true,
     showInNavigation: true,
   },
+  {
+    path: '/positions',
+    label: 'Positions',
+    isProtected: true,
+    showInNavigation: true,
+  },
 ];
 
 export const getPublicRoutes = () => routes.filter(route => !route.isProtected);

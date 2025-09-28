@@ -1,0 +1,30 @@
+{
+  "dev": {
+    "driver": "pg",
+    "host": "localhost",
+    "port": 5432,
+    "user": "blue_star_user",
+    "password": "blue_star_password",
+    "database": "blue_star_db",
+    "ssl": false
+  },
+  "test": {
+    "driver": "pg",
+    "host": "localhost",
+    "port": 5433,
+    "user": "blue_star_user",
+    "password": "blue_star_password",
+    "database": "blue_star_test_db",
+    "ssl": false
+  },
+  "prod": {
+    "driver": "pg",
+    "host": "${DB_HOST}",
+    "port": "${DB_PORT}",
+    "user": "${DB_USERNAME}",
+    "password": "${DB_PASSWORD}",
+    "database": "${DB_DATABASE}",
+    "ssl": "${DB_SSL}"
+  }
+}
+

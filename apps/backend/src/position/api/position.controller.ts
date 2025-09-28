@@ -1,25 +1,4 @@
-import { Body, Controller, Param, Post, Put, Req } from '@nestjs/common';
-import {
-  OpenPositionRequestDto,
-  OpenPositionResponseDto,
-  OpenPositionUseCase,
-} from '../use-cases/open-position.use-case';
-import {
-  SetStopLossRequestDto,
-  SetStopLossResponseDto,
-  SetStopLossUseCase,
-} from '../use-cases/set-stop-loss.use-case';
-import {
-  SellSharesRequestDto,
-  SellSharesResponseDto,
-  SellSharesUseCase,
-} from '../use-cases/sell-shares.use-case';
-
-import {
-  BuySharesRequestDto,
-  BuySharesResponseDto,
-  BuySharesUseCase,
-} from '../use-cases/buy-shares.use-case';
+import { Body, Controller, Get, Param, Post, Put, Req } from '@nestjs/common';
 import { PortfolioId } from '../domain/value-objects/portfolio-id';
 import { Ticker } from '../domain/value-objects/ticker';
 import { Quantity } from '../domain/value-objects/quantity';
@@ -29,6 +8,31 @@ import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 import { PositionId } from '../domain/value-objects/position-id';
 import type { AuthContext } from '../domain/auth/auth-context.interface';
 import type { AuthenticatedRequest } from '../../auth/types/request.interface';
+import { PositionApiMapper } from './position-api.mapper';
+import {
+  BuySharesApiResponseDto,
+  GetPositionsApiResponseDto,
+  OpenPositionApiResponseDto,
+  SellSharesApiResponseDto,
+  SetStopLossApiResponseDto,
+} from './position-api.dto';
+import {
+  OpenPositionRequestDto,
+  OpenPositionUseCase,
+} from '../use-cases/open-position.use-case';
+import {
+  SetStopLossRequestDto,
+  SetStopLossUseCase,
+} from '../use-cases/set-stop-loss.use-case';
+import {
+  SellSharesRequestDto,
+  SellSharesUseCase,
+} from '../use-cases/sell-shares.use-case';
+import {
+  BuySharesRequestDto,
+  BuySharesUseCase,
+} from '../use-cases/buy-shares.use-case';
+import { GetPositionsUseCase } from '../use-cases/get-positions.use-case';
 
 @Controller('positions')
 export class PositionController {
@@ -37,7 +41,22 @@ export class PositionController {
     private readonly setStopLossUseCase: SetStopLossUseCase,
     private readonly sellSharesUseCase: SellSharesUseCase,
     private readonly buySharesUseCase: BuySharesUseCase,
+    private readonly getPositionsUseCase: GetPositionsUseCase,
+    private readonly positionApiMapper: PositionApiMapper,
   ) {}
+
+  @Get()
+  async getPositions(
+    @Req() req: AuthenticatedRequest,
+  ): Promise<GetPositionsApiResponseDto> {
+    const user = req.user;
+    const authContext: AuthContext = {
+      userId: user.userId,
+    };
+
+    const useCaseResponse = await this.getPositionsUseCase.execute(authContext);
+    return this.positionApiMapper.mapGetPositionsResponse(useCaseResponse);
+  }
 
   @Post()
   async openPosition(
@@ -51,7 +70,7 @@ export class PositionController {
       note?: string;
     },
     @Req() req: AuthenticatedRequest,
-  ): Promise<OpenPositionResponseDto> {
+  ): Promise<OpenPositionApiResponseDto> {
     const user = req.user;
     const authContext: AuthContext = {
       userId: user.userId,
@@ -66,7 +85,11 @@ export class PositionController {
       note: body.note,
     };
 
-    return this.openPositionUseCase.execute(request, authContext);
+    const useCaseResponse = await this.openPositionUseCase.execute(
+      request,
+      authContext,
+    );
+    return this.positionApiMapper.mapOpenPositionResponse(useCaseResponse);
   }
 
   @Put(':positionId/stop-loss')
@@ -79,7 +102,7 @@ export class PositionController {
       note?: string;
     },
     @Req() req: AuthenticatedRequest,
-  ): Promise<SetStopLossResponseDto> {
+  ): Promise<SetStopLossApiResponseDto> {
     const user = req.user;
     const authContext: AuthContext = {
       userId: user.userId,
@@ -92,7 +115,11 @@ export class PositionController {
       note: body.note,
     };
 
-    return this.setStopLossUseCase.execute(request, authContext);
+    const useCaseResponse = await this.setStopLossUseCase.execute(
+      request,
+      authContext,
+    );
+    return this.positionApiMapper.mapSetStopLossResponse(useCaseResponse);
   }
 
   @Put(':positionId/sell')
@@ -106,7 +133,7 @@ export class PositionController {
       note?: string;
     },
     @Req() req: AuthenticatedRequest,
-  ): Promise<SellSharesResponseDto> {
+  ): Promise<SellSharesApiResponseDto> {
     const user = req.user;
     const authContext: AuthContext = {
       userId: user.userId,
@@ -120,7 +147,11 @@ export class PositionController {
       note: body.note,
     };
 
-    return this.sellSharesUseCase.execute(request, authContext);
+    const useCaseResponse = await this.sellSharesUseCase.execute(
+      request,
+      authContext,
+    );
+    return this.positionApiMapper.mapSellSharesResponse(useCaseResponse);
   }
 
   @Put(':positionId/buy')
@@ -134,7 +165,7 @@ export class PositionController {
       note?: string;
     },
     @Req() req: AuthenticatedRequest,
-  ): Promise<BuySharesResponseDto> {
+  ): Promise<BuySharesApiResponseDto> {
     const user = req.user;
     const authContext: AuthContext = {
       userId: user.userId,
@@ -148,6 +179,10 @@ export class PositionController {
       note: body.note,
     };
 
-    return this.buySharesUseCase.execute(request, authContext);
+    const useCaseResponse = await this.buySharesUseCase.execute(
+      request,
+      authContext,
+    );
+    return this.positionApiMapper.mapBuySharesResponse(useCaseResponse);
   }
 }

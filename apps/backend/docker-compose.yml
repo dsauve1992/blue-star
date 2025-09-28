@@ -1,0 +1,39 @@
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: blue-star-postgres
+    environment:
+      POSTGRES_DB: blue_star_db
+      POSTGRES_USER: blue_star_user
+      POSTGRES_PASSWORD: blue_star_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blue_star_user -d blue_star_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  postgres-test:
+    image: postgres:15-alpine
+    container_name: blue-star-postgres-test
+    environment:
+      POSTGRES_DB: blue_star_test_db
+      POSTGRES_USER: blue_star_user
+      POSTGRES_PASSWORD: blue_star_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_test_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U blue_star_user -d blue_star_test_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:
+  postgres_test_data:
+

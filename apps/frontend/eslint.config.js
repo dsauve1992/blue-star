@@ -5,6 +5,7 @@ import reactRefresh from 'eslint-plugin-react-refresh'
 import unusedImports from 'eslint-plugin-unused-imports'
 import tseslint from 'typescript-eslint'
 import { globalIgnores } from 'eslint/config'
+import tanstackQuery from '@tanstack/eslint-plugin-query'
 
 export default tseslint.config([
   globalIgnores(['dist']),
@@ -15,9 +16,11 @@ export default tseslint.config([
       tseslint.configs.recommended,
       reactHooks.configs['recommended-latest'],
       reactRefresh.configs.vite,
+      tanstackQuery.configs['flat/recommended'],
     ],
     plugins: {
       'unused-imports': unusedImports,
+      '@tanstack/query': tanstackQuery,
     },
     languageOptions: {
       ecmaVersion: 2020,

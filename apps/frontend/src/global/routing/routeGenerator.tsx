@@ -8,6 +8,7 @@ import Login from "../auth/Login";
 import Dashboard from "../pages/Dashboard";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
+import Position from "../../position/pages/Position";
 
 // Map of path to component
 const componentMap = {
@@ -16,6 +17,7 @@ const componentMap = {
   "/dashboard": Dashboard,
   "/profile": Profile,
   "/settings": Settings,
+  "/positions": Position,
 } as const;
 
 export function generateRoutes() {
