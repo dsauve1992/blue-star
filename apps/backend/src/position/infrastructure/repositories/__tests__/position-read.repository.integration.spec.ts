@@ -7,6 +7,7 @@ import { PositionReadRepository as PostgresPositionReadRepository } from '../pos
 import { PositionId } from '../../../domain/value-objects/position-id';
 import { Ticker } from '../../../domain/value-objects/ticker';
 import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
+import { TestcontainersSetup } from '../../../../test/testcontainers-setup';
 
 describe('PositionReadRepository Integration', () => {
   let module: TestingModule;
@@ -14,16 +15,12 @@ describe('PositionReadRepository Integration', () => {
   let databaseService: DatabaseService;
 
   beforeAll(async () => {
-    process.env.DB_HOST = 'localhost';
-    process.env.DB_PORT = '5433';
-    process.env.DB_USERNAME = 'blue_star_user';
-    process.env.DB_PASSWORD = 'blue_star_password';
-    process.env.DB_DATABASE = 'blue_star_test_db';
-    process.env.DB_SSL = 'false';
-
     jest
       .spyOn(UuidGeneratorService, 'generate')
       .mockReturnValue('550e8400-e29b-41d4-a716-446655440100');
+
+    // Start Testcontainers PostgreSQL
+    await TestcontainersSetup.startPostgresContainer();
 
     module = await Test.createTestingModule({
       imports: [
@@ -47,7 +44,11 @@ describe('PositionReadRepository Integration', () => {
   });
 
   afterAll(async () => {
-    await module.close();
+    if (module) {
+      await module.close();
+    }
+
+    TestcontainersSetup.stopPostgresContainer();
   });
 
   beforeEach(async () => {

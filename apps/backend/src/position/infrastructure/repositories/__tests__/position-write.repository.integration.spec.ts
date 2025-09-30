@@ -13,6 +13,7 @@ import { Price } from '../../../domain/value-objects/price';
 import { IsoTimestamp } from '../../../domain/value-objects/iso-timestamp';
 import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 import { InvariantError } from '../../../domain/domain-errors';
+import { TestcontainersSetup } from '../../../../test/testcontainers-setup';
 
 describe('PositionWriteRepository Integration', () => {
   let module: TestingModule;
@@ -20,16 +21,12 @@ describe('PositionWriteRepository Integration', () => {
   let databaseService: DatabaseService;
 
   beforeAll(async () => {
-    process.env.DB_HOST = 'localhost';
-    process.env.DB_PORT = '5433';
-    process.env.DB_USERNAME = 'blue_star_user';
-    process.env.DB_PASSWORD = 'blue_star_password';
-    process.env.DB_DATABASE = 'blue_star_test_db';
-    process.env.DB_SSL = 'false';
-
     jest
       .spyOn(UuidGeneratorService, 'generate')
       .mockReturnValue('550e8400-e29b-41d4-a716-446655440000');
+
+    // Start Testcontainers PostgreSQL
+    await TestcontainersSetup.startPostgresContainer();
 
     module = await Test.createTestingModule({
       imports: [
@@ -55,7 +52,10 @@ describe('PositionWriteRepository Integration', () => {
   });
 
   afterAll(async () => {
-    await module.close();
+    if (module) {
+      await module.close();
+    }
+    await TestcontainersSetup.stopPostgresContainer();
   });
 
   beforeEach(async () => {
