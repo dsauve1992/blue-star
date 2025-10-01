@@ -55,7 +55,8 @@ describe('PositionWriteRepository Integration', () => {
     if (module) {
       await module.close();
     }
-    await TestcontainersSetup.stopPostgresContainer();
+
+    TestcontainersSetup.stopPostgresContainer();
   });
 
   beforeEach(async () => {
@@ -66,7 +67,7 @@ describe('PositionWriteRepository Integration', () => {
   describe('save and getById round-trip', () => {
     it('should save a position and retrieve it correctly', async () => {
       const position = Position.open({
-        userId: UserId.of('test-user-123'),
+        userId: UserId.of('550e8400-e29b-41d4-a716-446655440000'),
         instrument: Ticker.of('AAPL'),
         ts: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
         qty: Quantity.of(100),

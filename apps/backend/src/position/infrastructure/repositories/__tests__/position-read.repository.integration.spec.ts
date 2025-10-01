@@ -8,11 +8,13 @@ import { PositionId } from '../../../domain/value-objects/position-id';
 import { Ticker } from '../../../domain/value-objects/ticker';
 import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 import { TestcontainersSetup } from '../../../../test/testcontainers-setup';
+import { MigrationService } from '../../../../config/migration.service';
 
 describe('PositionReadRepository Integration', () => {
   let module: TestingModule;
   let repository: PositionReadRepository;
   let databaseService: DatabaseService;
+  let migrationService: MigrationService;
 
   beforeAll(async () => {
     jest
@@ -39,8 +41,10 @@ describe('PositionReadRepository Integration', () => {
 
     repository = module.get<PositionReadRepository>('POSITION_READ_REPOSITORY');
     databaseService = module.get<DatabaseService>(DatabaseService);
+    migrationService = module.get<MigrationService>(MigrationService);
 
     await databaseService.onModuleInit();
+    await migrationService.runMigrations();
   });
 
   afterAll(async () => {
@@ -59,7 +63,7 @@ describe('PositionReadRepository Integration', () => {
   describe('findById', () => {
     it('should find a position by ID', async () => {
       const positionId = '550e8400-e29b-41d4-a716-446655440100';
-      const userId = 'test-user-123';
+      const userId = '550e8400-e29b-41d4-a716-446655440101';
       const eventId = '550e8400-e29b-41d4-a716-446655440102';
 
       await databaseService.query(

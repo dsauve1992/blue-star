@@ -24,9 +24,11 @@ export class MigrationService {
     try {
       console.log('Running database migrations...');
       const { stdout, stderr } = await execAsync(
-        'npx db-migrate up --env dev',
+        // FIXME the --env flag should be based on your environment, e.g., 'dev', 'test', 'production'
+        'npx db-migrate up --env test',
         {
           cwd: process.cwd(),
+          env: process.env,
         },
       );
 

@@ -12,10 +12,8 @@ export class TestcontainersSetup {
 
     const startedContainer = await this.container.start();
 
-    // Configure environment variables for DatabaseService
-    // The container will be accessible on localhost with the mapped port
     process.env.DB_HOST = startedContainer.getHost();
-    process.env.DB_PORT = startedContainer.getPort().toString(); // Testcontainers will map this to a random port
+    process.env.DB_PORT = startedContainer.getPort().toString();
     process.env.DB_USERNAME = startedContainer.getUsername();
     process.env.DB_PASSWORD = startedContainer.getPassword();
     process.env.DB_DATABASE = startedContainer.getDatabase();
