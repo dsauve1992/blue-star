@@ -12,6 +12,7 @@ export class MigrationService {
 
   async runMigrations(): Promise<void> {
     const config = getDatabaseConfig(this.configService);
+    const environment = this.configService.get<string>('NODE_ENV', 'dev');
 
     // Set environment variables for db-migrate
     process.env.DB_HOST = config.host;
@@ -22,10 +23,11 @@ export class MigrationService {
     process.env.DB_SSL = config.ssl.toString();
 
     try {
-      console.log('Running database migrations...');
+      console.log(
+        `Running database migrations for environment: ${environment}`,
+      );
       const { stdout, stderr } = await execAsync(
-        // FIXME the --env flag should be based on your environment, e.g., 'dev', 'test', 'production'
-        'npx db-migrate up --env test',
+        `npx db-migrate up --env ${environment}`,
         {
           cwd: process.cwd(),
           env: process.env,
@@ -44,6 +46,7 @@ export class MigrationService {
 
   async rollbackMigrations(): Promise<void> {
     const config = getDatabaseConfig(this.configService);
+    const environment = this.configService.get('NODE_ENV', 'dev');
 
     // Set environment variables for db-migrate
     process.env.DB_HOST = config.host;
@@ -54,9 +57,11 @@ export class MigrationService {
     process.env.DB_SSL = config.ssl.toString();
 
     try {
-      console.log('Rolling back database migrations...');
+      console.log(
+        `Rolling back database migrations for environment: ${environment}`,
+      );
       const { stdout, stderr } = await execAsync(
-        'npx db-migrate down --env dev',
+        `npx db-migrate down --env ${environment}`,
         {
           cwd: process.cwd(),
         },

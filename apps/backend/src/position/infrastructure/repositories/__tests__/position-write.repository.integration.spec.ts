@@ -14,11 +14,13 @@ import { IsoTimestamp } from '../../../domain/value-objects/iso-timestamp';
 import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 import { InvariantError } from '../../../domain/domain-errors';
 import { TestcontainersSetup } from '../../../../test/testcontainers-setup';
+import { MigrationService } from '../../../../config/migration.service';
 
 describe('PositionWriteRepository Integration', () => {
   let module: TestingModule;
   let repository: PositionWriteRepository;
   let databaseService: DatabaseService;
+  let migrationService: MigrationService;
 
   beforeAll(async () => {
     jest
@@ -47,8 +49,10 @@ describe('PositionWriteRepository Integration', () => {
       'POSITION_WRITE_REPOSITORY',
     );
     databaseService = module.get<DatabaseService>(DatabaseService);
+    migrationService = module.get<MigrationService>(MigrationService);
 
     await databaseService.onModuleInit();
+    await migrationService.runMigrations();
   });
 
   afterAll(async () => {
