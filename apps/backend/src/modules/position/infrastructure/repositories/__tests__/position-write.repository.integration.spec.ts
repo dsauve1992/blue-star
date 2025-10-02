@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseService } from '../../../../config/database.service';
-import { DatabaseModule } from '../../../../config/database.module';
+import { DatabaseService } from '../../../../../config/database.service';
 import { PositionWriteRepository } from '../../../domain/repositories/position-write.repository.interface';
 import { PositionWriteRepository as PostgresPositionWriteRepository } from '../position-write.repository';
 import { Position } from '../../../domain/entities/position';
@@ -11,7 +10,7 @@ import { Ticker } from '../../../domain/value-objects/ticker';
 import { Quantity } from '../../../domain/value-objects/quantity';
 import { Price } from '../../../domain/value-objects/price';
 import { IsoTimestamp } from '../../../domain/value-objects/iso-timestamp';
-import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
+import { UuidGeneratorService } from '../../../../../shared/services/uuid-generator.service';
 import { InvariantError } from '../../../domain/domain-errors';
 
 describe('PositionWriteRepository Integration', () => {
@@ -20,25 +19,14 @@ describe('PositionWriteRepository Integration', () => {
   let databaseService: DatabaseService;
 
   beforeAll(async () => {
-    process.env.DB_HOST = 'localhost';
-    process.env.DB_PORT = '5433';
-    process.env.DB_USERNAME = 'blue_star_user';
-    process.env.DB_PASSWORD = 'blue_star_password';
-    process.env.DB_DATABASE = 'blue_star_test_db';
-    process.env.DB_SSL = 'false';
-
     jest
       .spyOn(UuidGeneratorService, 'generate')
       .mockReturnValue('550e8400-e29b-41d4-a716-446655440000');
 
     module = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-        }),
-        DatabaseModule,
-      ],
+      imports: [await ConfigModule.forRoot({ isGlobal: true })],
       providers: [
+        DatabaseService,
         {
           provide: 'POSITION_WRITE_REPOSITORY',
           useClass: PostgresPositionWriteRepository,
@@ -46,16 +34,18 @@ describe('PositionWriteRepository Integration', () => {
       ],
     }).compile();
 
+    await module.init();
+
     repository = module.get<PositionWriteRepository>(
       'POSITION_WRITE_REPOSITORY',
     );
     databaseService = module.get<DatabaseService>(DatabaseService);
-
-    await databaseService.onModuleInit();
   });
 
   afterAll(async () => {
-    await module.close();
+    if (module) {
+      await module.close();
+    }
   });
 
   beforeEach(async () => {
@@ -66,7 +56,7 @@ describe('PositionWriteRepository Integration', () => {
   describe('save and getById round-trip', () => {
     it('should save a position and retrieve it correctly', async () => {
       const position = Position.open({
-        userId: UserId.of('test-user-123'),
+        userId: UserId.of('550e8400-e29b-41d4-a716-446655440000'),
         instrument: Ticker.of('AAPL'),
         ts: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
         qty: Quantity.of(100),

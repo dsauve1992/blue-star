@@ -12,7 +12,7 @@ import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
-import { UuidGeneratorService } from '../../../shared/services/uuid-generator.service';
+import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 import type { AuthContext } from '../../../auth/auth-context.interface';
 
 describe('OpenPositionUseCase', () => {

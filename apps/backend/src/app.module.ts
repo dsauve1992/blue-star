@@ -3,9 +3,9 @@ import { APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PositionModule } from './position/position.module';
-import { AuthModule } from './auth/auth.module';
-import { AuthGuard } from './auth/auth.guard';
+import { PositionModule } from './modules/position/position.module';
+import { AuthModule } from './modules/auth/auth.module';
+import { AuthGuard } from './modules/auth/auth.guard';
 import { DatabaseModule } from './config/database.module';
 
 @Module({

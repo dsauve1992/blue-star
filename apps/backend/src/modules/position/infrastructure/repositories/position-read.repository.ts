@@ -1,10 +1,9 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../../config/database.service';
-import { Position } from '../../domain/entities/position';
+import { DatabaseService } from '../../../../config/database.service';
+import { Action, Position } from '../../domain/entities/position';
 import { PositionId } from '../../domain/value-objects/position-id';
 import { UserId } from '../../domain/value-objects/user-id';
 import { PositionReadRepository as IPositionReadRepository } from '../../domain/repositories/position-read.repository.interface';
-import { Action } from '../../domain/entities/position';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';

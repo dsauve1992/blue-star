@@ -1,17 +1,16 @@
 import { Injectable } from '@nestjs/common';
-import { DatabaseService } from '../../../config/database.service';
-import { Position } from '../../domain/entities/position';
+import { DatabaseService } from '../../../../config/database.service';
+import { Action, Position } from '../../domain/entities/position';
 import { PositionId } from '../../domain/value-objects/position-id';
 import { UserId } from '../../domain/value-objects/user-id';
 import { PositionWriteRepository as IPositionWriteRepository } from '../../domain/repositories/position-write.repository.interface';
 import { InvariantError } from '../../domain/domain-errors';
-import { Action } from '../../domain/entities/position';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
 import { StopPrice } from '../../domain/value-objects/stop-price';
-import { UuidGeneratorService } from '../../../shared/services/uuid-generator.service';
+import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 import { PositionEvent } from '../../domain/value-objects/position-event';
 
 interface DatabaseRow {

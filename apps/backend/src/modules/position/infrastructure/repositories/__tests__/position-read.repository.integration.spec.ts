@@ -1,12 +1,11 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseService } from '../../../../config/database.service';
-import { DatabaseModule } from '../../../../config/database.module';
+import { DatabaseService } from '../../../../../config/database.service';
 import { PositionReadRepository } from '../../../domain/repositories/position-read.repository.interface';
 import { PositionReadRepository as PostgresPositionReadRepository } from '../position-read.repository';
 import { PositionId } from '../../../domain/value-objects/position-id';
 import { Ticker } from '../../../domain/value-objects/ticker';
-import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
+import { UuidGeneratorService } from '../../../../../shared/services/uuid-generator.service';
 
 describe('PositionReadRepository Integration', () => {
   let module: TestingModule;
@@ -14,25 +13,14 @@ describe('PositionReadRepository Integration', () => {
   let databaseService: DatabaseService;
 
   beforeAll(async () => {
-    process.env.DB_HOST = 'localhost';
-    process.env.DB_PORT = '5433';
-    process.env.DB_USERNAME = 'blue_star_user';
-    process.env.DB_PASSWORD = 'blue_star_password';
-    process.env.DB_DATABASE = 'blue_star_test_db';
-    process.env.DB_SSL = 'false';
-
     jest
       .spyOn(UuidGeneratorService, 'generate')
       .mockReturnValue('550e8400-e29b-41d4-a716-446655440100');
 
     module = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-        }),
-        DatabaseModule,
-      ],
+      imports: [await ConfigModule.forRoot({ isGlobal: true })],
       providers: [
+        DatabaseService,
         {
           provide: 'POSITION_READ_REPOSITORY',
           useClass: PostgresPositionReadRepository,
@@ -40,14 +28,16 @@ describe('PositionReadRepository Integration', () => {
       ],
     }).compile();
 
+    await module.init();
+
     repository = module.get<PositionReadRepository>('POSITION_READ_REPOSITORY');
     databaseService = module.get<DatabaseService>(DatabaseService);
-
-    await databaseService.onModuleInit();
   });
 
   afterAll(async () => {
-    await module.close();
+    if (module) {
+      await module.close();
+    }
   });
 
   beforeEach(async () => {
@@ -58,7 +48,7 @@ describe('PositionReadRepository Integration', () => {
   describe('findById', () => {
     it('should find a position by ID', async () => {
       const positionId = '550e8400-e29b-41d4-a716-446655440100';
-      const userId = 'test-user-123';
+      const userId = '550e8400-e29b-41d4-a716-446655440101';
       const eventId = '550e8400-e29b-41d4-a716-446655440102';
 
       await databaseService.query(

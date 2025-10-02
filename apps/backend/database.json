@@ -10,11 +10,11 @@
   },
   "test": {
     "driver": "pg",
-    "host": "localhost",
-    "port": 5433,
-    "user": "blue_star_user",
-    "password": "blue_star_password",
-    "database": "blue_star_test_db",
+    "host": { "ENV" : "DB_HOST"},
+    "port": { "ENV" : "DB_PORT"},
+    "user": { "ENV" : "DB_USERNAME"},
+    "password": { "ENV" : "DB_PASSWORD"},
+    "database": { "ENV" : "DB_DATABASE"},
     "ssl": false
   },
   "prod": {
