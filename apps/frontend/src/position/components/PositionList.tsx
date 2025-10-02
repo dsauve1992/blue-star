@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { usePositions } from "../hooks/use-positions";
 import {
   Alert,
@@ -7,9 +8,18 @@ import {
   LoadingSpinner,
 } from "src/global/design-system";
 import { Shield, TrendingDown, TrendingUp } from "lucide-react";
+import { BuySharesModal } from "./BuySharesModal";
+import { SellSharesModal } from "./SellSharesModal";
+import { SetStopLossModal } from "./SetStopLossModal";
 
 export function PositionList() {
   const { data, isLoading, error } = usePositions();
+  const [activeModal, setActiveModal] = useState<{
+    type: 'buy' | 'sell' | 'stop-loss' | null;
+    positionId: string;
+    instrument: string;
+    currentQuantity?: number;
+  }>({ type: null, positionId: '', instrument: '' });
 
   console.log("Positions Data:", data);
 
@@ -72,15 +82,40 @@ export function PositionList() {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setActiveModal({
+                    type: 'buy',
+                    positionId: position.id,
+                    instrument: position.instrument
+                  })}
+                >
                   <TrendingUp className="h-4 w-4 mr-1" />
                   Buy
                 </Button>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setActiveModal({
+                    type: 'sell',
+                    positionId: position.id,
+                    instrument: position.instrument,
+                    currentQuantity: position.currentQty
+                  })}
+                >
                   <TrendingDown className="h-4 w-4 mr-1" />
                   Sell
                 </Button>
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => setActiveModal({
+                    type: 'stop-loss',
+                    positionId: position.id,
+                    instrument: position.instrument
+                  })}
+                >
                   <Shield className="h-4 w-4 mr-1" />
                   Stop Loss
                 </Button>
@@ -114,6 +149,29 @@ export function PositionList() {
           )}
         </Card>
       ))}
+      
+      {/* Action Modals */}
+      <BuySharesModal
+        positionId={activeModal.positionId}
+        instrument={activeModal.instrument}
+        isOpen={activeModal.type === 'buy'}
+        onClose={() => setActiveModal({ type: null, positionId: '', instrument: '' })}
+      />
+      
+      <SellSharesModal
+        positionId={activeModal.positionId}
+        instrument={activeModal.instrument}
+        currentQuantity={activeModal.currentQuantity || 0}
+        isOpen={activeModal.type === 'sell'}
+        onClose={() => setActiveModal({ type: null, positionId: '', instrument: '' })}
+      />
+      
+      <SetStopLossModal
+        positionId={activeModal.positionId}
+        instrument={activeModal.instrument}
+        isOpen={activeModal.type === 'stop-loss'}
+        onClose={() => setActiveModal({ type: null, positionId: '', instrument: '' })}
+      />
     </div>
   );
 }
