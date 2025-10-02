@@ -30,7 +30,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       const client = await this.pool.connect();
       await client.query('SELECT NOW()');
       client.release();
-      console.log('Database connection established successfully');
     } catch (error) {
       console.error('Failed to connect to database:', error);
       throw error;
@@ -40,7 +39,6 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
   async onModuleDestroy() {
     if (this.pool) {
       await this.pool.end();
-      console.log('Database connection pool closed');
     }
   }
 
