@@ -1,7 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
 import { DatabaseService } from '../../../../../config/database.service';
-import { DatabaseModule } from '../../../../../config/database.module';
 import { PositionWriteRepository } from '../../../domain/repositories/position-write.repository.interface';
 import { PositionWriteRepository as PostgresPositionWriteRepository } from '../position-write.repository';
 import { Position } from '../../../domain/entities/position';
@@ -25,19 +24,17 @@ describe('PositionWriteRepository Integration', () => {
       .mockReturnValue('550e8400-e29b-41d4-a716-446655440000');
 
     module = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-        }),
-        DatabaseModule,
-      ],
+      imports: [await ConfigModule.forRoot({ isGlobal: true })],
       providers: [
+        DatabaseService,
         {
           provide: 'POSITION_WRITE_REPOSITORY',
           useClass: PostgresPositionWriteRepository,
         },
       ],
     }).compile();
+
+    await module.init();
 
     repository = module.get<PositionWriteRepository>(
       'POSITION_WRITE_REPOSITORY',
