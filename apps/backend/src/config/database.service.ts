@@ -1,7 +1,7 @@
 import { Injectable, OnModuleDestroy, OnModuleInit } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { Pool, PoolClient } from 'pg';
-import { getDatabaseConfig, DatabaseConfig } from './database.config';
+import { DatabaseConfig, getDatabaseConfig } from './database.config';
 
 @Injectable()
 export class DatabaseService implements OnModuleInit, OnModuleDestroy {
@@ -22,7 +22,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ssl: this.config.ssl === true ? { rejectUnauthorized: false } : false,
       max: 20, // Maximum number of clients in the pool
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-      connectionTimeoutMillis: 2000, // Return an error after 2 seconds if connection could not be established
+      connectionTimeoutMillis: 5000, // Return an error after 2 seconds if connection could not be established
     });
 
     // Test the connection

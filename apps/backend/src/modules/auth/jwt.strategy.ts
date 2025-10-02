@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserId } from '../position/domain/value-objects/user-id';
-import { kindeConfig } from '../config/kinde.config';
+import { kindeConfig } from '../../config/kinde.config';
 import { passportJwtSecret } from 'jwks-rsa';
 
 interface JwtPayload {

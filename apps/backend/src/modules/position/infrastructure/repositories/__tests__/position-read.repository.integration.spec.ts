@@ -1,36 +1,25 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseService } from '../../../../config/database.service';
-import { DatabaseModule } from '../../../../config/database.module';
+import { DatabaseService } from '../../../../../config/database.service';
+import { DatabaseModule } from '../../../../../config/database.module';
 import { PositionReadRepository } from '../../../domain/repositories/position-read.repository.interface';
 import { PositionReadRepository as PostgresPositionReadRepository } from '../position-read.repository';
 import { PositionId } from '../../../domain/value-objects/position-id';
 import { Ticker } from '../../../domain/value-objects/ticker';
-import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
-import { TestcontainersSetup } from '../../../../test/testcontainers-setup';
-import { MigrationService } from '../../../../config/migration.service';
+import { UuidGeneratorService } from '../../../../../shared/services/uuid-generator.service';
 
 describe('PositionReadRepository Integration', () => {
   let module: TestingModule;
   let repository: PositionReadRepository;
   let databaseService: DatabaseService;
-  let migrationService: MigrationService;
 
   beforeAll(async () => {
     jest
       .spyOn(UuidGeneratorService, 'generate')
       .mockReturnValue('550e8400-e29b-41d4-a716-446655440100');
 
-    // Start Testcontainers PostgreSQL
-    await TestcontainersSetup.startPostgresContainer();
-
     module = await Test.createTestingModule({
-      imports: [
-        ConfigModule.forRoot({
-          isGlobal: true,
-        }),
-        DatabaseModule,
-      ],
+      imports: [await ConfigModule.forRoot({ isGlobal: true }), DatabaseModule],
       providers: [
         {
           provide: 'POSITION_READ_REPOSITORY',
@@ -39,20 +28,16 @@ describe('PositionReadRepository Integration', () => {
       ],
     }).compile();
 
+    await module.init();
+
     repository = module.get<PositionReadRepository>('POSITION_READ_REPOSITORY');
     databaseService = module.get<DatabaseService>(DatabaseService);
-    migrationService = module.get<MigrationService>(MigrationService);
-
-    await databaseService.onModuleInit();
-    await migrationService.runMigrations();
   });
 
   afterAll(async () => {
     if (module) {
       await module.close();
     }
-
-    TestcontainersSetup.stopPostgresContainer();
   });
 
   beforeEach(async () => {

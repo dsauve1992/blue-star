@@ -1,7 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { ConfigModule } from '@nestjs/config';
-import { DatabaseService } from '../../../../config/database.service';
-import { DatabaseModule } from '../../../../config/database.module';
+import { DatabaseService } from '../../../../../config/database.service';
+import { DatabaseModule } from '../../../../../config/database.module';
 import { PositionWriteRepository } from '../../../domain/repositories/position-write.repository.interface';
 import { PositionWriteRepository as PostgresPositionWriteRepository } from '../position-write.repository';
 import { Position } from '../../../domain/entities/position';
@@ -11,24 +11,18 @@ import { Ticker } from '../../../domain/value-objects/ticker';
 import { Quantity } from '../../../domain/value-objects/quantity';
 import { Price } from '../../../domain/value-objects/price';
 import { IsoTimestamp } from '../../../domain/value-objects/iso-timestamp';
-import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
+import { UuidGeneratorService } from '../../../../../shared/services/uuid-generator.service';
 import { InvariantError } from '../../../domain/domain-errors';
-import { TestcontainersSetup } from '../../../../test/testcontainers-setup';
-import { MigrationService } from '../../../../config/migration.service';
 
 describe('PositionWriteRepository Integration', () => {
   let module: TestingModule;
   let repository: PositionWriteRepository;
   let databaseService: DatabaseService;
-  let migrationService: MigrationService;
 
   beforeAll(async () => {
     jest
       .spyOn(UuidGeneratorService, 'generate')
       .mockReturnValue('550e8400-e29b-41d4-a716-446655440000');
-
-    // Start Testcontainers PostgreSQL
-    await TestcontainersSetup.startPostgresContainer();
 
     module = await Test.createTestingModule({
       imports: [
@@ -49,18 +43,12 @@ describe('PositionWriteRepository Integration', () => {
       'POSITION_WRITE_REPOSITORY',
     );
     databaseService = module.get<DatabaseService>(DatabaseService);
-    migrationService = module.get<MigrationService>(MigrationService);
-
-    await databaseService.onModuleInit();
-    await migrationService.runMigrations();
   });
 
   afterAll(async () => {
     if (module) {
       await module.close();
     }
-
-    TestcontainersSetup.stopPostgresContainer();
   });
 
   beforeEach(async () => {

@@ -10,7 +10,7 @@ import {
   POSITION_READ_REPOSITORY,
   POSITION_WRITE_REPOSITORY,
 } from './constants/tokens';
-import { DatabaseModule } from '../config/database.module';
+import { DatabaseModule } from '../../config/database.module';
 import { PositionWriteRepository } from './infrastructure/repositories/position-write.repository';
 import { PositionReadRepository } from './infrastructure/repositories/position-read.repository';
 

@@ -1,4 +1,4 @@
-import { UuidGeneratorService } from '../../../shared/services/uuid-generator.service';
+import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 
 export class PositionId {
   private constructor(public readonly value: string) {}
