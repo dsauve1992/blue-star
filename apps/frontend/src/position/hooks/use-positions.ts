@@ -17,6 +17,14 @@ export function usePositions() {
   });
 }
 
+export function usePositionById(positionId: string) {
+  return useQuery({
+    queryKey: POSITION_QUERY_KEYS.detail(positionId),
+    queryFn: () => positionClient.getPositionById(positionId),
+    enabled: !!positionId,
+  });
+}
+
 export function useOpenPosition() {
   const queryClient = useQueryClient();
 

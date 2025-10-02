@@ -9,6 +9,7 @@ import Dashboard from "../pages/Dashboard";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 import Position from "../../position/pages/Position";
+import { PositionDetail } from "../../position/pages/PositionDetail";
 
 // Map of path to component
 const componentMap = {
@@ -18,6 +19,7 @@ const componentMap = {
   "/profile": Profile,
   "/settings": Settings,
   "/positions": Position,
+  "/positions/:positionId": PositionDetail,
 } as const;
 
 export function generateRoutes() {

@@ -74,6 +74,11 @@ export class PositionClient {
     return response.data;
   }
 
+  async getPositionById(positionId: string): Promise<Position> {
+    const response = await apiClient.get<Position>(`/positions/${positionId}`);
+    return response.data;
+  }
+
   async openPosition(
     request: OpenPositionRequest,
   ): Promise<OpenPositionResponse> {

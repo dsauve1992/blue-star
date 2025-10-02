@@ -1,0 +1,431 @@
+import { useParams, Link } from "react-router";
+import { ArrowLeft, TrendingUp, TrendingDown, Shield } from "lucide-react";
+import { usePositionById } from "../hooks/use-positions";
+import { useHistoricalData } from "../hooks/use-market-data";
+import { HistoricalPriceChart } from "../components/HistoricalPriceChart";
+import { BuySharesModal } from "../components/BuySharesModal";
+import { SellSharesModal } from "../components/SellSharesModal";
+import { SetStopLossModal } from "../components/SetStopLossModal";
+import {
+  Alert,
+  Badge,
+  Button,
+  Card,
+  LoadingSpinner,
+} from "src/global/design-system";
+import { useState } from "react";
+
+export function PositionDetail() {
+  const { positionId } = useParams<{ positionId: string }>();
+  const {
+    data: position,
+    isLoading,
+    error,
+  } = usePositionById(positionId || "");
+  const [activeModal, setActiveModal] = useState<{
+    type: "buy" | "sell" | "stop-loss" | null;
+  }>({ type: null });
+
+  // Calculate date range for historical data
+  const getDateRange = () => {
+    if (!position?.events || position.events.length === 0) {
+      // Default to last 3 months if no events
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setMonth(startDate.getMonth() - 3);
+      return {
+        startDate: startDate.toISOString().split("T")[0],
+        endDate: endDate.toISOString().split("T")[0],
+      };
+    }
+
+    const timestamps = position.events.map(
+      (event) => new Date(event.timestamp),
+    );
+    const startTime = Math.min(...timestamps.map((d) => d.getTime()));
+    const endTime = Math.max(...timestamps.map((d) => d.getTime()));
+
+    // Add padding: 30 days before first event, 7 days after last event
+    const startDate = new Date(startTime);
+    startDate.setDate(startDate.getDate() - 30);
+
+    const endDate = new Date(endTime);
+    endDate.setDate(endDate.getDate() + 7);
+
+    // Ensure end date is not in the future
+    const today = new Date();
+    if (endDate > today) {
+      endDate.setTime(today.getTime());
+    }
+
+    return {
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+    };
+  };
+
+  const dateRange = position ? getDateRange() : { startDate: "", endDate: "" };
+
+  const {
+    data: historicalData,
+    isLoading: isLoadingHistorical,
+    error: historicalError,
+  } = useHistoricalData(
+    position?.instrument || "",
+    dateRange.startDate,
+    dateRange.endDate,
+    !!position,
+  );
+
+  // Generate fake trading events for demonstration
+  const generateFakeEvents = () => {
+    if (!historicalData?.historicalData?.pricePoints || historicalData.historicalData.pricePoints.length === 0) {
+      return [];
+    }
+
+    const pricePoints = historicalData.historicalData.pricePoints;
+    const tradingDays = pricePoints.filter((point) => {
+      const date = new Date(point.date);
+      const dayOfWeek = date.getDay();
+      return dayOfWeek !== 0 && dayOfWeek !== 6; // Exclude weekends
+    });
+
+    if (tradingDays.length < 3) return [];
+
+    // Generate 3-4 fake events spread across the trading period
+    const events = [];
+    
+    // Event 1: Initial buy (around 20% into the period)
+    const buyIndex = Math.floor(tradingDays.length * 0.2);
+    const buyDay = tradingDays[buyIndex];
+    events.push({
+      action: "BUY",
+      timestamp: buyDay.date,
+      qty: 100,
+      price: buyDay.close,
+      note: "Initial position",
+    });
+
+    // Event 2: Another buy (around 40% into the period)
+    const buy2Index = Math.floor(tradingDays.length * 0.4);
+    const buy2Day = tradingDays[buy2Index];
+    events.push({
+      action: "BUY",
+      timestamp: buy2Day.date,
+      qty: 50,
+      price: buy2Day.close,
+      note: "Add to position",
+    });
+
+    // Event 3: Partial sell (around 60% into the period)
+    const sellIndex = Math.floor(tradingDays.length * 0.6);
+    const sellDay = tradingDays[sellIndex];
+    events.push({
+      action: "SELL",
+      timestamp: sellDay.date,
+      qty: 75,
+      price: sellDay.close,
+      note: "Take some profits",
+    });
+
+    // Event 4: Stop loss (around 80% into the period)
+    const stopIndex = Math.floor(tradingDays.length * 0.8);
+    const stopDay = tradingDays[stopIndex];
+    events.push({
+      action: "STOP_LOSS",
+      timestamp: stopDay.date,
+      stop: stopDay.close * 0.95, // 5% below current price
+      note: "Protect remaining position",
+    });
+
+    return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+  };
+
+  const fakeEvents = historicalData ? generateFakeEvents() : [];
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-8">
+        <LoadingSpinner />
+      </div>
+    );
+  }
+
+  if (error) {
+    const isNotFound =
+      error.message?.includes("not found") ||
+      error.message?.includes("404") ||
+      error.message?.includes("Position with ID");
+
+    return (
+      <div className="space-y-4">
+        <Link
+          to="/positions"
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Positions
+        </Link>
+        <Alert variant="danger">
+          {isNotFound ? (
+            <div>
+              <h3 className="font-semibold mb-2">Position Not Found</h3>
+              <p>
+                The position you're looking for doesn't exist or you don't have
+                permission to view it.
+              </p>
+              <p className="mt-2 text-sm">
+                Position ID:{" "}
+                <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                  {positionId}
+                </code>
+              </p>
+            </div>
+          ) : (
+            "Failed to load position details. Please try again."
+          )}
+        </Alert>
+      </div>
+    );
+  }
+
+  if (!position) {
+    return (
+      <div className="space-y-4">
+        <Link
+          to="/positions"
+          className="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Back to Positions
+        </Link>
+        <Alert variant="danger">
+          <div>
+            <h3 className="font-semibold mb-2">Position Not Found</h3>
+            <p>
+              The position you're looking for doesn't exist or you don't have
+              permission to view it.
+            </p>
+            <p className="mt-2 text-sm">
+              Position ID:{" "}
+              <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
+                {positionId}
+              </code>
+            </p>
+          </div>
+        </Alert>
+      </div>
+    );
+  }
+
+  // Calculate position metrics
+  const totalBuyEvents = position.events.filter(
+    (e) => e.action === "BUY",
+  ).length;
+  const totalSellEvents = position.events.filter(
+    (e) => e.action === "SELL",
+  ).length;
+  const stopLossEvents = position.events.filter(
+    (e) => e.action === "STOP_LOSS",
+  ).length;
+
+  // Calculate average buy price
+  const buyEvents = position.events.filter(
+    (e) => e.action === "BUY" && e.price,
+  );
+  const totalBuyQuantity = buyEvents.reduce((sum, e) => sum + (e.qty || 0), 0);
+  const totalBuyValue = buyEvents.reduce(
+    (sum, e) => sum + (e.qty || 0) * (e.price || 0),
+    0,
+  );
+  const averageBuyPrice =
+    totalBuyQuantity > 0 ? totalBuyValue / totalBuyQuantity : 0;
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center space-x-4">
+          <Link
+            to="/positions"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200"
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Back to Positions
+          </Link>
+          <div>
+            <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+              {position.instrument} Position
+            </h1>
+            <p className="text-slate-600 dark:text-slate-400">
+              Position ID: {position.id}
+            </p>
+          </div>
+        </div>
+        <Badge
+          variant={position.isClosed ? "secondary" : "default"}
+          className={
+            position.isClosed
+              ? "bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200"
+              : "bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200"
+          }
+        >
+          {position.isClosed ? "Closed" : "Open"}
+        </Badge>
+      </div>
+
+      {/* Position Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+        <Card className="p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <TrendingUp className="h-5 w-5 text-green-600" />
+            <h3 className="font-medium text-slate-900 dark:text-slate-100">
+              Current Quantity
+            </h3>
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {position.currentQty}
+          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">shares</p>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <TrendingUp className="h-5 w-5 text-blue-600" />
+            <h3 className="font-medium text-slate-900 dark:text-slate-100">
+              Average Buy Price
+            </h3>
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            ${averageBuyPrice.toFixed(2)}
+          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            per share
+          </p>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <TrendingDown className="h-5 w-5 text-red-600" />
+            <h3 className="font-medium text-slate-900 dark:text-slate-100">
+              Total Events
+            </h3>
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {position.events.length}
+          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">
+            {totalBuyEvents} buys, {totalSellEvents} sells
+          </p>
+        </Card>
+
+        <Card className="p-4">
+          <div className="flex items-center space-x-2 mb-2">
+            <Shield className="h-5 w-5 text-amber-600" />
+            <h3 className="font-medium text-slate-900 dark:text-slate-100">
+              Stop Loss Orders
+            </h3>
+          </div>
+          <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">
+            {stopLossEvents}
+          </p>
+          <p className="text-sm text-slate-600 dark:text-slate-400">active</p>
+        </Card>
+      </div>
+
+      {/* Action Buttons */}
+      {!position.isClosed && (
+        <Card className="p-4">
+          <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100 mb-4">
+            Position Actions
+          </h3>
+          <div className="flex flex-wrap gap-3">
+            <Button
+              variant="outline"
+              onClick={() => setActiveModal({ type: "buy" })}
+            >
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Buy More Shares
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setActiveModal({ type: "sell" })}
+            >
+              <TrendingDown className="h-4 w-4 mr-2" />
+              Sell Shares
+            </Button>
+            <Button
+              variant="outline"
+              onClick={() => setActiveModal({ type: "stop-loss" })}
+            >
+              <Shield className="h-4 w-4 mr-2" />
+              Set Stop Loss
+            </Button>
+          </div>
+        </Card>
+      )}
+
+      {/* Historical Price Chart */}
+      {isLoadingHistorical ? (
+        <Card className="p-6">
+          <div className="flex justify-center items-center py-8">
+            <LoadingSpinner />
+            <span className="ml-2 text-slate-600 dark:text-slate-400">
+              Loading historical price data...
+            </span>
+          </div>
+        </Card>
+      ) : historicalError ? (
+        <Card className="p-6">
+          <Alert variant="danger">
+            <div>
+              <h3 className="font-semibold mb-2">
+                Failed to Load Historical Data
+              </h3>
+              <p>
+                Unable to fetch historical price data for {position.instrument}.
+                This could be due to an invalid symbol or network issues.
+              </p>
+              <p className="mt-2 text-sm">Error: {historicalError.message}</p>
+            </div>
+          </Alert>
+        </Card>
+      ) : historicalData ? (
+        <HistoricalPriceChart
+          historicalData={historicalData.historicalData}
+          events={fakeEvents}
+          instrument={position.instrument}
+        />
+      ) : (
+        <Card className="p-6">
+          <Alert variant="danger">
+            No historical data available for {position.instrument}.
+          </Alert>
+        </Card>
+      )}
+
+      {/* Action Modals */}
+      <BuySharesModal
+        positionId={position.id}
+        instrument={position.instrument}
+        isOpen={activeModal.type === "buy"}
+        onClose={() => setActiveModal({ type: null })}
+      />
+
+      <SellSharesModal
+        positionId={position.id}
+        instrument={position.instrument}
+        currentQuantity={position.currentQty}
+        isOpen={activeModal.type === "sell"}
+        onClose={() => setActiveModal({ type: null })}
+      />
+
+      <SetStopLossModal
+        positionId={position.id}
+        instrument={position.instrument}
+        isOpen={activeModal.type === "stop-loss"}
+        onClose={() => setActiveModal({ type: null })}
+      />
+    </div>
+  );
+}

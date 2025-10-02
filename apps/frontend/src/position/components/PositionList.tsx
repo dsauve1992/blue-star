@@ -7,19 +7,20 @@ import {
   Card,
   LoadingSpinner,
 } from "src/global/design-system";
-import { Shield, TrendingDown, TrendingUp } from "lucide-react";
+import { Shield, TrendingDown, TrendingUp, Eye } from "lucide-react";
 import { BuySharesModal } from "./BuySharesModal";
 import { SellSharesModal } from "./SellSharesModal";
 import { SetStopLossModal } from "./SetStopLossModal";
+import { Link } from "react-router";
 
 export function PositionList() {
   const { data, isLoading, error } = usePositions();
   const [activeModal, setActiveModal] = useState<{
-    type: 'buy' | 'sell' | 'stop-loss' | null;
+    type: "buy" | "sell" | "stop-loss" | null;
     positionId: string;
     instrument: string;
     currentQuantity?: number;
-  }>({ type: null, positionId: '', instrument: '' });
+  }>({ type: null, positionId: "", instrument: "" });
 
   console.log("Positions Data:", data);
 
@@ -60,9 +61,12 @@ export function PositionList() {
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="flex items-center space-x-2">
-                <span className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                <Link
+                  to={`/positions/${position.id}`}
+                  className="text-lg font-semibold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                >
                   {position.instrument}
-                </span>
+                </Link>
                 <Badge
                   variant={position.isClosed ? "secondary" : "default"}
                   className={
@@ -82,39 +86,51 @@ export function PositionList() {
                 </div>
               </div>
               <div className="flex space-x-2">
-                <Button 
-                  size="sm" 
+                <Link to={`/positions/${position.id}`}>
+                  <Button size="sm" variant="outline">
+                    <Eye className="h-4 w-4 mr-1" />
+                    View Details
+                  </Button>
+                </Link>
+                <Button
+                  size="sm"
                   variant="outline"
-                  onClick={() => setActiveModal({
-                    type: 'buy',
-                    positionId: position.id,
-                    instrument: position.instrument
-                  })}
+                  onClick={() =>
+                    setActiveModal({
+                      type: "buy",
+                      positionId: position.id,
+                      instrument: position.instrument,
+                    })
+                  }
                 >
                   <TrendingUp className="h-4 w-4 mr-1" />
                   Buy
                 </Button>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
-                  onClick={() => setActiveModal({
-                    type: 'sell',
-                    positionId: position.id,
-                    instrument: position.instrument,
-                    currentQuantity: position.currentQty
-                  })}
+                  onClick={() =>
+                    setActiveModal({
+                      type: "sell",
+                      positionId: position.id,
+                      instrument: position.instrument,
+                      currentQuantity: position.currentQty,
+                    })
+                  }
                 >
                   <TrendingDown className="h-4 w-4 mr-1" />
                   Sell
                 </Button>
-                <Button 
-                  size="sm" 
+                <Button
+                  size="sm"
                   variant="outline"
-                  onClick={() => setActiveModal({
-                    type: 'stop-loss',
-                    positionId: position.id,
-                    instrument: position.instrument
-                  })}
+                  onClick={() =>
+                    setActiveModal({
+                      type: "stop-loss",
+                      positionId: position.id,
+                      instrument: position.instrument,
+                    })
+                  }
                 >
                   <Shield className="h-4 w-4 mr-1" />
                   Stop Loss
@@ -149,28 +165,34 @@ export function PositionList() {
           )}
         </Card>
       ))}
-      
+
       {/* Action Modals */}
       <BuySharesModal
         positionId={activeModal.positionId}
         instrument={activeModal.instrument}
-        isOpen={activeModal.type === 'buy'}
-        onClose={() => setActiveModal({ type: null, positionId: '', instrument: '' })}
+        isOpen={activeModal.type === "buy"}
+        onClose={() =>
+          setActiveModal({ type: null, positionId: "", instrument: "" })
+        }
       />
-      
+
       <SellSharesModal
         positionId={activeModal.positionId}
         instrument={activeModal.instrument}
         currentQuantity={activeModal.currentQuantity || 0}
-        isOpen={activeModal.type === 'sell'}
-        onClose={() => setActiveModal({ type: null, positionId: '', instrument: '' })}
+        isOpen={activeModal.type === "sell"}
+        onClose={() =>
+          setActiveModal({ type: null, positionId: "", instrument: "" })
+        }
       />
-      
+
       <SetStopLossModal
         positionId={activeModal.positionId}
         instrument={activeModal.instrument}
-        isOpen={activeModal.type === 'stop-loss'}
-        onClose={() => setActiveModal({ type: null, positionId: '', instrument: '' })}
+        isOpen={activeModal.type === "stop-loss"}
+        onClose={() =>
+          setActiveModal({ type: null, positionId: "", instrument: "" })
+        }
       />
     </div>
   );
