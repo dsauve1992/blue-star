@@ -47,19 +47,8 @@ export class YahooMarketDataService implements MarketDataService {
         pricePoints,
       };
     } catch (error) {
-      if (error.message?.includes('Invalid symbol')) {
-        throw new Error(`Invalid symbol: ${symbol.value}`);
-      }
-
-      if (error.message?.includes('No data')) {
-        throw new Error(
-          `No historical data available for symbol ${symbol.value}`,
-        );
-      }
-
-      throw new Error(
-        `Failed to fetch historical data for ${symbol.value}: ${error.message}`,
-      );
+      console.error(error);
+      throw new Error(`Failed to fetch historical data for ${symbol.value}`);
     }
   }
 
