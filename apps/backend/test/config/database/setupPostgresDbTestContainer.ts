@@ -1,4 +1,7 @@
-import { PostgreSqlContainer, StartedPostgreSqlContainer, } from '@testcontainers/postgresql';
+import {
+  PostgreSqlContainer,
+  StartedPostgreSqlContainer,
+} from '@testcontainers/postgresql';
 
 export class TestContainer {
   private static container: StartedPostgreSqlContainer;
