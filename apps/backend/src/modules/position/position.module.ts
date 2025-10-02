@@ -6,6 +6,7 @@ import { SetStopLossUseCase } from './use-cases/set-stop-loss.use-case';
 import { SellSharesUseCase } from './use-cases/sell-shares.use-case';
 import { BuySharesUseCase } from './use-cases/buy-shares.use-case';
 import { GetPositionsUseCase } from './use-cases/get-positions.use-case';
+import { GetPositionByIdUseCase } from './use-cases/get-position-by-id.use-case';
 import {
   POSITION_READ_REPOSITORY,
   POSITION_WRITE_REPOSITORY,
@@ -32,6 +33,7 @@ import { PositionReadRepository } from './infrastructure/repositories/position-r
     SellSharesUseCase,
     BuySharesUseCase,
     GetPositionsUseCase,
+    GetPositionByIdUseCase,
   ],
 })
 export class PositionModule {}

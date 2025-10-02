@@ -12,6 +12,7 @@ import {
   BuySharesApiResponseDto,
   GetPositionsApiResponseDto,
   OpenPositionApiResponseDto,
+  PositionApiDto,
   SellSharesApiResponseDto,
   SetStopLossApiResponseDto,
 } from './position-api.dto';
@@ -32,6 +33,10 @@ import {
   BuySharesUseCase,
 } from '../use-cases/buy-shares.use-case';
 import { GetPositionsUseCase } from '../use-cases/get-positions.use-case';
+import {
+  GetPositionByIdRequestDto,
+  GetPositionByIdUseCase,
+} from '../use-cases/get-position-by-id.use-case';
 
 @Controller('positions')
 export class PositionController {
@@ -41,6 +46,7 @@ export class PositionController {
     private readonly sellSharesUseCase: SellSharesUseCase,
     private readonly buySharesUseCase: BuySharesUseCase,
     private readonly getPositionsUseCase: GetPositionsUseCase,
+    private readonly getPositionByIdUseCase: GetPositionByIdUseCase,
     private readonly positionApiMapper: PositionApiMapper,
   ) {}
 
@@ -55,6 +61,27 @@ export class PositionController {
 
     const useCaseResponse = await this.getPositionsUseCase.execute(authContext);
     return this.positionApiMapper.mapGetPositionsResponse(useCaseResponse);
+  }
+
+  @Get(':positionId')
+  async getPositionById(
+    @Param('positionId') positionId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<PositionApiDto> {
+    const user = req.user;
+    const authContext: AuthContext = {
+      userId: user.userId,
+    };
+
+    const request: GetPositionByIdRequestDto = {
+      positionId: PositionId.of(positionId),
+    };
+
+    const useCaseResponse = await this.getPositionByIdUseCase.execute(
+      request,
+      authContext,
+    );
+    return this.positionApiMapper.mapPositionToApiDto(useCaseResponse.position);
   }
 
   @Post()
