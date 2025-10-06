@@ -9,6 +9,7 @@ export {
   CardTitle,
 } from './card';
 export { Input } from './input';
+export { DateInput } from './date-input';
 export { Label } from './label';
 export { Badge } from './badge';
 export { Separator } from './separator';

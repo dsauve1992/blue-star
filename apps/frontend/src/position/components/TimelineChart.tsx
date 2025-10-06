@@ -125,7 +125,7 @@ export function TimelineChart({ events, instrument }: TimelineChartProps) {
             .map((event, index, array) => {
               if (index === 0) return null;
               const prevEvent = array[index - 1];
-              if (!prevEvent.price) return null;
+              if (!prevEvent.price || !event.price) return null;
               
               return (
                 <line

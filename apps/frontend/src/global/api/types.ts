@@ -12,7 +12,7 @@ export interface ApiError {
 
 export interface ApiRequestConfig {
   headers?: Record<string, string>;
-  params?: Record<string, never>;
+  params?: Record<string, string | number | boolean>;
   timeout?: number;
 }
 
