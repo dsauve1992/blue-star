@@ -87,7 +87,7 @@ export function PositionHistoryChart({
 
   // Prepare candlestick data [timestamp, open, close, low, high]
   const candlestickData = tradingDays.map((point) => [
-    point.date, // Use the date string directly for proper time axis handling
+    new Date(point.date),
     point.open,
     point.close,
     point.low,
