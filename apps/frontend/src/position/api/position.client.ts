@@ -56,9 +56,9 @@ export interface Position {
   events: Array<{
     action: string;
     timestamp: string;
-    qty?: number;
+    quantity?: number;
     price?: number;
-    stop?: number;
+    stopPrice?: number;
     note?: string;
   }>;
 }

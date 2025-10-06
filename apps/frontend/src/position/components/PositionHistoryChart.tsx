@@ -7,9 +7,9 @@ import type { HistoricalData } from "../api/market-data.client";
 interface PositionEvent {
   action: string;
   timestamp: string;
-  qty?: number;
+  quantity?: number;
   price?: number;
-  stop?: number;
+  stopPrice?: number;
   note?: string;
 }
 
@@ -19,7 +19,7 @@ interface HistoricalPriceChartEChartsGradientPinsProps {
   instrument: string;
 }
 
-export function HistoricalPriceChartEChartsGradientPins({
+export function PositionHistoryChart({
   historicalData,
   events,
   instrument,
@@ -51,13 +51,8 @@ export function HistoricalPriceChartEChartsGradientPins({
     );
   }
 
-  // Find the position opening date
-  const positionOpenEvent = events.find(
-    (event) => event.action === "POSITION_OPEN",
-  );
-  const positionOpenDate = positionOpenEvent
-    ? new Date(positionOpenEvent.timestamp)
-    : events.length > 0
+  const positionOpenDate =
+    events.length > 0
       ? new Date(events[0].timestamp) // Use first event if no explicit opening
       : new Date(historicalData.pricePoints[0].date); // Fallback to first price point
 
@@ -83,22 +78,18 @@ export function HistoricalPriceChartEChartsGradientPins({
   const stopLossEvents = events.filter((event) => event.action === "STOP_LOSS");
   const stopLossLinesData = [];
 
-  console.log("All events:", events);
-  console.log("Stop loss events:", stopLossEvents);
-
   // Get the end time of the chart (last trading day)
   const chartEndTime =
     tradingDays.length > 0
       ? new Date(tradingDays[tradingDays.length - 1].date).getTime()
       : new Date().getTime();
 
-  // Create separate line segments for each stop-loss line
+  // Create separate line segments for each stop-loss line with vertical connections
   for (let i = 0; i < stopLossEvents.length; i++) {
     const currentEvent = stopLossEvents[i];
     const nextEvent = stopLossEvents[i + 1];
 
-    // Handle both 'stop' and 'stopPrice' field names
-    const stopPrice = currentEvent.stop || (currentEvent as any).stopPrice;
+    const stopPrice = currentEvent.stopPrice;
     if (stopPrice === undefined) continue;
 
     // Determine end time: next stop-loss event or end of chart
@@ -106,60 +97,87 @@ export function HistoricalPriceChartEChartsGradientPins({
       ? new Date(nextEvent.timestamp).getTime()
       : chartEndTime;
 
-    const lineData = [
-      [new Date(currentEvent.timestamp).getTime(), stopPrice],
+    const currentTime = new Date(currentEvent.timestamp).getTime();
+
+    // Horizontal line data
+    const horizontalLineData = [
+      [currentTime, stopPrice],
       [endTime, stopPrice],
     ];
 
     stopLossLinesData.push({
       name: `Stop Loss Line ${i + 1}`,
       type: "line",
-      data: lineData,
+      data: horizontalLineData,
       symbol: "none",
       lineStyle: {
         color: "#f59e0b",
-        width: 3,
-        type: "solid",
+        width: 1,
+        type: "dashed",
       },
       silent: true,
       z: 1,
     });
+
+    // Add vertical line if there's a next stop loss event
+    if (nextEvent) {
+      const nextStopPrice = nextEvent.stopPrice;
+      if (nextStopPrice !== undefined) {
+        const verticalLineData = [
+          [endTime, stopPrice],
+          [endTime, nextStopPrice],
+        ];
+
+        stopLossLinesData.push({
+          name: `Stop Loss Vertical ${i + 1}`,
+          type: "line",
+          data: verticalLineData,
+          symbol: "none",
+          lineStyle: {
+            color: "#f59e0b",
+            width: 1,
+            type: "dashed",
+          },
+          silent: true,
+          z: 1,
+        });
+      }
+    }
   }
 
   // Prepare pin event markers with share quantities
   const eventMarkers = events
-    .map((event) => {
-      // Handle both 'stop' and 'stopPrice' field names for stop loss events
+    .map((event, index) => {
+      // Handle stop loss events
       const eventPrice =
-        event.action === "STOP_LOSS"
-          ? event.stop || (event as any).stopPrice
-          : event.price;
+        event.action === "STOP_LOSS" ? event.stopPrice : event.price;
       if (eventPrice === undefined) return null;
 
-      const color =
-        event.action === "POSITION_OPEN"
-          ? "#10b981" // Green for position opening
-          : event.action === "BUY"
-            ? "#8b5cf6"
-            : event.action === "SELL"
-              ? "#06b6d4"
-              : "#f59e0b";
+      // Check if this is the first BUY event (position opening)
+      const isFirstBuyEvent = event.action === "BUY" && index === 0;
 
-      const symbolSize =
-        event.action === "STOP_LOSS"
-          ? 30
-          : event.action === "POSITION_OPEN"
-            ? 35
-            : 25;
-      const labelText =
-        event.action === "STOP_LOSS"
-          ? "STOP"
-          : event.action === "POSITION_OPEN"
-            ? "OPEN"
-            : `${event.action} ${event.qty ? (event.qty > 0 ? `+${event.qty}` : `${event.qty}`) : ""}`;
+      // Skip stop loss events for pin markers, but keep them for other processing
+      if (event.action === "STOP_LOSS") return null;
+
+      const color = isFirstBuyEvent
+        ? "#10b981" // Green for position opening (first BUY)
+        : event.action === "BUY"
+          ? "#8b5cf6"
+          : event.action === "SELL"
+            ? "#06b6d4"
+            : "#f59e0b";
+
+      const symbolSize = isFirstBuyEvent ? 35 : 25;
+      const labelText = isFirstBuyEvent
+        ? `OPEN ${event.quantity ? `+${event.quantity}` : ""}`
+        : event.action === "BUY"
+          ? `BUY ${event.quantity ? `+${event.quantity}` : ""}`
+          : event.action === "SELL"
+            ? `SELL ${event.quantity ? `${event.quantity}` : ""}`
+            : `${event.action} ${event.quantity ? (event.quantity > 0 ? `+${event.quantity}` : `${event.quantity}`) : ""}`;
 
       return {
-        name: `${event.action} Event`,
+        name: isFirstBuyEvent ? "Position Opening" : `${event.action} Event`,
         coord: [new Date(event.timestamp).getTime(), eventPrice],
         symbol: "pin",
         symbolSize: symbolSize,
@@ -187,44 +205,39 @@ export function HistoricalPriceChartEChartsGradientPins({
     })
     .filter(Boolean);
 
-  // Add position opening marker if no explicit POSITION_OPEN event exists
-  if (!positionOpenEvent && events.length > 0) {
-    const firstEvent = events[0];
-    // Handle both 'stop' and 'stopPrice' field names
-    const firstEventPrice =
-      firstEvent.action === "STOP_LOSS"
-        ? firstEvent.stop || (firstEvent as any).stopPrice
-        : firstEvent.price;
+  // Create subtle stop loss markers
+  const stopLossMarkers = stopLossEvents
+    .map((event) => {
+      const stopPrice = event.stopPrice;
+      if (stopPrice === undefined) return null;
 
-    if (firstEventPrice !== undefined) {
-      eventMarkers.unshift({
-        name: "Position Opening",
-        coord: [new Date(firstEvent.timestamp).getTime(), firstEventPrice],
-        symbol: "pin",
-        symbolSize: 35,
+      return {
+        name: "Stop Loss",
+        coord: [new Date(event.timestamp).getTime(), stopPrice],
+        symbol: "circle",
+        symbolSize: 8,
         itemStyle: {
-          color: "#10b981",
+          color: "#f59e0b",
           borderColor: "#ffffff",
-          borderWidth: 2,
+          borderWidth: 1,
         },
         label: {
           show: true,
-          position: "top",
-          formatter: "OPEN",
-          color: "#10b981",
-          fontSize: 12,
-          fontWeight: "bold",
-          backgroundColor: "rgba(255, 255, 255, 0.95)",
-          borderColor: "#10b981",
-          borderWidth: 2,
-          borderRadius: 8,
-          padding: [6, 12],
-          shadowBlur: 4,
-          shadowColor: "#10b981",
+          position: "left",
+          formatter: `$${stopPrice.toFixed(2)}`,
+          color: "#f59e0b",
+          fontSize: 9,
+          fontWeight: "normal",
+          backgroundColor: "rgba(255, 255, 255)",
+          borderColor: "#f59e0b",
+          borderWidth: 1,
+          borderRadius: 3,
+          padding: [4, 8],
+          offset: [-5, 0],
         },
-      });
-    }
-  }
+      };
+    })
+    .filter(Boolean);
 
   const latestPrice = tradingDays[tradingDays.length - 1]?.close || 0;
   const firstPrice = tradingDays[0]?.open || 0;
@@ -400,7 +413,7 @@ export function HistoricalPriceChartEChartsGradientPins({
           },
         },
         markPoint: {
-          data: eventMarkers,
+          data: [...eventMarkers, ...stopLossMarkers],
         },
       },
       ...stopLossLinesData,

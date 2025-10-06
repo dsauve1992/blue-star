@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router";
 import { ArrowLeft, TrendingUp, TrendingDown, Shield } from "lucide-react";
 import { usePositionById } from "../hooks/use-positions";
 import { useHistoricalData } from "../hooks/use-market-data";
-import { HistoricalPriceChartEChartsGradientPins } from "../components/HistoricalPriceChartEChartsGradientPins";
+import { PositionHistoryChart } from "../components/PositionHistoryChart.tsx";
 import { BuySharesModal } from "../components/BuySharesModal";
 import { SellSharesModal } from "../components/SellSharesModal";
 import { SetStopLossModal } from "../components/SetStopLossModal";
@@ -158,9 +158,12 @@ export function PositionDetail() {
   const buyEvents = position.events.filter(
     (e) => e.action === "BUY" && e.price,
   );
-  const totalBuyQuantity = buyEvents.reduce((sum, e) => sum + (e.qty || 0), 0);
+  const totalBuyQuantity = buyEvents.reduce(
+    (sum, e) => sum + (e.quantity || 0),
+    0,
+  );
   const totalBuyValue = buyEvents.reduce(
-    (sum, e) => sum + (e.qty || 0) * (e.price || 0),
+    (sum, e) => sum + (e.quantity || 0) * (e.price || 0),
     0,
   );
   const averageBuyPrice =
@@ -314,7 +317,7 @@ export function PositionDetail() {
         </Card>
       ) : historicalData ? (
         <>
-          <HistoricalPriceChartEChartsGradientPins
+          <PositionHistoryChart
             historicalData={historicalData.historicalData}
             events={positionEvents}
             instrument={position.instrument}
