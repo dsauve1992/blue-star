@@ -28,10 +28,13 @@ export class FinancialModelingPrepScreenerService implements ScreenerService {
   private readonly apiKey: string;
 
   constructor(private readonly configService: ConfigService) {
-    const apiKey = this.configService.get<string>('FINANCIAL_MODELING_PREP_API_KEY');
+    const apiKey = this.configService.get<string>(
+      'FINANCIAL_MODELING_PREP_API_KEY',
+    );
     if (!apiKey) {
       throw new Error('FINANCIAL_MODELING_PREP_API_KEY is required');
     }
+
     this.apiKey = apiKey;
   }
 
@@ -46,30 +49,33 @@ export class FinancialModelingPrepScreenerService implements ScreenerService {
 
     try {
       const response = await fetch(url.toString());
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
 
-      const data: FinancialModelingPrepResponse[] = await response.json() as FinancialModelingPrepResponse[];
+      const data: FinancialModelingPrepResponse[] =
+        (await response.json()) as FinancialModelingPrepResponse[];
 
-      return data.map(item => ScreenerResult.of({
-        symbol: item.symbol,
-        companyName: item.companyName,
-        marketCap: item.marketCap,
-        sector: item.sector,
-        industry: item.industry,
-        beta: item.beta,
-        price: item.price,
-        lastAnnualDividend: item.lastAnnualDividend,
-        volume: item.volume,
-        exchange: item.exchange,
-        exchangeShortName: item.exchangeShortName,
-        country: item.country,
-        isEtf: item.isEtf,
-        isFund: item.isFund,
-        isActivelyTrading: item.isActivelyTrading,
-      }));
+      return data.map((item) =>
+        ScreenerResult.of({
+          symbol: item.symbol,
+          companyName: item.companyName,
+          marketCap: item.marketCap,
+          sector: item.sector,
+          industry: item.industry,
+          beta: item.beta,
+          price: item.price,
+          lastAnnualDividend: item.lastAnnualDividend,
+          volume: item.volume,
+          exchange: item.exchange,
+          exchangeShortName: item.exchangeShortName,
+          country: item.country,
+          isEtf: item.isEtf,
+          isFund: item.isFund,
+          isActivelyTrading: item.isActivelyTrading,
+        }),
+      );
     } catch (error) {
       throw new Error(`Failed to fetch screener data: ${error.message}`);
     }
