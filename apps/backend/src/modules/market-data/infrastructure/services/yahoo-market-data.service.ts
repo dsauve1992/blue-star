@@ -1,5 +1,5 @@
 import { Injectable } from '@nestjs/common';
-import yahooFinance from 'yahoo-finance2';
+import YahooFinance from 'yahoo-finance2';
 import { Symbol } from '../../domain/value-objects/symbol';
 import { DateRange } from '../../domain/value-objects/date-range';
 import { PricePoint } from '../../domain/value-objects/price-point';
@@ -10,6 +10,12 @@ import {
 
 @Injectable()
 export class YahooMarketDataService implements MarketDataService {
+  private readonly yahooFinance: InstanceType<typeof YahooFinance>;
+
+  constructor() {
+    this.yahooFinance = new YahooFinance();
+  }
+
   async getHistoricalData(
     symbol: Symbol,
     dateRange: DateRange,
@@ -20,7 +26,7 @@ export class YahooMarketDataService implements MarketDataService {
       const period2 = dateRange.endDate;
       const interval = this.determineInterval(dateRange);
 
-      const result = await yahooFinance.historical(query, {
+      const result = await this.yahooFinance.historical(query, {
         period1,
         period2,
         interval,
