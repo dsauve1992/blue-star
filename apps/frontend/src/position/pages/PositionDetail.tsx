@@ -52,6 +52,18 @@ export function PositionDetail() {
     const endDate = new Date(endTime);
     endDate.setDate(endDate.getDate() + 7);
 
+    // Ensure we stay within daily data range (90 days max for daily data)
+    const maxDays = 90;
+    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (totalDays > maxDays) {
+      // If range is too large, center it around the events with max 90 days
+      const centerTime = (startTime + endTime) / 2;
+      const halfRange = maxDays / 2;
+      startDate.setTime(centerTime - (halfRange * 24 * 60 * 60 * 1000));
+      endDate.setTime(centerTime + (halfRange * 24 * 60 * 60 * 1000));
+    }
+
     // Ensure end date is not in the future
     const today = new Date();
     if (endDate > today) {

@@ -60,19 +60,41 @@ export function PositionHistoryChart({
   const threeWeeksBefore = new Date(positionOpenDate);
   threeWeeksBefore.setDate(threeWeeksBefore.getDate() - 21); // 3 weeks = 21 days
 
+  // Use all price points since we're now getting daily data from the API
   const tradingDays = historicalData.pricePoints.filter((point) => {
     const date = new Date(point.date);
-    const dayOfWeek = date.getDay();
-    const isWeekday = dayOfWeek !== 0 && dayOfWeek !== 6;
     const isAfterThreeWeeksBefore = date >= threeWeeksBefore;
-    return isWeekday && isAfterThreeWeeksBefore;
+    return isAfterThreeWeeksBefore;
   });
 
-  // Prepare gradient line data
-  const lineData = tradingDays.map((point) => [
-    new Date(point.date).getTime(),
+  console.log(
+    "Debug - historicalData.pricePoints:",
+    historicalData.pricePoints,
+  );
+  console.log("Debug - tradingDays:", tradingDays);
+  console.log("Debug - threeWeeksBefore:", threeWeeksBefore);
+
+  // Check if we have any trading days
+  if (tradingDays.length === 0) {
+    return (
+      <Card className="p-6 text-center">
+        <Alert variant="danger">
+          No trading data available for the selected period for {instrument}.
+        </Alert>
+      </Card>
+    );
+  }
+
+  // Prepare candlestick data [timestamp, open, close, low, high]
+  const candlestickData = tradingDays.map((point) => [
+    point.date, // Use the date string directly for proper time axis handling
+    point.open,
     point.close,
+    point.low,
+    point.high,
   ]);
+
+  console.log("Debug - candlestickData:", candlestickData);
 
   // Prepare stop loss horizontal lines data
   const stopLossEvents = events.filter((event) => event.action === "STOP_LOSS");
@@ -268,14 +290,26 @@ export function PositionHistoryChart({
       formatter: function (params: Array<{ data: number[] }>) {
         const data = params[0];
         const date = new Date(data.data[0]).toLocaleDateString();
-        const price = data.data[1];
+        const [, open, close, low, high] = data.data;
 
         return `
           <div style="padding: 8px;">
             <div style="font-weight: bold; margin-bottom: 4px;">${date}</div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span style="color: #64748b;">Open:</span>
+              <span style="font-weight: bold;">$${open.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span style="color: #64748b;">High:</span>
+              <span style="font-weight: bold;">$${high.toFixed(2)}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
+              <span style="color: #64748b;">Low:</span>
+              <span style="font-weight: bold;">$${low.toFixed(2)}</span>
+            </div>
             <div style="display: flex; justify-content: space-between;">
-              <span style="color: #64748b;">Price:</span>
-              <span style="font-weight: bold;">$${price.toFixed(2)}</span>
+              <span style="color: #64748b;">Close:</span>
+              <span style="font-weight: bold;">$${close.toFixed(2)}</span>
             </div>
           </div>
         `;
@@ -355,61 +389,21 @@ export function PositionHistoryChart({
     series: [
       {
         name: instrument,
-        type: "line",
-        data: lineData,
-        smooth: true,
-        symbol: "none",
-        lineStyle: {
-          color: {
-            type: "linear",
-            x: 0,
-            y: 0,
-            x2: 1,
-            y2: 0,
-            colorStops: [
-              {
-                offset: 0,
-                color: "#8b5cf6",
-              },
-              {
-                offset: 0.5,
-                color: "#06b6d4",
-              },
-              {
-                offset: 1,
-                color: "#10b981",
-              },
-            ],
-          },
-          width: 4,
-        },
-        areaStyle: {
-          color: {
-            type: "linear",
-            x: 0,
-            y: 0,
-            x2: 0,
-            y2: 1,
-            colorStops: [
-              {
-                offset: 0,
-                color: "rgba(139, 92, 246, 0.6)",
-              },
-              {
-                offset: 0.5,
-                color: "rgba(6, 182, 212, 0.4)",
-              },
-              {
-                offset: 1,
-                color: "rgba(16, 185, 129, 0.2)",
-              },
-            ],
-          },
+        type: "candlestick",
+        data: candlestickData,
+        itemStyle: {
+          color: isDarkMode ? "#10b981" : "#26a69a", // Green for up candles
+          color0: isDarkMode ? "#ef4444" : "#ef5350", // Red for down candles
+          borderColor: isDarkMode ? "#10b981" : "#26a69a",
+          borderColor0: isDarkMode ? "#ef4444" : "#ef5350",
         },
         emphasis: {
           focus: "series",
-          lineStyle: {
-            width: 6,
+          itemStyle: {
+            color: isDarkMode ? "#22c55e" : "#22c55e",
+            color0: isDarkMode ? "#dc2626" : "#dc2626",
+            borderColor: isDarkMode ? "#22c55e" : "#22c55e",
+            borderColor0: isDarkMode ? "#dc2626" : "#dc2626",
           },
         },
         markPoint: {
@@ -430,7 +424,7 @@ export function PositionHistoryChart({
           <div>
             <h3 className="text-xl font-bold text-slate-900 dark:text-slate-100 flex items-center">
               <MapPin className="h-5 w-5 mr-2 text-purple-600" />
-              {instrument} Gradient Pins
+              {instrument} Daily Chart
             </h3>
           </div>
           <div className="flex items-center space-x-4">
