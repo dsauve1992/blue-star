@@ -11,6 +11,7 @@ import { Shield, TrendingDown, TrendingUp, Eye } from "lucide-react";
 import { BuySharesModal } from "./BuySharesModal";
 import { SellSharesModal } from "./SellSharesModal";
 import { SetStopLossModal } from "./SetStopLossModal";
+import { MinimalPositionChart } from "./MinimalPositionChart";
 import { Link } from "react-router";
 
 export function PositionList() {
@@ -58,12 +59,13 @@ export function PositionList() {
     <div className="space-y-4">
       {data.positions.map((position) => (
         <Card key={position.id} className="p-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="flex items-center space-x-2">
+          <div className="flex flex-col lg:flex-row lg:items-start justify-between gap-6">
+            {/* Left side - Position info and actions */}
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center space-x-3 mb-4">
                 <Link
                   to={`/positions/${position.id}`}
-                  className="text-lg font-semibold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="text-xl font-bold text-slate-900 dark:text-slate-100 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                 >
                   {position.instrument}
                 </Link>
@@ -78,14 +80,29 @@ export function PositionList() {
                   {position.isClosed ? "Closed" : "Open"}
                 </Badge>
               </div>
-            </div>
-            <div className="flex items-center space-x-4">
-              <div className="text-right">
-                <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
-                  {position.currentQty} shares
+
+              {/* Position metrics */}
+              <div className="grid grid-cols-2 gap-4 mb-4">
+                <div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                    Current Quantity
+                  </div>
+                  <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {position.currentQty} shares
+                  </div>
+                </div>
+                <div>
+                  <div className="text-sm text-slate-600 dark:text-slate-400 mb-1">
+                    Total Events
+                  </div>
+                  <div className="text-lg font-semibold text-slate-900 dark:text-slate-100">
+                    {position.events.length}
+                  </div>
                 </div>
               </div>
-              <div className="flex space-x-2">
+
+              {/* Action buttons */}
+              <div className="flex flex-wrap gap-2">
                 <Link to={`/positions/${position.id}`}>
                   <Button size="sm" variant="outline">
                     <Eye className="h-4 w-4 mr-1" />
@@ -137,32 +154,16 @@ export function PositionList() {
                 </Button>
               </div>
             </div>
-          </div>
 
-          {position.events.length > 0 && (
-            <div className="mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
-              <h4 className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
-                Recent Activity
-              </h4>
-              <div className="space-y-1">
-                {position.events.slice(-3).map((event, index) => (
-                  <div
-                    key={index}
-                    className="flex items-center justify-between text-sm"
-                  >
-                    <span className="text-slate-600 dark:text-slate-400">
-                      {event.action} {event.qty && `${event.qty} shares`}
-                      {event.price && ` at $${event.price}`}
-                      {event.stop && ` (stop: $${event.stop})`}
-                    </span>
-                    <span className="text-slate-500 dark:text-slate-500">
-                      {new Date(event.timestamp).toLocaleDateString()}
-                    </span>
-                  </div>
-                ))}
-              </div>
+            {/* Right side - Chart */}
+            <div className="w-full lg:w-80 flex-shrink-0 h-48">
+              <MinimalPositionChart
+                instrument={position.instrument}
+                events={position.events}
+                className="w-full h-full"
+              />
             </div>
-          )}
+          </div>
         </Card>
       ))}
 

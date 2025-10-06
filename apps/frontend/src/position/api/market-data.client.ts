@@ -30,9 +30,9 @@ export class MarketDataClient {
       `/market-data/historical`,
       {
         params: {
-          symbol,
-          startDate,
-          endDate,
+          symbol: symbol,
+          startDate: startDate,
+          endDate: endDate,
         },
       },
     );

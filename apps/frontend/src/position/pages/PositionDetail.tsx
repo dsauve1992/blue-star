@@ -2,7 +2,7 @@ import { useParams, Link } from "react-router";
 import { ArrowLeft, TrendingUp, TrendingDown, Shield } from "lucide-react";
 import { usePositionById } from "../hooks/use-positions";
 import { useHistoricalData } from "../hooks/use-market-data";
-import { HistoricalPriceChart } from "../components/HistoricalPriceChart";
+import { HistoricalPriceChartEChartsGradientPins } from "../components/HistoricalPriceChartEChartsGradientPins";
 import { BuySharesModal } from "../components/BuySharesModal";
 import { SellSharesModal } from "../components/SellSharesModal";
 import { SetStopLossModal } from "../components/SetStopLossModal";
@@ -77,71 +77,8 @@ export function PositionDetail() {
     !!position,
   );
 
-  // Generate fake trading events for demonstration
-  const generateFakeEvents = () => {
-    if (!historicalData?.historicalData?.pricePoints || historicalData.historicalData.pricePoints.length === 0) {
-      return [];
-    }
-
-    const pricePoints = historicalData.historicalData.pricePoints;
-    const tradingDays = pricePoints.filter((point) => {
-      const date = new Date(point.date);
-      const dayOfWeek = date.getDay();
-      return dayOfWeek !== 0 && dayOfWeek !== 6; // Exclude weekends
-    });
-
-    if (tradingDays.length < 3) return [];
-
-    // Generate 3-4 fake events spread across the trading period
-    const events = [];
-    
-    // Event 1: Initial buy (around 20% into the period)
-    const buyIndex = Math.floor(tradingDays.length * 0.2);
-    const buyDay = tradingDays[buyIndex];
-    events.push({
-      action: "BUY",
-      timestamp: buyDay.date,
-      qty: 100,
-      price: buyDay.close,
-      note: "Initial position",
-    });
-
-    // Event 2: Another buy (around 40% into the period)
-    const buy2Index = Math.floor(tradingDays.length * 0.4);
-    const buy2Day = tradingDays[buy2Index];
-    events.push({
-      action: "BUY",
-      timestamp: buy2Day.date,
-      qty: 50,
-      price: buy2Day.close,
-      note: "Add to position",
-    });
-
-    // Event 3: Partial sell (around 60% into the period)
-    const sellIndex = Math.floor(tradingDays.length * 0.6);
-    const sellDay = tradingDays[sellIndex];
-    events.push({
-      action: "SELL",
-      timestamp: sellDay.date,
-      qty: 75,
-      price: sellDay.close,
-      note: "Take some profits",
-    });
-
-    // Event 4: Stop loss (around 80% into the period)
-    const stopIndex = Math.floor(tradingDays.length * 0.8);
-    const stopDay = tradingDays[stopIndex];
-    events.push({
-      action: "STOP_LOSS",
-      timestamp: stopDay.date,
-      stop: stopDay.close * 0.95, // 5% below current price
-      note: "Protect remaining position",
-    });
-
-    return events.sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
-  };
-
-  const fakeEvents = historicalData ? generateFakeEvents() : [];
+  // Use real position events
+  const positionEvents = position?.events || [];
 
   if (isLoading) {
     return (
@@ -174,12 +111,6 @@ export function PositionDetail() {
                 The position you're looking for doesn't exist or you don't have
                 permission to view it.
               </p>
-              <p className="mt-2 text-sm">
-                Position ID:{" "}
-                <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                  {positionId}
-                </code>
-              </p>
             </div>
           ) : (
             "Failed to load position details. Please try again."
@@ -205,12 +136,6 @@ export function PositionDetail() {
             <p>
               The position you're looking for doesn't exist or you don't have
               permission to view it.
-            </p>
-            <p className="mt-2 text-sm">
-              Position ID:{" "}
-              <code className="bg-slate-100 dark:bg-slate-800 px-2 py-1 rounded">
-                {positionId}
-              </code>
             </p>
           </div>
         </Alert>
@@ -257,9 +182,6 @@ export function PositionDetail() {
             <h1 className="text-2xl font-bold text-slate-900 dark:text-slate-100">
               {position.instrument} Position
             </h1>
-            <p className="text-slate-600 dark:text-slate-400">
-              Position ID: {position.id}
-            </p>
           </div>
         </div>
         <Badge
@@ -391,11 +313,13 @@ export function PositionDetail() {
           </Alert>
         </Card>
       ) : historicalData ? (
-        <HistoricalPriceChart
-          historicalData={historicalData.historicalData}
-          events={fakeEvents}
-          instrument={position.instrument}
-        />
+        <>
+          <HistoricalPriceChartEChartsGradientPins
+            historicalData={historicalData.historicalData}
+            events={positionEvents}
+            instrument={position.instrument}
+          />
+        </>
       ) : (
         <Card className="p-6">
           <Alert variant="danger">

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Input, Label } from 'src/global/design-system';
+import { Button, Card, Input, Label, DateInput } from 'src/global/design-system';
 import { useSetStopLoss } from '../hooks/use-positions';
 
 interface SetStopLossModalProps {
@@ -17,6 +17,7 @@ export function SetStopLossModal({
 }: SetStopLossModalProps) {
   const [stopPrice, setStopPrice] = useState('');
   const [note, setNote] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const setStopLossMutation = useSetStopLoss();
@@ -42,7 +43,7 @@ export function SetStopLossModal({
         positionId,
         request: {
           stopPrice: Number(stopPrice),
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(date).toISOString(),
           note: note || undefined,
         },
       });
@@ -50,6 +51,7 @@ export function SetStopLossModal({
       // Reset form and close modal
       setStopPrice('');
       setNote('');
+      setDate(new Date().toISOString().split("T")[0]);
       setErrors({});
       onClose();
     } catch (error) {
@@ -60,6 +62,7 @@ export function SetStopLossModal({
   const handleClose = () => {
     setStopPrice('');
     setNote('');
+    setDate(new Date().toISOString().split("T")[0]);
     setErrors({});
     onClose();
   };
@@ -106,6 +109,15 @@ export function SetStopLossModal({
                 {errors.stopPrice}
               </p>
             )}
+          </div>
+
+          <div>
+            <DateInput
+              label="Stop Loss Date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              helperText="Select the date when this stop loss was set"
+            />
           </div>
 
           <div>

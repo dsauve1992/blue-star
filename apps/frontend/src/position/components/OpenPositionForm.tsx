@@ -1,10 +1,6 @@
 import { useState } from "react";
 import { useOpenPosition } from "../hooks/use-positions";
-import { Card } from "src/global/design-system";
-import { Button } from "src/global/design-system";
-import { Input } from "src/global/design-system";
-import { Label } from "src/global/design-system";
-import { Alert } from "src/global/design-system";
+import { Card, Button, Input, Label, Alert, DateInput } from "src/global/design-system";
 import { Plus } from "lucide-react";
 
 export function OpenPositionForm() {
@@ -14,6 +10,7 @@ export function OpenPositionForm() {
     quantity: "",
     price: "",
     note: "",
+    date: new Date().toISOString().split("T")[0], // Default to today
   });
 
   const openPositionMutation = useOpenPosition();
@@ -30,7 +27,7 @@ export function OpenPositionForm() {
         instrument: formData.instrument,
         quantity: parseFloat(formData.quantity),
         price: parseFloat(formData.price),
-        timestamp: new Date().toISOString(),
+        timestamp: new Date(formData.date).toISOString(),
         note: formData.note || undefined,
       });
 
@@ -39,6 +36,7 @@ export function OpenPositionForm() {
         quantity: "",
         price: "",
         note: "",
+        date: new Date().toISOString().split("T")[0],
       });
       setIsOpen(false);
     } catch (error) {
@@ -110,6 +108,15 @@ export function OpenPositionForm() {
               required
             />
           </div>
+        </div>
+
+        <div>
+          <DateInput
+            label="Transaction Date"
+            value={formData.date}
+            onChange={(e) => handleInputChange("date", e.target.value)}
+            helperText="Select the date when this transaction occurred"
+          />
         </div>
 
         <div>

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Input, Label } from 'src/global/design-system';
+import { Button, Card, Input, Label, DateInput } from 'src/global/design-system';
 import { useSellShares } from '../hooks/use-positions';
 
 interface SellSharesModalProps {
@@ -20,6 +20,7 @@ export function SellSharesModal({
   const [quantity, setQuantity] = useState('');
   const [price, setPrice] = useState('');
   const [note, setNote] = useState('');
+  const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
   const sellSharesMutation = useSellShares();
@@ -52,7 +53,7 @@ export function SellSharesModal({
         request: {
           quantity: Number(quantity),
           price: Number(price),
-          timestamp: new Date().toISOString(),
+          timestamp: new Date(date).toISOString(),
           note: note || undefined,
         },
       });
@@ -61,6 +62,7 @@ export function SellSharesModal({
       setQuantity('');
       setPrice('');
       setNote('');
+      setDate(new Date().toISOString().split("T")[0]);
       setErrors({});
       onClose();
     } catch (error) {
@@ -72,6 +74,7 @@ export function SellSharesModal({
     setQuantity('');
     setPrice('');
     setNote('');
+    setDate(new Date().toISOString().split("T")[0]);
     setErrors({});
     onClose();
   };
@@ -136,6 +139,15 @@ export function SellSharesModal({
                 {errors.price}
               </p>
             )}
+          </div>
+
+          <div>
+            <DateInput
+              label="Transaction Date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              helperText="Select the date when this transaction occurred"
+            />
           </div>
 
           <div>
