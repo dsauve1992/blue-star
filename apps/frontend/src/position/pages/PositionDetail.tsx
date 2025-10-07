@@ -54,14 +54,16 @@ export function PositionDetail() {
 
     // Ensure we stay within daily data range (90 days max for daily data)
     const maxDays = 90;
-    const totalDays = Math.ceil((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
-    
+    const totalDays = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
     if (totalDays > maxDays) {
       // If range is too large, center it around the events with max 90 days
       const centerTime = (startTime + endTime) / 2;
       const halfRange = maxDays / 2;
-      startDate.setTime(centerTime - (halfRange * 24 * 60 * 60 * 1000));
-      endDate.setTime(centerTime + (halfRange * 24 * 60 * 60 * 1000));
+      startDate.setTime(centerTime - halfRange * 24 * 60 * 60 * 1000);
+      endDate.setTime(centerTime + halfRange * 24 * 60 * 60 * 1000);
     }
 
     // Ensure end date is not in the future
@@ -343,25 +345,20 @@ export function PositionDetail() {
         </Card>
       )}
 
-      {/* Action Modals */}
       <BuySharesModal
-        positionId={position.id}
-        instrument={position.instrument}
+        position={position}
         isOpen={activeModal.type === "buy"}
         onClose={() => setActiveModal({ type: null })}
       />
 
       <SellSharesModal
-        positionId={position.id}
-        instrument={position.instrument}
-        currentQuantity={position.currentQty}
+        position={position}
         isOpen={activeModal.type === "sell"}
         onClose={() => setActiveModal({ type: null })}
       />
 
       <SetStopLossModal
-        positionId={position.id}
-        instrument={position.instrument}
+        position={position}
         isOpen={activeModal.type === "stop-loss"}
         onClose={() => setActiveModal({ type: null })}
       />
