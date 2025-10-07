@@ -1,27 +1,31 @@
-import { useState } from 'react';
-import { Button, Card, Input, Label, DateInput } from 'src/global/design-system';
-import { useSellShares } from '../hooks/use-positions';
+import { useState } from "react";
+import {
+  Button,
+  Card,
+  Input,
+  Label,
+  DateInput,
+} from "src/global/design-system";
+import { useSellShares } from "../hooks/use-positions";
+import type { Position } from "src/position/api/position.client.ts";
 
 interface SellSharesModalProps {
-  positionId: string;
-  instrument: string;
-  currentQuantity: number;
+  position: Position | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function SellSharesModal({
-  positionId,
-  instrument,
-  currentQuantity,
+  position,
   isOpen,
   onClose,
 }: SellSharesModalProps) {
-  const [quantity, setQuantity] = useState('');
-  const [price, setPrice] = useState('');
-  const [note, setNote] = useState('');
+  const [quantity, setQuantity] = useState("");
+  const [price, setPrice] = useState("");
+  const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const currentQuantity = position ? position.currentQty : 0;
 
   const sellSharesMutation = useSellShares();
 
@@ -29,13 +33,13 @@ export function SellSharesModal({
     const newErrors: Record<string, string> = {};
 
     if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
-      newErrors.quantity = 'Quantity must be a positive number';
+      newErrors.quantity = "Quantity must be a positive number";
     } else if (Number(quantity) > currentQuantity) {
       newErrors.quantity = `Cannot sell more than ${currentQuantity} shares`;
     }
 
     if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-      newErrors.price = 'Price must be a positive number';
+      newErrors.price = "Price must be a positive number";
     }
 
     setErrors(newErrors);
@@ -49,7 +53,7 @@ export function SellSharesModal({
 
     try {
       await sellSharesMutation.mutateAsync({
-        positionId,
+        positionId: position!.id,
         request: {
           quantity: Number(quantity),
           price: Number(price),
@@ -59,21 +63,21 @@ export function SellSharesModal({
       });
 
       // Reset form and close modal
-      setQuantity('');
-      setPrice('');
-      setNote('');
+      setQuantity("");
+      setPrice("");
+      setNote("");
       setDate(new Date().toISOString().split("T")[0]);
       setErrors({});
       onClose();
     } catch (error) {
-      console.error('Failed to sell shares:', error);
+      console.error("Failed to sell shares:", error);
     }
   };
 
   const handleClose = () => {
-    setQuantity('');
-    setPrice('');
-    setNote('');
+    setQuantity("");
+    setPrice("");
+    setNote("");
     setDate(new Date().toISOString().split("T")[0]);
     setErrors({});
     onClose();
@@ -86,7 +90,7 @@ export function SellSharesModal({
       <Card className="w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            Sell {instrument} Shares
+            Sell {position!.instrument} Shares
           </h2>
           <Button
             variant="ghost"
@@ -100,7 +104,8 @@ export function SellSharesModal({
 
         <div className="mb-4 p-3 bg-slate-100 dark:bg-slate-800 rounded-lg">
           <p className="text-sm text-slate-600 dark:text-slate-400">
-            Current position: <span className="font-medium">{currentQuantity} shares</span>
+            Current position:{" "}
+            <span className="font-medium">{currentQuantity} shares</span>
           </p>
         </div>
 
@@ -114,7 +119,7 @@ export function SellSharesModal({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder={`Max: ${currentQuantity} shares`}
-              className={errors.quantity ? 'border-red-500' : ''}
+              className={errors.quantity ? "border-red-500" : ""}
             />
             {errors.quantity && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1">
@@ -132,7 +137,7 @@ export function SellSharesModal({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="Enter price per share"
-              className={errors.price ? 'border-red-500' : ''}
+              className={errors.price ? "border-red-500" : ""}
             />
             {errors.price && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1">
@@ -175,7 +180,7 @@ export function SellSharesModal({
               disabled={sellSharesMutation.isPending}
               className="flex-1"
             >
-              {sellSharesMutation.isPending ? 'Selling...' : 'Sell Shares'}
+              {sellSharesMutation.isPending ? "Selling..." : "Sell Shares"}
             </Button>
           </div>
         </form>

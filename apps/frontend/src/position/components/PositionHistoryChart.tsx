@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
 import ReactECharts from "echarts-for-react";
-import { Card, Alert, Badge } from "src/global/design-system";
+import { Card, Alert, Badge, useTheme } from "src/global/design-system";
 import { Zap, MapPin } from "lucide-react";
 import type { HistoricalData } from "../api/market-data.client";
 
@@ -24,22 +23,8 @@ export function PositionHistoryChart({
   events,
   instrument,
 }: HistoricalPriceChartEChartsGradientPinsProps) {
-  const [isDarkMode, setIsDarkMode] = useState(false);
-
-  useEffect(() => {
-    const checkTheme = () => {
-      setIsDarkMode(document.documentElement.classList.contains("dark"));
-    };
-
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
   if (!historicalData.pricePoints || historicalData.pricePoints.length === 0) {
     return (

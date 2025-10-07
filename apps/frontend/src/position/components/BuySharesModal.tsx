@@ -1,23 +1,28 @@
-import { useState } from 'react';
-import { Button, Card, Input, Label, DateInput } from 'src/global/design-system';
-import { useBuyShares } from '../hooks/use-positions';
+import { useState } from "react";
+import {
+  Button,
+  Card,
+  Input,
+  Label,
+  DateInput,
+} from "src/global/design-system";
+import { useBuyShares } from "../hooks/use-positions";
+import type { Position } from "src/position/api/position.client.ts";
 
 interface BuySharesModalProps {
-  positionId: string;
-  instrument: string;
+  position: Position | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function BuySharesModal({
-  positionId,
-  instrument,
+  position,
   isOpen,
   onClose,
 }: BuySharesModalProps) {
-  const [quantity, setQuantity] = useState('');
-  const [price, setPrice] = useState('');
-  const [note, setNote] = useState('');
+  const [quantity, setQuantity] = useState("");
+  const [price, setPrice] = useState("");
+  const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -27,11 +32,11 @@ export function BuySharesModal({
     const newErrors: Record<string, string> = {};
 
     if (!quantity || isNaN(Number(quantity)) || Number(quantity) <= 0) {
-      newErrors.quantity = 'Quantity must be a positive number';
+      newErrors.quantity = "Quantity must be a positive number";
     }
 
     if (!price || isNaN(Number(price)) || Number(price) <= 0) {
-      newErrors.price = 'Price must be a positive number';
+      newErrors.price = "Price must be a positive number";
     }
 
     setErrors(newErrors);
@@ -45,7 +50,7 @@ export function BuySharesModal({
 
     try {
       await buySharesMutation.mutateAsync({
-        positionId,
+        positionId: position!.id,
         request: {
           quantity: Number(quantity),
           price: Number(price),
@@ -55,21 +60,21 @@ export function BuySharesModal({
       });
 
       // Reset form and close modal
-      setQuantity('');
-      setPrice('');
-      setNote('');
+      setQuantity("");
+      setPrice("");
+      setNote("");
       setDate(new Date().toISOString().split("T")[0]);
       setErrors({});
       onClose();
     } catch (error) {
-      console.error('Failed to buy shares:', error);
+      console.error("Failed to buy shares:", error);
     }
   };
 
   const handleClose = () => {
-    setQuantity('');
-    setPrice('');
-    setNote('');
+    setQuantity("");
+    setPrice("");
+    setNote("");
     setDate(new Date().toISOString().split("T")[0]);
     setErrors({});
     onClose();
@@ -82,7 +87,7 @@ export function BuySharesModal({
       <Card className="w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            Buy {instrument} Shares
+            Buy {position!.instrument} Shares
           </h2>
           <Button
             variant="ghost"
@@ -103,7 +108,7 @@ export function BuySharesModal({
               value={quantity}
               onChange={(e) => setQuantity(e.target.value)}
               placeholder="Enter quantity"
-              className={errors.quantity ? 'border-red-500' : ''}
+              className={errors.quantity ? "border-red-500" : ""}
             />
             {errors.quantity && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1">
@@ -121,7 +126,7 @@ export function BuySharesModal({
               value={price}
               onChange={(e) => setPrice(e.target.value)}
               placeholder="Enter price per share"
-              className={errors.price ? 'border-red-500' : ''}
+              className={errors.price ? "border-red-500" : ""}
             />
             {errors.price && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1">
@@ -164,7 +169,7 @@ export function BuySharesModal({
               disabled={buySharesMutation.isPending}
               className="flex-1"
             >
-              {buySharesMutation.isPending ? 'Buying...' : 'Buy Shares'}
+              {buySharesMutation.isPending ? "Buying..." : "Buy Shares"}
             </Button>
           </div>
         </form>

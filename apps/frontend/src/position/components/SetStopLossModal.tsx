@@ -1,22 +1,27 @@
-import { useState } from 'react';
-import { Button, Card, Input, Label, DateInput } from 'src/global/design-system';
-import { useSetStopLoss } from '../hooks/use-positions';
+import { useState } from "react";
+import {
+  Button,
+  Card,
+  Input,
+  Label,
+  DateInput,
+} from "src/global/design-system";
+import { useSetStopLoss } from "../hooks/use-positions";
+import type { Position } from "src/position/api/position.client.ts";
 
 interface SetStopLossModalProps {
-  positionId: string;
-  instrument: string;
+  position: Position | null;
   isOpen: boolean;
   onClose: () => void;
 }
 
 export function SetStopLossModal({
-  positionId,
-  instrument,
+  position,
   isOpen,
   onClose,
 }: SetStopLossModalProps) {
-  const [stopPrice, setStopPrice] = useState('');
-  const [note, setNote] = useState('');
+  const [stopPrice, setStopPrice] = useState("");
+  const [note, setNote] = useState("");
   const [date, setDate] = useState(new Date().toISOString().split("T")[0]);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
@@ -26,7 +31,7 @@ export function SetStopLossModal({
     const newErrors: Record<string, string> = {};
 
     if (!stopPrice || isNaN(Number(stopPrice)) || Number(stopPrice) <= 0) {
-      newErrors.stopPrice = 'Stop price must be a positive number';
+      newErrors.stopPrice = "Stop price must be a positive number";
     }
 
     setErrors(newErrors);
@@ -40,7 +45,7 @@ export function SetStopLossModal({
 
     try {
       await setStopLossMutation.mutateAsync({
-        positionId,
+        positionId: position!.id,
         request: {
           stopPrice: Number(stopPrice),
           timestamp: new Date(date).toISOString(),
@@ -49,19 +54,19 @@ export function SetStopLossModal({
       });
 
       // Reset form and close modal
-      setStopPrice('');
-      setNote('');
+      setStopPrice("");
+      setNote("");
       setDate(new Date().toISOString().split("T")[0]);
       setErrors({});
       onClose();
     } catch (error) {
-      console.error('Failed to set stop loss:', error);
+      console.error("Failed to set stop loss:", error);
     }
   };
 
   const handleClose = () => {
-    setStopPrice('');
-    setNote('');
+    setStopPrice("");
+    setNote("");
     setDate(new Date().toISOString().split("T")[0]);
     setErrors({});
     onClose();
@@ -74,7 +79,7 @@ export function SetStopLossModal({
       <Card className="w-full max-w-md p-6">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-xl font-semibold text-slate-900 dark:text-slate-100">
-            Set Stop Loss for {instrument}
+            Set Stop Loss for {position!.instrument}
           </h2>
           <Button
             variant="ghost"
@@ -88,7 +93,9 @@ export function SetStopLossModal({
 
         <div className="mb-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
           <p className="text-sm text-amber-800 dark:text-amber-200">
-            <strong>Stop Loss:</strong> A stop loss order will automatically sell your shares if the price drops to or below the specified stop price.
+            <strong>Stop Loss:</strong> A stop loss order will automatically
+            sell your shares if the price drops to or below the specified stop
+            price.
           </p>
         </div>
 
@@ -102,7 +109,7 @@ export function SetStopLossModal({
               value={stopPrice}
               onChange={(e) => setStopPrice(e.target.value)}
               placeholder="Enter stop price"
-              className={errors.stopPrice ? 'border-red-500' : ''}
+              className={errors.stopPrice ? "border-red-500" : ""}
             />
             {errors.stopPrice && (
               <p className="text-sm text-red-600 dark:text-red-400 mt-1">
@@ -145,7 +152,7 @@ export function SetStopLossModal({
               disabled={setStopLossMutation.isPending}
               className="flex-1"
             >
-              {setStopLossMutation.isPending ? 'Setting...' : 'Set Stop Loss'}
+              {setStopLossMutation.isPending ? "Setting..." : "Set Stop Loss"}
             </Button>
           </div>
         </form>

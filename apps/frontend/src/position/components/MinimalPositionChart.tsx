@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
 import ReactECharts from "echarts-for-react";
+import { useTheme } from "src/global/design-system";
 import { useHistoricalData } from "../hooks/use-market-data";
 
 interface PositionEvent {
@@ -22,24 +22,9 @@ export function MinimalPositionChart({
   events,
   className = "",
 }: MinimalPositionChartProps) {
-  const [isDarkMode, setIsDarkMode] = useState(false);
+  const { theme } = useTheme();
+  const isDarkMode = theme === 'dark';
 
-  useEffect(() => {
-    const checkTheme = () => {
-      setIsDarkMode(document.documentElement.classList.contains("dark"));
-    };
-
-    checkTheme();
-    const observer = new MutationObserver(checkTheme);
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
-
-  // Calculate date range for historical data (same logic as PositionDetail)
   const getDateRange = () => {
     if (!events || events.length === 0) {
       // Default to last 3 months if no events
