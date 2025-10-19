@@ -1,15 +1,15 @@
-import { Controller, Get, Query, BadRequestException } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { Public } from '../../auth/public.decorator';
 import { Symbol } from '../domain/value-objects/symbol';
 import { DateRange } from '../domain/value-objects/date-range';
 import { GetHistoricalDataUseCase } from '../use-cases/get-historical-data.use-case';
-import { ScreenStocksUseCase } from '../use-cases/screen-stocks.use-case';
-import { MarketDataApiMapper } from './market-data-api.mapper';
-import { GetHistoricalDataApiResponseDto } from './market-data-api.dto';
 import {
   ScreenStocksRequestDto,
   ScreenStocksResponseDto,
+  ScreenStocksUseCase,
 } from '../use-cases/screen-stocks.use-case';
+import { MarketDataApiMapper } from './market-data-api.mapper';
+import { GetHistoricalDataApiResponseDto } from './market-data-api.dto';
 
 @Controller('market-data')
 export class MarketDataController {
@@ -42,7 +42,7 @@ export class MarketDataController {
         useCaseResponse,
       );
     } catch (error) {
-      throw new BadRequestException(error.message);
+      throw new BadRequestException(error);
     }
   }
 
@@ -80,7 +80,7 @@ export class MarketDataController {
 
       return await this.screenStocksUseCase.execute(request);
     } catch (error) {
-      throw new BadRequestException(error.message);
+      throw new BadRequestException(error);
     }
   }
 }

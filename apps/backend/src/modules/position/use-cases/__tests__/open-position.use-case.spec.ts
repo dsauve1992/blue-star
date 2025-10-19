@@ -11,6 +11,7 @@ import { UserId } from '../../domain/value-objects/user-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
+import { StopPrice } from '../../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
 import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 import type { AuthContext } from '../../../auth/auth-context.interface';
@@ -52,6 +53,7 @@ describe('OpenPositionUseCase', () => {
         instrument: Ticker.of('AAPL'),
         quantity: Quantity.of(100),
         price: Price.of(150.5),
+        stop: StopPrice.of(140.0),
         timestamp: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
         note: 'Initial position',
       };
@@ -68,6 +70,13 @@ describe('OpenPositionUseCase', () => {
             instrument: request.instrument,
             qty: request.quantity,
             price: request.price,
+            note: request.note,
+          },
+          {
+            action: Action.STOP_LOSS,
+            ts: request.timestamp,
+            instrument: request.instrument,
+            stop: request.stop,
             note: request.note,
           },
         ],
@@ -95,6 +104,7 @@ describe('OpenPositionUseCase', () => {
         instrument: Ticker.of('MSFT'),
         quantity: Quantity.of(50),
         price: Price.of(300.0),
+        stop: StopPrice.of(280.0),
         timestamp: IsoTimestamp.of('2024-01-16T14:30:00.000Z'),
       };
 
@@ -110,6 +120,13 @@ describe('OpenPositionUseCase', () => {
             instrument: request.instrument,
             qty: request.quantity,
             price: request.price,
+            note: undefined,
+          },
+          {
+            action: Action.STOP_LOSS,
+            ts: request.timestamp,
+            instrument: request.instrument,
+            stop: request.stop,
             note: undefined,
           },
         ],
@@ -140,6 +157,7 @@ describe('OpenPositionUseCase', () => {
         instrument: Ticker.of('GOOGL'),
         quantity: Quantity.of(25),
         price: Price.of(2500.0),
+        stop: StopPrice.of(2400.0),
         timestamp: IsoTimestamp.of('2024-01-17T09:15:00.000Z'),
         note: 'High-value position',
       };
@@ -166,6 +184,7 @@ describe('OpenPositionUseCase', () => {
         instrument: Ticker.of('AAPL'),
         quantity: Quantity.of(100),
         price: Price.of(150.0),
+        stop: StopPrice.of(140.0),
         timestamp: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
       };
 
@@ -173,6 +192,7 @@ describe('OpenPositionUseCase', () => {
         instrument: Ticker.of('TSLA'),
         quantity: Quantity.of(50),
         price: Price.of(200.0),
+        stop: StopPrice.of(180.0),
         timestamp: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
       };
 
@@ -211,6 +231,12 @@ describe('OpenPositionUseCase', () => {
         expect(() => {
           IsoTimestamp.of('invalid-timestamp');
         }).toThrow('Invalid ISO timestamp');
+      });
+
+      it('should throw error for invalid stop price', () => {
+        expect(() => {
+          StopPrice.of(-10.0);
+        }).toThrow('Stop must be > 0');
       });
 
       it('should throw error for invalid user ID', () => {

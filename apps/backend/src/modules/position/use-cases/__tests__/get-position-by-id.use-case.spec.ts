@@ -8,6 +8,7 @@ import { UserId } from '../../domain/value-objects/user-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
+import { StopPrice } from '../../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
 import { Action } from '../../domain/entities/position';
 
@@ -47,6 +48,13 @@ describe('GetPositionByIdUseCase', () => {
           instrument: Ticker.of('AAPL'),
           qty: Quantity.of(100),
           price: Price.of(150.5),
+          note: 'Test position',
+        },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
           note: 'Test position',
         },
       ]);
@@ -94,6 +102,13 @@ describe('GetPositionByIdUseCase', () => {
           instrument: Ticker.of('AAPL'),
           qty: Quantity.of(100),
           price: Price.of(150.5),
+          note: 'Test position',
+        },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
           note: 'Test position',
         },
       ]);

@@ -4,6 +4,7 @@ export interface OpenPositionRequest {
   instrument: string;
   quantity: number;
   price: number;
+  stop: number;
   timestamp: string;
   note?: string;
 }

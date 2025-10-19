@@ -91,6 +91,7 @@ export class PositionController {
       instrument: string;
       quantity: number;
       price: number;
+      stop: number;
       timestamp: string;
       note?: string;
     },
@@ -105,6 +106,7 @@ export class PositionController {
       instrument: Ticker.of(body.instrument),
       quantity: Quantity.of(body.quantity),
       price: Price.of(body.price),
+      stop: StopPrice.of(body.stop),
       timestamp: IsoTimestamp.of(body.timestamp),
       note: body.note,
     };

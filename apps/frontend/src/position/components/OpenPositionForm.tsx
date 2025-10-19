@@ -9,6 +9,7 @@ export function OpenPositionForm() {
     instrument: "",
     quantity: "",
     price: "",
+    stop: "",
     note: "",
     date: new Date().toISOString().split("T")[0], // Default to today
   });
@@ -18,7 +19,7 @@ export function OpenPositionForm() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.instrument || !formData.quantity || !formData.price) {
+    if (!formData.instrument || !formData.quantity || !formData.price || !formData.stop) {
       return;
     }
 
@@ -27,6 +28,7 @@ export function OpenPositionForm() {
         instrument: formData.instrument,
         quantity: parseFloat(formData.quantity),
         price: parseFloat(formData.price),
+        stop: parseFloat(formData.stop),
         timestamp: new Date(formData.date).toISOString(),
         note: formData.note || undefined,
       });
@@ -35,6 +37,7 @@ export function OpenPositionForm() {
         instrument: "",
         quantity: "",
         price: "",
+        stop: "",
         note: "",
         date: new Date().toISOString().split("T")[0],
       });
@@ -105,6 +108,19 @@ export function OpenPositionForm() {
               value={formData.price}
               onChange={(e) => handleInputChange("price", e.target.value)}
               placeholder="e.g., 150.50"
+              required
+            />
+          </div>
+
+          <div>
+            <Label htmlFor="stop">Stop Loss</Label>
+            <Input
+              id="stop"
+              type="number"
+              step="0.01"
+              value={formData.stop}
+              onChange={(e) => handleInputChange("stop", e.target.value)}
+              placeholder="e.g., 140.00"
               required
             />
           </div>

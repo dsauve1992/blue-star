@@ -7,7 +7,7 @@ export class Symbol {
     }
 
     const trimmedSymbol = symbol.trim().toUpperCase();
-    
+
     // Basic validation for stock symbols (can be extended)
     if (!/^[A-Z0-9.-]+$/.test(trimmedSymbol)) {
       throw new Error(`Invalid symbol format: ${symbol}`);
