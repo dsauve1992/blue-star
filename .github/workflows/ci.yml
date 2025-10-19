@@ -9,6 +9,7 @@ env:
   NODE_VERSION: '22'
 
 jobs:
+  # Parallel execution: lint and test run simultaneously
   lint-and-typecheck:
     name: Lint & Type Check
     runs-on: ubuntu-latest

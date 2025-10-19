@@ -1,5 +1,5 @@
 name: Setup Dependencies
-description: Install and cache npm dependencies for CI
+description: Install and cache npm dependencies for CI with optimizations
 inputs:
   node-version:
     description: 'Node.js version'
@@ -22,4 +22,13 @@ runs:
 
     - name: Install dependencies
       shell: bash
-      run: npm ci --prefer-offline --no-audit
+      run: |
+        npm ci --prefer-offline --no-audit --no-fund --silent
+        
+    - name: Cache node_modules
+      uses: actions/cache@v4
+      with:
+        path: node_modules
+        key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-modules-
