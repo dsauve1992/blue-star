@@ -1,0 +1,25 @@
+name: Setup Dependencies
+description: Install and cache npm dependencies for CI
+inputs:
+  node-version:
+    description: 'Node.js version'
+    required: false
+    default: '22'
+  cache-key:
+    description: 'Cache key for dependencies'
+    required: false
+    default: 'npm-deps'
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ inputs.node-version }}
+        cache: 'npm'
+        cache-dependency-path: 'package-lock.json'
+
+    - name: Install dependencies
+      shell: bash
+      run: npm ci --prefer-offline --no-audit
