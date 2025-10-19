@@ -9,6 +9,7 @@ import { UserId } from '../../../domain/value-objects/user-id';
 import { Ticker } from '../../../domain/value-objects/ticker';
 import { Quantity } from '../../../domain/value-objects/quantity';
 import { Price } from '../../../domain/value-objects/price';
+import { StopPrice } from '../../../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../../../domain/value-objects/iso-timestamp';
 import { UuidGeneratorService } from '../../../../../shared/services/uuid-generator.service';
 import { InvariantError } from '../../../domain/domain-errors';
@@ -19,9 +20,11 @@ describe('PositionWriteRepository Integration', () => {
   let databaseService: DatabaseService;
 
   beforeAll(async () => {
-    jest
-      .spyOn(UuidGeneratorService, 'generate')
-      .mockReturnValue('550e8400-e29b-41d4-a716-446655440000');
+    let uuidCounter = 0;
+    jest.spyOn(UuidGeneratorService, 'generate').mockImplementation(() => {
+      const baseUuid = '550e8400-e29b-41d4-a716-44665544000';
+      return `${baseUuid}${uuidCounter++}`;
+    });
 
     module = await Test.createTestingModule({
       imports: [await ConfigModule.forRoot({ isGlobal: true })],
@@ -61,6 +64,7 @@ describe('PositionWriteRepository Integration', () => {
         ts: IsoTimestamp.of('2024-01-15T10:30:00.000Z'),
         qty: Quantity.of(100),
         price: Price.of(150.5),
+        stop: StopPrice.of(140.0),
         note: 'Test position',
       });
 

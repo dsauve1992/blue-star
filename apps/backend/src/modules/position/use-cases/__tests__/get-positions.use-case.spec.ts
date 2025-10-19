@@ -8,6 +8,7 @@ import { UserId } from '../../domain/value-objects/user-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
+import { StopPrice } from '../../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
 import type { AuthContext } from '../../../auth/auth-context.interface';
 
@@ -50,6 +51,13 @@ describe('GetPositionsUseCase', () => {
             price: Price.of(150.0),
             note: 'Initial position',
           },
+          {
+            action: Action.STOP_LOSS,
+            ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+            instrument: Ticker.of('AAPL'),
+            stop: StopPrice.of(140.0),
+            note: 'Initial position',
+          },
         ]),
         Position.fromEvents(PositionId.of('position-2'), userId, [
           {
@@ -58,6 +66,13 @@ describe('GetPositionsUseCase', () => {
             instrument: Ticker.of('MSFT'),
             qty: Quantity.of(50),
             price: Price.of(300.0),
+            note: 'Microsoft position',
+          },
+          {
+            action: Action.STOP_LOSS,
+            ts: IsoTimestamp.of('2024-01-16T14:30:00.000Z'),
+            instrument: Ticker.of('MSFT'),
+            stop: StopPrice.of(280.0),
             note: 'Microsoft position',
           },
         ]),
@@ -125,6 +140,13 @@ describe('GetPositionsUseCase', () => {
             price: Price.of(150.0),
             note: 'User 1 position',
           },
+          {
+            action: Action.STOP_LOSS,
+            ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+            instrument: Ticker.of('AAPL'),
+            stop: StopPrice.of(140.0),
+            note: 'User 1 position',
+          },
         ]),
       ];
 
@@ -136,6 +158,13 @@ describe('GetPositionsUseCase', () => {
             instrument: Ticker.of('TSLA'),
             qty: Quantity.of(50),
             price: Price.of(200.0),
+            note: 'User 2 position',
+          },
+          {
+            action: Action.STOP_LOSS,
+            ts: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
+            instrument: Ticker.of('TSLA'),
+            stop: StopPrice.of(180.0),
             note: 'User 2 position',
           },
         ]),
@@ -176,6 +205,13 @@ describe('GetPositionsUseCase', () => {
             note: 'Initial position',
           },
           {
+            action: Action.STOP_LOSS,
+            ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+            instrument: Ticker.of('AAPL'),
+            stop: StopPrice.of(140.0),
+            note: 'Initial position',
+          },
+          {
             action: Action.BUY,
             ts: IsoTimestamp.of('2024-01-15T11:00:00.000Z'),
             instrument: Ticker.of('AAPL'),
@@ -195,7 +231,7 @@ describe('GetPositionsUseCase', () => {
       expect(result).toEqual({
         positions: [positionWithMultipleEvents],
       });
-      expect(result.positions[0].events).toHaveLength(2);
+      expect(result.positions[0].events).toHaveLength(3);
     });
   });
 });

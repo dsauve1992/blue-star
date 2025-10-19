@@ -9,6 +9,7 @@ import { UserId } from '../../domain/value-objects/user-id';
 import { Ticker } from '../../domain/value-objects/ticker';
 import { Quantity } from '../../domain/value-objects/quantity';
 import { Price } from '../../domain/value-objects/price';
+import { StopPrice } from '../../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../../domain/value-objects/iso-timestamp';
 import { PositionWriteRepository } from '../../domain/repositories/position-write.repository.interface';
 import type { AuthContext } from '../../../auth/auth-context.interface';
@@ -48,6 +49,13 @@ describe('SellSharesUseCase', () => {
           instrument: Ticker.of('AAPL'),
           qty: Quantity.of(100),
           price: Price.of(150.0),
+          note: 'Initial position',
+        },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
           note: 'Initial position',
         },
       ]);
@@ -91,6 +99,13 @@ describe('SellSharesUseCase', () => {
           price: Price.of(150.0),
           note: 'Initial position',
         },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
+          note: 'Initial position',
+        },
       ]);
 
       mockPositionWriteRepository.getById.mockResolvedValue(existingPosition);
@@ -130,6 +145,13 @@ describe('SellSharesUseCase', () => {
           price: Price.of(150.0),
           note: 'Initial position',
         },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
+          note: 'Initial position',
+        },
       ]);
 
       mockPositionWriteRepository.getById.mockResolvedValue(existingPosition);
@@ -166,6 +188,13 @@ describe('SellSharesUseCase', () => {
           instrument: Ticker.of('AAPL'),
           qty: Quantity.of(100),
           price: Price.of(150.0),
+          note: 'Initial position',
+        },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
           note: 'Initial position',
         },
       ]);

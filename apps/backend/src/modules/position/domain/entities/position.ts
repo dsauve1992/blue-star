@@ -19,6 +19,7 @@ export interface OpenPositionArgs {
   ts: IsoTimestamp;
   qty: Quantity;
   price: Price;
+  stop: StopPrice;
   note?: string;
 }
 
@@ -58,11 +59,11 @@ export class Position {
     private _closed: boolean,
   ) {}
 
-  /** Start a new position with the first BUY from flat. */
+  /** Start a new position with the first BUY from flat and initial stop loss. */
   static open(args: OpenPositionArgs): Position {
     const positionId = PositionId.new();
 
-    const e: BuyEvent = {
+    const buyEvent: BuyEvent = {
       action: Action.BUY,
       ts: args.ts,
       instrument: args.instrument,
@@ -71,12 +72,20 @@ export class Position {
       note: args.note,
     };
 
+    const stopLossEvent: StopLossEvent = {
+      action: Action.STOP_LOSS,
+      ts: args.ts,
+      instrument: args.instrument,
+      stop: args.stop,
+      note: args.note,
+    };
+
     return new Position(
       positionId,
       args.userId,
       args.instrument,
-      [e],
-      e.qty.value,
+      [buyEvent, stopLossEvent],
+      buyEvent.qty.value,
       false,
     );
   }
@@ -93,6 +102,8 @@ export class Position {
       throw new InvariantError('Position must start with a BUY event');
     }
     const instrument = first.instrument;
+
+    Position.ensureHasStopLoss(events);
 
     let qty = 0;
     let closed = false;
@@ -231,6 +242,13 @@ export class Position {
       throw new ChronologyError(
         `Timestamp ${ts.value} precedes last event ${last.value}`,
       );
+    }
+  }
+
+  private static ensureHasStopLoss(events: PositionEvent[]): void {
+    const hasStopLoss = events.some(e => e.action === Action.STOP_LOSS);
+    if (!hasStopLoss) {
+      throw new InvariantError('Position must have at least one stop loss event');
     }
   }
 }

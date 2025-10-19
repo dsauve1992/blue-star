@@ -51,6 +51,13 @@ describe('SetStopLossUseCase', () => {
           price: Price.of(150.0),
           note: 'Initial position',
         },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
+          note: 'Initial position',
+        },
       ]);
 
       mockPositionWriteRepository.getById.mockResolvedValue(existingPosition);
@@ -93,6 +100,13 @@ describe('SetStopLossUseCase', () => {
           price: Price.of(150.0),
           note: 'Initial position',
         },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
+          note: 'Initial position',
+        },
       ]);
 
       mockPositionWriteRepository.getById.mockResolvedValue(existingPosition);
@@ -128,6 +142,13 @@ describe('SetStopLossUseCase', () => {
           instrument: Ticker.of('AAPL'),
           qty: Quantity.of(100),
           price: Price.of(150.0),
+          note: 'Initial position',
+        },
+        {
+          action: Action.STOP_LOSS,
+          ts: IsoTimestamp.of('2024-01-15T10:00:00.000Z'),
+          instrument: Ticker.of('AAPL'),
+          stop: StopPrice.of(140.0),
           note: 'Initial position',
         },
       ]);

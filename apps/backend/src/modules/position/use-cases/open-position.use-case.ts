@@ -4,6 +4,7 @@ import { PositionId } from '../domain/value-objects/position-id';
 import { Ticker } from '../domain/value-objects/ticker';
 import { Quantity } from '../domain/value-objects/quantity';
 import { Price } from '../domain/value-objects/price';
+import { StopPrice } from '../domain/value-objects/stop-price';
 import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 import type { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
 import type { AuthContext } from '../../auth/auth-context.interface';
@@ -13,6 +14,7 @@ export interface OpenPositionRequestDto {
   instrument: Ticker;
   quantity: Quantity;
   price: Price;
+  stop: StopPrice;
   timestamp: IsoTimestamp;
   note?: string;
 }
@@ -38,6 +40,7 @@ export class OpenPositionUseCase {
       ts: request.timestamp,
       qty: request.quantity,
       price: request.price,
+      stop: request.stop,
       note: request.note,
     });
 

@@ -71,6 +71,22 @@ describe('PositionReadRepository Integration', () => {
         ],
       );
 
+      const stopLossEventId = '550e8400-e29b-41d4-a716-446655440103';
+      await databaseService.query(
+        'INSERT INTO position_events (id, position_id, action, timestamp, instrument, quantity, price, stop_price, note, created_at) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())',
+        [
+          stopLossEventId,
+          positionId,
+          'STOP_LOSS',
+          '2024-01-15T10:30:00.000Z',
+          'AAPL',
+          null,
+          null,
+          140.0,
+          'Test position',
+        ],
+      );
+
       const foundPosition = await repository.findById(
         PositionId.of(positionId),
       );
