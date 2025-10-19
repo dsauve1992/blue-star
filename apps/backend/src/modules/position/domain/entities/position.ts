@@ -246,9 +246,11 @@ export class Position {
   }
 
   private static ensureHasStopLoss(events: PositionEvent[]): void {
-    const hasStopLoss = events.some(e => e.action === Action.STOP_LOSS);
+    const hasStopLoss = events.some((e) => e.action === Action.STOP_LOSS);
     if (!hasStopLoss) {
-      throw new InvariantError('Position must have at least one stop loss event');
+      throw new InvariantError(
+        'Position must have at least one stop loss event',
+      );
     }
   }
 }

@@ -77,7 +77,7 @@ export class FinancialModelingPrepScreenerService implements ScreenerService {
         }),
       );
     } catch (error) {
-      throw new Error(`Failed to fetch screener data: ${error.message}`);
+      throw new Error(`Failed to fetch screener data: ${error}`);
     }
   }
 }

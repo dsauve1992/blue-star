@@ -1,6 +1,7 @@
 import ReactECharts from "echarts-for-react";
 import { useTheme } from "src/global/design-system";
 import { useHistoricalData } from "../hooks/use-market-data";
+import type { PricePoint } from "src/position/api/market-data.client.ts";
 
 interface PositionEvent {
   action: string;
@@ -23,7 +24,7 @@ export function MinimalPositionChart({
   className = "",
 }: MinimalPositionChartProps) {
   const { theme } = useTheme();
-  const isDarkMode = theme === 'dark';
+  const isDarkMode = theme === "dark";
 
   const getDateRange = () => {
     if (!events || events.length === 0) {
@@ -99,7 +100,7 @@ export function MinimalPositionChart({
 
   // Filter to show only weekdays within the calculated date range
   const tradingDays = historicalData.historicalData.pricePoints.filter(
-    (point: any) => {
+    (point: PricePoint) => {
       const date = new Date(point.date);
       const dayOfWeek = date.getDay();
       const isWeekday = dayOfWeek !== 0 && dayOfWeek !== 6;
@@ -121,7 +122,7 @@ export function MinimalPositionChart({
   }
 
   // Prepare line data
-  const lineData = tradingDays.map((point: any) => [
+  const lineData = tradingDays.map((point: PricePoint) => [
     new Date(point.date).getTime(),
     point.close,
   ]);
@@ -149,7 +150,7 @@ export function MinimalPositionChart({
     const nextEvent = stopLossEvents[i + 1];
 
     // Handle both 'stop' and 'stopPrice' field names
-    const stopPrice = currentEvent.stop || (currentEvent as any).stopPrice;
+    const stopPrice = currentEvent.stop;
     if (stopPrice === undefined) continue;
 
     // Determine end time: next stop-loss event or end of chart
