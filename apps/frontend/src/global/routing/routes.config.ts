@@ -48,6 +48,12 @@ export const routes: RouteConfig[] = [
     isProtected: true,
     showInNavigation: false,
   },
+  {
+    path: '/stock-analysis',
+    label: 'Stock Analysis',
+    isProtected: true,
+    showInNavigation: true,
+  },
 ];
 
 export const getPublicRoutes = () => routes.filter(route => !route.isProtected);
