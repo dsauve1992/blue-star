@@ -109,7 +109,8 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
         'close': raw.data_fields[1] if len(raw.data_fields) > 1 else 0,
         'ema10': raw.data_fields[2] if len(raw.data_fields) > 2 else 0,
         'ema20': raw.data_fields[3] if len(raw.data_fields) > 3 else 0,
-        'sma50': raw.data_fields[4] if len(raw.data_fields) > 4 else 0
+        'sma50': raw.data_fields[4] if len(raw.data_fields) > 4 else 0,
+        'ticker_full_name': raw.symbol_full
     }
 
     candidates = screener_service.scan(parameters, breakout_mapper)

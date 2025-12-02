@@ -9,8 +9,8 @@ import { ConsolidationResult } from '../../domain/value-objects/consolidation-re
 const execAsync = promisify(exec);
 
 interface PythonResponse {
-  daily: Array<{ symbol: string; is_new: boolean }>;
-  weekly: Array<{ symbol: string; is_new: boolean }>;
+  daily: Array<{ symbol: string; is_new: boolean; ticker_full_name: string }>;
+  weekly: Array<{ symbol: string; is_new: boolean; ticker_full_name: string }>;
   dailyCount: number;
   weeklyCount: number;
   error?: string;
@@ -161,6 +161,7 @@ export class PythonConsolidationScreenerService
           ConsolidationResult.of({
             symbol: item.symbol,
             isNew: item.is_new,
+            tickerFullName: item.ticker_full_name,
             timeframe: 'daily',
           }),
         ),
@@ -168,6 +169,7 @@ export class PythonConsolidationScreenerService
           ConsolidationResult.of({
             symbol: item.symbol,
             isNew: item.is_new,
+            tickerFullName: item.ticker_full_name,
             timeframe: 'weekly',
           }),
         ),

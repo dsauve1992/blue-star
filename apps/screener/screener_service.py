@@ -12,6 +12,7 @@ T = TypeVar('T')
 @dataclass
 class RawScreenerEntry:
     data_fields: List[Any]
+    symbol_full: str
 
 
 class ScreenerService:
@@ -38,9 +39,11 @@ class ScreenerService:
 
             for entry in data:
                 data_fields = entry['d']
+                symbol_full = entry['s']
                 
                 raw_entry = RawScreenerEntry(
                     data_fields=data_fields,
+                    symbol_full=symbol_full,
                 )
                 
                 mapped_entry = mapper(raw_entry)

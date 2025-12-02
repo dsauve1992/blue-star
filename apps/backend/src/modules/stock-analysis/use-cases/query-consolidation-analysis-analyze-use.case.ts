@@ -43,6 +43,7 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
       ConsolidationResult.of({
         symbol: r.symbol,
         isNew: r.isNew,
+        tickerFullName: r.tickerFullName,
         timeframe: r.timeframe,
       }),
     );

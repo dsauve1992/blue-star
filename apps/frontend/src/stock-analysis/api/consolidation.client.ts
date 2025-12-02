@@ -3,6 +3,7 @@ import { apiClient } from "../../global/api/api-instance";
 export interface ConsolidationResult {
   symbol: string;
   isNew: boolean;
+  tickerFullName: string;
   timeframe: "daily" | "weekly";
 }
 

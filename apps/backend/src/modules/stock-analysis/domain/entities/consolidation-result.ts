@@ -6,6 +6,7 @@ export interface ConsolidationResultData {
   analysisDate: AnalysisDate;
   symbol: string;
   isNew: boolean;
+  tickerFullName: string;
   createdAt: Date;
 }
 
@@ -16,6 +17,7 @@ export class ConsolidationResultEntity {
     public readonly analysisDate: AnalysisDate,
     public readonly symbol: string,
     public readonly isNew: boolean,
+    public readonly tickerFullName: string,
     public readonly createdAt: Date,
   ) {}
 
@@ -24,6 +26,7 @@ export class ConsolidationResultEntity {
     analysisDate: AnalysisDate,
     symbol: string,
     isNew: boolean,
+    tickerFullName: string,
   ): ConsolidationResultEntity {
     return new ConsolidationResultEntity(
       crypto.randomUUID(),
@@ -31,6 +34,7 @@ export class ConsolidationResultEntity {
       analysisDate,
       symbol,
       isNew,
+      tickerFullName,
       new Date(),
     );
   }
@@ -42,8 +46,8 @@ export class ConsolidationResultEntity {
       data.analysisDate,
       data.symbol,
       data.isNew,
+      data.tickerFullName,
       data.createdAt,
     );
   }
 }
-
