@@ -1,29 +1,53 @@
-const { MigrationInterface, QueryRunner } = require('typeorm');
+'use strict';
 
-module.exports = class AddTickerFullNameToConsolidationResults20251202023200 {
-    async up(queryRunner) {
-        await queryRunner.query(
-            `ALTER TABLE consolidation_results ADD COLUMN ticker_full_name VARCHAR(255)`
-        );
-        // Update existing records to have a default value or copy from symbol if appropriate
-        // For now, we'll leave it nullable or empty string if not nullable, but since we just added it, it's nullable by default unless specified otherwise.
-        // Let's make it NOT NULL and default to empty string for existing records to avoid issues, or just nullable.
-        // Given the previous schema, let's check if we want it nullable.
-        // The entity definition implies it's required (string, not string | null).
-        // So we should probably make it NOT NULL.
+var dbm;
+var type;
+var seed;
+var fs = require('fs');
+var path = require('path');
+var Promise;
 
-        await queryRunner.query(
-            `UPDATE consolidation_results SET ticker_full_name = symbol WHERE ticker_full_name IS NULL`
-        );
+/**
+  * We receive the dbmigrate dependency from dbmigrate initially.
+  * This enables us to not have to rely on NODE_PATH.
+  */
+exports.setup = function (options, seedLink) {
+    dbm = options.dbmigrate;
+    type = dbm.dataType;
+    seed = seedLink;
+    Promise = options.Promise;
+};
 
-        await queryRunner.query(
-            `ALTER TABLE consolidation_results ALTER COLUMN ticker_full_name SET NOT NULL`
-        );
-    }
+exports.up = function (db) {
+    var filePath = path.join(__dirname, 'sqls', '20251202023200-add-ticker-full-name-up.sql');
+    return new Promise(function (resolve, reject) {
+        fs.readFile(filePath, { encoding: 'utf-8' }, function (err, data) {
+            if (err) return reject(err);
+            console.log('received data: ' + data);
 
-    async down(queryRunner) {
-        await queryRunner.query(
-            `ALTER TABLE consolidation_results DROP COLUMN ticker_full_name`
-        );
-    }
+            resolve(data);
+        });
+    })
+        .then(function (data) {
+            return db.runSql(data);
+        });
+};
+
+exports.down = function (db) {
+    var filePath = path.join(__dirname, 'sqls', '20251202023200-add-ticker-full-name-down.sql');
+    return new Promise(function (resolve, reject) {
+        fs.readFile(filePath, { encoding: 'utf-8' }, function (err, data) {
+            if (err) return reject(err);
+            console.log('received data: ' + data);
+
+            resolve(data);
+        });
+    })
+        .then(function (data) {
+            return db.runSql(data);
+        });
+};
+
+exports._meta = {
+    "version": 1
 };

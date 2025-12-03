@@ -44,6 +44,7 @@ export class ConsolidationAnalysisServiceImpl
             analysisDate,
             result.symbol,
             result.isNew,
+            result.tickerFullName,
           ),
         );
       }

@@ -212,6 +212,7 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
                 
                 green_candidates.append({
                     'symbol': candidate['name'],
+                    'ticker_full_name': candidate['ticker_full_name'],
                     'is_new': is_new
                 })
 
@@ -352,6 +353,7 @@ def analyse_weekly_setup(screener_service: ScreenerService, yahoo_finance_servic
                 
                 green_candidates.append({
                     'symbol': candidate['name'],
+                    'ticker_full_name': candidate['ticker_full_name'],
                     'is_new': is_new
                 })
 
