@@ -3,6 +3,7 @@ export interface RouteConfig {
   label: string;
   isProtected: boolean;
   showInNavigation: boolean;
+  navigationPath?: string;
 }
 
 export const routes: RouteConfig[] = [
@@ -49,10 +50,11 @@ export const routes: RouteConfig[] = [
     showInNavigation: false,
   },
   {
-    path: '/stock-analysis',
+    path: '/stock-analysis/:type',
     label: 'Stock Analysis',
     isProtected: true,
     showInNavigation: true,
+    navigationPath: '/stock-analysis/daily',
   },
 ];
 

@@ -21,7 +21,7 @@ const componentMap = {
   "/settings": Settings,
   "/positions": Position,
   "/positions/:positionId": PositionDetail,
-  "/stock-analysis": ConsolidationAnalysis,
+  "/stock-analysis/:type": ConsolidationAnalysis,
 } as const;
 
 export function generateRoutes() {

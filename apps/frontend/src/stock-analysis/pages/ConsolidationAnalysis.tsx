@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from "react";
+import { useParams, useNavigate } from "react-router";
 import { Button } from "src/global/design-system";
 import { Badge } from "src/global/design-system";
 import { LoadingSpinner } from "src/global/design-system";
@@ -23,7 +24,11 @@ type AnalysisType = "daily" | "weekly";
 import { PageContainer } from "src/global/design-system/page-container";
 
 export default function ConsolidationAnalysis() {
-  const [analysisType, setAnalysisType] = useState<AnalysisType>("daily");
+  const { type } = useParams<{ type: string }>();
+  const navigate = useNavigate();
+  // Default to daily if type is invalid or missing
+  const analysisType: AnalysisType = (type === "weekly" ? "weekly" : "daily");
+
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -43,6 +48,11 @@ export default function ConsolidationAnalysis() {
   const currentIndex = consolidations.findIndex(
     (c) => c.tickerFullName === selectedTicker,
   );
+
+  useEffect(() => {
+    // Reset selection when analysis type changes
+    setSelectedTicker(null);
+  }, [analysisType]);
 
   useEffect(() => {
     if (data?.hasData) {
@@ -107,8 +117,8 @@ export default function ConsolidationAnalysis() {
     };
   }, [data, analysisType, selectedTicker]);
 
-  const handleTypeChange = (type: AnalysisType) => {
-    setAnalysisType(type);
+  const handleTypeChange = (newType: AnalysisType) => {
+    navigate(`/stock-analysis/${newType}`);
   };
 
   const handleRunAnalysis = async () => {
