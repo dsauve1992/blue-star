@@ -8,6 +8,13 @@ import { ConsolidationResult } from '../../domain/value-objects/consolidation-re
 
 const execAsync = promisify(exec);
 
+interface ExecException extends Error {
+  code?: number;
+  stdout?: string;
+  stderr?: string;
+  signal?: string;
+}
+
 interface PythonResponse {
   daily: Array<{ symbol: string; is_new: boolean; ticker_full_name: string }>;
   weekly: Array<{ symbol: string; is_new: boolean; ticker_full_name: string }>;
@@ -81,12 +88,14 @@ export class PythonConsolidationScreenerService
         });
         stdout = result.stdout;
         stderr = result.stderr;
-      } catch (execError: any) {
-        stdout = execError.stdout || '';
-        stderr = execError.stderr || '';
+      } catch (execError: unknown) {
+        const error = execError as ExecException;
 
-        const errorCode = execError.code;
-        const errorSignal = execError.signal;
+        stdout = error.stdout || '';
+        stderr = error.stderr || '';
+
+        const errorCode = error.code;
+        const errorSignal = error.signal;
 
         const errorInfo = {
           command,
@@ -97,8 +106,8 @@ export class PythonConsolidationScreenerService
           errorSignal,
           stdout: stdout.substring(0, 1000),
           stderr: stderr.substring(0, 1000),
-          message: execError.message,
-          fullError: execError.toString(),
+          message: error.message,
+          fullError: JSON.stringify(error),
         };
 
         console.error(
@@ -115,7 +124,7 @@ export class PythonConsolidationScreenerService
             `Signal: ${errorSignal || 'none'}`,
             `Stdout: ${stdout || '(empty)'}`,
             `Stderr: ${stderr || '(empty)'}`,
-            `Error message: ${execError.message || 'No message'}`,
+            `Error message: ${error.message || 'No message'}`,
           ].join('\n');
 
           throw new Error(
@@ -146,7 +155,7 @@ export class PythonConsolidationScreenerService
       let result: PythonResponse;
       try {
         result = JSON.parse(jsonLine) as PythonResponse;
-      } catch (parseError) {
+      } catch {
         throw new Error(
           `Failed to parse Python screener JSON output. Raw output: ${stdout.substring(0, 500)}`,
         );
