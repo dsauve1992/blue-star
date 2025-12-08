@@ -20,6 +20,7 @@ export { MetricCard } from './metric-card';
 // Layout & Animation
 export { PageTransition } from './page-transition';
 export { AnimatedLayout } from './animated-layout';
+export { PageContainer } from './page-container';
 
 // Theme
 export { ThemeProvider } from './theme-provider';

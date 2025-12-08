@@ -10,6 +10,7 @@ import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 import Position from "../../position/pages/Position";
 import { PositionDetail } from "../../position/pages/PositionDetail";
+import ConsolidationAnalysis from "../../stock-analysis/pages/ConsolidationAnalysis";
 
 // Map of path to component
 const componentMap = {
@@ -20,6 +21,7 @@ const componentMap = {
   "/settings": Settings,
   "/positions": Position,
   "/positions/:positionId": PositionDetail,
+  "/stock-analysis/:type": ConsolidationAnalysis,
 } as const;
 
 export function generateRoutes() {
