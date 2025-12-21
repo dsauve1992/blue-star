@@ -30,8 +30,8 @@ FROM node:22-alpine AS production
 
 WORKDIR /app
 
-# Install Python runtime for screener
-RUN apk add --no-cache python3 py3-pip bash
+# Install Python runtime and native dependencies for faster builds
+RUN apk add --no-cache python3 py3-pip bash py3-pandas py3-numpy py3-requests
 
 # Copy package files
 COPY package*.json ./
@@ -40,6 +40,10 @@ COPY apps/backend/package*.json ./apps/backend/
 
 # Install production dependencies only
 RUN npm ci --workspace=backend --omit=dev
+
+# Install additional Python dependencies for screener
+COPY apps/screener/requirements.txt ./apps/screener/
+RUN pip3 install --no-cache-dir --break-system-packages yfinance
 
 # Copy built application
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
