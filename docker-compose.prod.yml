@@ -1,0 +1,82 @@
+# Blue-Star Production Docker Compose
+# Used for deployment to Raspberry Pi
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: apps/backend/Dockerfile
+    container_name: blue-star-backend
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - DB_HOST=${DB_HOST:-blue-star-postgres}
+      - DB_PORT=${DB_PORT:-5432}
+      - DB_USERNAME=${DB_USERNAME}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_SSL=${DB_SSL:-false}
+      - FINANCIAL_MODELING_PREP_API_KEY=${FINANCIAL_MODELING_PREP_API_KEY:-}
+    networks:
+      - blue-star-network
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    build:
+      context: .
+      dockerfile: apps/frontend/Dockerfile
+      args:
+        - VITE_API_URL=${VITE_API_URL:-/api}
+        - VITE_KINDE_CLIENT_ID=${VITE_KINDE_CLIENT_ID}
+        - VITE_KINDE_DOMAIN=${VITE_KINDE_DOMAIN}
+        - VITE_KINDE_AUDIENCE=${VITE_KINDE_AUDIENCE}
+        - VITE_KINDE_REDIRECT_URI=${VITE_KINDE_REDIRECT_URI}
+        - VITE_KINDE_LOGOUT_URI=${VITE_KINDE_LOGOUT_URI}
+    container_name: blue-star-frontend
+    restart: unless-stopped
+    ports:
+      - "5173:80"
+    networks:
+      - blue-star-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  postgres:
+    image: postgres:18-alpine
+    container_name: blue-star-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_DB=${DB_DATABASE}
+      - POSTGRES_USER=${DB_USERNAME}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - blue-star-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+networks:
+  blue-star-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

@@ -56,6 +56,12 @@ export const routes: RouteConfig[] = [
     showInNavigation: true,
     navigationPath: '/stock-analysis/daily',
   },
+  {
+    path: '/price-chart',
+    label: 'Price Chart',
+    isProtected: true,
+    showInNavigation: true,
+  },
 ];
 
 export const getPublicRoutes = () => routes.filter(route => !route.isProtected);

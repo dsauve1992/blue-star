@@ -8,8 +8,8 @@ export class Symbol {
 
     const trimmedSymbol = symbol.trim().toUpperCase();
 
-    // Basic validation for stock symbols (can be extended)
-    if (!/^[A-Z0-9.-]+$/.test(trimmedSymbol)) {
+    // Basic validation for stock symbols (supports exchange prefixes like NYSE:CIEN)
+    if (!/^[A-Z0-9.:-]+$/.test(trimmedSymbol)) {
       throw new Error(`Invalid symbol format: ${symbol}`);
     }
 

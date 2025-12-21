@@ -20,3 +20,6 @@ export interface ConsolidationResultRepository {
 
   saveRun(run: ConsolidationRun): Promise<void>;
 }
+
+
+
