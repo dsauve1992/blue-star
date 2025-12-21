@@ -1,5 +1,6 @@
 # Blue-Star Production Docker Compose
 # Used for deployment to Raspberry Pi
+# Note: PostgreSQL is managed separately by Ansible (postgres role)
 
 services:
   backend:
@@ -12,18 +13,15 @@ services:
       - "3000:3000"
     environment:
       - NODE_ENV=production
-      - DB_HOST=${DB_HOST:-blue-star-postgres}
+      - DB_HOST=${DB_HOST:-host.docker.internal}
       - DB_PORT=${DB_PORT:-5432}
       - DB_USERNAME=${DB_USERNAME}
       - DB_PASSWORD=${DB_PASSWORD}
       - DB_DATABASE=${DB_DATABASE}
       - DB_SSL=${DB_SSL:-false}
       - FINANCIAL_MODELING_PREP_API_KEY=${FINANCIAL_MODELING_PREP_API_KEY:-}
-    networks:
-      - blue-star-network
-    depends_on:
-      postgres:
-        condition: service_healthy
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/api/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1))"]
       interval: 30s
@@ -46,37 +44,8 @@ services:
     restart: unless-stopped
     ports:
       - "5173:80"
-    networks:
-      - blue-star-network
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
       interval: 30s
       timeout: 10s
       retries: 3
-
-  postgres:
-    image: postgres:18-alpine
-    container_name: blue-star-postgres
-    restart: unless-stopped
-    environment:
-      - POSTGRES_DB=${DB_DATABASE}
-      - POSTGRES_USER=${DB_USERNAME}
-      - POSTGRES_PASSWORD=${DB_PASSWORD}
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - blue-star-network
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_DATABASE}"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-networks:
-  blue-star-network:
-    driver: bridge
-
-volumes:
-  postgres_data:
