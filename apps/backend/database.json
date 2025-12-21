@@ -19,12 +19,12 @@
   },
   "prod": {
     "driver": "pg",
-    "host": "${DB_HOST}",
-    "port": "${DB_PORT}",
-    "user": "${DB_USERNAME}",
-    "password": "${DB_PASSWORD}",
-    "database": "${DB_DATABASE}",
-    "ssl": "${DB_SSL}"
+    "host": { "ENV": "DB_HOST" },
+    "port": { "ENV": "DB_PORT" },
+    "user": { "ENV": "DB_USERNAME" },
+    "password": { "ENV": "DB_PASSWORD" },
+    "database": { "ENV": "DB_DATABASE" },
+    "ssl": false
   }
 }
 
