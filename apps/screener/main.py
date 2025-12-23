@@ -135,6 +135,18 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
 
 
             # Volume indicators
+            # FIXME utiliser dollar volume à la place
+            # Tu sélectionnes des phases de “dry-up”, c’est bien… mais sur le marché US, certains titres à 1M de volume moyen peuvent quand même avoir :
+            #
+            # spreads larges
+            #
+            # carnets fins
+            #
+            # slippage à l’exécution (surtout si tu tailles “portfolio-level”)
+            #
+            # ➡️ Ajoute un filtre dollar volume (bien plus robuste que volume brut) :
+            #
+            # ex : AvgDollarVolume20 = close * volume_sma_20 > seuil (ex. 20–50M$ selon ton confort)
             historical_data['volume_sma_20'] = calculate_sma(historical_data['volume'], 20)
             historical_data['low_volume'] = historical_data['volume'] < historical_data['volume_sma_20']
 
@@ -147,7 +159,6 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
             historical_data['ema20_rising'] = historical_data['ema_20'] > historical_data['ema_20'].shift(1)
 
             historical_data['basic_signal'] = (
-                    (historical_data['adr_perc_20'] > historical_data['price_vs_ema10_perc']) &
                     (historical_data['adr_perc_20'] * 1.5 > historical_data['price_vs_ema10_perc']) &
                     (historical_data['ema_10'] > historical_data['ema_20'])
             )
