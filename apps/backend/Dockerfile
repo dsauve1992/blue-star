@@ -22,6 +22,9 @@ COPY apps/backend ./apps/backend
 # Copy screener (Python dependency)
 COPY apps/screener ./apps/screener
 
+# Copy theme_extractor (Python dependency)
+COPY apps/theme_extractor ./apps/theme_extractor
+
 # Build the application
 RUN npm run build --workspace=backend
 
@@ -45,11 +48,18 @@ RUN npm ci --workspace=backend --omit=dev
 COPY apps/screener/requirements.txt ./apps/screener/
 RUN pip3 install --no-cache-dir --break-system-packages yfinance
 
+# Install additional Python dependencies for theme_extractor
+COPY apps/theme_extractor/requirements.txt ./apps/theme_extractor/
+RUN pip3 install --no-cache-dir --break-system-packages -r apps/theme_extractor/requirements.txt
+
 # Copy built application
 COPY --from=builder /app/apps/backend/dist ./apps/backend/dist
 
 # Copy screener
 COPY apps/screener ./apps/screener
+
+# Copy theme_extractor
+COPY apps/theme_extractor ./apps/theme_extractor
 
 # Copy database migrations
 COPY apps/backend/database.json ./apps/backend/

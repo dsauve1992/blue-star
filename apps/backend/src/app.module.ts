@@ -6,6 +6,7 @@ import { AppService } from './app.service';
 import { PositionModule } from './modules/position/position.module';
 import { MarketDataModule } from './modules/market-data/market-data.module';
 import { StockAnalysisModule } from './modules/stock-analysis/stock-analysis.module';
+import { ThemesModule } from './modules/themes/themes.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { DatabaseModule } from './config/database.module';
@@ -20,6 +21,7 @@ import { DatabaseModule } from './config/database.module';
     PositionModule,
     MarketDataModule,
     StockAnalysisModule,
+    ThemesModule,
     AuthModule,
   ],
   controllers: [AppController],

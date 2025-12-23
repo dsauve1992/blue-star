@@ -21,7 +21,7 @@
     "migrate:down": "db-migrate down --env dev",
     "migrate:create": "db-migrate create --env dev",
     "migrate:check": "db-migrate check --env dev",
-    "setup:python": "bash ../screener/setup.sh",
+    "setup:python": "bash ../screener/setup.sh && bash ../theme_extractor/setup.sh",
     "prebuild": "npm run setup:python",
     "prestart": "npm run setup:python",
     "predev": "npm run setup:python"
