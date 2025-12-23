@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from '../../config/database.module';
+import { ThemesModule } from '../themes/themes.module';
 import { StockAnalysisController } from './api/stock-analysis.controller';
 import { QueryConsolidationAnalysisAnalyzeUseCase } from './use-cases/query-consolidation-analysis-analyze-use.case';
 import { RunConsolidationAnalysisUseCase } from './use-cases/run-consolidation-analysis.use-case';
@@ -21,7 +22,7 @@ export {
 };
 
 @Module({
-  imports: [ScheduleModule.forRoot(), DatabaseModule],
+  imports: [ScheduleModule.forRoot(), DatabaseModule, ThemesModule],
   controllers: [StockAnalysisController],
   providers: [
     {

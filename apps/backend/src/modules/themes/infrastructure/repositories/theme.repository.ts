@@ -91,5 +91,18 @@ export class ThemeRepositoryImpl implements ThemeRepository {
       [themeId],
     );
   }
+
+  async findThemesByTicker(ticker: string): Promise<ThemeEntity[]> {
+    const result = (await this.databaseService.query(
+      `SELECT t.id, t.name, t.created_at, t.updated_at
+       FROM themes t
+       INNER JOIN theme_tickers tt ON t.id = tt.theme_id
+       WHERE UPPER(tt.ticker) = UPPER($1)
+       ORDER BY t.name`,
+      [ticker],
+    )) as { rows: ThemeRow[] };
+
+    return result.rows.map((row) => ThemeEntity.fromData(row));
+  }
 }
 

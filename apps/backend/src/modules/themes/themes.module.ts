@@ -35,6 +35,7 @@ export {
     },
     ThemeCronService,
   ],
+  exports: [THEME_REPOSITORY],
 })
 export class ThemesModule {}
 

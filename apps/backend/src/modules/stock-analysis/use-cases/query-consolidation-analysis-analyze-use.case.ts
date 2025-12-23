@@ -4,6 +4,8 @@ import { ConsolidationResult } from '../domain/value-objects/consolidation-resul
 import { AnalysisDate } from '../domain/value-objects/analysis-date';
 import { ConsolidationRunStatus } from '../domain/value-objects/consolidation-run-status';
 import { CONSOLIDATION_RESULT_REPOSITORY } from '../constants/tokens';
+import { ThemeRepository } from '../../themes/domain/repositories/theme.repository.interface';
+import { THEME_REPOSITORY } from '../../themes/constants/tokens';
 
 export interface QueryConsolidationAnalysisRequestDto {
   type: 'daily' | 'weekly';
@@ -24,6 +26,8 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
   constructor(
     @Inject(CONSOLIDATION_RESULT_REPOSITORY)
     private readonly repository: ConsolidationResultRepository,
+    @Inject(THEME_REPOSITORY)
+    private readonly themeRepository: ThemeRepository,
   ) {}
 
   async execute(
@@ -39,12 +43,18 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
       analysisDate,
     );
 
-    const consolidationResults: ConsolidationResult[] = results.map((r) =>
-      ConsolidationResult.of({
-        symbol: r.symbol,
-        isNew: r.isNew,
-        tickerFullName: r.tickerFullName,
-        timeframe: r.timeframe,
+    const consolidationResults: ConsolidationResult[] = await Promise.all(
+      results.map(async (r) => {
+        const themes = await this.themeRepository.findThemesByTicker(r.symbol);
+        const themeNames = themes.map((theme) => theme.name);
+
+        return ConsolidationResult.of({
+          symbol: r.symbol,
+          isNew: r.isNew,
+          tickerFullName: r.tickerFullName,
+          timeframe: r.timeframe,
+          themes: themeNames,
+        });
       }),
     );
 

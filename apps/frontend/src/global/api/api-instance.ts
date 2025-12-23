@@ -1,6 +1,6 @@
 import { ApiClient } from "./api-client";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000";
+const API_URL = import.meta.env.VITE_API_URL || "http://localhost:3000/api";
 
 export const apiClient = new ApiClient({
   baseURL: API_URL,

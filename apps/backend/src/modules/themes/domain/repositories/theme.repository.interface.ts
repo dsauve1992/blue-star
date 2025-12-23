@@ -11,5 +11,6 @@ export interface ThemeRepository {
   ): Promise<void>;
   findTickersByThemeId(themeId: string): Promise<ThemeTickerEntity[]>;
   deleteAllThemeTickers(themeId: string): Promise<void>;
+  findThemesByTicker(ticker: string): Promise<ThemeEntity[]>;
 }
 
