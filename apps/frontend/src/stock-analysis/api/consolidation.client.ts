@@ -5,6 +5,7 @@ export interface ConsolidationResult {
   isNew: boolean;
   tickerFullName: string;
   timeframe: "daily" | "weekly";
+  themes: string[];
 }
 
 export interface AnalyzeConsolidationsRequest {

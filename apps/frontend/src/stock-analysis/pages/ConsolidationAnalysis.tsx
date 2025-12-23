@@ -198,7 +198,7 @@ export default function ConsolidationAnalysis() {
 
         {/* Ticker Info */}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap">
             <span
               className={`font-semibold truncate ${isSelected ? "text-white" : "text-slate-100"}`}
             >
@@ -214,6 +214,23 @@ export default function ConsolidationAnalysis() {
           <span className="text-xs text-slate-400 truncate block">
             {consolidation.tickerFullName}
           </span>
+          {consolidation.themes && consolidation.themes.length > 0 && (
+            <div className="flex flex-wrap gap-1 mt-1.5">
+              {consolidation.themes.slice(0, 2).map((theme) => (
+                <span
+                  key={theme}
+                  className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                >
+                  {theme}
+                </span>
+              ))}
+              {consolidation.themes.length > 2 && (
+                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-700/50 text-slate-400 border border-slate-600/50">
+                  +{consolidation.themes.length - 2}
+                </span>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Selection Indicator */}
@@ -417,7 +434,7 @@ export default function ConsolidationAnalysis() {
           <main className="flex-1 flex flex-col min-w-0">
             {/* Chart Header */}
             <header className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
-              <div className="flex items-center gap-4">
+              <div className="flex items-center gap-4 flex-wrap">
                 {selectedTicker ? (
                   <>
                     <div className="flex items-center gap-3">
@@ -434,10 +451,30 @@ export default function ConsolidationAnalysis() {
                     {consolidations.find(
                       (c) => c.tickerFullName === selectedTicker,
                     )?.isNew && (
-                        <Badge variant="success" className="ml-2">
-                          <Sparkles className="w-3 h-3 mr-1" />
-                          New Signal
-                        </Badge>
+                      <Badge variant="success" className="ml-2">
+                        <Sparkles className="w-3 h-3 mr-1" />
+                        New Signal
+                      </Badge>
+                    )}
+                    {consolidations.find(
+                      (c) => c.tickerFullName === selectedTicker,
+                    )?.themes &&
+                      consolidations.find(
+                        (c) => c.tickerFullName === selectedTicker,
+                      )!.themes.length > 0 && (
+                        <div className="flex flex-wrap gap-2 ml-2">
+                          {consolidations
+                            .find((c) => c.tickerFullName === selectedTicker)!
+                            .themes.map((theme) => (
+                              <Badge
+                                key={theme}
+                                variant="default"
+                                className="bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                              >
+                                {theme}
+                              </Badge>
+                            ))}
+                        </div>
                       )}
                   </>
                 ) : (
