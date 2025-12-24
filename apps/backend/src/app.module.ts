@@ -7,6 +7,7 @@ import { PositionModule } from './modules/position/position.module';
 import { MarketDataModule } from './modules/market-data/market-data.module';
 import { StockAnalysisModule } from './modules/stock-analysis/stock-analysis.module';
 import { ThemesModule } from './modules/themes/themes.module';
+import { WatchlistModule } from './modules/watchlist/watchlist.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { DatabaseModule } from './config/database.module';
@@ -22,6 +23,7 @@ import { DatabaseModule } from './config/database.module';
     MarketDataModule,
     StockAnalysisModule,
     ThemesModule,
+    WatchlistModule,
     AuthModule,
   ],
   controllers: [AppController],

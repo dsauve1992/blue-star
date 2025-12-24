@@ -12,6 +12,7 @@ import Position from "../../position/pages/Position";
 import { PositionDetail } from "../../position/pages/PositionDetail";
 import ConsolidationAnalysis from "../../stock-analysis/pages/ConsolidationAnalysis";
 import PriceChart from "src/pages/PriceChart.tsx";
+import Watchlist from "../../watchlist/pages/Watchlist";
 
 // Map of path to component
 const componentMap = {
@@ -24,6 +25,7 @@ const componentMap = {
   "/positions/:positionId": PositionDetail,
   "/stock-analysis/:type": ConsolidationAnalysis,
   "/price-chart": PriceChart,
+  "/watchlists": Watchlist,
 } as const;
 
 export function generateRoutes() {

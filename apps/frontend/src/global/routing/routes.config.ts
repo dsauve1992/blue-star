@@ -62,6 +62,12 @@ export const routes: RouteConfig[] = [
     isProtected: true,
     showInNavigation: true,
   },
+  {
+    path: '/watchlists',
+    label: 'Watchlists',
+    isProtected: true,
+    showInNavigation: true,
+  },
 ];
 
 export const getPublicRoutes = () => routes.filter(route => !route.isProtected);
