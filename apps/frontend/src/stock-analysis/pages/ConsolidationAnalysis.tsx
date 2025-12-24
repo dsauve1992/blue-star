@@ -23,6 +23,15 @@ type AnalysisType = "daily" | "weekly";
 
 import { PageContainer } from "src/global/design-system/page-container";
 
+function extractSymbol(ticker: string): string {
+  const parts = ticker.split(":");
+  return parts.length > 1 ? parts[1] : parts[0];
+}
+
+function getTickerLogoUrl(symbol: string): string {
+  return `https://images.financialmodelingprep.com/symbol/${symbol}.png`;
+}
+
 export default function ConsolidationAnalysis() {
   const { type } = useParams<{ type: string }>();
   const navigate = useNavigate();
@@ -30,6 +39,7 @@ export default function ConsolidationAnalysis() {
   const analysisType: AnalysisType = (type === "weekly" ? "weekly" : "daily");
 
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const request: AnalyzeConsolidationsRequest = {
@@ -161,6 +171,9 @@ export default function ConsolidationAnalysis() {
 
   const renderTickerItem = (consolidation: ConsolidationResult) => {
     const isSelected = selectedTicker === consolidation.tickerFullName;
+    const symbol = extractSymbol(consolidation.symbol);
+    const logoUrl = getTickerLogoUrl(symbol);
+    const logoFailed = failedLogos.has(symbol);
 
     return (
       <div
@@ -182,18 +195,31 @@ export default function ConsolidationAnalysis() {
           }
         `}
       >
-        {/* Ticker Symbol */}
+        {/* Ticker Logo */}
         <div
           className={`
-          flex items-center justify-center w-12 h-12 rounded-lg font-bold text-sm
+          flex items-center justify-center w-12 h-12 rounded-lg overflow-hidden
           transition-all duration-200
           ${isSelected
-              ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white shadow-lg"
-              : "bg-slate-700 text-slate-300 group-hover:bg-slate-600"
+              ? "bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg ring-2 ring-blue-400/50"
+              : "bg-slate-700 group-hover:bg-slate-600"
             }
         `}
         >
-          {consolidation.symbol.slice(0, 4)}
+          {logoFailed ? (
+            <span className={`font-bold text-sm ${isSelected ? "text-white" : "text-slate-300"}`}>
+              {symbol.slice(0, 4)}
+            </span>
+          ) : (
+            <img
+              src={logoUrl}
+              alt={symbol}
+              className="w-full h-full object-contain p-1"
+              onError={() => {
+                setFailedLogos((prev) => new Set(prev).add(symbol));
+              }}
+            />
+          )}
         </div>
 
         {/* Ticker Info */}
@@ -438,12 +464,25 @@ export default function ConsolidationAnalysis() {
                 {selectedTicker ? (
                   <>
                     <div className="flex items-center gap-3">
-                      <div className="p-2 rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/25">
-                        <TrendingUp className="w-5 h-5 text-white" />
+                      <div className="w-12 h-12 rounded-lg bg-slate-700/50 overflow-hidden border border-slate-600/50 shadow-lg flex items-center justify-center">
+                        {failedLogos.has(extractSymbol(selectedTicker)) ? (
+                          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600">
+                            <TrendingUp className="w-6 h-6 text-white" />
+                          </div>
+                        ) : (
+                          <img
+                            src={getTickerLogoUrl(extractSymbol(selectedTicker))}
+                            alt={extractSymbol(selectedTicker)}
+                            className="w-full h-full object-contain p-1"
+                            onError={() => {
+                              setFailedLogos((prev) => new Set(prev).add(extractSymbol(selectedTicker)));
+                            }}
+                          />
+                        )}
                       </div>
                       <div>
                         <h2 className="text-xl font-bold text-white">
-                          {selectedTicker.split(":")[1] || selectedTicker}
+                          {extractSymbol(selectedTicker)}
                         </h2>
                         <p className="text-sm text-slate-400">{selectedTicker}</p>
                       </div>
