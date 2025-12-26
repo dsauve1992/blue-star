@@ -1,13 +1,17 @@
-import { useState, useEffect, useRef, useMemo } from 'react';
-import { useWatchlists, useAddTickerToWatchlist, useRemoveTickerFromWatchlist, useCreateWatchlist, useDeleteWatchlist } from '../hooks/use-watchlists';
-import { PageContainer } from 'src/global/design-system/page-container';
-import { Button } from 'src/global/design-system';
-import { Badge } from 'src/global/design-system';
-import { LoadingSpinner } from 'src/global/design-system';
-import { Alert, AlertDescription } from 'src/global/design-system';
-import { Input } from 'src/global/design-system';
-import TradingViewTapeCardWidget from 'src/stock-analysis/components/new/TradingViewTapeCardWidget';
-import { AddTickerModal } from '../components/AddTickerModal';
+import { useState, useEffect, useRef, useMemo } from "react";
+import {
+  useWatchlists,
+  useRemoveTickerFromWatchlist,
+  useCreateWatchlist,
+  useDeleteWatchlist,
+} from "../hooks/use-watchlists";
+import { PageContainer } from "src/global/design-system/page-container";
+import { Button } from "src/global/design-system";
+import { LoadingSpinner } from "src/global/design-system";
+import { Alert, AlertDescription } from "src/global/design-system";
+import { Input } from "src/global/design-system";
+import TradingViewTapeCardWidget from "src/stock-analysis/components/new/TradingViewTapeCardWidget";
+import { AddTickerModal } from "../components/AddTickerModal";
 import {
   Bookmark,
   TrendingUp,
@@ -16,18 +20,17 @@ import {
   BarChart3,
   Plus,
   Trash2,
-  RefreshCw,
   X,
-} from 'lucide-react';
+} from "lucide-react";
 
 function extractSymbol(ticker: string): string {
-  const parts = ticker.split(':');
+  const parts = ticker.split(":");
   return parts.length > 1 ? parts[1] : parts[0];
 }
 
 function extractExchange(ticker: string): string {
-  const parts = ticker.split(':');
-  return parts.length > 1 ? parts[0] : 'NASDAQ';
+  const parts = ticker.split(":");
+  return parts.length > 1 ? parts[0] : "NASDAQ";
 }
 
 function getTickerLogoUrl(symbol: string): string {
@@ -36,29 +39,32 @@ function getTickerLogoUrl(symbol: string): string {
 
 export default function Watchlist() {
   const { data, isLoading, error } = useWatchlists();
-  const addTickerToWatchlist = useAddTickerToWatchlist();
   const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
   const createWatchlist = useCreateWatchlist();
   const deleteWatchlist = useDeleteWatchlist();
 
-  const [selectedWatchlistId, setSelectedWatchlistId] = useState<string | null>(null);
+  const [selectedWatchlistId, setSelectedWatchlistId] = useState<string | null>(
+    null,
+  );
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
   const [showCreateForm, setShowCreateForm] = useState(false);
-  const [newWatchlistName, setNewWatchlistName] = useState('');
+  const [newWatchlistName, setNewWatchlistName] = useState("");
   const [showAddTickerModal, setShowAddTickerModal] = useState(false);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
-  const selectedWatchlist = data?.watchlists.find((w) => w.id === selectedWatchlistId);
+  const selectedWatchlist = data?.watchlists.find(
+    (w) => w.id === selectedWatchlistId,
+  );
   const tickers = selectedWatchlist?.tickers || [];
 
   const currentIndex = tickers.findIndex((t) => t === selectedTicker);
 
   const movingAverages = useMemo(
     () => [
-      { type: 'EMA' as const, length: 10 },
-      { type: 'EMA' as const, length: 20 },
+      { type: "EMA" as const, length: 10 },
+      { type: "EMA" as const, length: 20 },
     ],
     [],
   );
@@ -68,13 +74,17 @@ export default function Watchlist() {
     return {
       exchange: extractExchange(selectedTicker),
       symbol: extractSymbol(selectedTicker),
-      interval: 'D' as const,
-      range: '6m' as const,
+      interval: "D" as const,
+      range: "6m" as const,
     };
   }, [selectedTicker]);
 
   useEffect(() => {
-    if (data?.watchlists && data.watchlists.length > 0 && !selectedWatchlistId) {
+    if (
+      data?.watchlists &&
+      data.watchlists.length > 0 &&
+      !selectedWatchlistId
+    ) {
       setSelectedWatchlistId(data.watchlists[0].id);
     }
   }, [data, selectedWatchlistId]);
@@ -93,7 +103,7 @@ export default function Watchlist() {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (!selectedWatchlist || tickers.length === 0) return;
 
-      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
         event.preventDefault();
 
         const currentIndex = tickers.findIndex((t) => t === selectedTicker);
@@ -104,7 +114,7 @@ export default function Watchlist() {
         }
 
         let newIndex: number;
-        if (event.key === 'ArrowDown') {
+        if (event.key === "ArrowDown") {
           newIndex = Math.min(currentIndex + 1, tickers.length - 1);
         } else {
           newIndex = Math.max(currentIndex - 1, 0);
@@ -116,16 +126,16 @@ export default function Watchlist() {
         const tickerElement = tickerRefs.current.get(newTicker);
         if (tickerElement && listContainerRef.current) {
           tickerElement.scrollIntoView({
-            behavior: 'smooth',
-            block: 'nearest',
+            behavior: "smooth",
+            block: "nearest",
           });
         }
       }
     };
 
-    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener("keydown", handleKeyDown);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener("keydown", handleKeyDown);
     };
   }, [selectedWatchlist, tickers, selectedTicker]);
 
@@ -138,23 +148,26 @@ export default function Watchlist() {
         name: newWatchlistName.trim(),
       });
       setSelectedWatchlistId(response.watchlistId);
-      setNewWatchlistName('');
+      setNewWatchlistName("");
       setShowCreateForm(false);
     } catch (error) {
-      console.error('Failed to create watchlist:', error);
+      console.error("Failed to create watchlist:", error);
     }
   };
 
   const handleDeleteWatchlist = async (watchlistId: string) => {
-    if (window.confirm('Are you sure you want to delete this watchlist?')) {
+    if (window.confirm("Are you sure you want to delete this watchlist?")) {
       try {
         await deleteWatchlist.mutateAsync(watchlistId);
         if (selectedWatchlistId === watchlistId) {
-          const remainingWatchlists = data?.watchlists.filter((w) => w.id !== watchlistId) || [];
-          setSelectedWatchlistId(remainingWatchlists.length > 0 ? remainingWatchlists[0].id : null);
+          const remainingWatchlists =
+            data?.watchlists.filter((w) => w.id !== watchlistId) || [];
+          setSelectedWatchlistId(
+            remainingWatchlists.length > 0 ? remainingWatchlists[0].id : null,
+          );
         }
       } catch (error) {
-        console.error('Failed to delete watchlist:', error);
+        console.error("Failed to delete watchlist:", error);
       }
     }
   };
@@ -164,19 +177,19 @@ export default function Watchlist() {
     const tickerElement = tickerRefs.current.get(ticker);
     if (tickerElement && listContainerRef.current) {
       tickerElement.scrollIntoView({
-        behavior: 'smooth',
-        block: 'nearest',
+        behavior: "smooth",
+        block: "nearest",
       });
     }
   };
 
-  const navigateTicker = (direction: 'up' | 'down') => {
+  const navigateTicker = (direction: "up" | "down") => {
     if (tickers.length === 0) return;
 
     let newIndex: number;
     if (currentIndex === -1) {
       newIndex = 0;
-    } else if (direction === 'down') {
+    } else if (direction === "down") {
       newIndex = Math.min(currentIndex + 1, tickers.length - 1);
     } else {
       newIndex = Math.max(currentIndex - 1, 0);
@@ -195,10 +208,12 @@ export default function Watchlist() {
       });
       if (selectedTicker === ticker) {
         const remainingTickers = tickers.filter((t) => t !== ticker);
-        setSelectedTicker(remainingTickers.length > 0 ? remainingTickers[0] : null);
+        setSelectedTicker(
+          remainingTickers.length > 0 ? remainingTickers[0] : null,
+        );
       }
     } catch (error) {
-      console.error('Failed to remove ticker:', error);
+      console.error("Failed to remove ticker:", error);
     }
   };
 
@@ -222,9 +237,10 @@ export default function Watchlist() {
         className={`
           group relative flex items-center gap-3 p-3 rounded-xl cursor-pointer
           transition-all duration-200 ease-out
-          ${isSelected
-            ? 'bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/50 shadow-lg shadow-blue-500/10'
-            : 'hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50'
+          ${
+            isSelected
+              ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/50 shadow-lg shadow-blue-500/10"
+              : "hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50"
           }
         `}
       >
@@ -232,14 +248,17 @@ export default function Watchlist() {
           className={`
           flex items-center justify-center w-12 h-12 rounded-lg overflow-hidden
           transition-all duration-200
-          ${isSelected
-              ? 'bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg ring-2 ring-blue-400/50'
-              : 'bg-slate-700 group-hover:bg-slate-600'
-            }
+          ${
+            isSelected
+              ? "bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg ring-2 ring-blue-400/50"
+              : "bg-slate-700 group-hover:bg-slate-600"
+          }
         `}
         >
           {logoFailed ? (
-            <span className={`font-bold text-sm ${isSelected ? 'text-white' : 'text-slate-300'}`}>
+            <span
+              className={`font-bold text-sm ${isSelected ? "text-white" : "text-slate-300"}`}
+            >
               {symbol.slice(0, 4)}
             </span>
           ) : (
@@ -257,7 +276,7 @@ export default function Watchlist() {
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             <span
-              className={`font-semibold truncate ${isSelected ? 'text-white' : 'text-slate-100'}`}
+              className={`font-semibold truncate ${isSelected ? "text-white" : "text-slate-100"}`}
             >
               {ticker}
             </span>
@@ -284,9 +303,11 @@ export default function Watchlist() {
                 <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/25">
                   <Bookmark className="w-5 h-5 text-white" />
                 </div>
-        <div>
+                <div>
                   <h1 className="text-lg font-bold text-white">Watchlists</h1>
-                  <p className="text-xs text-slate-400">Manage your ticker lists</p>
+                  <p className="text-xs text-slate-400">
+                    Manage your ticker lists
+                  </p>
                 </div>
               </div>
 
@@ -306,10 +327,12 @@ export default function Watchlist() {
                     <Button
                       type="submit"
                       size="sm"
-                      disabled={!newWatchlistName.trim() || createWatchlist.isPending}
+                      disabled={
+                        !newWatchlistName.trim() || createWatchlist.isPending
+                      }
                       className="flex-1"
                     >
-                      {createWatchlist.isPending ? 'Creating...' : 'Create'}
+                      {createWatchlist.isPending ? "Creating..." : "Create"}
                     </Button>
                     <Button
                       type="button"
@@ -317,7 +340,7 @@ export default function Watchlist() {
                       variant="outline"
                       onClick={() => {
                         setShowCreateForm(false);
-                        setNewWatchlistName('');
+                        setNewWatchlistName("");
                       }}
                     >
                       Cancel
@@ -345,9 +368,10 @@ export default function Watchlist() {
                       className={`
                         flex items-center justify-between p-2 rounded-lg cursor-pointer
                         transition-all duration-200
-                        ${selectedWatchlistId === watchlist.id
-                          ? 'bg-blue-500/20 border border-blue-500/50'
-                          : 'hover:bg-slate-700/50 border border-transparent'
+                        ${
+                          selectedWatchlistId === watchlist.id
+                            ? "bg-blue-500/20 border border-blue-500/50"
+                            : "hover:bg-slate-700/50 border border-transparent"
                         }
                       `}
                       onClick={() => setSelectedWatchlistId(watchlist.id)}
@@ -357,7 +381,8 @@ export default function Watchlist() {
                           {watchlist.name}
                         </div>
                         <div className="text-xs text-slate-400">
-                          {watchlist.tickers.length} ticker{watchlist.tickers.length !== 1 ? 's' : ''}
+                          {watchlist.tickers.length} ticker
+                          {watchlist.tickers.length !== 1 ? "s" : ""}
                         </div>
                       </div>
                       <button
@@ -394,7 +419,7 @@ export default function Watchlist() {
                     </Button>
                   </div>
                   <div className="text-xs text-slate-400">
-                    {tickers.length} ticker{tickers.length !== 1 ? 's' : ''}
+                    {tickers.length} ticker{tickers.length !== 1 ? "s" : ""}
                   </div>
                 </div>
 
@@ -429,7 +454,7 @@ export default function Watchlist() {
                   <div className="p-3 border-t border-slate-700/50 bg-slate-900/30">
                     <div className="flex items-center justify-between gap-2">
                       <button
-                        onClick={() => navigateTicker('up')}
+                        onClick={() => navigateTicker("up")}
                         disabled={currentIndex <= 0}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                     bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white
@@ -442,7 +467,7 @@ export default function Watchlist() {
                         {currentIndex + 1} / {tickers.length}
                       </span>
                       <button
-                        onClick={() => navigateTicker('down')}
+                        onClick={() => navigateTicker("down")}
                         disabled={currentIndex >= tickers.length - 1}
                         className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
                     bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white
@@ -467,16 +492,18 @@ export default function Watchlist() {
                 </div>
                 <p className="text-slate-400 text-sm">
                   {data?.watchlists && data.watchlists.length === 0
-                    ? 'Create your first watchlist to get started'
-                    : 'Select a watchlist to view tickers'}
-          </p>
-        </div>
+                    ? "Create your first watchlist to get started"
+                    : "Select a watchlist to view tickers"}
+                </p>
+              </div>
             )}
 
             {isLoading && (
               <div className="flex-1 flex flex-col items-center justify-center gap-3">
                 <LoadingSpinner />
-                <span className="text-sm text-slate-400">Loading watchlists...</span>
+                <span className="text-sm text-slate-400">
+                  Loading watchlists...
+                </span>
               </div>
             )}
 
@@ -504,20 +531,28 @@ export default function Watchlist() {
                           </div>
                         ) : (
                           <img
-                            src={getTickerLogoUrl(extractSymbol(selectedTicker))}
+                            src={getTickerLogoUrl(
+                              extractSymbol(selectedTicker),
+                            )}
                             alt={extractSymbol(selectedTicker)}
                             className="w-full h-full object-contain p-1"
                             onError={() => {
-                              setFailedLogos((prev) => new Set(prev).add(extractSymbol(selectedTicker)));
+                              setFailedLogos((prev) =>
+                                new Set(prev).add(
+                                  extractSymbol(selectedTicker),
+                                ),
+                              );
                             }}
                           />
                         )}
                       </div>
-        <div>
+                      <div>
                         <h2 className="text-xl font-bold text-white">
                           {extractSymbol(selectedTicker)}
-          </h2>
-                        <p className="text-sm text-slate-400">{selectedTicker}</p>
+                        </h2>
+                        <p className="text-sm text-slate-400">
+                          {selectedTicker}
+                        </p>
                       </div>
                     </div>
                   </>
@@ -569,8 +604,8 @@ export default function Watchlist() {
                   </h3>
                   <p className="text-slate-500 text-center max-w-md">
                     {selectedWatchlist
-                      ? 'Select a ticker from the list on the left to view its interactive chart with technical indicators.'
-                      : 'Select or create a watchlist to get started.'}
+                      ? "Select a ticker from the list on the left to view its interactive chart with technical indicators."
+                      : "Select or create a watchlist to get started."}
                   </p>
                 </div>
               )}
