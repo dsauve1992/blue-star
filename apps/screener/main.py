@@ -85,7 +85,8 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
     custom_filters = [
         {"left": "close", "operation": "egreater", "right": 2},  # Price > $5
         {"left": "market_cap_basic", "operation": "egreater", "right": 300000000},  # Market cap > $500M
-        {"left": "average_volume_30d_calc", "operation": "greater", "right": 1000000},  # Volume > 2M
+        {"left":"AvgValue.Traded_30d","operation":"greater","right":30000000}, # Average Dollar Volume > 30M
+        {"left": "average_volume_30d_calc", "operation": "greater", "right": 500000},  # Volume > 500K
         {"left": "EMA10", "operation": "egreater", "right": "EMA20"},
         {"left": "EMA20", "operation": "egreater", "right": "SMA50"},
         {"left": "close", "operation": "egreater", "right": "EMA20"},
@@ -238,7 +239,8 @@ def analyse_weekly_setup(screener_service: ScreenerService, yahoo_finance_servic
     custom_filters = [
         {"left": "close", "operation": "egreater", "right": 2},  # Price > $5
         {"left": "market_cap_basic", "operation": "egreater", "right": 300000000},  # Market cap > $500M
-        {"left": "average_volume_30d_calc", "operation": "greater", "right": 1000000},  # Volume > 2M
+        {"left":"AvgValue.Traded_30d","operation":"greater","right":30000000}, # Average Dollar Volume > 30M
+        {"left": "average_volume_30d_calc", "operation": "greater", "right": 500000},  # Volume > 500K
         {"left": "EMA10|1W", "operation": "egreater", "right": "EMA20|1W"},
         {"left": "EMA20|1W", "operation": "egreater", "right": "SMA30|1W"},
         {"left": "close", "operation": "egreater", "right": "EMA20|1W"},

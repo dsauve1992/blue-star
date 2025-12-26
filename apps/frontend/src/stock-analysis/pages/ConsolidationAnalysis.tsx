@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { useParams, useNavigate } from "react-router";
 import { Button } from "src/global/design-system";
 import { Badge } from "src/global/design-system";
@@ -7,6 +7,7 @@ import { Alert, AlertDescription } from "src/global/design-system";
 import { useConsolidations } from "../hooks/use-consolidations";
 import { useRunConsolidationAnalysis } from "../hooks/use-run-consolidation-analysis";
 import type { AnalyzeConsolidationsRequest } from "../api/consolidation.client";
+import { useWatchlists, useAddTickerToWatchlist, useRemoveTickerFromWatchlist, useCreateWatchlist } from "src/watchlist/hooks/use-watchlists";
 import TradingViewTapeCardWidget from "../components/new/TradingViewTapeCardWidget";
 import type { ConsolidationResult } from "../api/consolidation.client";
 import {
@@ -17,6 +18,8 @@ import {
   ChevronDown,
   BarChart3,
   Sparkles,
+  BookmarkPlus,
+  Check,
 } from "lucide-react";
 
 type AnalysisType = "daily" | "weekly";
@@ -40,14 +43,21 @@ export default function ConsolidationAnalysis() {
 
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
+  const [showWatchlistDropdown, setShowWatchlistDropdown] = useState(false);
+  const [newWatchlistName, setNewWatchlistName] = useState("");
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const dropdownRef = useRef<HTMLDivElement>(null);
   const request: AnalyzeConsolidationsRequest = {
     type: analysisType,
   };
 
   const { data, isLoading, error, refetch } = useConsolidations(request);
   const runAnalysis = useRunConsolidationAnalysis();
+  const { data: watchlistsData } = useWatchlists();
+  const addTickerToWatchlist = useAddTickerToWatchlist();
+  const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
+  const createWatchlist = useCreateWatchlist();
 
   const consolidations = data?.hasData
     ? analysisType === "daily"
@@ -59,10 +69,46 @@ export default function ConsolidationAnalysis() {
     (c) => c.tickerFullName === selectedTicker,
   );
 
+  const movingAverages = useMemo(
+    () => [
+      { type: "EMA" as const, length: 10 },
+      { type: "EMA" as const, length: 20 },
+    ],
+    [],
+  );
+
+  const tradingViewProps = useMemo(() => {
+    if (!selectedTicker) return null;
+    return {
+      exchange: selectedTicker.split(":")[0] || "NASDAQ",
+      symbol: selectedTicker.split(":")[1] || selectedTicker,
+      interval: (analysisType === "daily" ? "D" : "W") as "D" | "W",
+      range: (analysisType === "daily" ? "6m" : "12m") as "6m" | "12m",
+    };
+  }, [selectedTicker, analysisType]);
+
   useEffect(() => {
     // Reset selection when analysis type changes
     setSelectedTicker(null);
   }, [analysisType]);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setShowWatchlistDropdown(false);
+      }
+    };
+
+    if (showWatchlistDropdown) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [showWatchlistDropdown]);
 
   useEffect(() => {
     if (data?.hasData) {
@@ -167,6 +213,51 @@ export default function ConsolidationAnalysis() {
 
     const newTicker = consolidations[newIndex].tickerFullName;
     handleTickerSelect(newTicker);
+  };
+
+  const handleToggleTickerInWatchlist = async (watchlistId: string, isTickerInWatchlist: boolean) => {
+    if (!selectedTicker) return;
+
+    const tickerSymbol = extractSymbol(selectedTicker);
+    const tickerToUse = watchlistsData?.watchlists
+      .find((w) => w.id === watchlistId)
+      ?.tickers.find((t) => t === selectedTicker || t === tickerSymbol) || selectedTicker;
+
+    try {
+      if (isTickerInWatchlist) {
+        await removeTickerFromWatchlist.mutateAsync({
+          watchlistId,
+          ticker: tickerToUse,
+        });
+      } else {
+        await addTickerToWatchlist.mutateAsync({
+          watchlistId,
+          request: { ticker: selectedTicker },
+        });
+      }
+    } catch (error) {
+      console.error(`Failed to ${isTickerInWatchlist ? "remove" : "add"} ticker from watchlist:`, error);
+    }
+  };
+
+  const handleCreateWatchlist = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedTicker || !newWatchlistName.trim()) return;
+
+    try {
+      const response = await createWatchlist.mutateAsync({
+        name: newWatchlistName.trim(),
+      });
+      
+      await addTickerToWatchlist.mutateAsync({
+        watchlistId: response.watchlistId,
+        request: { ticker: selectedTicker },
+      });
+      
+      setNewWatchlistName("");
+    } catch (error) {
+      console.error("Failed to create watchlist:", error);
+    }
   };
 
   const renderTickerItem = (consolidation: ConsolidationResult) => {
@@ -459,7 +550,7 @@ export default function ConsolidationAnalysis() {
           {/* Main Content - Chart Area */}
           <main className="flex-1 flex flex-col min-w-0">
             {/* Chart Header */}
-            <header className="flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
+            <header className="relative z-10 flex items-center justify-between px-6 py-4 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
               <div className="flex items-center gap-4 flex-wrap">
                 {selectedTicker ? (
                   <>
@@ -526,34 +617,115 @@ export default function ConsolidationAnalysis() {
                 )}
               </div>
 
-              <button
-                onClick={() => refetch()}
-                disabled={isLoading}
-                className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white
-                border border-slate-600/50 transition-all duration-200
-                disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <RefreshCw
-                  className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
-                />
-                Refresh
-              </button>
+              <div className="flex items-center gap-2">
+                {selectedTicker && (
+                  <div className="relative" ref={dropdownRef}>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowWatchlistDropdown(!showWatchlistDropdown);
+                      }}
+                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                      bg-blue-600/50 text-white hover:bg-blue-600/70
+                      border border-blue-500/50 transition-all duration-200"
+                    >
+                      <BookmarkPlus className="w-4 h-4" />
+                      Add to Watchlist
+                    </button>
+
+                    {showWatchlistDropdown && (
+                      <div className="absolute right-0 mt-2 w-64 rounded-lg bg-slate-800 border border-slate-700 shadow-xl z-[9999] overflow-hidden">
+                        {watchlistsData?.watchlists && watchlistsData.watchlists.length > 0 && (
+                          <div className="p-2">
+                            <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                              Select Watchlist
+                            </div>
+                            {watchlistsData.watchlists.map((watchlist) => {
+                              const tickerSymbol = extractSymbol(selectedTicker);
+                              const isTickerInWatchlist =
+                                watchlist.tickers.includes(selectedTicker) ||
+                                watchlist.tickers.includes(tickerSymbol);
+                              return (
+                                <button
+                                  key={watchlist.id}
+                                  onClick={() => handleToggleTickerInWatchlist(watchlist.id, isTickerInWatchlist)}
+                                  disabled={
+                                    addTickerToWatchlist.isPending ||
+                                    removeTickerFromWatchlist.isPending
+                                  }
+                                  className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-slate-200 hover:bg-slate-700/50 transition-colors
+                                  disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
+                                  <span className="truncate">{watchlist.name}</span>
+                                  {isTickerInWatchlist && (
+                                    <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                  )}
+                                </button>
+                              );
+                            })}
+                          </div>
+                        )}
+
+                        <div className="border-t border-slate-700/50 p-2">
+                          <form onSubmit={handleCreateWatchlist} className="space-y-2">
+                            <div className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                              Create New Watchlist
+                            </div>
+                            <input
+                              type="text"
+                              value={newWatchlistName}
+                              onChange={(e) => setNewWatchlistName(e.target.value)}
+                              placeholder="Watchlist name..."
+                              maxLength={255}
+                              disabled={createWatchlist.isPending}
+                              className="w-full px-3 py-2 rounded-md text-sm bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500
+                              focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50
+                              disabled:opacity-50 disabled:cursor-not-allowed"
+                              autoFocus={watchlistsData?.watchlists && watchlistsData.watchlists.length === 0}
+                            />
+                            <button
+                              type="submit"
+                              disabled={!newWatchlistName.trim() || createWatchlist.isPending}
+                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium
+                              bg-blue-600/50 text-white hover:bg-blue-600/70
+                              disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            >
+                              <BookmarkPlus className="w-4 h-4" />
+                              {createWatchlist.isPending ? "Creating..." : "Create & Add"}
+                            </button>
+                          </form>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                <button
+                  onClick={() => refetch()}
+                  disabled={isLoading}
+                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                  bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white
+                  border border-slate-600/50 transition-all duration-200
+                  disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+                  />
+                  Refresh
+                </button>
+              </div>
             </header>
 
             {/* Chart Content */}
             <div className="flex-1 p-6 overflow-hidden">
-              {selectedTicker ? (
+              {selectedTicker && tradingViewProps ? (
                 <div className="h-full rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
                   <TradingViewTapeCardWidget
-                    exchange={selectedTicker.split(":")[0] || "NASDAQ"}
-                    symbol={selectedTicker.split(":")[1] || selectedTicker}
-                    interval={analysisType === "daily" ? "D" : "W"}
-                    range={analysisType === "daily" ? "6m" : "12m"}
-                    movingAverages={[
-                      { type: "EMA", length: 10 },
-                      { type: "EMA", length: 20 },
-                    ]}
+                    exchange={tradingViewProps.exchange}
+                    symbol={tradingViewProps.symbol}
+                    interval={tradingViewProps.interval}
+                    range={tradingViewProps.range}
+                    movingAverages={movingAverages}
                   />
                 </div>
               ) : (
