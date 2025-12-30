@@ -68,6 +68,12 @@ export const routes: RouteConfig[] = [
     isProtected: true,
     showInNavigation: true,
   },
+  {
+    path: '/sector-rotation',
+    label: 'Sector Rotation',
+    isProtected: true,
+    showInNavigation: true,
+  },
 ];
 
 export const getPublicRoutes = () => routes.filter(route => !route.isProtected);

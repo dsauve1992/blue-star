@@ -5,6 +5,7 @@ import { DateRange } from '../../domain/value-objects/date-range';
 import { PricePoint } from '../../domain/value-objects/price-point';
 import {
   HistoricalData,
+  Interval,
   MarketDataService,
 } from '../../domain/services/market-data.service';
 
@@ -19,12 +20,13 @@ export class YahooMarketDataService implements MarketDataService {
   async getHistoricalData(
     symbol: Symbol,
     dateRange: DateRange,
+    _interval?: Interval,
   ): Promise<HistoricalData> {
     try {
       const query = symbol.value;
       const period1 = dateRange.startDate;
       const period2 = dateRange.endDate;
-      const interval = this.determineInterval(dateRange);
+      const interval = _interval ?? this.determineInterval(dateRange);
 
       const result = await this.yahooFinance.historical(query, {
         period1,
@@ -58,7 +60,7 @@ export class YahooMarketDataService implements MarketDataService {
     }
   }
 
-  private determineInterval(dateRange: DateRange): '1d' | '1wk' | '1mo' {
+  private determineInterval(dateRange: DateRange): Interval {
     const days = dateRange.getDaysDifference();
 
     if (days <= 90) {
