@@ -21,4 +21,3 @@ export { SECTOR_ROTATION_CALCULATION_SERVICE };
   ],
 })
 export class SectorRotationModule {}
-

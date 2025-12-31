@@ -20,6 +20,31 @@ export function SectorRotationRRGChart({
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
 
+  const axisRanges = useMemo(() => {
+    if (!dataPoints || dataPoints.length === 0) {
+      return { xMin: -1, xMax: 1, yMin: -1, yMax: 1 };
+    }
+
+    const allXValues = dataPoints.map((p) => p.x);
+    const allYValues = dataPoints.map((p) => p.y);
+
+    const xMin = Math.min(...allXValues);
+    const xMax = Math.max(...allXValues);
+    const yMin = Math.min(...allYValues);
+    const yMax = Math.max(...allYValues);
+
+    const xRange = xMax - xMin || 2;
+    const yRange = yMax - yMin || 2;
+    const padding = 0.1;
+
+    return {
+      xMin: xMin - xRange * padding,
+      xMax: xMax + xRange * padding,
+      yMin: yMin - yRange * padding,
+      yMax: yMax + yRange * padding,
+    };
+  }, [dataPoints]);
+
   const filteredDataPoints = useMemo(() => {
     if (!startDate || !endDate) {
       const latestDate = new Date(
@@ -91,6 +116,7 @@ export function SectorRotationRRGChart({
 
   const option = {
     backgroundColor: 'transparent',
+    animation: false,
     grid: {
       left: '10%',
       right: '10%',
@@ -103,6 +129,8 @@ export function SectorRotationRRGChart({
       name: 'Relative Trend (X)',
       nameLocation: 'middle',
       nameGap: 30,
+      min: axisRanges.xMin,
+      max: axisRanges.xMax,
       splitLine: {
         lineStyle: {
           color: isDarkMode ? '#374151' : '#e5e7eb',
@@ -119,6 +147,8 @@ export function SectorRotationRRGChart({
       name: 'Relative Momentum (Y)',
       nameLocation: 'middle',
       nameGap: 50,
+      min: axisRanges.yMin,
+      max: axisRanges.yMax,
       splitLine: {
         lineStyle: {
           color: isDarkMode ? '#374151' : '#e5e7eb',
@@ -146,6 +176,26 @@ export function SectorRotationRRGChart({
           fontSize: 10,
           color: isDarkMode ? '#d1d5db' : '#374151',
         },
+        markLine: {
+          silent: true,
+          symbol: 'none',
+          lineStyle: {
+            color: isDarkMode ? '#4b5563' : '#9ca3af',
+            width: 1,
+            type: 'solid',
+            opacity: 0.5,
+          },
+          data: [
+            [
+              { coord: [0, axisRanges.yMin] },
+              { coord: [0, axisRanges.yMax] },
+            ],
+            [
+              { coord: [axisRanges.xMin, 0] },
+              { coord: [axisRanges.xMax, 0] },
+            ],
+          ],
+        },
       },
       ...seriesData.map((d, index) => ({
         type: 'line',
@@ -153,7 +203,7 @@ export function SectorRotationRRGChart({
         data: d.trail.map((point) => point),
         lineStyle: {
           color: getQuadrantColor(d.latestPoint.quadrant),
-          width: 1.5,
+          width: 3,
           opacity: 0.4,
           type: 'dashed',
         },

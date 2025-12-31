@@ -46,10 +46,8 @@ export class SectorRotationCalculationServiceImpl
       dateRange,
       requiredLookbackWeeks,
     );
-    console.log({ dateRange, extendedDateRange });
 
     const sectorData = await this.fetchSectorData(sectors, extendedDateRange);
-    console.dir(sectorData.map((el) => el.prices));
     const benchmark = this.calculateBenchmark(sectorData);
 
     const relativeStrengths = this.calculateRelativeStrengths(
@@ -93,28 +91,49 @@ export class SectorRotationCalculationServiceImpl
     sectors: Sector[],
     dateRange: DateRange,
   ): Promise<SectorWeeklyData[]> {
-    const sectorDataPromises = sectors.map(async (sector) => {
+    const sectorData: SectorWeeklyData[] = [];
+    const delayBetweenRequestsMs = 15000;
+
+    for (let i = 0; i < sectors.length; i++) {
+      const sector = sectors[i];
       const symbol = Symbol.of(sector.symbol);
-      const historicalData = await this.marketDataService.getHistoricalData(
-        symbol,
-        dateRange,
-        '1wk',
-      );
+      
+      try {
+        const historicalData = await this.marketDataService.getHistoricalData(
+          symbol,
+          dateRange,
+          '1wk',
+        );
 
-      const weeklyPrices = this.convertToWeeklyPrices(
-        historicalData.pricePoints.map((p) => ({
-          date: p.date,
-          close: p.close,
-        })),
-      );
+        const weeklyPrices = this.convertToWeeklyPrices(
+          historicalData.pricePoints.map((p) => ({
+            date: p.date,
+            close: p.close,
+          })),
+        );
 
-      return {
-        sector,
-        prices: weeklyPrices,
-      };
-    });
+        sectorData.push({
+          sector,
+          prices: weeklyPrices,
+        });
+      } catch (error) {
+        console.error(
+          `Failed to fetch data for sector ${sector.symbol}:`,
+          error,
+        );
+        throw error;
+      }
 
-    return Promise.all(sectorDataPromises);
+      if (i < sectors.length - 1) {
+        await this.delay(delayBetweenRequestsMs);
+      }
+    }
+
+    return sectorData;
+  }
+
+  private delay(ms: number): Promise<void> {
+    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private extendDateRangeForLookback(
@@ -239,7 +258,7 @@ export class SectorRotationCalculationServiceImpl
         if (i >= lookbackWeeks) {
           const lookbackDate = sortedDates[i - lookbackWeeks];
           const lookbackRS = rsMap.get(lookbackDate)!;
-          const xRaw = currentRS - lookbackRS;
+          const xRaw = Math.log(currentRS) - Math.log(lookbackRS);
           xRawMap.set(currentDate, xRaw);
         }
       }

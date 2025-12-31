@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Inject } from '@nestjs/common';
 import YahooFinance from 'yahoo-finance2';
 import { Symbol } from '../../domain/value-objects/symbol';
 import { DateRange } from '../../domain/value-objects/date-range';
@@ -8,12 +8,17 @@ import {
   Interval,
   MarketDataService,
 } from '../../domain/services/market-data.service';
+import { MarketDataCacheRepository } from '../../domain/repositories/market-data-cache.repository.interface';
+import { MARKET_DATA_CACHE_REPOSITORY } from '../../constants/tokens';
 
 @Injectable()
 export class YahooMarketDataService implements MarketDataService {
   private readonly yahooFinance: InstanceType<typeof YahooFinance>;
 
-  constructor() {
+  constructor(
+    @Inject(MARKET_DATA_CACHE_REPOSITORY)
+    private readonly cacheRepository: MarketDataCacheRepository,
+  ) {
     this.yahooFinance = new YahooFinance();
   }
 
@@ -22,42 +27,120 @@ export class YahooMarketDataService implements MarketDataService {
     dateRange: DateRange,
     _interval?: Interval,
   ): Promise<HistoricalData> {
-    try {
-      const query = symbol.value;
-      const period1 = dateRange.startDate;
-      const period2 = dateRange.endDate;
-      const interval = _interval ?? this.determineInterval(dateRange);
+    const interval = _interval ?? this.determineInterval(dateRange);
 
-      const result = await this.yahooFinance.historical(query, {
-        period1,
-        period2,
-        interval,
-      });
-
-      if (!result || result.length === 0) {
-        throw new Error(`No historical data found for symbol ${symbol.value}`);
-      }
-
-      const pricePoints = result.map((data) => {
-        return PricePoint.of(
-          new Date(data.date),
-          data.open,
-          data.high,
-          data.low,
-          data.close,
-          data.volume || 0,
-        );
-      });
-
-      return {
+    const cachedPricePoints =
+      await this.cacheRepository.findBySymbolAndDateRange(
         symbol,
-        dateRange,
-        pricePoints,
-      };
-    } catch (error) {
-      console.error(error);
-      throw new Error(`Failed to fetch historical data for ${symbol.value}`);
+        dateRange.startDate,
+        dateRange.endDate,
+        interval,
+      );
+
+    const requiredDateCount = this.estimateRequiredDataPoints(
+      dateRange.startDate,
+      dateRange.endDate,
+      interval,
+    );
+
+    const hasCompleteCache =
+      cachedPricePoints.length >= requiredDateCount * 0.8;
+
+    let fetchedPricePoints: PricePoint[] = [];
+
+    if (!hasCompleteCache) {
+      try {
+        const result = await this.yahooFinance.historical(symbol.value, {
+          period1: dateRange.startDate,
+          period2: dateRange.endDate,
+          interval,
+        });
+
+        if (result && result.length > 0) {
+          fetchedPricePoints = result.map((data) => {
+            return PricePoint.of(
+              new Date(data.date),
+              data.open,
+              data.high,
+              data.low,
+              data.close,
+              data.volume || 0,
+            );
+          });
+
+          await this.cacheRepository.savePricePoints(
+            symbol,
+            fetchedPricePoints,
+            interval,
+          );
+        }
+      } catch (error) {
+        console.error(
+          `Failed to fetch historical data for ${symbol.value}:`,
+          error,
+        );
+        if (cachedPricePoints.length === 0) {
+          throw new Error(
+            `Failed to fetch historical data for ${symbol.value} and no cached data available`,
+          );
+        }
+      }
     }
+
+    const allPricePoints = [...cachedPricePoints, ...fetchedPricePoints]
+      .filter((point) => {
+        const pointTime = point.date.getTime();
+        return (
+          pointTime >= dateRange.startDate.getTime() &&
+          pointTime <= dateRange.endDate.getTime()
+        );
+      })
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    const uniquePricePoints = this.deduplicatePricePoints(allPricePoints);
+
+    if (uniquePricePoints.length === 0) {
+      throw new Error(`No historical data found for symbol ${symbol.value}`);
+    }
+
+    return {
+      symbol,
+      dateRange,
+      pricePoints: uniquePricePoints,
+    };
+  }
+
+  private estimateRequiredDataPoints(
+    startDate: Date,
+    endDate: Date,
+    interval: Interval,
+  ): number {
+    const daysDiff = Math.ceil(
+      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (interval === '1d') {
+      return Math.min(daysDiff, 252);
+    } else if (interval === '1wk') {
+      return Math.ceil(daysDiff / 7);
+    } else {
+      return Math.ceil(daysDiff / 30);
+    }
+  }
+
+  private deduplicatePricePoints(pricePoints: PricePoint[]): PricePoint[] {
+    const seen = new Set<string>();
+    const unique: PricePoint[] = [];
+
+    for (const point of pricePoints) {
+      const key = point.date.toISOString().split('T')[0];
+      if (!seen.has(key)) {
+        seen.add(key);
+        unique.push(point);
+      }
+    }
+
+    return unique;
   }
 
   private determineInterval(dateRange: DateRange): Interval {
