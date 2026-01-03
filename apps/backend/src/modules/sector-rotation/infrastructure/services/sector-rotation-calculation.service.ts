@@ -11,6 +11,8 @@ import { SectorRotationResult } from '../../domain/value-objects/sector-rotation
 import { SectorRotationDataPoint } from '../../domain/value-objects/sector-rotation-data-point';
 import { Quadrant } from '../../domain/value-objects/quadrant';
 import { Sector } from '../../domain/value-objects/sector';
+import { ZScoreNormalizer } from './z-score-normalizer.service';
+import { BenchmarkCalculator } from './benchmark-calculator.service';
 
 interface WeeklyPriceData {
   date: Date;
@@ -22,6 +24,9 @@ interface SectorWeeklyData {
   prices: WeeklyPriceData[];
 }
 
+const MIN_DATA_POINTS_REQUIRED = 2;
+const EPSILON = 1e-10;
+
 @Injectable()
 export class SectorRotationCalculationServiceImpl
   implements SectorRotationCalculationService
@@ -29,6 +34,8 @@ export class SectorRotationCalculationServiceImpl
   constructor(
     @Inject(MARKET_DATA_SERVICE)
     private readonly marketDataService: MarketDataService,
+    private readonly zScoreNormalizer: ZScoreNormalizer,
+    private readonly benchmarkCalculator: BenchmarkCalculator,
   ) {}
 
   async calculate(
@@ -36,6 +43,9 @@ export class SectorRotationCalculationServiceImpl
     dateRange: DateRange,
     params: SectorRotationCalculationParams,
   ): Promise<SectorRotationResult> {
+    this.validateParams(params);
+    this.validateSectors(sectors);
+
     const requiredLookbackWeeks = Math.max(
       params.normalizationWindowWeeks,
       params.lookbackWeeks,
@@ -48,7 +58,10 @@ export class SectorRotationCalculationServiceImpl
     );
 
     const sectorData = await this.fetchSectorData(sectors, extendedDateRange);
-    const benchmark = this.calculateBenchmark(sectorData);
+    this.validateSectorData(sectorData, requiredLookbackWeeks);
+
+    const benchmark = this.benchmarkCalculator.calculate(sectorData);
+    this.validateBenchmark(benchmark);
 
     const relativeStrengths = this.calculateRelativeStrengths(
       sectorData,
@@ -79,6 +92,12 @@ export class SectorRotationCalculationServiceImpl
       );
     });
 
+    if (outputDataPoints.length === 0) {
+      throw new Error(
+        `No data points generated for date range ${dateRange.startDate.toISOString()} to ${dateRange.endDate.toISOString()}. Insufficient historical data.`,
+      );
+    }
+
     return SectorRotationResult.of(
       dateRange.startDate,
       dateRange.endDate,
@@ -87,45 +106,124 @@ export class SectorRotationCalculationServiceImpl
     );
   }
 
+  private validateParams(params: SectorRotationCalculationParams): void {
+    if (params.lookbackWeeks < 1) {
+      throw new Error(
+        `lookbackWeeks must be at least 1, got ${params.lookbackWeeks}`,
+      );
+    }
+    if (params.momentumWeeks < 1) {
+      throw new Error(
+        `momentumWeeks must be at least 1, got ${params.momentumWeeks}`,
+      );
+    }
+    if (params.normalizationWindowWeeks < 1) {
+      throw new Error(
+        `normalizationWindowWeeks must be at least 1, got ${params.normalizationWindowWeeks}`,
+      );
+    }
+  }
+
+  private validateSectors(sectors: Sector[]): void {
+    if (!sectors || sectors.length === 0) {
+      throw new Error('At least one sector is required');
+    }
+  }
+
+  private validateSectorData(
+    sectorData: SectorWeeklyData[],
+    requiredLookbackWeeks: number,
+  ): void {
+    if (sectorData.length === 0) {
+      throw new Error('No sector data available after fetching');
+    }
+
+    const minRequiredPoints = requiredLookbackWeeks + MIN_DATA_POINTS_REQUIRED;
+    for (const { sector, prices } of sectorData) {
+      if (prices.length < minRequiredPoints) {
+        throw new Error(
+          `Sector ${sector.symbol} has insufficient data: ${prices.length} points, need at least ${minRequiredPoints}`,
+        );
+      }
+    }
+  }
+
+  private validateBenchmark(benchmark: Map<number, number>): void {
+    if (benchmark.size === 0) {
+      throw new Error('Benchmark calculation produced no data points');
+    }
+
+    for (const [date, price] of benchmark.entries()) {
+      if (!Number.isFinite(price) || price <= 0) {
+        throw new Error(
+          `Invalid benchmark price at ${new Date(date).toISOString()}: ${price}`,
+        );
+      }
+    }
+  }
+
   private async fetchSectorData(
     sectors: Sector[],
     dateRange: DateRange,
   ): Promise<SectorWeeklyData[]> {
+    const fetchPromises = sectors.map((sector) =>
+      this.fetchSingleSector(sector, dateRange),
+    );
+
+    const results = await Promise.allSettled(fetchPromises);
     const sectorData: SectorWeeklyData[] = [];
+    const errors: string[] = [];
 
-    for (let i = 0; i < sectors.length; i++) {
+    for (let i = 0; i < results.length; i++) {
+      const result = results[i];
       const sector = sectors[i];
-      const symbol = Symbol.of(sector.symbol);
 
-      try {
-        const historicalData = await this.marketDataService.getHistoricalData(
-          symbol,
-          dateRange,
-
-          '1wk',
-        );
-
-        const weeklyPrices = this.convertToWeeklyPrices(
-          historicalData.pricePoints.map((p) => ({
-            date: p.date,
-            close: p.close,
-          })),
-        );
-
-        sectorData.push({
-          sector,
-          prices: weeklyPrices,
-        });
-      } catch (error) {
-        console.error(
-          `Failed to fetch data for sector ${sector.symbol}:`,
-          error,
-        );
-        throw error;
+      if (result.status === 'fulfilled') {
+        sectorData.push(result.value);
+      } else {
+        const errorMessage = `Failed to fetch data for sector ${sector.symbol}: ${result.reason?.message || 'Unknown error'}`;
+        errors.push(errorMessage);
+        console.warn(errorMessage);
       }
     }
 
+    if (sectorData.length === 0) {
+      throw new Error(
+        `Failed to fetch data for all sectors. Errors: ${errors.join('; ')}`,
+      );
+    }
+
+    if (errors.length > 0) {
+      console.warn(
+        `Some sectors failed to load (${errors.length}/${sectors.length}). Continuing with available data.`,
+      );
+    }
+
     return sectorData;
+  }
+
+  private async fetchSingleSector(
+    sector: Sector,
+    dateRange: DateRange,
+  ): Promise<SectorWeeklyData> {
+    const symbol = Symbol.of(sector.symbol);
+    const historicalData = await this.marketDataService.getHistoricalData(
+      symbol,
+      dateRange,
+      '1wk',
+    );
+
+    const weeklyPrices = this.convertToWeeklyPrices(
+      historicalData.pricePoints.map((p) => ({
+        date: p.date,
+        close: p.close,
+      })),
+    );
+
+    return {
+      sector,
+      prices: weeklyPrices,
+    };
   }
 
   private extendDateRangeForLookback(
@@ -179,36 +277,6 @@ export class SectorRotationCalculationServiceImpl
     return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 
-  private calculateBenchmark(
-    sectorData: SectorWeeklyData[],
-  ): Map<number, number> {
-    const benchmark = new Map<number, number>();
-    const allDates = new Set<number>();
-
-    for (const { prices } of sectorData) {
-      for (const { date } of prices) {
-        allDates.add(date.getTime());
-      }
-    }
-
-    for (const dateTime of allDates) {
-      const pricesAtDate = sectorData
-        .map(({ prices }) => {
-          const pricePoint = prices.find((p) => p.date.getTime() === dateTime);
-          return pricePoint?.price;
-        })
-        .filter((p): p is number => p !== undefined);
-
-      if (pricesAtDate.length > 0) {
-        const averagePrice =
-          pricesAtDate.reduce((sum, p) => sum + p, 0) / pricesAtDate.length;
-        benchmark.set(dateTime, averagePrice);
-      }
-    }
-
-    return benchmark;
-  }
-
   private calculateRelativeStrengths(
     sectorData: SectorWeeklyData[],
     benchmark: Map<number, number>,
@@ -222,7 +290,9 @@ export class SectorRotationCalculationServiceImpl
         const benchmarkPrice = benchmark.get(date.getTime());
         if (benchmarkPrice && benchmarkPrice > 0) {
           const rs = Math.log(price) - Math.log(benchmarkPrice);
-          rsMap.set(date.getTime(), rs);
+          if (Number.isFinite(rs)) {
+            rsMap.set(date.getTime(), rs);
+          }
         }
       }
 
@@ -250,22 +320,37 @@ export class SectorRotationCalculationServiceImpl
         if (i >= lookbackWeeks) {
           const lookbackDate = sortedDates[i - lookbackWeeks];
           const lookbackRS = rsMap.get(lookbackDate)!;
-          const xRaw = currentRS / lookbackRS - 1;
 
-          xRawMap.set(currentDate, xRaw);
+          const xRaw = this.calculateXRawValue(currentRS, lookbackRS);
+          if (Number.isFinite(xRaw)) {
+            xRawMap.set(currentDate, xRaw);
+          }
         }
       }
 
-      const xNormalizedMap = this.normalizeWithZScore(
+      const xNormalizedMap = this.zScoreNormalizer.normalizeWithRollingWindow(
         xRawMap,
-        normalizationWindowWeeks,
         sortedDates,
+        normalizationWindowWeeks,
       );
 
       xValues.set(sectorSymbol, xNormalizedMap);
     }
 
     return xValues;
+  }
+
+  private calculateXRawValue(currentRS: number, lookbackRS: number): number {
+    if (Math.abs(lookbackRS) < EPSILON) {
+      return currentRS - lookbackRS;
+    }
+
+    const ratio = currentRS / lookbackRS;
+    if (ratio > 0) {
+      return Math.log(ratio);
+    }
+
+    return currentRS / lookbackRS - 1;
   }
 
   private calculateYValues(
@@ -287,54 +372,23 @@ export class SectorRotationCalculationServiceImpl
           const momentumDate = sortedDates[i - momentumWeeks];
           const momentumX = xMap.get(momentumDate)!;
           const yRaw = currentX - momentumX;
-          yRawMap.set(currentDate, yRaw);
+
+          if (Number.isFinite(yRaw)) {
+            yRawMap.set(currentDate, yRaw);
+          }
         }
       }
 
-      const yNormalizedMap = this.normalizeWithZScore(
+      const yNormalizedMap = this.zScoreNormalizer.normalizeWithRollingWindow(
         yRawMap,
-        normalizationWindowWeeks,
         sortedDates,
+        normalizationWindowWeeks,
       );
 
       yValues.set(sectorSymbol, yNormalizedMap);
     }
 
     return yValues;
-  }
-
-  private normalizeWithZScore(
-    rawMap: Map<number, number>,
-    windowWeeks: number,
-    sortedDates: number[],
-  ): Map<number, number> {
-    const normalizedMap = new Map<number, number>();
-
-    for (let i = 0; i < sortedDates.length; i++) {
-      const currentDate = sortedDates[i];
-      const windowStart = Math.max(0, i - windowWeeks + 1);
-      const windowDates = sortedDates.slice(windowStart, i + 1);
-      const windowValues = windowDates
-        .map((d) => rawMap.get(d))
-        .filter((v): v is number => v !== undefined);
-
-      if (windowValues.length > 0) {
-        const mean =
-          windowValues.reduce((sum, v) => sum + v, 0) / windowValues.length;
-        const variance =
-          windowValues.reduce((sum, v) => sum + Math.pow(v - mean, 2), 0) /
-          windowValues.length;
-        const stdDev = Math.sqrt(variance);
-
-        const rawValue = rawMap.get(currentDate);
-        if (rawValue !== undefined && stdDev > 0) {
-          const zScore = (rawValue - mean) / stdDev;
-          normalizedMap.set(currentDate, zScore);
-        }
-      }
-    }
-
-    return normalizedMap;
   }
 
   private createDataPoints(
@@ -344,35 +398,44 @@ export class SectorRotationCalculationServiceImpl
     yValues: Map<string, Map<number, number>>,
   ): SectorRotationDataPoint[] {
     const dataPoints: SectorRotationDataPoint[] = [];
-    const allDates = new Set<number>();
+    const dateToSectorPrices = new Map<number, Map<string, WeeklyPriceData>>();
 
-    for (const { prices } of sectorData) {
-      for (const { date } of prices) {
-        allDates.add(date.getTime());
+    for (const { sector, prices } of sectorData) {
+      for (const priceData of prices) {
+        const dateTime = priceData.date.getTime();
+        if (!dateToSectorPrices.has(dateTime)) {
+          dateToSectorPrices.set(dateTime, new Map());
+        }
+        dateToSectorPrices.get(dateTime)!.set(sector.symbol, priceData);
       }
     }
 
-    for (const dateTime of allDates) {
-      for (const { sector, prices } of sectorData) {
-        const pricePoint = prices.find((p) => p.date.getTime() === dateTime);
-        if (!pricePoint) continue;
+    const sortedDates = Array.from(dateToSectorPrices.keys()).sort(
+      (a, b) => a - b,
+    );
 
-        const rs = relativeStrengths.get(sector.symbol)?.get(dateTime);
-        const x = xValues.get(sector.symbol)?.get(dateTime);
-        const y = yValues.get(sector.symbol)?.get(dateTime);
+    for (const dateTime of sortedDates) {
+      const sectorPricesAtDate = dateToSectorPrices.get(dateTime)!;
+
+      for (const [sectorSymbol, priceData] of sectorPricesAtDate.entries()) {
+        const rs = relativeStrengths.get(sectorSymbol)?.get(dateTime);
+        const x = xValues.get(sectorSymbol)?.get(dateTime);
+        const y = yValues.get(sectorSymbol)?.get(dateTime);
 
         if (
           rs !== undefined &&
           x !== undefined &&
           y !== undefined &&
+          Number.isFinite(x) &&
+          Number.isFinite(y) &&
           !isNaN(x) &&
           !isNaN(y)
         ) {
           const quadrant = Quadrant.fromCoordinates(x, y);
           const dataPoint = SectorRotationDataPoint.of(
-            pricePoint.date,
-            sector.symbol,
-            pricePoint.price,
+            priceData.date,
+            sectorSymbol,
+            priceData.price,
             rs,
             x,
             y,
@@ -383,6 +446,6 @@ export class SectorRotationCalculationServiceImpl
       }
     }
 
-    return dataPoints.sort((a, b) => a.date.getTime() - b.date.getTime());
+    return dataPoints;
   }
 }

@@ -3,6 +3,8 @@ import { SectorRotationController } from './api/sector-rotation.controller';
 import { SectorRotationApiMapper } from './api/sector-rotation-api.mapper';
 import { CalculateSectorRotationUseCase } from './use-cases/calculate-sector-rotation.use-case';
 import { SectorRotationCalculationServiceImpl } from './infrastructure/services/sector-rotation-calculation.service';
+import { ZScoreNormalizer } from './infrastructure/services/z-score-normalizer.service';
+import { BenchmarkCalculator } from './infrastructure/services/benchmark-calculator.service';
 import { SECTOR_ROTATION_CALCULATION_SERVICE } from './constants/tokens';
 import { MarketDataModule } from '../market-data/market-data.module';
 
@@ -16,6 +18,8 @@ export { SECTOR_ROTATION_CALCULATION_SERVICE };
       provide: SECTOR_ROTATION_CALCULATION_SERVICE,
       useClass: SectorRotationCalculationServiceImpl,
     },
+    ZScoreNormalizer,
+    BenchmarkCalculator,
     SectorRotationApiMapper,
     CalculateSectorRotationUseCase,
   ],
