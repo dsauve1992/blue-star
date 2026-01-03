@@ -24,6 +24,7 @@ export default function SectorRotation() {
   const [lookbackWeeks, setLookbackWeeks] = useState(12);
   const [momentumWeeks, setMomentumWeeks] = useState(5);
   const [normalizationWindowWeeks, setNormalizationWindowWeeks] = useState(52);
+  const [benchmarkType, setBenchmarkType] = useState<"equal-weighted" | "spx">("equal-weighted");
   const [showSettings, setShowSettings] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
@@ -39,6 +40,7 @@ export default function SectorRotation() {
     lookbackWeeks,
     momentumWeeks,
     normalizationWindowWeeks,
+    benchmarkType,
   });
 
   const uniqueDates = useMemo(() => {
@@ -197,7 +199,22 @@ export default function SectorRotation() {
             <h3 className="text-lg font-semibold mb-4">
               Calculation Parameters
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div>
+                <label className="block text-sm font-medium mb-2">
+                  Benchmark
+                </label>
+                <select
+                  value={benchmarkType}
+                  onChange={(e) =>
+                    setBenchmarkType(e.target.value as "equal-weighted" | "spx")
+                  }
+                  className="w-full px-3 py-2 border border-border rounded-md bg-background"
+                >
+                  <option value="equal-weighted">Equal-Weighted Average</option>
+                  <option value="spx">S&P 500 (SPY)</option>
+                </select>
+              </div>
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Lookback Weeks

@@ -13,6 +13,7 @@ import { Quadrant } from '../../domain/value-objects/quadrant';
 import { Sector } from '../../domain/value-objects/sector';
 import { ZScoreNormalizer } from './z-score-normalizer.service';
 import { BenchmarkCalculator } from './benchmark-calculator.service';
+import { BenchmarkType } from '../../domain/value-objects/benchmark-type';
 
 interface WeeklyPriceData {
   date: Date;
@@ -60,7 +61,12 @@ export class SectorRotationCalculationServiceImpl
     const sectorData = await this.fetchSectorData(sectors, extendedDateRange);
     this.validateSectorData(sectorData, requiredLookbackWeeks);
 
-    const benchmark = this.benchmarkCalculator.calculate(sectorData);
+    const benchmarkType = params.benchmarkType ?? BenchmarkType.EqualWeighted;
+    const benchmark = await this.benchmarkCalculator.calculate(
+      sectorData,
+      extendedDateRange,
+      benchmarkType,
+    );
     this.validateBenchmark(benchmark);
 
     const relativeStrengths = this.calculateRelativeStrengths(

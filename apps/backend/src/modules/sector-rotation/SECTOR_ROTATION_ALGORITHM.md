@@ -138,17 +138,19 @@ Where:
 
 **Note**: X-values are only calculated when at least `lookbackWeeks` of historical data is available.
 
-#### 4.2 X-Value Normalization (Z-Score)
+#### 4.2 X-Value Normalization (100-Centered)
 
-Raw X-values are normalized using a rolling Z-score with a window of `normalizationWindowWeeks`:
+Raw X-values are normalized using a rolling Z-score with a window of `normalizationWindowWeeks`, then scaled to center around 100:
 
 ```
-X_normalized(sector, t) = (X_raw(sector, t) - μ_window) / σ_window
+z = (X_raw(sector, t) - μ_window) / σ_window
+X_normalized(sector, t) = 100 + z × scale_factor
 ```
 
 Where:
 - `μ_window` = mean of X_raw values over the normalization window
 - `σ_window` = standard deviation of X_raw values over the normalization window
+- `scale_factor` = 10 (default scaling factor)
 
 **Z-Score Formula**:
 ```
@@ -156,7 +158,13 @@ Where:
 σ² = (1/n) × Σ((value - μ)²)
 σ = √σ²
 z = (rawValue - μ) / σ
+normalized = 100 + z × 10
 ```
+
+**Why 100-Centered?**
+- Values above 100 indicate outperformance relative to the benchmark
+- Values below 100 indicate underperformance
+- The axes intersect at (100, 100), matching StockCharts RRG methodology
 
 **Implementation Details**:
 - Window includes indices from `max(0, i - windowWeeks + 1)` to `i` (inclusive)
@@ -187,17 +195,19 @@ Where:
 
 **Note**: Y-values are only calculated when at least `momentumWeeks` of normalized X-values are available.
 
-#### 5.2 Y-Value Normalization (Z-Score)
+#### 5.2 Y-Value Normalization (100-Centered)
 
-Raw Y-values are normalized using the same Z-score method as X-values:
+Raw Y-values are normalized using the same 100-centered method as X-values:
 
 ```
-Y_normalized(sector, t) = (Y_raw(sector, t) - μ_window) / σ_window
+z = (Y_raw(sector, t) - μ_window) / σ_window
+Y_normalized(sector, t) = 100 + z × scale_factor
 ```
 
 Where:
 - `μ_window` = mean of Y_raw values over the normalization window
 - `σ_window` = standard deviation of Y_raw values over the normalization window
+- `scale_factor` = 10 (default scaling factor)
 
 ### Step 6: Data Point Creation
 
@@ -211,10 +221,10 @@ For each sector and each date, create a data point if all required values are av
 
 **Quadrant Assignment**:
 ```
-if (X > 0 && Y > 0) → Leading
-if (X > 0 && Y < 0) → Weakening
-if (X < 0 && Y < 0) → Lagging
-if (X < 0 && Y > 0) → Improving
+if (X > 100 && Y > 100) → Leading
+if (X > 100 && Y < 100) → Weakening
+if (X < 100 && Y < 100) → Lagging
+if (X < 100 && Y > 100) → Improving
 ```
 
 **Data Point Structure**:
@@ -258,7 +268,8 @@ Where `L = lookbackWeeks`
 
 ### X-Axis (Normalized)
 ```
-X_norm(sector, t) = (X_raw(sector, t) - μ_X) / σ_X
+z = (X_raw(sector, t) - μ_X) / σ_X
+X_norm(sector, t) = 100 + z × 10
 ```
 Where `μ_X` and `σ_X` are calculated over a rolling window of `normalizationWindowWeeks`
 
@@ -270,17 +281,20 @@ Where `M = momentumWeeks`
 
 ### Y-Axis (Normalized)
 ```
-Y_norm(sector, t) = (Y_raw(sector, t) - μ_Y) / σ_Y
+z = (Y_raw(sector, t) - μ_Y) / σ_Y
+Y_norm(sector, t) = 100 + z × 10
 ```
 Where `μ_Y` and `σ_Y` are calculated over a rolling window of `normalizationWindowWeeks`
 
-### Z-Score Normalization (General)
+### 100-Centered Normalization (General)
 ```
 z = (value - mean) / stdDev
+normalized = 100 + z × scale_factor
 
 mean = (1/n) × Σ(values)
 variance = (1/n) × Σ((value - mean)²)
 stdDev = √variance
+scale_factor = 10 (default)
 ```
 
 ## Quadrant Interpretation

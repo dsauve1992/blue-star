@@ -8,6 +8,9 @@ interface RollingWindowStats {
 
 @Injectable()
 export class ZScoreNormalizer {
+  private readonly CENTER_VALUE = 100;
+  private readonly SCALE_FACTOR = 10;
+
   normalizeWithRollingWindow(
     rawValues: Map<number, number>,
     sortedDates: number[],
@@ -42,7 +45,8 @@ export class ZScoreNormalizer {
       if (stats.count > 0 && stats.variance > 0) {
         const stdDev = Math.sqrt(stats.variance);
         const zScore = (rawValue - stats.mean) / stdDev;
-        normalizedMap.set(currentDate, zScore);
+        const normalizedValue = this.CENTER_VALUE + zScore * this.SCALE_FACTOR;
+        normalizedMap.set(currentDate, normalizedValue);
       }
     }
 

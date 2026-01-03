@@ -34,6 +34,7 @@ export class SectorRotationController {
     @Query('lookbackWeeks') lookbackWeeks?: string,
     @Query('momentumWeeks') momentumWeeks?: string,
     @Query('normalizationWindowWeeks') normalizationWindowWeeks?: string,
+    @Query('benchmarkType') benchmarkType?: string,
   ): Promise<CalculateSectorRotationApiResponseDto> {
     try {
       const sectors = sectorsParam
@@ -73,6 +74,7 @@ export class SectorRotationController {
         lookbackWeeks: lookbackWeeksValue,
         momentumWeeks: momentumWeeksValue,
         normalizationWindowWeeks: normalizationWindowWeeksValue,
+        benchmarkType,
       };
 
       const useCaseResponse =

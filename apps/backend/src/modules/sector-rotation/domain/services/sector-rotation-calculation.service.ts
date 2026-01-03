@@ -5,11 +5,13 @@ import { SectorRotationResult } from '../value-objects/sector-rotation-result';
 import { SectorRotationDataPoint } from '../value-objects/sector-rotation-data-point';
 import { Quadrant } from '../value-objects/quadrant';
 import { Sector } from '../value-objects/sector';
+import { BenchmarkType } from '../value-objects/benchmark-type';
 
 export interface SectorRotationCalculationParams {
   lookbackWeeks: number;
   momentumWeeks: number;
   normalizationWindowWeeks: number;
+  benchmarkType?: BenchmarkType;
 }
 
 export interface SectorRotationCalculationService {

@@ -9,11 +9,12 @@ export class Quadrant {
   static Improving = new Quadrant('Improving');
 
   static fromCoordinates(x: number, y: number): Quadrant {
-    if (x > 0 && y > 0) {
+    const threshold = 100;
+    if (x > threshold && y > threshold) {
       return Quadrant.Leading;
-    } else if (x > 0 && y < 0) {
+    } else if (x > threshold && y < threshold) {
       return Quadrant.Weakening;
-    } else if (x < 0 && y < 0) {
+    } else if (x < threshold && y < threshold) {
       return Quadrant.Lagging;
     } else {
       return Quadrant.Improving;

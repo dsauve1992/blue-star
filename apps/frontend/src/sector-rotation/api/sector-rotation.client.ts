@@ -26,6 +26,7 @@ export interface CalculateSectorRotationRequest {
   lookbackWeeks?: number;
   momentumWeeks?: number;
   normalizationWindowWeeks?: number;
+  benchmarkType?: "equal-weighted" | "spx";
 }
 
 export interface CalculateSectorRotationResponse {
@@ -58,6 +59,9 @@ export class SectorRotationClient {
         "normalizationWindowWeeks",
         request.normalizationWindowWeeks.toString(),
       );
+    }
+    if (request.benchmarkType) {
+      params.append("benchmarkType", request.benchmarkType);
     }
 
     const response = await apiClient.get<CalculateSectorRotationResponse>(

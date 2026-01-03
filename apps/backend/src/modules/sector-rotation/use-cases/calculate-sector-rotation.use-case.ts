@@ -6,6 +6,7 @@ import {
 } from '../domain/services/sector-rotation-calculation.service';
 import { SectorRotationResult } from '../domain/value-objects/sector-rotation-result';
 import { Sector } from '../domain/value-objects/sector';
+import { BenchmarkType } from '../domain/value-objects/benchmark-type';
 import { SECTOR_ROTATION_CALCULATION_SERVICE } from '../constants/tokens';
 
 export interface CalculateSectorRotationRequestDto {
@@ -15,6 +16,7 @@ export interface CalculateSectorRotationRequestDto {
   lookbackWeeks?: number;
   momentumWeeks?: number;
   normalizationWindowWeeks?: number;
+  benchmarkType?: string;
 }
 
 export interface CalculateSectorRotationResponseDto {
@@ -34,10 +36,15 @@ export class CalculateSectorRotationUseCase {
     const sectors = request.sectors.map((s) => Sector.of(s.symbol, s.name));
     const dateRange = DateRange.of(request.startDate, request.endDate);
 
+    const benchmarkType = request.benchmarkType
+      ? BenchmarkType.of(request.benchmarkType)
+      : BenchmarkType.EqualWeighted;
+
     const params: SectorRotationCalculationParams = {
-      lookbackWeeks: request.lookbackWeeks ?? 12,
+      lookbackWeeks: request.lookbackWeeks ?? 100,
       momentumWeeks: request.momentumWeeks ?? 5,
       normalizationWindowWeeks: request.normalizationWindowWeeks ?? 5,
+      benchmarkType,
     };
 
     const result = await this.calculationService.calculate(
