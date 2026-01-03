@@ -92,16 +92,16 @@ export class SectorRotationCalculationServiceImpl
     dateRange: DateRange,
   ): Promise<SectorWeeklyData[]> {
     const sectorData: SectorWeeklyData[] = [];
-    const delayBetweenRequestsMs = 15000;
 
     for (let i = 0; i < sectors.length; i++) {
       const sector = sectors[i];
       const symbol = Symbol.of(sector.symbol);
-      
+
       try {
         const historicalData = await this.marketDataService.getHistoricalData(
           symbol,
           dateRange,
+
           '1wk',
         );
 
@@ -123,17 +123,9 @@ export class SectorRotationCalculationServiceImpl
         );
         throw error;
       }
-
-      if (i < sectors.length - 1) {
-        await this.delay(delayBetweenRequestsMs);
-      }
     }
 
     return sectorData;
-  }
-
-  private delay(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
   }
 
   private extendDateRangeForLookback(
@@ -258,7 +250,8 @@ export class SectorRotationCalculationServiceImpl
         if (i >= lookbackWeeks) {
           const lookbackDate = sortedDates[i - lookbackWeeks];
           const lookbackRS = rsMap.get(lookbackDate)!;
-          const xRaw = Math.log(currentRS) - Math.log(lookbackRS);
+          const xRaw = currentRS / lookbackRS - 1;
+
           xRawMap.set(currentDate, xRaw);
         }
       }

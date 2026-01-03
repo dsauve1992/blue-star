@@ -46,11 +46,11 @@ export class MarketDataCacheRepositoryImpl
     return result.rows.map((row: CacheRow) =>
       PricePoint.of(
         new Date(row.date),
-        row.open,
-        row.high,
-        row.low,
-        row.close,
-        row.volume,
+        Number(row.open),
+        Number(row.high),
+        Number(row.low),
+        Number(row.close),
+        Number(row.volume),
       ),
     );
   }
@@ -92,4 +92,3 @@ export class MarketDataCacheRepositoryImpl
     });
   }
 }
-

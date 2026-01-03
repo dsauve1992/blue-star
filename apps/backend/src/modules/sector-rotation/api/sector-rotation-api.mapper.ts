@@ -30,17 +30,15 @@ export class SectorRotationApiMapper {
     };
   }
 
-  private mapSectorRotationDataPoint(
-    point: {
-      date: Date;
-      sectorSymbol: string;
-      price: number;
-      relativeStrength: number;
-      x: number;
-      y: number;
-      quadrant: { value: string };
-    },
-  ): SectorRotationDataPointDto {
+  private mapSectorRotationDataPoint(point: {
+    date: Date;
+    sectorSymbol: string;
+    price: number;
+    relativeStrength: number;
+    x: number;
+    y: number;
+    quadrant: { value: string };
+  }): SectorRotationDataPointDto {
     return {
       date: point.date.toISOString(),
       sectorSymbol: point.sectorSymbol,
@@ -52,4 +50,3 @@ export class SectorRotationApiMapper {
     };
   }
 }
-

@@ -37,7 +37,7 @@ export class CalculateSectorRotationUseCase {
     const params: SectorRotationCalculationParams = {
       lookbackWeeks: request.lookbackWeeks ?? 12,
       momentumWeeks: request.momentumWeeks ?? 5,
-      normalizationWindowWeeks: request.normalizationWindowWeeks ?? 52,
+      normalizationWindowWeeks: request.normalizationWindowWeeks ?? 5,
     };
 
     const result = await this.calculationService.calculate(
