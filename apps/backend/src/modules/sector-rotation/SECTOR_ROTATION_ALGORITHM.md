@@ -102,55 +102,43 @@ Where:
 
 ### Step 3: Relative Strength Calculation
 
-For each sector and each date, calculate the relative strength using logarithmic returns:
+For each sector and each date, calculate the relative strength as a ratio:
 
 ```
-RS(sector, t) = ln(Price(sector, t)) - ln(Benchmark(t))
+RS(sector, t) = 100 × (Price(sector, t) / Benchmark(t))
 ```
 
 Where:
-- `ln` = natural logarithm
 - `Price(sector, t)` = sector price at time t
 - `Benchmark(t)` = benchmark price at time t
 
-**Why Logarithmic Returns?**
-- Logarithmic returns are symmetric and additive over time
-- They provide proper scaling across different price levels
-- They ensure that a 10% gain followed by a 10% loss returns to the original value
+**Why Ratio-Based RS?**
+- Matches the standard RRG methodology used by StockCharts and RRGPy
+- Values above 100 indicate outperformance, below 100 indicate underperformance
+- Provides intuitive interpretation of relative performance
 
-### Step 4: X-Axis Calculation (Relative Strength Momentum)
+### Step 4: X-Axis Calculation (RS-Ratio)
 
-The X-axis measures the rate of change in relative strength over the lookback period.
+The X-axis represents the normalized relative strength (RS-Ratio), which measures how the current RS compares to its historical average.
 
-#### 4.1 Raw X-Value Calculation
+#### 4.1 RS-Ratio Calculation
 
-For each date where sufficient historical data exists:
-
-```
-X_raw(sector, t) = RS(sector, t) / RS(sector, t - lookbackWeeks) - 1
-```
-
-Where:
-- `RS(sector, t)` = current relative strength
-- `RS(sector, t - lookbackWeeks)` = relative strength `lookbackWeeks` ago
-
-**Implementation Note**: The formula is calculated as `currentRS / lookbackRS - 1`, which is equivalent to `(currentRS / lookbackRS) - 1`.
-
-**Note**: X-values are only calculated when at least `lookbackWeeks` of historical data is available.
-
-#### 4.2 X-Value Normalization (100-Centered)
-
-Raw X-values are normalized using a rolling Z-score with a window of `normalizationWindowWeeks`, then scaled to center around 100:
+RS-Ratio is calculated by normalizing the RS values using a rolling Z-score:
 
 ```
-z = (X_raw(sector, t) - μ_window) / σ_window
-X_normalized(sector, t) = 100 + z × scale_factor
+RSR(sector, t) = 100 + (RS(sector, t) - μ_RS) / σ_RS × scale_factor
 ```
 
 Where:
-- `μ_window` = mean of X_raw values over the normalization window
-- `σ_window` = standard deviation of X_raw values over the normalization window
+- `RS(sector, t)` = relative strength at time t
+- `μ_RS` = mean of RS values over the normalization window
+- `σ_RS` = standard deviation of RS values over the normalization window
 - `scale_factor` = 10 (default scaling factor)
+
+**Implementation Details**:
+- Uses a rolling window of `normalizationWindowWeeks` ending at the current date
+- Window includes all RS values from `max(0, i - windowWeeks + 1)` to `i` (inclusive)
+- Only includes dates where RS values exist
 
 **Z-Score Formula**:
 ```
@@ -177,37 +165,39 @@ normalized = 100 + z × 10
 - Window size: `normalizationWindowWeeks`
 - Only includes dates where X_raw values exist
 
-### Step 5: Y-Axis Calculation (Momentum of X)
+### Step 5: Y-Axis Calculation (RS-Momentum)
 
-The Y-axis measures the momentum (rate of change) of the X-axis value.
+The Y-axis represents the normalized rate of change of RS-Ratio (RS-Momentum), which measures the momentum of relative strength.
 
-#### 5.1 Raw Y-Value Calculation
+#### 5.1 RS-Ratio Rate of Change Calculation
 
-For each date where sufficient historical data exists:
-
-```
-Y_raw(sector, t) = X_normalized(sector, t) - X_normalized(sector, t - momentumWeeks)
-```
-
-Where:
-- `X_normalized(sector, t)` = current normalized X-value
-- `X_normalized(sector, t - momentumWeeks)` = normalized X-value `momentumWeeks` ago
-
-**Note**: Y-values are only calculated when at least `momentumWeeks` of normalized X-values are available.
-
-#### 5.2 Y-Value Normalization (100-Centered)
-
-Raw Y-values are normalized using the same 100-centered method as X-values:
+First, calculate the rate of change of RS-Ratio:
 
 ```
-z = (Y_raw(sector, t) - μ_window) / σ_window
-Y_normalized(sector, t) = 100 + z × scale_factor
+RSR_ROC(sector, t) = 100 × ((RSR(sector, t) / RSR(sector, t-1)) - 1)
 ```
 
 Where:
-- `μ_window` = mean of Y_raw values over the normalization window
-- `σ_window` = standard deviation of Y_raw values over the normalization window
+- `RSR(sector, t)` = current RS-Ratio
+- `RSR(sector, t-1)` = previous RS-Ratio (1 week ago)
+
+**Note**: RSR_ROC is only calculated when both current and previous RS-Ratio values exist.
+
+#### 5.2 RS-Momentum Normalization
+
+RS-Momentum is calculated by normalizing RSR_ROC using a rolling Z-score, then centering at 101:
+
+```
+z = (RSR_ROC(sector, t) - μ_ROC) / σ_ROC
+RSM(sector, t) = 101 + z × scale_factor
+```
+
+Where:
+- `μ_ROC` = mean of RSR_ROC values over the normalization window
+- `σ_ROC` = standard deviation of RSR_ROC values over the normalization window
 - `scale_factor` = 10 (default scaling factor)
+
+**Note**: RS-Momentum is centered at 101 (instead of 100) to match the RRGPy implementation and provide slight visual separation from RS-Ratio.
 
 ### Step 6: Data Point Creation
 
@@ -255,36 +245,23 @@ Benchmark(t) = (1/N) × Σ(Sector_i(t))
 
 ### Relative Strength
 ```
-RS(sector, t) = ln(Price(sector, t)) - ln(Benchmark(t))
+RS(sector, t) = 100 × (Price(sector, t) / Benchmark(t))
 ```
 
-### X-Axis (Raw)
+### X-Axis (RS-Ratio)
 ```
-X_raw(sector, t) = RS(sector, t) / RS(sector, t - L) - 1
+z = (RS(sector, t) - μ_RS) / σ_RS
+RSR(sector, t) = 100 + z × 10
 ```
-Where `L = lookbackWeeks`
+Where `μ_RS` and `σ_RS` are calculated over a rolling window of `normalizationWindowWeeks`
 
-**Implementation**: `currentRS / lookbackRS - 1`
-
-### X-Axis (Normalized)
+### Y-Axis (RS-Momentum)
 ```
-z = (X_raw(sector, t) - μ_X) / σ_X
-X_norm(sector, t) = 100 + z × 10
+RSR_ROC(sector, t) = 100 × ((RSR(sector, t) / RSR(sector, t-1)) - 1)
+z = (RSR_ROC(sector, t) - μ_ROC) / σ_ROC
+RSM(sector, t) = 101 + z × 10
 ```
-Where `μ_X` and `σ_X` are calculated over a rolling window of `normalizationWindowWeeks`
-
-### Y-Axis (Raw)
-```
-Y_raw(sector, t) = X_norm(sector, t) - X_norm(sector, t - M)
-```
-Where `M = momentumWeeks`
-
-### Y-Axis (Normalized)
-```
-z = (Y_raw(sector, t) - μ_Y) / σ_Y
-Y_norm(sector, t) = 100 + z × 10
-```
-Where `μ_Y` and `σ_Y` are calculated over a rolling window of `normalizationWindowWeeks`
+Where `μ_ROC` and `σ_ROC` are calculated over a rolling window of `normalizationWindowWeeks`
 
 ### 100-Centered Normalization (General)
 ```

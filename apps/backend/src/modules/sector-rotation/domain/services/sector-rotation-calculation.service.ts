@@ -8,7 +8,6 @@ import { Sector } from '../value-objects/sector';
 import { BenchmarkType } from '../value-objects/benchmark-type';
 
 export interface SectorRotationCalculationParams {
-  lookbackWeeks: number;
   momentumWeeks: number;
   normalizationWindowWeeks: number;
   benchmarkType?: BenchmarkType;

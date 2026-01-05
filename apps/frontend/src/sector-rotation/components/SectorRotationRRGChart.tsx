@@ -20,34 +20,6 @@ export function SectorRotationRRGChart({
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
 
-  const axisRanges = useMemo(() => {
-    if (!dataPoints || dataPoints.length === 0) {
-      return { xMin: 80, xMax: 120, yMin: 80, yMax: 120 };
-    }
-
-    const allXValues = dataPoints.map((p) => p.x);
-    const allYValues = dataPoints.map((p) => p.y);
-
-    const xMin = Math.min(...allXValues);
-    const xMax = Math.max(...allXValues);
-    const yMin = Math.min(...allYValues);
-    const yMax = Math.max(...allYValues);
-
-    const xRange = xMax - xMin || 40;
-    const yRange = yMax - yMin || 40;
-    const padding = 0.1;
-
-    const centerX = 100;
-    const centerY = 100;
-
-    return {
-      xMin: Math.min(xMin - xRange * padding, centerX - 20),
-      xMax: Math.max(xMax + xRange * padding, centerX + 20),
-      yMin: Math.min(yMin - yRange * padding, centerY - 20),
-      yMax: Math.max(yMax + yRange * padding, centerY + 20),
-    };
-  }, [dataPoints]);
-
   const filteredDataPoints = useMemo(() => {
     if (!startDate || !endDate) {
       const latestDate = new Date(
@@ -72,6 +44,45 @@ export function SectorRotationRRGChart({
       );
     });
   }, [dataPoints, startDate, endDate]);
+
+  const axisRanges = useMemo(() => {
+    if (!filteredDataPoints || filteredDataPoints.length === 0) {
+      return { xMin: 95, xMax: 105, yMin: 95, yMax: 105 };
+    }
+
+    const allXValues = filteredDataPoints.map((p) => p.x);
+    const allYValues = filteredDataPoints.map((p) => p.y);
+
+    const xMin = Math.min(...allXValues);
+    const xMax = Math.max(...allXValues);
+    const yMin = Math.min(...allYValues);
+    const yMax = Math.max(...allYValues);
+
+    const centerX = 100;
+    const centerY = 100;
+
+    const maxXDistance = Math.max(
+      Math.abs(xMax - centerX),
+      Math.abs(xMin - centerX),
+    );
+    const maxYDistance = Math.max(
+      Math.abs(yMax - centerY),
+      Math.abs(yMin - centerY),
+    );
+
+    const padding = 0.15;
+    const minRange = 20;
+
+    const xRange = Math.min(maxXDistance * (1 + padding * 2), minRange);
+    const yRange = Math.min(maxYDistance * (1 + padding * 2), minRange);
+
+    return {
+      xMin: centerX - xRange,
+      xMax: centerX + xRange,
+      yMin: centerY - yRange,
+      yMax: centerY + yRange,
+    };
+  }, [filteredDataPoints]);
 
   if (!dataPoints || dataPoints.length === 0) {
     return (
@@ -190,8 +201,14 @@ export function SectorRotationRRGChart({
             opacity: 0.5,
           },
           data: [
-            [{ coord: [100, axisRanges.yMin] }, { coord: [100, axisRanges.yMax] }],
-            [{ coord: [axisRanges.xMin, 100] }, { coord: [axisRanges.xMax, 100] }],
+            [
+              { coord: [100, axisRanges.yMin] },
+              { coord: [100, axisRanges.yMax] },
+            ],
+            [
+              { coord: [axisRanges.xMin, 100] },
+              { coord: [axisRanges.xMax, 100] },
+            ],
           ],
         },
         markArea: {
@@ -284,7 +301,7 @@ export function SectorRotationRRGChart({
     ],
     tooltip: {
       trigger: "item",
-      formatter: (params: any) => {
+      formatter: (params: { seriesType?: string; name?: string }) => {
         if (params.seriesType === "scatter") {
           const point = filteredDataPoints.find(
             (p) => p.sectorSymbol === params.name,
@@ -305,8 +322,8 @@ export function SectorRotationRRGChart({
         return "";
       },
     },
-      graphic: [
-        {
+    graphic: [
+      {
         type: "text",
         left: "center",
         top: "5%",

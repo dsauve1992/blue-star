@@ -21,9 +21,6 @@ const DEFAULT_SECTORS = [
 ];
 
 export default function SectorRotation() {
-  const [lookbackWeeks, setLookbackWeeks] = useState(12);
-  const [momentumWeeks, setMomentumWeeks] = useState(5);
-  const [normalizationWindowWeeks, setNormalizationWindowWeeks] = useState(52);
   const [benchmarkType, setBenchmarkType] = useState<"equal-weighted" | "spx">("equal-weighted");
   const [showSettings, setShowSettings] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
@@ -37,9 +34,6 @@ export default function SectorRotation() {
     sectors: DEFAULT_SECTORS,
     startDate: startDate.toISOString().split("T")[0],
     endDate: endDate.toISOString().split("T")[0],
-    lookbackWeeks,
-    momentumWeeks,
-    normalizationWindowWeeks,
     benchmarkType,
   });
 
@@ -75,7 +69,6 @@ export default function SectorRotation() {
   const initialTimeWindow = useMemo(() => {
     if (uniqueDates.length === 0 || !fullRange.weeks.length) return { start: null, end: null, sliderPosition: 0 };
 
-    const endWeek = fullRange.weeks[fullRange.weeks.length - 1];
     const startWeek = fullRange.weeks[Math.max(0, fullRange.weeks.length - 5)];
 
     const endDate = uniqueDates[uniqueDates.length - 1];
@@ -199,7 +192,7 @@ export default function SectorRotation() {
             <h3 className="text-lg font-semibold mb-4">
               Calculation Parameters
             </h3>
-            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
               <div>
                 <label className="block text-sm font-medium mb-2">
                   Benchmark
@@ -215,50 +208,13 @@ export default function SectorRotation() {
                   <option value="spx">S&P 500 (SPY)</option>
                 </select>
               </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Lookback Weeks
-                </label>
-                <input
-                  type="number"
-                  min="4"
-                  max="26"
-                  value={lookbackWeeks}
-                  onChange={(e) =>
-                    setLookbackWeeks(parseInt(e.target.value, 10))
-                  }
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Momentum Weeks
-                </label>
-                <input
-                  type="number"
-                  min="2"
-                  max="12"
-                  value={momentumWeeks}
-                  onChange={(e) =>
-                    setMomentumWeeks(parseInt(e.target.value, 10))
-                  }
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background"
-                />
-              </div>
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Normalization Window (Weeks)
-                </label>
-                <input
-                  type="number"
-                  min="26"
-                  max="104"
-                  value={normalizationWindowWeeks}
-                  onChange={(e) =>
-                    setNormalizationWindowWeeks(parseInt(e.target.value, 10))
-                  }
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background"
-                />
+              <div className="text-sm text-muted-foreground">
+                <p>RRG Parameters (from RRGPy library):</p>
+                <ul className="list-disc list-inside mt-1">
+                  <li>RS Smoothing (EMA): 5 weeks</li>
+                  <li>Normalization Window: 14 weeks</li>
+                  <li>Momentum Period: 1 week</li>
+                </ul>
               </div>
             </div>
           </Card>

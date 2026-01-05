@@ -3,6 +3,7 @@ import { Public } from '../../auth/public.decorator';
 import { CalculateSectorRotationUseCase } from '../use-cases/calculate-sector-rotation.use-case';
 import { SectorRotationApiMapper } from './sector-rotation-api.mapper';
 import { CalculateSectorRotationApiResponseDto } from './sector-rotation-api.dto';
+import { RRG_PARAMETERS } from '../constants/rrg-parameters';
 
 const DEFAULT_SECTOR_ETFS = [
   { symbol: 'XLK', name: 'Technology' },
@@ -31,9 +32,6 @@ export class SectorRotationController {
     @Query('sectors') sectorsParam?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-    @Query('lookbackWeeks') lookbackWeeks?: string,
-    @Query('momentumWeeks') momentumWeeks?: string,
-    @Query('normalizationWindowWeeks') normalizationWindowWeeks?: string,
     @Query('benchmarkType') benchmarkType?: string,
   ): Promise<CalculateSectorRotationApiResponseDto> {
     try {
@@ -46,21 +44,7 @@ export class SectorRotationController {
         ? new Date(startDate)
         : new Date(endDateObj.getTime() - 52 * 7 * 24 * 60 * 60 * 1000);
 
-      const lookbackWeeksValue = lookbackWeeks
-        ? parseInt(lookbackWeeks, 10)
-        : 12;
-      const momentumWeeksValue = momentumWeeks
-        ? parseInt(momentumWeeks, 10)
-        : 5;
-      const normalizationWindowWeeksValue = normalizationWindowWeeks
-        ? parseInt(normalizationWindowWeeks, 10)
-        : 52;
-
-      const requiredLookbackWeeks = Math.max(
-        normalizationWindowWeeksValue,
-        lookbackWeeksValue,
-        momentumWeeksValue,
-      );
+      const requiredLookbackWeeks = RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS;
 
       const startDateObj = new Date(
         requestedStartDate.getTime() -
@@ -71,9 +55,6 @@ export class SectorRotationController {
         sectors,
         startDate: startDateObj,
         endDate: endDateObj,
-        lookbackWeeks: lookbackWeeksValue,
-        momentumWeeks: momentumWeeksValue,
-        normalizationWindowWeeks: normalizationWindowWeeksValue,
         benchmarkType,
       };
 

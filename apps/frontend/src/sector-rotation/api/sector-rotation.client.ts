@@ -23,9 +23,6 @@ export interface CalculateSectorRotationRequest {
   sectors?: Array<{ symbol: string; name: string }>;
   startDate?: string;
   endDate?: string;
-  lookbackWeeks?: number;
-  momentumWeeks?: number;
-  normalizationWindowWeeks?: number;
   benchmarkType?: "equal-weighted" | "spx";
 }
 
@@ -47,18 +44,6 @@ export class SectorRotationClient {
     }
     if (request.endDate) {
       params.append("endDate", request.endDate);
-    }
-    if (request.lookbackWeeks !== undefined) {
-      params.append("lookbackWeeks", request.lookbackWeeks.toString());
-    }
-    if (request.momentumWeeks !== undefined) {
-      params.append("momentumWeeks", request.momentumWeeks.toString());
-    }
-    if (request.normalizationWindowWeeks !== undefined) {
-      params.append(
-        "normalizationWindowWeeks",
-        request.normalizationWindowWeeks.toString(),
-      );
     }
     if (request.benchmarkType) {
       params.append("benchmarkType", request.benchmarkType);

@@ -1,10 +1,5 @@
 import { Injectable } from '@nestjs/common';
-
-interface RollingWindowStats {
-  mean: number;
-  variance: number;
-  count: number;
-}
+import { RollingStats, RollingStatsCalculator } from '../utils/rolling-stats';
 
 @Injectable()
 export class ZScoreNormalizer {
@@ -18,7 +13,7 @@ export class ZScoreNormalizer {
   ): Map<number, number> {
     const normalizedMap = new Map<number, number>();
     const windowQueue: Array<{ date: number; value: number }> = [];
-    let stats: RollingWindowStats = { mean: 0, variance: 0, count: 0 };
+    let stats: RollingStats = { mean: 0, variance: 0, count: 0 };
 
     for (let i = 0; i < sortedDates.length; i++) {
       const currentDate = sortedDates[i];
@@ -36,11 +31,11 @@ export class ZScoreNormalizer {
         windowQueue[0].date < windowStartDate
       ) {
         const removed = windowQueue.shift()!;
-        stats = this.removeValue(stats, removed.value);
+        stats = RollingStatsCalculator.removeValue(stats, removed.value);
       }
 
       windowQueue.push({ date: currentDate, value: rawValue });
-      stats = this.addValue(stats, rawValue);
+      stats = RollingStatsCalculator.addValue(stats, rawValue);
 
       if (stats.count > 0 && stats.variance > 0) {
         const stdDev = Math.sqrt(stats.variance);
@@ -51,46 +46,6 @@ export class ZScoreNormalizer {
     }
 
     return normalizedMap;
-  }
-
-  private addValue(
-    stats: RollingWindowStats,
-    value: number,
-  ): RollingWindowStats {
-    const newCount = stats.count + 1;
-    const delta = value - stats.mean;
-    const newMean = stats.mean + delta / newCount;
-    const delta2 = value - newMean;
-    const newVariance =
-      (stats.count * stats.variance + delta * delta2) / newCount;
-
-    return {
-      mean: newMean,
-      variance: newVariance,
-      count: newCount,
-    };
-  }
-
-  private removeValue(
-    stats: RollingWindowStats,
-    value: number,
-  ): RollingWindowStats {
-    if (stats.count <= 1) {
-      return { mean: 0, variance: 0, count: 0 };
-    }
-
-    const newCount = stats.count - 1;
-    const delta = value - stats.mean;
-    const newMean = stats.mean - delta / newCount;
-    const delta2 = value - newMean;
-    const newVariance =
-      (stats.count * stats.variance - delta * delta2) / newCount;
-
-    return {
-      mean: newMean,
-      variance: Math.max(0, newVariance),
-      count: newCount,
-    };
   }
 }
 

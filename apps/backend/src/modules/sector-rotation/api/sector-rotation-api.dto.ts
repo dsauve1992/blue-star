@@ -21,9 +21,7 @@ export interface CalculateSectorRotationApiRequestDto {
   sectors: Array<{ symbol: string; name: string }>;
   startDate: string;
   endDate: string;
-  lookbackWeeks?: number;
-  momentumWeeks?: number;
-  normalizationWindowWeeks?: number;
+  benchmarkType?: string;
 }
 
 export interface CalculateSectorRotationApiResponseDto {

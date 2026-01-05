@@ -4,6 +4,7 @@ import { DateRange } from '../../../market-data/domain/value-objects/date-range'
 import { MarketDataService } from '../../../market-data/domain/services/market-data.service';
 import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
 import { BenchmarkType } from '../../domain/value-objects/benchmark-type';
+import { WeekUtils } from '../utils/week-utils';
 
 interface WeeklyPriceData {
   date: Date;
@@ -77,7 +78,7 @@ export class BenchmarkCalculator {
     const weeklyMap = new Map<string, { date: Date; price: number }>();
 
     for (const point of historicalData.pricePoints) {
-      const weekKey = this.getWeekKey(point.date);
+      const weekKey = WeekUtils.getWeekKey(point.date);
       const existing = weeklyMap.get(weekKey);
 
       if (!existing || point.date > existing.date) {
@@ -97,22 +98,6 @@ export class BenchmarkCalculator {
     }
 
     return benchmark;
-  }
-
-  private getWeekKey(date: Date): string {
-    const year = date.getFullYear();
-    const week = this.getWeekNumber(date);
-    return `${year}-W${week.toString().padStart(2, '0')}`;
-  }
-
-  private getWeekNumber(date: Date): number {
-    const d = new Date(
-      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-    );
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
   }
 }
 

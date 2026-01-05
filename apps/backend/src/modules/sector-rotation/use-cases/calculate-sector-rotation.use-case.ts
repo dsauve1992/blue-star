@@ -8,14 +8,12 @@ import { SectorRotationResult } from '../domain/value-objects/sector-rotation-re
 import { Sector } from '../domain/value-objects/sector';
 import { BenchmarkType } from '../domain/value-objects/benchmark-type';
 import { SECTOR_ROTATION_CALCULATION_SERVICE } from '../constants/tokens';
+import { RRG_PARAMETERS } from '../constants/rrg-parameters';
 
 export interface CalculateSectorRotationRequestDto {
   sectors: Array<{ symbol: string; name: string }>;
   startDate: Date;
   endDate: Date;
-  lookbackWeeks?: number;
-  momentumWeeks?: number;
-  normalizationWindowWeeks?: number;
   benchmarkType?: string;
 }
 
@@ -41,9 +39,8 @@ export class CalculateSectorRotationUseCase {
       : BenchmarkType.EqualWeighted;
 
     const params: SectorRotationCalculationParams = {
-      lookbackWeeks: request.lookbackWeeks ?? 100,
-      momentumWeeks: request.momentumWeeks ?? 5,
-      normalizationWindowWeeks: request.normalizationWindowWeeks ?? 5,
+      momentumWeeks: RRG_PARAMETERS.MOMENTUM_WEEKS,
+      normalizationWindowWeeks: RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS,
       benchmarkType,
     };
 

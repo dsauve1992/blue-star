@@ -14,6 +14,10 @@ import { Sector } from '../../domain/value-objects/sector';
 import { ZScoreNormalizer } from './z-score-normalizer.service';
 import { BenchmarkCalculator } from './benchmark-calculator.service';
 import { BenchmarkType } from '../../domain/value-objects/benchmark-type';
+import { WeekUtils } from '../utils/week-utils';
+import { EMACalculator } from '../utils/ema-calculator';
+import { RollingStatsCalculator, RollingStats } from '../utils/rolling-stats';
+import { RRG_PARAMETERS } from '../../constants/rrg-parameters';
 
 interface WeeklyPriceData {
   date: Date;
@@ -26,7 +30,6 @@ interface SectorWeeklyData {
 }
 
 const MIN_DATA_POINTS_REQUIRED = 2;
-const EPSILON = 1e-10;
 
 @Injectable()
 export class SectorRotationCalculationServiceImpl
@@ -49,8 +52,8 @@ export class SectorRotationCalculationServiceImpl
 
     const requiredLookbackWeeks = Math.max(
       params.normalizationWindowWeeks,
-      params.lookbackWeeks,
       params.momentumWeeks,
+      RRG_PARAMETERS.RS_SMOOTHING_PERIOD,
     );
 
     const extendedDateRange = this.extendDateRangeForLookback(
@@ -75,12 +78,10 @@ export class SectorRotationCalculationServiceImpl
     );
     const xValues = this.calculateXValues(
       relativeStrengths,
-      params.lookbackWeeks,
       params.normalizationWindowWeeks,
     );
     const yValues = this.calculateYValues(
       xValues,
-      params.momentumWeeks,
       params.normalizationWindowWeeks,
     );
     const allDataPoints = this.createDataPoints(
@@ -113,11 +114,6 @@ export class SectorRotationCalculationServiceImpl
   }
 
   private validateParams(params: SectorRotationCalculationParams): void {
-    if (params.lookbackWeeks < 1) {
-      throw new Error(
-        `lookbackWeeks must be at least 1, got ${params.lookbackWeeks}`,
-      );
-    }
     if (params.momentumWeeks < 1) {
       throw new Error(
         `momentumWeeks must be at least 1, got ${params.momentumWeeks}`,
@@ -251,7 +247,7 @@ export class SectorRotationCalculationServiceImpl
     const weeklyMap = new Map<string, WeeklyPriceData>();
 
     for (const point of pricePoints) {
-      const weekKey = this.getWeekKey(point.date);
+      const weekKey = WeekUtils.getWeekKey(point.date);
       const existing = weeklyMap.get(weekKey);
 
       if (!existing || point.date > existing.date) {
@@ -267,22 +263,6 @@ export class SectorRotationCalculationServiceImpl
     );
   }
 
-  private getWeekKey(date: Date): string {
-    const year = date.getFullYear();
-    const week = this.getWeekNumber(date);
-    return `${year}-W${week.toString().padStart(2, '0')}`;
-  }
-
-  private getWeekNumber(date: Date): number {
-    const d = new Date(
-      Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
-    );
-    const dayNum = d.getUTCDay() || 7;
-    d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
-  }
-
   private calculateRelativeStrengths(
     sectorData: SectorWeeklyData[],
     benchmark: Map<number, number>,
@@ -295,8 +275,8 @@ export class SectorRotationCalculationServiceImpl
       for (const { date, price } of prices) {
         const benchmarkPrice = benchmark.get(date.getTime());
         if (benchmarkPrice && benchmarkPrice > 0) {
-          const rs = Math.log(price) - Math.log(benchmarkPrice);
-          if (Number.isFinite(rs)) {
+          const rs = 100 * (price / benchmarkPrice);
+          if (Number.isFinite(rs) && rs > 0) {
             rsMap.set(date.getTime(), rs);
           }
         }
@@ -310,32 +290,21 @@ export class SectorRotationCalculationServiceImpl
 
   private calculateXValues(
     relativeStrengths: Map<string, Map<number, number>>,
-    lookbackWeeks: number,
     normalizationWindowWeeks: number,
   ): Map<string, Map<number, number>> {
     const xValues = new Map<string, Map<number, number>>();
 
     for (const [sectorSymbol, rsMap] of relativeStrengths.entries()) {
       const sortedDates = Array.from(rsMap.keys()).sort((a, b) => a - b);
-      const xRawMap = new Map<number, number>();
 
-      for (let i = 0; i < sortedDates.length; i++) {
-        const currentDate = sortedDates[i];
-        const currentRS = rsMap.get(currentDate)!;
+      const rsSmoothed = EMACalculator.calculate(
+        rsMap,
+        sortedDates,
+        RRG_PARAMETERS.RS_SMOOTHING_PERIOD,
+      );
 
-        if (i >= lookbackWeeks) {
-          const lookbackDate = sortedDates[i - lookbackWeeks];
-          const lookbackRS = rsMap.get(lookbackDate)!;
-
-          const xRaw = this.calculateXRawValue(currentRS, lookbackRS);
-          if (Number.isFinite(xRaw)) {
-            xRawMap.set(currentDate, xRaw);
-          }
-        }
-      }
-
-      const xNormalizedMap = this.zScoreNormalizer.normalizeWithRollingWindow(
-        xRawMap,
+      const xNormalizedMap = this.calculateRSRatio(
+        rsSmoothed,
         sortedDates,
         normalizationWindowWeeks,
       );
@@ -346,48 +315,86 @@ export class SectorRotationCalculationServiceImpl
     return xValues;
   }
 
-  private calculateXRawValue(currentRS: number, lookbackRS: number): number {
-    if (Math.abs(lookbackRS) < EPSILON) {
-      return currentRS - lookbackRS;
+  private calculateRSRatio(
+    rsSmoothed: Map<number, number>,
+    sortedDates: number[],
+    normalizationWindowWeeks: number,
+  ): Map<number, number> {
+    const rsRatioMap = new Map<number, number>();
+    const windowQueue: Array<{ date: number; value: number }> = [];
+    let stats: RollingStats = {
+      mean: 0,
+      variance: 0,
+      count: 0,
+    };
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      const currentDate = sortedDates[i];
+      const smoothedValue = rsSmoothed.get(currentDate);
+
+      if (smoothedValue === undefined) {
+        continue;
+      }
+
+      const windowStartIndex = Math.max(0, i - normalizationWindowWeeks + 1);
+      const windowStartDate = sortedDates[windowStartIndex];
+
+      while (
+        windowQueue.length > 0 &&
+        windowQueue[0].date < windowStartDate
+      ) {
+        const removed = windowQueue.shift()!;
+        stats = RollingStatsCalculator.removeValue(stats, removed.value);
+      }
+
+      windowQueue.push({ date: currentDate, value: smoothedValue });
+      stats = RollingStatsCalculator.addValue(stats, smoothedValue);
+
+      if (stats.count > 0 && stats.variance > 0) {
+        const stdDev = Math.sqrt(stats.variance);
+        const zScoreRatio = (smoothedValue - stats.mean) / stdDev;
+        const jdkRSRatio = 100 + (zScoreRatio + 1);
+        rsRatioMap.set(currentDate, jdkRSRatio);
+      }
     }
 
-    const ratio = currentRS / lookbackRS;
-    if (ratio > 0) {
-      return Math.log(ratio);
-    }
-
-    return currentRS / lookbackRS - 1;
+    return rsRatioMap;
   }
 
   private calculateYValues(
     xValues: Map<string, Map<number, number>>,
-    momentumWeeks: number,
     normalizationWindowWeeks: number,
   ): Map<string, Map<number, number>> {
     const yValues = new Map<string, Map<number, number>>();
 
     for (const [sectorSymbol, xMap] of xValues.entries()) {
       const sortedDates = Array.from(xMap.keys()).sort((a, b) => a - b);
-      const yRawMap = new Map<number, number>();
+      const rsRatioDiffMap = new Map<number, number>();
 
-      for (let i = 0; i < sortedDates.length; i++) {
+      for (let i = 1; i < sortedDates.length; i++) {
         const currentDate = sortedDates[i];
-        const currentX = xMap.get(currentDate)!;
+        const currentRSRatio = xMap.get(currentDate);
+        const previousDate = sortedDates[i - 1];
+        const previousRSRatio = xMap.get(previousDate);
 
-        if (i >= momentumWeeks) {
-          const momentumDate = sortedDates[i - momentumWeeks];
-          const momentumX = xMap.get(momentumDate)!;
-          const yRaw = currentX - momentumX;
-
-          if (Number.isFinite(yRaw)) {
-            yRawMap.set(currentDate, yRaw);
+        if (
+          currentRSRatio !== undefined &&
+          previousRSRatio !== undefined
+        ) {
+          const rsRatioDiff = currentRSRatio - previousRSRatio;
+          if (Number.isFinite(rsRatioDiff)) {
+            rsRatioDiffMap.set(currentDate, rsRatioDiff);
           }
         }
       }
 
-      const yNormalizedMap = this.zScoreNormalizer.normalizeWithRollingWindow(
-        yRawMap,
-        sortedDates,
+      const sortedDiffDates = Array.from(rsRatioDiffMap.keys()).sort(
+        (a, b) => a - b,
+      );
+
+      const yNormalizedMap = this.calculateRSMomentum(
+        rsRatioDiffMap,
+        sortedDiffDates,
         normalizationWindowWeeks,
       );
 
@@ -395,6 +402,52 @@ export class SectorRotationCalculationServiceImpl
     }
 
     return yValues;
+  }
+
+  private calculateRSMomentum(
+    rsRatioDiff: Map<number, number>,
+    sortedDates: number[],
+    normalizationWindowWeeks: number,
+  ): Map<number, number> {
+    const rsMomentumMap = new Map<number, number>();
+    const windowQueue: Array<{ date: number; value: number }> = [];
+    let stats: RollingStats = {
+      mean: 0,
+      variance: 0,
+      count: 0,
+    };
+
+    for (let i = 0; i < sortedDates.length; i++) {
+      const currentDate = sortedDates[i];
+      const diffValue = rsRatioDiff.get(currentDate);
+
+      if (diffValue === undefined) {
+        continue;
+      }
+
+      const windowStartIndex = Math.max(0, i - normalizationWindowWeeks + 1);
+      const windowStartDate = sortedDates[windowStartIndex];
+
+      while (
+        windowQueue.length > 0 &&
+        windowQueue[0].date < windowStartDate
+      ) {
+        const removed = windowQueue.shift()!;
+        stats = RollingStatsCalculator.removeValue(stats, removed.value);
+      }
+
+      windowQueue.push({ date: currentDate, value: diffValue });
+      stats = RollingStatsCalculator.addValue(stats, diffValue);
+
+      if (stats.count > 0 && stats.variance > 0) {
+        const stdDev = Math.sqrt(stats.variance);
+        const zScoreMomentum = (diffValue - stats.mean) / stdDev;
+        const jdkRSMomentum = 100 + (zScoreMomentum + 1);
+        rsMomentumMap.set(currentDate, jdkRSMomentum);
+      }
+    }
+
+    return rsMomentumMap;
   }
 
   private createDataPoints(
