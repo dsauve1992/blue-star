@@ -21,7 +21,9 @@ const DEFAULT_SECTORS = [
 ];
 
 export default function SectorRotation() {
-  const [benchmarkType, setBenchmarkType] = useState<"equal-weighted" | "spx">("equal-weighted");
+  const [benchmarkType, setBenchmarkType] = useState<"equal-weighted" | "spx">(
+    "spx",
+  );
   const [showSettings, setShowSettings] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
@@ -67,14 +69,15 @@ export default function SectorRotation() {
   }, [uniqueDates]);
 
   const initialTimeWindow = useMemo(() => {
-    if (uniqueDates.length === 0 || !fullRange.weeks.length) return { start: null, end: null, sliderPosition: 0 };
+    if (uniqueDates.length === 0 || !fullRange.weeks.length)
+      return { start: null, end: null, sliderPosition: 0 };
 
     const startWeek = fullRange.weeks[Math.max(0, fullRange.weeks.length - 5)];
 
     const endDate = uniqueDates[uniqueDates.length - 1];
-    const startDate = uniqueDates.find(
-      (date) => date.getTime() >= startWeek.getTime()
-    ) || uniqueDates[0];
+    const startDate =
+      uniqueDates.find((date) => date.getTime() >= startWeek.getTime()) ||
+      uniqueDates[0];
 
     return {
       start: startDate,
@@ -86,7 +89,11 @@ export default function SectorRotation() {
   const [sliderPosition, setSliderPosition] = useState<number>(0);
 
   useEffect(() => {
-    if (initialTimeWindow.start && initialTimeWindow.end && initialTimeWindow.sliderPosition !== undefined) {
+    if (
+      initialTimeWindow.start &&
+      initialTimeWindow.end &&
+      initialTimeWindow.sliderPosition !== undefined
+    ) {
       if (!selectedStartDate || !selectedEndDate) {
         setSelectedStartDate(initialTimeWindow.start);
         setSelectedEndDate(initialTimeWindow.end);
@@ -107,7 +114,10 @@ export default function SectorRotation() {
     setSliderPosition(position);
     const windowSize = 5;
     const startWeekIndex = position;
-    const endWeekIndex = Math.min(position + windowSize - 1, fullRange.weeks.length - 1);
+    const endWeekIndex = Math.min(
+      position + windowSize - 1,
+      fullRange.weeks.length - 1,
+    );
 
     const startWeek = fullRange.weeks[startWeekIndex];
     const endWeek = fullRange.weeks[endWeekIndex];
@@ -116,13 +126,14 @@ export default function SectorRotation() {
       const weekEndDate = new Date(endWeek);
       weekEndDate.setDate(weekEndDate.getDate() + 6);
 
-      const actualStartDate = uniqueDates.find(
-        (date) => date.getTime() >= startWeek.getTime()
-      ) || startWeek;
+      const actualStartDate =
+        uniqueDates.find((date) => date.getTime() >= startWeek.getTime()) ||
+        startWeek;
 
-      const actualEndDate = uniqueDates.find(
-        (date) => date.getTime() >= weekEndDate.getTime()
-      ) || uniqueDates[uniqueDates.length - 1] || weekEndDate;
+      const actualEndDate =
+        uniqueDates.find((date) => date.getTime() >= weekEndDate.getTime()) ||
+        uniqueDates[uniqueDates.length - 1] ||
+        weekEndDate;
 
       setSelectedStartDate(actualStartDate);
       setSelectedEndDate(actualEndDate);
@@ -233,7 +244,9 @@ export default function SectorRotation() {
                   </p>
                 </div>
                 <div className="text-xs text-muted-foreground">
-                  Week {sliderPosition + 1} - {Math.min(sliderPosition + 5, fullRange.weeks.length)} of {fullRange.weeks.length}
+                  Week {sliderPosition + 1} -{" "}
+                  {Math.min(sliderPosition + 5, fullRange.weeks.length)} of{" "}
+                  {fullRange.weeks.length}
                 </div>
               </div>
               <div className="relative">
@@ -242,7 +255,9 @@ export default function SectorRotation() {
                   min="0"
                   max={Math.max(0, fullRange.weeks.length - 5)}
                   value={sliderPosition}
-                  onChange={(e) => handleSliderChange(parseInt(e.target.value, 10))}
+                  onChange={(e) =>
+                    handleSliderChange(parseInt(e.target.value, 10))
+                  }
                   className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
                   style={{
                     background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(sliderPosition / Math.max(1, fullRange.weeks.length - 5)) * 100}%, #e5e7eb ${(sliderPosition / Math.max(1, fullRange.weeks.length - 5)) * 100}%, #e5e7eb 100%)`,
@@ -278,9 +293,7 @@ export default function SectorRotation() {
               </div>
               <div className="flex justify-between text-xs text-muted-foreground">
                 <span>
-                  {fullRange.start
-                    ? fullRange.start.toLocaleDateString()
-                    : ""}
+                  {fullRange.start ? fullRange.start.toLocaleDateString() : ""}
                 </span>
                 <span>
                   {fullRange.end ? fullRange.end.toLocaleDateString() : ""}

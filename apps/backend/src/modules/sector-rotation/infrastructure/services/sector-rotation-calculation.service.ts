@@ -339,10 +339,7 @@ export class SectorRotationCalculationServiceImpl
       const windowStartIndex = Math.max(0, i - normalizationWindowWeeks + 1);
       const windowStartDate = sortedDates[windowStartIndex];
 
-      while (
-        windowQueue.length > 0 &&
-        windowQueue[0].date < windowStartDate
-      ) {
+      while (windowQueue.length > 0 && windowQueue[0].date < windowStartDate) {
         const removed = windowQueue.shift()!;
         stats = RollingStatsCalculator.removeValue(stats, removed.value);
       }
@@ -353,7 +350,7 @@ export class SectorRotationCalculationServiceImpl
       if (stats.count > 0 && stats.variance > 0) {
         const stdDev = Math.sqrt(stats.variance);
         const zScoreRatio = (smoothedValue - stats.mean) / stdDev;
-        const jdkRSRatio = 100 + (zScoreRatio + 1);
+        const jdkRSRatio = 100 + zScoreRatio;
         rsRatioMap.set(currentDate, jdkRSRatio);
       }
     }
@@ -377,10 +374,7 @@ export class SectorRotationCalculationServiceImpl
         const previousDate = sortedDates[i - 1];
         const previousRSRatio = xMap.get(previousDate);
 
-        if (
-          currentRSRatio !== undefined &&
-          previousRSRatio !== undefined
-        ) {
+        if (currentRSRatio !== undefined && previousRSRatio !== undefined) {
           const rsRatioDiff = currentRSRatio - previousRSRatio;
           if (Number.isFinite(rsRatioDiff)) {
             rsRatioDiffMap.set(currentDate, rsRatioDiff);
@@ -428,10 +422,7 @@ export class SectorRotationCalculationServiceImpl
       const windowStartIndex = Math.max(0, i - normalizationWindowWeeks + 1);
       const windowStartDate = sortedDates[windowStartIndex];
 
-      while (
-        windowQueue.length > 0 &&
-        windowQueue[0].date < windowStartDate
-      ) {
+      while (windowQueue.length > 0 && windowQueue[0].date < windowStartDate) {
         const removed = windowQueue.shift()!;
         stats = RollingStatsCalculator.removeValue(stats, removed.value);
       }
@@ -442,7 +433,7 @@ export class SectorRotationCalculationServiceImpl
       if (stats.count > 0 && stats.variance > 0) {
         const stdDev = Math.sqrt(stats.variance);
         const zScoreMomentum = (diffValue - stats.mean) / stdDev;
-        const jdkRSMomentum = 100 + (zScoreMomentum + 1);
+        const jdkRSMomentum = 100 + zScoreMomentum;
         rsMomentumMap.set(currentDate, jdkRSMomentum);
       }
     }
