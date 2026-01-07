@@ -137,7 +137,7 @@ export function SectorRotationRRGChart({
       right: "10%",
       top: "10%",
       bottom: "10%",
-      containLabel: true,
+      containLabel: false,
     },
     xAxis: {
       type: "value",
@@ -161,7 +161,7 @@ export function SectorRotationRRGChart({
       type: "value",
       name: "RS-Momentum",
       nameLocation: "middle",
-      nameGap: 50,
+      nameGap: 30,
       min: axisRanges.yMin,
       max: axisRanges.yMax,
       splitLine: {
@@ -328,7 +328,6 @@ export function SectorRotationRRGChart({
         left: "center",
         top: "5%",
         style: {
-          text: "Leading",
           fill: getQuadrantColor("Leading"),
           fontSize: 12,
           fontWeight: "bold",
@@ -340,7 +339,6 @@ export function SectorRotationRRGChart({
         right: "5%",
         top: "center",
         style: {
-          text: "Weakening",
           fill: getQuadrantColor("Weakening"),
           fontSize: 12,
           fontWeight: "bold",
@@ -352,7 +350,6 @@ export function SectorRotationRRGChart({
         left: "center",
         bottom: "5%",
         style: {
-          text: "Lagging",
           fill: getQuadrantColor("Lagging"),
           fontSize: 12,
           fontWeight: "bold",
@@ -364,7 +361,6 @@ export function SectorRotationRRGChart({
         left: "5%",
         top: "center",
         style: {
-          text: "Improving",
           fill: getQuadrantColor("Improving"),
           fontSize: 12,
           fontWeight: "bold",
