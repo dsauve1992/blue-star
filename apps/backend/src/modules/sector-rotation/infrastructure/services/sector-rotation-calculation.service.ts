@@ -30,6 +30,8 @@ interface SectorWeeklyData {
 }
 
 const MIN_DATA_POINTS_REQUIRED = 2;
+const Z_SCORE_MULTIPLIER = 3;
+const Z_SCORE_CENTER = 100;
 
 @Injectable()
 export class SectorRotationCalculationServiceImpl
@@ -350,7 +352,7 @@ export class SectorRotationCalculationServiceImpl
       if (stats.count > 0 && stats.variance > 0) {
         const stdDev = Math.sqrt(stats.variance);
         const zScoreRatio = (smoothedValue - stats.mean) / stdDev;
-        const jdkRSRatio = 100 + zScoreRatio;
+        const jdkRSRatio = Z_SCORE_CENTER + zScoreRatio * Z_SCORE_MULTIPLIER;
         rsRatioMap.set(currentDate, jdkRSRatio);
       }
     }
@@ -386,8 +388,14 @@ export class SectorRotationCalculationServiceImpl
         (a, b) => a - b,
       );
 
-      const yNormalizedMap = this.calculateRSMomentum(
+      const rsRatioDiffSmoothed = EMACalculator.calculate(
         rsRatioDiffMap,
+        sortedDiffDates,
+        RRG_PARAMETERS.RS_SMOOTHING_PERIOD,
+      );
+
+      const yNormalizedMap = this.calculateRSMomentum(
+        rsRatioDiffSmoothed,
         sortedDiffDates,
         normalizationWindowWeeks,
       );
@@ -433,7 +441,8 @@ export class SectorRotationCalculationServiceImpl
       if (stats.count > 0 && stats.variance > 0) {
         const stdDev = Math.sqrt(stats.variance);
         const zScoreMomentum = (diffValue - stats.mean) / stdDev;
-        const jdkRSMomentum = 100 + zScoreMomentum;
+        const jdkRSMomentum =
+          Z_SCORE_CENTER + zScoreMomentum * Z_SCORE_MULTIPLIER;
         rsMomentumMap.set(currentDate, jdkRSMomentum);
       }
     }

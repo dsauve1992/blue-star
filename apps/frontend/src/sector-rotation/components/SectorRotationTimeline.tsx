@@ -4,10 +4,14 @@ import type { SectorRotationDataPoint } from '../api/sector-rotation.client';
 
 interface SectorRotationTimelineProps {
   dataPoints: SectorRotationDataPoint[];
+  enabledSectors: Set<string>;
+  onToggleSector: (sectorSymbol: string) => void;
 }
 
 export function SectorRotationTimeline({
   dataPoints,
+  enabledSectors,
+  onToggleSector,
 }: SectorRotationTimelineProps) {
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
@@ -88,11 +92,25 @@ export function SectorRotationTimeline({
               </tr>
             </thead>
             <tbody>
-              {sectorSymbols.map((symbol) => (
-                <tr key={symbol}>
-                  <td className="sticky left-0 z-10 bg-background border border-border p-2 text-sm font-medium">
-                    {symbol}
-                  </td>
+              {sectorSymbols.map((symbol) => {
+                const isEnabled = enabledSectors.has(symbol);
+                return (
+                  <tr
+                    key={symbol}
+                    className={!isEnabled ? 'opacity-40' : ''}
+                  >
+                    <td className="sticky left-0 z-10 bg-background border border-border p-2 text-sm font-medium">
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="checkbox"
+                          checked={isEnabled}
+                          onChange={() => onToggleSector(symbol)}
+                          className="w-4 h-4 cursor-pointer"
+                          aria-label={`Toggle ${symbol} sector`}
+                        />
+                        <span>{symbol}</span>
+                      </div>
+                    </td>
                   {uniqueDates.map((date) => {
                     const point = dataPoints.find(
                       (p) => p.sectorSymbol === symbol && p.date === date,
@@ -114,8 +132,9 @@ export function SectorRotationTimeline({
                       </td>
                     );
                   })}
-                </tr>
-              ))}
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>

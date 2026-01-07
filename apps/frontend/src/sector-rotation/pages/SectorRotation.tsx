@@ -27,6 +27,7 @@ export default function SectorRotation() {
   const [showSettings, setShowSettings] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
+  const [enabledSectors, setEnabledSectors] = useState<Set<string>>(new Set());
 
   const endDate = new Date();
   const startDate = new Date(endDate);
@@ -46,6 +47,31 @@ export default function SectorRotation() {
       .sort((a, b) => a.getTime() - b.getTime());
     return dates;
   }, [data?.result?.dataPoints]);
+
+  const availableSectors = useMemo(() => {
+    if (!data?.result?.dataPoints) return [];
+    return Array.from(
+      new Set(data.result.dataPoints.map((p) => p.sectorSymbol)),
+    ).sort();
+  }, [data?.result?.dataPoints]);
+
+  useEffect(() => {
+    if (availableSectors.length > 0 && enabledSectors.size === 0) {
+      setEnabledSectors(new Set(availableSectors));
+    }
+  }, [availableSectors, enabledSectors.size]);
+
+  const handleToggleSector = (sectorSymbol: string) => {
+    setEnabledSectors((prev) => {
+      const next = new Set(prev);
+      if (next.has(sectorSymbol)) {
+        next.delete(sectorSymbol);
+      } else {
+        next.add(sectorSymbol);
+      }
+      return next;
+    });
+  };
 
   const fullRange = useMemo(() => {
     if (uniqueDates.length === 0) return { start: null, end: null, weeks: [] };
@@ -309,10 +335,15 @@ export default function SectorRotation() {
             trailWeeks={12}
             startDate={displayStartDate}
             endDate={displayEndDate}
+            enabledSectors={enabledSectors}
           />
         </Card>
 
-        <SectorRotationTimeline dataPoints={data.result.dataPoints} />
+        <SectorRotationTimeline
+          dataPoints={data.result.dataPoints}
+          enabledSectors={enabledSectors}
+          onToggleSector={handleToggleSector}
+        />
       </div>
     </PageContainer>
   );
