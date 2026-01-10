@@ -10,6 +10,7 @@ import { ThemesModule } from './modules/themes/themes.module';
 import { WatchlistModule } from './modules/watchlist/watchlist.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SectorRotationModule } from './modules/sector-rotation/sector-rotation.module';
+import { FundamentalModule } from './modules/fundamental/fundamental.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { DatabaseModule } from './config/database.module';
 
@@ -27,6 +28,7 @@ import { DatabaseModule } from './config/database.module';
     WatchlistModule,
     AuthModule,
     SectorRotationModule,
+    FundamentalModule,
   ],
   controllers: [AppController],
   providers: [
