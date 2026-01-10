@@ -72,4 +72,3 @@ export class ConsolidationRun {
     return this._completedAt;
   }
 }
-

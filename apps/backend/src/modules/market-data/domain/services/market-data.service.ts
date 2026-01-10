@@ -8,9 +8,12 @@ export interface HistoricalData {
   pricePoints: PricePoint[];
 }
 
+export type Interval = '1d' | '1wk' | '1mo';
+
 export interface MarketDataService {
   getHistoricalData(
     symbol: Symbol,
     dateRange: DateRange,
+    _interval?: Interval,
   ): Promise<HistoricalData>;
 }

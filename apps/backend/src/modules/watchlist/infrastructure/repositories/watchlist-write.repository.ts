@@ -49,10 +49,7 @@ export class WatchlistWriteRepository implements IWatchlistWriteRepository {
           INSERT INTO watchlist_tickers (id, watchlist_id, ticker, created_at)
           VALUES (gen_random_uuid(), $1, $2, NOW())
         `;
-        await client.query(tickerQuery, [
-          watchlist.id.value,
-          ticker.value,
-        ]);
+        await client.query(tickerQuery, [watchlist.id.value, ticker.value]);
       }
     });
   }
@@ -75,9 +72,7 @@ export class WatchlistWriteRepository implements IWatchlistWriteRepository {
       GROUP BY w.id, w.user_id, w.name, w.created_at, w.updated_at
     `;
 
-    const result = await this.databaseService.query(query, [
-      watchlistId.value,
-    ]);
+    const result = await this.databaseService.query(query, [watchlistId.value]);
 
     if (result.rows.length === 0) {
       throw new InvariantError(
@@ -89,10 +84,9 @@ export class WatchlistWriteRepository implements IWatchlistWriteRepository {
   }
 
   async delete(watchlistId: WatchlistId): Promise<void> {
-    await this.databaseService.query(
-      'DELETE FROM watchlists WHERE id = $1',
-      [watchlistId.value],
-    );
+    await this.databaseService.query('DELETE FROM watchlists WHERE id = $1', [
+      watchlistId.value,
+    ]);
   }
 
   private mapRowToWatchlist(row: DatabaseRow): Watchlist {
@@ -110,4 +104,3 @@ export class WatchlistWriteRepository implements IWatchlistWriteRepository {
     });
   }
 }
-

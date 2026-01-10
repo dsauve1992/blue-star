@@ -105,4 +105,3 @@ export class ThemeRepositoryImpl implements ThemeRepository {
     return result.rows.map((row) => ThemeEntity.fromData(row));
   }
 }
-

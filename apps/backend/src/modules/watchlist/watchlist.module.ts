@@ -37,4 +37,3 @@ import { WatchlistReadRepository } from './infrastructure/repositories/watchlist
   ],
 })
 export class WatchlistModule {}
-

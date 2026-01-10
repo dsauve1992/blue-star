@@ -17,14 +17,6 @@ export class DateRange {
       throw new Error('Start date must be before end date');
     }
 
-    // Check if date range is not too far in the past (more than 2 years)
-    const twoYearsAgo = new Date();
-    twoYearsAgo.setFullYear(twoYearsAgo.getFullYear() - 2);
-
-    if (startDate < twoYearsAgo) {
-      throw new Error('Start date cannot be more than 2 years in the past');
-    }
-
     // Check if end date is not in the future
     const today = new Date();
     if (endDate > today) {

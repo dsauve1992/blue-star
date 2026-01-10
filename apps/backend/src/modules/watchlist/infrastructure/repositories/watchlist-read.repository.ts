@@ -38,9 +38,7 @@ export class WatchlistReadRepository implements IWatchlistReadRepository {
       GROUP BY w.id, w.user_id, w.name, w.created_at, w.updated_at
     `;
 
-    const result = await this.databaseService.query(query, [
-      watchlistId.value,
-    ]);
+    const result = await this.databaseService.query(query, [watchlistId.value]);
 
     if (result.rows.length === 0) {
       return null;
@@ -109,4 +107,3 @@ export class WatchlistReadRepository implements IWatchlistReadRepository {
     });
   }
 }
-

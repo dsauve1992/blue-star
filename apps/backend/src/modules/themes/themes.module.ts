@@ -11,11 +11,7 @@ import {
   THEME_SERVICE,
 } from './constants/tokens';
 
-export {
-  THEME_REPOSITORY,
-  THEME_EXTRACTOR_SERVICE,
-  THEME_SERVICE,
-};
+export { THEME_REPOSITORY, THEME_EXTRACTOR_SERVICE, THEME_SERVICE };
 
 @Module({
   imports: [ScheduleModule.forRoot(), DatabaseModule],
@@ -38,4 +34,3 @@ export {
   exports: [THEME_REPOSITORY],
 })
 export class ThemesModule {}
-

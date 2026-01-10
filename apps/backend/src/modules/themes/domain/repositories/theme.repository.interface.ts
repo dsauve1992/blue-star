@@ -13,4 +13,3 @@ export interface ThemeRepository {
   deleteAllThemeTickers(themeId: string): Promise<void>;
   findThemesByTicker(ticker: string): Promise<ThemeEntity[]>;
 }
-

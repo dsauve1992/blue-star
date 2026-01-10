@@ -19,4 +19,3 @@ export class WatchlistId {
     return this.value;
   }
 }
-

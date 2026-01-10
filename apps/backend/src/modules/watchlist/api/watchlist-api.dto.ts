@@ -25,4 +25,3 @@ export interface DeleteWatchlistApiResponseDto {
 export interface ListWatchlistsApiResponseDto {
   watchlists: WatchlistApiDto[];
 }
-
