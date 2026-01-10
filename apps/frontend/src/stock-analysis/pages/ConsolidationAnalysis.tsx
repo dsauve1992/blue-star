@@ -9,6 +9,7 @@ import { useRunConsolidationAnalysis } from "../hooks/use-run-consolidation-anal
 import type { AnalyzeConsolidationsRequest } from "../api/consolidation.client";
 import { useWatchlists, useAddTickerToWatchlist, useRemoveTickerFromWatchlist, useCreateWatchlist } from "src/watchlist/hooks/use-watchlists";
 import TradingViewTapeCardWidget from "../components/new/TradingViewTapeCardWidget";
+import { FinancialReportSidePanel } from "../components/FinancialReportSidePanel";
 import type { ConsolidationResult } from "../api/consolidation.client";
 import {
   RefreshCw,
@@ -20,6 +21,7 @@ import {
   Sparkles,
   BookmarkPlus,
   Check,
+  FileText,
 } from "lucide-react";
 
 type AnalysisType = "daily" | "weekly";
@@ -45,6 +47,7 @@ export default function ConsolidationAnalysis() {
   const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
   const [showWatchlistDropdown, setShowWatchlistDropdown] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
+  const [showFinancialReportPanel, setShowFinancialReportPanel] = useState(false);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -619,19 +622,31 @@ export default function ConsolidationAnalysis() {
 
               <div className="flex items-center gap-2">
                 {selectedTicker && (
-                  <div className="relative" ref={dropdownRef}>
+                  <>
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setShowWatchlistDropdown(!showWatchlistDropdown);
-                      }}
-                      className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                      bg-blue-600/50 text-white hover:bg-blue-600/70
-                      border border-blue-500/50 transition-all duration-200"
+                      onClick={() => setShowFinancialReportPanel(!showFinancialReportPanel)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        showFinancialReportPanel
+                          ? "bg-purple-600/50 text-white hover:bg-purple-600/70 border border-purple-500/50"
+                          : "bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white border border-slate-600/50"
+                      }`}
                     >
-                      <BookmarkPlus className="w-4 h-4" />
-                      Add to Watchlist
+                      <FileText className="w-4 h-4" />
+                      Financial Report
                     </button>
+                    <div className="relative" ref={dropdownRef}>
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowWatchlistDropdown(!showWatchlistDropdown);
+                        }}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                        bg-blue-600/50 text-white hover:bg-blue-600/70
+                        border border-blue-500/50 transition-all duration-200"
+                      >
+                        <BookmarkPlus className="w-4 h-4" />
+                        Add to Watchlist
+                      </button>
 
                     {showWatchlistDropdown && (
                       <div className="absolute right-0 mt-2 w-64 rounded-lg bg-slate-800 border border-slate-700 shadow-xl z-[9999] overflow-hidden">
@@ -698,6 +713,7 @@ export default function ConsolidationAnalysis() {
                       </div>
                     )}
                   </div>
+                  </>
                 )}
 
                 <button
@@ -744,6 +760,13 @@ export default function ConsolidationAnalysis() {
               )}
             </div>
           </main>
+
+          {/* Financial Report Side Panel */}
+          <FinancialReportSidePanel
+            symbol={selectedTicker}
+            isOpen={showFinancialReportPanel}
+            onClose={() => setShowFinancialReportPanel(false)}
+          />
         </div>
       </div>
     </PageContainer>

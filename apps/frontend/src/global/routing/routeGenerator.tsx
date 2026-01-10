@@ -13,7 +13,6 @@ import { PositionDetail } from "../../position/pages/PositionDetail";
 import ConsolidationAnalysis from "../../stock-analysis/pages/ConsolidationAnalysis";
 import Watchlist from "../../watchlist/pages/Watchlist";
 import SectorRotation from "../../sector-rotation/pages/SectorRotation";
-import FinancialReport from "../../fundamental/pages/FinancialReport";
 
 // Map of path to component
 const componentMap = {
@@ -27,7 +26,6 @@ const componentMap = {
   "/stock-analysis/:type": ConsolidationAnalysis,
   "/watchlists": Watchlist,
   "/sector-rotation": SectorRotation,
-  "/financial-report": FinancialReport,
 } as const;
 
 export function generateRoutes() {

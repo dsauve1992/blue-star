@@ -68,12 +68,6 @@ export const routes: RouteConfig[] = [
     isProtected: true,
     showInNavigation: true,
   },
-  {
-    path: "/financial-report",
-    label: "Financial Report",
-    isProtected: true,
-    showInNavigation: true,
-  },
 ];
 
 export const getPublicRoutes = () =>
