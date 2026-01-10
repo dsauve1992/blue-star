@@ -4,7 +4,10 @@ import { ThemeService } from '../../domain/services/theme.service';
 import { ThemeEntity } from '../../domain/entities/theme.entity';
 import { ThemeTickerEntity } from '../../domain/entities/theme-ticker.entity';
 import { PythonThemeExtractorService } from './python-theme-extractor.service';
-import { THEME_REPOSITORY, THEME_EXTRACTOR_SERVICE } from '../../constants/tokens';
+import {
+  THEME_REPOSITORY,
+  THEME_EXTRACTOR_SERVICE,
+} from '../../constants/tokens';
 import { randomUUID } from 'crypto';
 
 @Injectable()
@@ -75,4 +78,3 @@ export class ThemeServiceImpl implements ThemeService {
     }
   }
 }
-

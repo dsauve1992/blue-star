@@ -22,4 +22,3 @@ export class Sector {
     return `${this.symbol} (${this.name})`;
   }
 }
-

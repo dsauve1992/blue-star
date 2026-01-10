@@ -16,4 +16,3 @@ export interface MarketDataCacheRepository {
     interval: Interval,
   ): Promise<void>;
 }
-

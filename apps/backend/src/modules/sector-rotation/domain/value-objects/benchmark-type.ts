@@ -23,5 +23,3 @@ export class BenchmarkType {
     return this.value;
   }
 }
-
-

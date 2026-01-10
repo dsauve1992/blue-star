@@ -30,7 +30,12 @@ export class SectorRotationResult {
       throw new Error('Sector symbols cannot be empty');
     }
 
-    return new SectorRotationResult(startDate, endDate, dataPoints, sectorSymbols);
+    return new SectorRotationResult(
+      startDate,
+      endDate,
+      dataPoints,
+      sectorSymbols,
+    );
   }
 
   getDataPointsBySector(sectorSymbol: string): SectorRotationDataPoint[] {
@@ -41,9 +46,7 @@ export class SectorRotationResult {
 
   getDataPointsByDate(date: Date): SectorRotationDataPoint[] {
     const dateTime = date.getTime();
-    return this.dataPoints.filter(
-      (point) => point.date.getTime() === dateTime,
-    );
+    return this.dataPoints.filter((point) => point.date.getTime() === dateTime);
   }
 
   getLatestDataPoints(): SectorRotationDataPoint[] {
@@ -58,12 +61,9 @@ export class SectorRotationResult {
   }
 
   getUniqueDates(): Date[] {
-    const dates = new Set(
-      this.dataPoints.map((point) => point.date.getTime()),
-    );
+    const dates = new Set(this.dataPoints.map((point) => point.date.getTime()));
     return Array.from(dates)
       .map((time) => new Date(time))
       .sort((a, b) => a.getTime() - b.getTime());
   }
 }
-

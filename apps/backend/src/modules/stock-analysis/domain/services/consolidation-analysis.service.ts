@@ -7,6 +7,3 @@ export interface ConsolidationAnalysisService {
     analysisDate: AnalysisDate,
   ): Promise<ConsolidationRun>;
 }
-
-
-

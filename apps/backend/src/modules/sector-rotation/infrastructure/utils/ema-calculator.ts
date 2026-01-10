@@ -26,5 +26,3 @@ export class EMACalculator {
     return emaMap;
   }
 }
-
-

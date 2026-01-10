@@ -185,7 +185,7 @@ export class SectorRotationCalculationServiceImpl
       if (result.status === 'fulfilled') {
         sectorData.push(result.value);
       } else {
-        const errorMessage = `Failed to fetch data for sector ${sector.symbol}: ${result.reason?.message || 'Unknown error'}`;
+        const errorMessage = `Failed to fetch data for sector ${sector.symbol}: ${result.reason || 'Unknown error'}`;
         errors.push(errorMessage);
         console.warn(errorMessage);
       }

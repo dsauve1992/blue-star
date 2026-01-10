@@ -29,4 +29,3 @@ export class Quadrant {
     return this.value;
   }
 }
-

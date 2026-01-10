@@ -6,4 +6,3 @@ export interface WatchlistWriteRepository {
   getById(watchlistId: WatchlistId): Promise<Watchlist>;
   delete(watchlistId: WatchlistId): Promise<void>;
 }
-

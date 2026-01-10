@@ -26,10 +26,7 @@ export class ZScoreNormalizer {
       const windowStartIndex = Math.max(0, i - windowWeeks + 1);
       const windowStartDate = sortedDates[windowStartIndex];
 
-      while (
-        windowQueue.length > 0 &&
-        windowQueue[0].date < windowStartDate
-      ) {
+      while (windowQueue.length > 0 && windowQueue[0].date < windowStartDate) {
         const removed = windowQueue.shift()!;
         stats = RollingStatsCalculator.removeValue(stats, removed.value);
       }
@@ -48,4 +45,3 @@ export class ZScoreNormalizer {
     return normalizedMap;
   }
 }
-

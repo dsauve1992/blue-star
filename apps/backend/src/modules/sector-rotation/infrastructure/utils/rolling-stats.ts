@@ -5,10 +5,7 @@ export interface RollingStats {
 }
 
 export class RollingStatsCalculator {
-  static addValue(
-    stats: RollingStats,
-    value: number,
-  ): RollingStats {
+  static addValue(stats: RollingStats, value: number): RollingStats {
     const newCount = stats.count + 1;
     const delta = value - stats.mean;
     const newMean = stats.mean + delta / newCount;
@@ -23,10 +20,7 @@ export class RollingStatsCalculator {
     };
   }
 
-  static removeValue(
-    stats: RollingStats,
-    value: number,
-  ): RollingStats {
+  static removeValue(stats: RollingStats, value: number): RollingStats {
     if (stats.count <= 1) {
       return { mean: 0, variance: 0, count: 0 };
     }
@@ -45,5 +39,3 @@ export class RollingStatsCalculator {
     };
   }
 }
-
-

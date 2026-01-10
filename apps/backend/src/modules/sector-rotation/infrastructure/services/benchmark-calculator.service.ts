@@ -66,7 +66,9 @@ export class BenchmarkCalculator {
     return benchmark;
   }
 
-  private async calculateSPX(dateRange: DateRange): Promise<Map<number, number>> {
+  private async calculateSPX(
+    dateRange: DateRange,
+  ): Promise<Map<number, number>> {
     const spxSymbol = Symbol.of('SPY');
     const historicalData = await this.marketDataService.getHistoricalData(
       spxSymbol,
@@ -100,4 +102,3 @@ export class BenchmarkCalculator {
     return benchmark;
   }
 }
-

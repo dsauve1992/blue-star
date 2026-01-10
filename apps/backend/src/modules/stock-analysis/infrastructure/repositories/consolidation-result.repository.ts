@@ -28,8 +28,9 @@ interface ConsolidationRunRow {
 
 @Injectable()
 export class ConsolidationResultRepositoryImpl
-  implements ConsolidationResultRepository {
-  constructor(private readonly databaseService: DatabaseService) { }
+  implements ConsolidationResultRepository
+{
+  constructor(private readonly databaseService: DatabaseService) {}
 
   async saveResults(
     run: ConsolidationRun,

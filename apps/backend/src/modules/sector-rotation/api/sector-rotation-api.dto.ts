@@ -27,4 +27,3 @@ export interface CalculateSectorRotationApiRequestDto {
 export interface CalculateSectorRotationApiResponseDto {
   result: SectorRotationResultDto;
 }
-

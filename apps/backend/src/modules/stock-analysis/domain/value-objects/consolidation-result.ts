@@ -23,6 +23,3 @@ export class ConsolidationResult {
     );
   }
 }
-
-
-
