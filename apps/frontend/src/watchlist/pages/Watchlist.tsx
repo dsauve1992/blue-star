@@ -11,6 +11,7 @@ import { LoadingSpinner } from "src/global/design-system";
 import { Alert, AlertDescription } from "src/global/design-system";
 import { Input } from "src/global/design-system";
 import TradingViewTapeCardWidget from "src/stock-analysis/components/new/TradingViewTapeCardWidget";
+import { FinancialReportSidePanel } from "src/stock-analysis/components/FinancialReportSidePanel";
 import { AddTickerModal } from "../components/AddTickerModal";
 import {
   Bookmark,
@@ -21,6 +22,7 @@ import {
   Plus,
   Trash2,
   X,
+  FileText,
 } from "lucide-react";
 
 function extractSymbol(ticker: string): string {
@@ -51,6 +53,7 @@ export default function Watchlist() {
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const [showAddTickerModal, setShowAddTickerModal] = useState(false);
+  const [showFinancialReportPanel, setShowFinancialReportPanel] = useState(false);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
@@ -567,18 +570,33 @@ export default function Watchlist() {
               </div>
 
               <div className="flex items-center gap-2">
-                {selectedTicker && selectedWatchlist && (
-                  <button
-                    onClick={() => handleRemoveTicker(selectedTicker)}
-                    disabled={removeTickerFromWatchlist.isPending}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
-                  bg-red-600/50 text-white hover:bg-red-600/70
-                  border border-red-500/50 transition-all duration-200
-                  disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    <X className="w-4 h-4" />
-                    Remove from Watchlist
-                  </button>
+                {selectedTicker && (
+                  <>
+                    <button
+                      onClick={() => setShowFinancialReportPanel(!showFinancialReportPanel)}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                        showFinancialReportPanel
+                          ? "bg-purple-600/50 text-white hover:bg-purple-600/70 border border-purple-500/50"
+                          : "bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white border border-slate-600/50"
+                      }`}
+                    >
+                      <FileText className="w-4 h-4" />
+                      Financial Report
+                    </button>
+                    {selectedWatchlist && (
+                      <button
+                        onClick={() => handleRemoveTicker(selectedTicker)}
+                        disabled={removeTickerFromWatchlist.isPending}
+                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                      bg-red-600/50 text-white hover:bg-red-600/70
+                      border border-red-500/50 transition-all duration-200
+                      disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <X className="w-4 h-4" />
+                        Remove from Watchlist
+                      </button>
+                    )}
+                  </>
                 )}
               </div>
             </header>
@@ -611,6 +629,13 @@ export default function Watchlist() {
               )}
             </div>
           </main>
+
+          {/* Financial Report Side Panel */}
+          <FinancialReportSidePanel
+            symbol={selectedTicker}
+            isOpen={showFinancialReportPanel}
+            onClose={() => setShowFinancialReportPanel(false)}
+          />
         </div>
       </div>
 
