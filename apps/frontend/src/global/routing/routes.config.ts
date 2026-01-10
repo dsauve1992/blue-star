@@ -8,78 +8,74 @@ export interface RouteConfig {
 
 export const routes: RouteConfig[] = [
   {
-    path: '/',
-    label: 'Home',
+    path: "/",
+    label: "Home",
     isProtected: false,
     showInNavigation: true,
   },
   {
-    path: '/login',
-    label: 'Login',
+    path: "/login",
+    label: "Login",
     isProtected: false,
     showInNavigation: false,
   },
   {
-    path: '/dashboard',
-    label: 'Dashboard',
+    path: "/dashboard",
+    label: "Dashboard",
     isProtected: true,
     showInNavigation: true,
   },
   {
-    path: '/profile',
-    label: 'Profile',
+    path: "/profile",
+    label: "Profile",
     isProtected: true,
     showInNavigation: true,
   },
   {
-    path: '/settings',
-    label: 'Settings',
+    path: "/settings",
+    label: "Settings",
     isProtected: true,
     showInNavigation: true,
   },
   {
-    path: '/positions',
-    label: 'Positions',
+    path: "/positions",
+    label: "Positions",
     isProtected: true,
     showInNavigation: true,
   },
   {
-    path: '/positions/:positionId',
-    label: 'Position Detail',
+    path: "/positions/:positionId",
+    label: "Position Detail",
     isProtected: true,
     showInNavigation: false,
   },
   {
-    path: '/stock-analysis/:type',
-    label: 'Stock Analysis',
+    path: "/stock-analysis/:type",
+    label: "Stock Analysis",
     isProtected: true,
     showInNavigation: true,
-    navigationPath: '/stock-analysis/daily',
+    navigationPath: "/stock-analysis/daily",
   },
   {
-    path: '/price-chart',
-    label: 'Price Chart',
-    isProtected: true,
-    showInNavigation: true,
-  },
-  {
-    path: '/watchlists',
-    label: 'Watchlists',
+    path: "/watchlists",
+    label: "Watchlists",
     isProtected: true,
     showInNavigation: true,
   },
   {
-    path: '/sector-rotation',
-    label: 'Sector Rotation',
+    path: "/sector-rotation",
+    label: "Sector Rotation",
     isProtected: true,
     showInNavigation: true,
   },
 ];
 
-export const getPublicRoutes = () => routes.filter(route => !route.isProtected);
+export const getPublicRoutes = () =>
+  routes.filter((route) => !route.isProtected);
 export const getProtectedRoutes = () =>
-  routes.filter(route => route.isProtected);
+  routes.filter((route) => route.isProtected);
 export const getNavigationRoutes = (isAuthenticated: boolean) =>
   routes.filter(
-    route => route.showInNavigation && (!route.isProtected || isAuthenticated)
+    (route) =>
+      route.showInNavigation && (!route.isProtected || isAuthenticated),
   );
