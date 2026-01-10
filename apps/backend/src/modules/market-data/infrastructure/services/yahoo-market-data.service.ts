@@ -37,14 +37,11 @@ export class YahooMarketDataService implements MarketDataService {
         interval,
       );
 
-    const requiredDateCount = this.estimateRequiredDataPoints(
-      dateRange.startDate,
-      dateRange.endDate,
+    const hasCompleteCache = this.isCacheComplete(
+      cachedPricePoints,
+      dateRange,
       interval,
     );
-
-    const hasCompleteCache =
-      cachedPricePoints.length >= requiredDateCount * 0.8;
 
     let fetchedPricePoints: PricePoint[] = [];
 
@@ -110,22 +107,59 @@ export class YahooMarketDataService implements MarketDataService {
     };
   }
 
-  private estimateRequiredDataPoints(
-    startDate: Date,
-    endDate: Date,
+  private isCacheComplete(
+    cachedPricePoints: PricePoint[],
+    dateRange: DateRange,
     interval: Interval,
-  ): number {
-    const daysDiff = Math.ceil(
-      (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24),
+  ): boolean {
+    if (cachedPricePoints.length === 0) {
+      return false;
+    }
+
+    const sortedCache = [...cachedPricePoints].sort(
+      (a, b) => a.date.getTime() - b.date.getTime(),
     );
 
-    if (interval === '1d') {
-      return Math.min(daysDiff, 252);
-    } else if (interval === '1wk') {
-      return Math.ceil(daysDiff / 7);
-    } else {
-      return Math.ceil(daysDiff / 30);
+    const earliestCachedDate = sortedCache[0].date;
+    const latestCachedDate = sortedCache[sortedCache.length - 1].date;
+
+    const startDateTime = dateRange.startDate.getTime();
+    const endDateTime = dateRange.endDate.getTime();
+
+    if (earliestCachedDate.getTime() > startDateTime) {
+      return false;
     }
+
+    const now = new Date();
+
+    let maxStalenessDays: number;
+    if (interval === '1d') {
+      maxStalenessDays = 3;
+    } else if (interval === '1wk') {
+      maxStalenessDays = 7;
+    } else {
+      maxStalenessDays = 30;
+    }
+
+    const daysSinceLatestCache = Math.floor(
+      (now.getTime() - latestCachedDate.getTime()) / (1000 * 60 * 60 * 24),
+    );
+
+    if (daysSinceLatestCache > maxStalenessDays) {
+      return false;
+    }
+
+    const latestCacheTime = latestCachedDate.getTime();
+    if (latestCacheTime < endDateTime) {
+      const daysGap = Math.floor(
+        (endDateTime - latestCacheTime) / (1000 * 60 * 60 * 24),
+      );
+      if (daysGap > maxStalenessDays) {
+        return false;
+      }
+    }
+
+    return true;
   }
 
   private deduplicatePricePoints(pricePoints: PricePoint[]): PricePoint[] {
