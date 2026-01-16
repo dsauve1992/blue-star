@@ -6,9 +6,7 @@ const fundamentalClient = new FundamentalClient();
 
 export function useFinancialReport(symbol: string | null) {
   return useQuery({
-    queryKey: symbol
-      ? FUNDAMENTAL_QUERY_KEYS.financialReport(symbol)
-      : ["fundamental", "financial-report", "disabled"],
+    queryKey: FUNDAMENTAL_QUERY_KEYS.financialReport(symbol ?? ""),
     queryFn: () => fundamentalClient.getFinancialReport(symbol!),
     enabled: !!symbol,
   });

@@ -11,6 +11,7 @@ import { WatchlistModule } from './modules/watchlist/watchlist.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { SectorRotationModule } from './modules/sector-rotation/sector-rotation.module';
 import { FundamentalModule } from './modules/fundamental/fundamental.module';
+import { NotificationModule } from './modules/notification/notification.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { DatabaseModule } from './config/database.module';
 
@@ -29,6 +30,7 @@ import { DatabaseModule } from './config/database.module';
     AuthModule,
     SectorRotationModule,
     FundamentalModule,
+    NotificationModule,
   ],
   controllers: [AppController],
   providers: [

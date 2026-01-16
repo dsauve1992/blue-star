@@ -1,8 +1,8 @@
 import { WatchlistId } from '../value-objects/watchlist-id';
 import { WatchlistName } from '../value-objects/watchlist-name';
 import { WatchlistTicker } from '../value-objects/watchlist-ticker';
-import { UserId } from 'src/modules/position/domain/value-objects/user-id';
 import { StateError } from '../domain-errors';
+import { UserId } from '../../../position/domain/value-objects/user-id';
 
 export interface CreateWatchlistArgs {
   userId: UserId;

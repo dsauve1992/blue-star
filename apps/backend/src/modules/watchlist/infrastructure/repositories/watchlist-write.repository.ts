@@ -3,10 +3,10 @@ import { DatabaseService } from '../../../../config/database.service';
 import { Watchlist } from '../../domain/entities/watchlist';
 import { WatchlistId } from '../../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../domain/value-objects/watchlist-name';
-import { UserId } from 'src/modules/position/domain/value-objects/user-id';
 import { WatchlistTicker } from '../../domain/value-objects/watchlist-ticker';
 import { WatchlistWriteRepository as IWatchlistWriteRepository } from '../../domain/repositories/watchlist-write.repository.interface';
 import { InvariantError } from '../../domain/domain-errors';
+import { UserId } from '../../../position/domain/value-objects/user-id';
 
 interface DatabaseRow {
   id: string;
