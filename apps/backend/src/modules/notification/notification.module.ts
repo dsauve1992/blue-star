@@ -7,15 +7,9 @@ import { NOTIFICATION_SERVICE } from './constants/tokens';
 
 export { NOTIFICATION_SERVICE };
 export type { NotificationService } from './domain/services/notification.service';
-export {
-  NotificationTopic,
-} from './domain/value-objects/notification-topic';
-export {
-  NotificationMessage,
-} from './domain/value-objects/notification-message';
-export {
-  NotificationTitle,
-} from './domain/value-objects/notification-title';
+export { NotificationTopic } from './domain/value-objects/notification-topic';
+export { NotificationMessage } from './domain/value-objects/notification-message';
+export { NotificationTitle } from './domain/value-objects/notification-title';
 export {
   NotificationPriority,
   type SendNotificationRequest,
