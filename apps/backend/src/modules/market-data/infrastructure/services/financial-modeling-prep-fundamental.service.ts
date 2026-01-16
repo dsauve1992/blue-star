@@ -3,7 +3,6 @@ import { ConfigService } from '@nestjs/config';
 import {
   FundamentalService,
   GetIncomeStatementHistoryOptions,
-  IncomeStatementPeriod,
 } from '../../domain/services/fundamental.service';
 import { Symbol } from '../../domain/value-objects/symbol';
 import { IncomeStatement } from '../../domain/value-objects/income-statement';
