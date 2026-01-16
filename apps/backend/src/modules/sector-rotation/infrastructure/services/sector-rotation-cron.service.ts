@@ -30,16 +30,23 @@ export class SectorRotationCronService {
   @Cron('0 2 * * 6')
   async runWeeklyCalculation() {
     this.logger.log('Starting weekly sector rotation calculation...');
+    console.log(
+      '[SectorRotationCron] Starting weekly sector rotation calculation...',
+    );
     try {
       const sectors = DEFAULT_SECTORS.map((s) => Sector.of(s.symbol, s.name));
       await this.persistenceService.computeAndSaveIncremental(sectors);
-      this.logger.log(
-        'Weekly sector rotation calculation completed successfully',
-      );
+      const successMessage =
+        'Weekly sector rotation calculation completed successfully';
+      this.logger.log(successMessage);
+      console.log(`[SectorRotationCron] ${successMessage}`);
     } catch (error) {
-      this.logger.error(
-        `Weekly sector rotation calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
-      );
+      const errorMessage = `Weekly sector rotation calculation failed: ${error instanceof Error ? error.message : 'Unknown error'}`;
+      this.logger.error(errorMessage);
+      console.error(`[SectorRotationCron] ${errorMessage}`);
+      if (error instanceof Error) {
+        console.error('[SectorRotationCron] Error stack:', error.stack);
+      }
     }
   }
 }
