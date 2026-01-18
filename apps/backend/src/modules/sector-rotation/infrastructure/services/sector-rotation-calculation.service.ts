@@ -245,13 +245,31 @@ export class SectorRotationCalculationServiceImpl
 
     for (const point of pricePoints) {
       const weekKey = WeekUtils.getWeekKey(point.date);
+      const mondayOfWeek = WeekUtils.getMondayOfWeek(point.date);
       const existing = weeklyMap.get(weekKey);
 
-      if (!existing || point.date > existing.date) {
+      if (!existing) {
         weeklyMap.set(weekKey, {
-          date: point.date,
+          date: mondayOfWeek,
           price: point.close,
         });
+      } else {
+        const existingIsMonday = WeekUtils.isMonday(existing.date);
+        const currentIsMonday = WeekUtils.isMonday(point.date);
+
+        if (currentIsMonday && !existingIsMonday) {
+          weeklyMap.set(weekKey, {
+            date: mondayOfWeek,
+            price: point.close,
+          });
+        } else if (currentIsMonday && existingIsMonday) {
+          if (point.date.getTime() === mondayOfWeek.getTime()) {
+            weeklyMap.set(weekKey, {
+              date: mondayOfWeek,
+              price: point.close,
+            });
+          }
+        }
       }
     }
 
