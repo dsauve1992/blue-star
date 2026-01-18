@@ -17,13 +17,6 @@ export interface SectorRotationResultDto {
   sectorSymbols: string[];
 }
 
-export interface CalculateSectorRotationApiRequestDto {
-  sectors: Array<{ symbol: string; name: string }>;
-  startDate: string;
-  endDate: string;
-  benchmarkType?: string;
-}
-
 export interface CalculateSectorRotationApiResponseDto {
   result: SectorRotationResultDto;
 }

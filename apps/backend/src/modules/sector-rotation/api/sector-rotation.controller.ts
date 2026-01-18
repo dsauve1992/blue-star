@@ -34,7 +34,6 @@ export class SectorRotationController {
     @Query('sectors') sectorsParam?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
-    @Query('benchmarkType') benchmarkType?: string,
   ): Promise<CalculateSectorRotationApiResponseDto> {
     try {
       const sectors = sectorsParam
@@ -57,7 +56,6 @@ export class SectorRotationController {
         sectors,
         startDate: startDateObj,
         endDate: endDateObj,
-        benchmarkType,
       };
 
       const useCaseResponse =
