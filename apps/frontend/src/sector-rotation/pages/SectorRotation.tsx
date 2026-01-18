@@ -1,10 +1,11 @@
 import { useState, useMemo, useEffect } from "react";
 import { PageContainer } from "src/global/design-system";
-import { Card, Button, LoadingSpinner, Alert } from "src/global/design-system";
+import { Card, Button, LoadingSpinner, Alert, Badge } from "src/global/design-system";
 import { useSectorRotation } from "../hooks/use-sector-rotation";
+import { useCompareSectorRotation } from "../hooks/use-compare-sector-rotation";
 import { SectorRotationRRGChart } from "../components/SectorRotationRRGChart";
 import { SectorRotationTimeline } from "../components/SectorRotationTimeline";
-import { RefreshCw } from "lucide-react";
+import { RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
 
 const DEFAULT_SECTORS = [
   { symbol: "XLK", name: "Technology" },
@@ -29,11 +30,27 @@ export default function SectorRotation() {
   const startDate = new Date(endDate);
   startDate.setDate(startDate.getDate() - 52 * 7);
 
+  const [showComparison, setShowComparison] = useState(false);
+
   const { data, isLoading, error, refetch } = useSectorRotation({
     sectors: DEFAULT_SECTORS,
     startDate: startDate.toISOString().split("T")[0],
     endDate: endDate.toISOString().split("T")[0],
   });
+
+  const {
+    data: comparisonData,
+    isLoading: isComparing,
+    error: comparisonError,
+    refetch: refetchComparison,
+  } = useCompareSectorRotation(
+    {
+      sectors: DEFAULT_SECTORS,
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+    },
+    showComparison,
+  );
 
   const uniqueDates = useMemo(() => {
     if (!data?.result?.dataPoints) return [];
@@ -204,6 +221,13 @@ export default function SectorRotation() {
             </p>
           </div>
           <div className="flex gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowComparison(!showComparison)}
+            >
+              {showComparison ? "Hide" : "Show"} Comparison
+            </Button>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
@@ -298,6 +322,196 @@ export default function SectorRotation() {
           enabledSectors={enabledSectors}
           onToggleSector={handleToggleSector}
         />
+
+        {showComparison && (
+          <Card className="p-6">
+            <div className="space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h2 className="text-xl font-semibold">
+                    Persisted vs Live Comparison
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Compare database-persisted data with live computation
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => refetchComparison()}
+                  disabled={isComparing}
+                >
+                  <RefreshCw
+                    className={`w-4 h-4 mr-2 ${isComparing ? "animate-spin" : ""}`}
+                  />
+                  Refresh Comparison
+                </Button>
+              </div>
+
+              {isComparing && (
+                <div className="flex items-center justify-center py-8">
+                  <LoadingSpinner />
+                </div>
+              )}
+
+              {comparisonError && (
+                <Alert variant="danger">
+                  Error loading comparison:{" "}
+                  {comparisonError instanceof Error
+                    ? comparisonError.message
+                    : "Unknown error"}
+                </Alert>
+              )}
+
+              {comparisonData && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
+                      <div className="text-sm text-muted-foreground">
+                        Total Data Points
+                      </div>
+                      <div className="text-2xl font-bold mt-1">
+                        {comparisonData.summary.totalDataPoints}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
+                        Matching
+                      </div>
+                      <div className="text-2xl font-bold mt-1 text-green-600 dark:text-green-400">
+                        {comparisonData.summary.matchingDataPoints}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
+                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                        <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
+                        Different
+                      </div>
+                      <div className="text-2xl font-bold mt-1 text-red-600 dark:text-red-400">
+                        {comparisonData.summary.differentDataPoints}
+                      </div>
+                    </div>
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                      <div className="text-sm text-muted-foreground">
+                        Match Rate
+                      </div>
+                      <div className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400">
+                        {comparisonData.summary.totalDataPoints > 0
+                          ? (
+                              (comparisonData.summary.matchingDataPoints /
+                                comparisonData.summary.totalDataPoints) *
+                              100
+                            ).toFixed(1)
+                          : 0}
+                        %
+                      </div>
+                    </div>
+                  </div>
+
+                  {comparisonData.summary.maxDifference.x > 0.0001 ||
+                  comparisonData.summary.maxDifference.y > 0.0001 ||
+                  comparisonData.summary.maxDifference.relativeStrength >
+                    0.0001 ? (
+                    <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg border border-amber-200 dark:border-amber-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+                        <h3 className="font-semibold text-amber-900 dark:text-amber-100">
+                          Maximum Differences Found
+                        </h3>
+                      </div>
+                      <div className="grid grid-cols-3 gap-4 mt-3">
+                        <div>
+                          <div className="text-xs text-muted-foreground">X</div>
+                          <div className="text-lg font-semibold">
+                            {comparisonData.summary.maxDifference.x.toFixed(6)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">Y</div>
+                          <div className="text-lg font-semibold">
+                            {comparisonData.summary.maxDifference.y.toFixed(6)}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-xs text-muted-foreground">
+                            Relative Strength
+                          </div>
+                          <div className="text-lg font-semibold">
+                            {comparisonData.summary.maxDifference.relativeStrength.toFixed(
+                              6,
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                      <div className="flex items-center gap-2">
+                        <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        <h3 className="font-semibold text-green-900 dark:text-green-100">
+                          All data points match perfectly!
+                        </h3>
+                      </div>
+                    </div>
+                  )}
+
+                  {comparisonData.summary.differentDataPoints > 0 && (
+                    <div className="space-y-2">
+                      <h3 className="font-semibold">Differences Details</h3>
+                      <div className="max-h-96 overflow-y-auto">
+                        <table className="w-full text-sm">
+                          <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800">
+                            <tr>
+                              <th className="text-left p-2">Date</th>
+                              <th className="text-left p-2">Sector</th>
+                              <th className="text-right p-2">Δ X</th>
+                              <th className="text-right p-2">Δ Y</th>
+                              <th className="text-right p-2">Δ RS</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {comparisonData.differences
+                              .filter(
+                                (diff) =>
+                                  Math.abs(diff.differences.x) > 0.0001 ||
+                                  Math.abs(diff.differences.y) > 0.0001 ||
+                                  Math.abs(
+                                    diff.differences.relativeStrength,
+                                  ) > 0.0001,
+                              )
+                              .map((diff, idx) => (
+                                <tr
+                                  key={`${diff.date}-${diff.sectorSymbol}-${idx}`}
+                                  className="border-t border-slate-200 dark:border-slate-700"
+                                >
+                                  <td className="p-2">
+                                    {new Date(diff.date).toLocaleDateString()}
+                                  </td>
+                                  <td className="p-2">{diff.sectorSymbol}</td>
+                                  <td className="p-2 text-right font-mono">
+                                    {diff.differences.x.toFixed(6)}
+                                  </td>
+                                  <td className="p-2 text-right font-mono">
+                                    {diff.differences.y.toFixed(6)}
+                                  </td>
+                                  <td className="p-2 text-right font-mono">
+                                    {diff.differences.relativeStrength.toFixed(
+                                      6,
+                                    )}
+                                  </td>
+                                </tr>
+                              ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </Card>
+        )}
       </div>
     </PageContainer>
   );

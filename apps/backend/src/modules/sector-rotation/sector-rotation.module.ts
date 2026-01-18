@@ -4,6 +4,8 @@ import { DatabaseModule } from '../../config/database.module';
 import { SectorRotationController } from './api/sector-rotation.controller';
 import { SectorRotationApiMapper } from './api/sector-rotation-api.mapper';
 import { CalculateSectorRotationUseCase } from './use-cases/calculate-sector-rotation.use-case';
+import { GetSectorRotationUseCase } from './use-cases/get-sector-rotation.use-case';
+import { CompareSectorRotationUseCase } from './use-cases/compare-sector-rotation.use-case';
 import { SectorRotationCalculationServiceImpl } from './infrastructure/services/sector-rotation-calculation.service';
 import { SectorRotationPersistenceServiceImpl } from './infrastructure/services/sector-rotation-persistence.service';
 import { SectorRotationCronService } from './infrastructure/services/sector-rotation-cron.service';
@@ -50,6 +52,8 @@ export {
     BenchmarkCalculator,
     SectorRotationApiMapper,
     CalculateSectorRotationUseCase,
+    GetSectorRotationUseCase,
+    CompareSectorRotationUseCase,
     SectorRotationCronService,
   ],
 })

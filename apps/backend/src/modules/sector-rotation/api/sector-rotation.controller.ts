@@ -3,8 +3,13 @@
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { Public } from '../../auth/public.decorator';
 import { CalculateSectorRotationUseCase } from '../use-cases/calculate-sector-rotation.use-case';
+import { GetSectorRotationUseCase } from '../use-cases/get-sector-rotation.use-case';
+import { CompareSectorRotationUseCase } from '../use-cases/compare-sector-rotation.use-case';
 import { SectorRotationApiMapper } from './sector-rotation-api.mapper';
-import { CalculateSectorRotationApiResponseDto } from './sector-rotation-api.dto';
+import {
+  CalculateSectorRotationApiResponseDto,
+  CompareSectorRotationApiResponseDto,
+} from './sector-rotation-api.dto';
 import { RRG_PARAMETERS } from '../constants/rrg-parameters';
 
 const DEFAULT_SECTOR_ETFS = [
@@ -25,6 +30,8 @@ const DEFAULT_SECTOR_ETFS = [
 export class SectorRotationController {
   constructor(
     private readonly calculateSectorRotationUseCase: CalculateSectorRotationUseCase,
+    private readonly getSectorRotationUseCase: GetSectorRotationUseCase,
+    private readonly compareSectorRotationUseCase: CompareSectorRotationUseCase,
     private readonly sectorRotationApiMapper: SectorRotationApiMapper,
   ) {}
 
@@ -34,6 +41,7 @@ export class SectorRotationController {
     @Query('sectors') sectorsParam?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('mode') mode?: string,
   ): Promise<CalculateSectorRotationApiResponseDto> {
     try {
       const sectors = sectorsParam
@@ -44,6 +52,22 @@ export class SectorRotationController {
       const requestedStartDate = startDate
         ? new Date(startDate)
         : new Date(endDateObj.getTime() - 52 * 7 * 24 * 60 * 60 * 1000);
+
+      const usePersisted = mode === 'persisted' || mode === 'cache';
+
+      if (usePersisted) {
+        const request = {
+          sectors,
+          startDate: requestedStartDate,
+          endDate: endDateObj,
+        };
+
+        const useCaseResponse =
+          await this.getSectorRotationUseCase.execute(request);
+        return this.sectorRotationApiMapper.mapCalculateSectorRotationResponse(
+          useCaseResponse,
+        );
+      }
 
       const requiredLookbackWeeks = RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS;
 
@@ -63,6 +87,49 @@ export class SectorRotationController {
       return this.sectorRotationApiMapper.mapCalculateSectorRotationResponse(
         useCaseResponse,
       );
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid request',
+      );
+    }
+  }
+
+  @Get('compare')
+  @Public()
+  async compareSectorRotation(
+    @Query('sectors') sectorsParam?: string,
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ): Promise<CompareSectorRotationApiResponseDto> {
+    try {
+      const sectors = sectorsParam
+        ? this.parseSectors(sectorsParam)
+        : DEFAULT_SECTOR_ETFS;
+
+      const endDateObj = endDate ? new Date(endDate) : new Date();
+      const requestedStartDate = startDate
+        ? new Date(startDate)
+        : new Date(endDateObj.getTime() - 52 * 7 * 24 * 60 * 60 * 1000);
+
+      const request = {
+        sectors,
+        startDate: requestedStartDate,
+        endDate: endDateObj,
+      };
+
+      const useCaseResponse =
+        await this.compareSectorRotationUseCase.execute(request);
+
+      return {
+        persisted: this.sectorRotationApiMapper.mapSectorRotationResult(
+          useCaseResponse.persisted,
+        ),
+        live: this.sectorRotationApiMapper.mapSectorRotationResult(
+          useCaseResponse.live,
+        ),
+        differences: useCaseResponse.differences,
+        summary: useCaseResponse.summary,
+      };
     } catch (error) {
       throw new BadRequestException(
         error instanceof Error ? error.message : 'Invalid request',

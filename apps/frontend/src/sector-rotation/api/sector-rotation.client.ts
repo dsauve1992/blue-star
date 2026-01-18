@@ -29,6 +29,50 @@ export interface CalculateSectorRotationResponse {
   result: SectorRotationResult;
 }
 
+export interface ComparisonDifference {
+  date: string;
+  sectorSymbol: string;
+  persisted: {
+    x: number;
+    y: number;
+    relativeStrength: number;
+  } | null;
+  live: {
+    x: number;
+    y: number;
+    relativeStrength: number;
+  } | null;
+  differences: {
+    x: number;
+    y: number;
+    relativeStrength: number;
+  };
+}
+
+export interface ComparisonSummary {
+  totalDataPoints: number;
+  matchingDataPoints: number;
+  differentDataPoints: number;
+  maxDifference: {
+    x: number;
+    y: number;
+    relativeStrength: number;
+  };
+}
+
+export interface CompareSectorRotationRequest {
+  sectors?: Array<{ symbol: string; name: string }>;
+  startDate?: string;
+  endDate?: string;
+}
+
+export interface CompareSectorRotationResponse {
+  persisted: SectorRotationResult;
+  live: SectorRotationResult;
+  differences: ComparisonDifference[];
+  summary: ComparisonSummary;
+}
+
 export class SectorRotationClient {
   async calculateSectorRotation(
     request: CalculateSectorRotationRequest = {},
@@ -47,6 +91,27 @@ export class SectorRotationClient {
 
     const response = await apiClient.get<CalculateSectorRotationResponse>(
       `/sector-rotation/calculate?${params.toString()}`,
+    );
+    return response.data;
+  }
+
+  async compareSectorRotation(
+    request: CompareSectorRotationRequest = {},
+  ): Promise<CompareSectorRotationResponse> {
+    const params = new URLSearchParams();
+
+    if (request.sectors) {
+      params.append("sectors", JSON.stringify(request.sectors));
+    }
+    if (request.startDate) {
+      params.append("startDate", request.startDate);
+    }
+    if (request.endDate) {
+      params.append("endDate", request.endDate);
+    }
+
+    const response = await apiClient.get<CompareSectorRotationResponse>(
+      `/sector-rotation/compare?${params.toString()}`,
     );
     return response.data;
   }

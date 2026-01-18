@@ -20,3 +20,41 @@ export interface SectorRotationResultDto {
 export interface CalculateSectorRotationApiResponseDto {
   result: SectorRotationResultDto;
 }
+
+export interface CompareSectorRotationApiResponseDto {
+  persisted: SectorRotationResultDto;
+  live: SectorRotationResultDto;
+  differences: ComparisonDifferenceDto[];
+  summary: ComparisonSummaryDto;
+}
+
+export interface ComparisonDifferenceDto {
+  date: string;
+  sectorSymbol: string;
+  persisted: {
+    x: number;
+    y: number;
+    relativeStrength: number;
+  } | null;
+  live: {
+    x: number;
+    y: number;
+    relativeStrength: number;
+  } | null;
+  differences: {
+    x: number;
+    y: number;
+    relativeStrength: number;
+  };
+}
+
+export interface ComparisonSummaryDto {
+  totalDataPoints: number;
+  matchingDataPoints: number;
+  differentDataPoints: number;
+  maxDifference: {
+    x: number;
+    y: number;
+    relativeStrength: number;
+  };
+}

@@ -17,7 +17,7 @@ export class SectorRotationApiMapper {
     };
   }
 
-  private mapSectorRotationResult(
+  mapSectorRotationResult(
     result: SectorRotationResult,
   ): SectorRotationResultDto {
     return {
