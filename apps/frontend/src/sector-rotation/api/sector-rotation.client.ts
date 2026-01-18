@@ -23,7 +23,6 @@ export interface CalculateSectorRotationRequest {
   sectors?: Array<{ symbol: string; name: string }>;
   startDate?: string;
   endDate?: string;
-  benchmarkType?: "equal-weighted" | "spx";
 }
 
 export interface CalculateSectorRotationResponse {
@@ -44,9 +43,6 @@ export class SectorRotationClient {
     }
     if (request.endDate) {
       params.append("endDate", request.endDate);
-    }
-    if (request.benchmarkType) {
-      params.append("benchmarkType", request.benchmarkType);
     }
 
     const response = await apiClient.get<CalculateSectorRotationResponse>(

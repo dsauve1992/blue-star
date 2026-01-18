@@ -6,7 +6,6 @@ import {
 } from '../domain/services/sector-rotation-calculation.service';
 import { SectorRotationResult } from '../domain/value-objects/sector-rotation-result';
 import { Sector } from '../domain/value-objects/sector';
-import { BenchmarkType } from '../domain/value-objects/benchmark-type';
 import { SECTOR_ROTATION_CALCULATION_SERVICE } from '../constants/tokens';
 import { RRG_PARAMETERS } from '../constants/rrg-parameters';
 
@@ -34,14 +33,9 @@ export class CalculateSectorRotationUseCase {
     const sectors = request.sectors.map((s) => Sector.of(s.symbol, s.name));
     const dateRange = DateRange.of(request.startDate, request.endDate);
 
-    const benchmarkType = request.benchmarkType
-      ? BenchmarkType.of(request.benchmarkType)
-      : BenchmarkType.EqualWeighted;
-
     const params: SectorRotationCalculationParams = {
       momentumWeeks: RRG_PARAMETERS.MOMENTUM_WEEKS,
       normalizationWindowWeeks: RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS,
-      benchmarkType,
     };
 
     const result = await this.calculationService.calculate(

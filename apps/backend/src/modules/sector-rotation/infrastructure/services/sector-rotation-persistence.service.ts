@@ -10,7 +10,6 @@ import {
 } from '../../domain/services/sector-rotation-calculation.service';
 import { SectorRotationDataReadRepository } from '../../domain/repositories/sector-rotation-data-read.repository.interface';
 import { SectorRotationDataWriteRepository } from '../../domain/repositories/sector-rotation-data-write.repository.interface';
-import { BenchmarkType } from '../../domain/value-objects/benchmark-type';
 import { SECTOR_ROTATION_CALCULATION_SERVICE } from '../../constants/tokens';
 import {
   SECTOR_ROTATION_DATA_READ_REPOSITORY,
@@ -40,7 +39,6 @@ export class SectorRotationPersistenceServiceImpl
     const params: SectorRotationCalculationParams = {
       momentumWeeks: RRG_PARAMETERS.MOMENTUM_WEEKS,
       normalizationWindowWeeks: RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS,
-      benchmarkType: BenchmarkType.SPX,
     };
 
     const result = await this.calculationService.calculate(
@@ -86,7 +84,6 @@ export class SectorRotationPersistenceServiceImpl
     const params: SectorRotationCalculationParams = {
       momentumWeeks: RRG_PARAMETERS.MOMENTUM_WEEKS,
       normalizationWindowWeeks: RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS,
-      benchmarkType: BenchmarkType.SPX,
     };
 
     const result = await this.calculationService.calculate(
@@ -155,7 +152,6 @@ export class SectorRotationPersistenceServiceImpl
     const params: SectorRotationCalculationParams = {
       momentumWeeks: RRG_PARAMETERS.MOMENTUM_WEEKS,
       normalizationWindowWeeks: RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS,
-      benchmarkType: BenchmarkType.SPX,
     };
 
     const computedResult = await this.calculationService.calculate(

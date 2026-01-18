@@ -14,6 +14,14 @@ interface DatabaseRow {
   quadrant: string;
 }
 
+interface LatestDateRow {
+  latest_date: string | null;
+}
+
+interface DateStringRow {
+  date_str: string;
+}
+
 @Injectable()
 export class SectorRotationDataReadRepositoryImpl
   implements SectorRotationDataReadRepository
@@ -67,16 +75,13 @@ export class SectorRotationDataReadRepositoryImpl
     `;
 
     const result = await this.databaseService.query(query);
+    const row = result.rows[0] as LatestDateRow | undefined;
 
-    if (
-      result.rows.length === 0 ||
-      !result.rows[0].latest_date ||
-      result.rows[0].latest_date === null
-    ) {
+    if (!row || !row.latest_date || row.latest_date === null) {
       return null;
     }
 
-    return new Date(result.rows[0].latest_date);
+    return new Date(row.latest_date);
   }
 
   async findLatestDateBySector(sectorSymbol: string): Promise<Date | null> {
@@ -87,16 +92,13 @@ export class SectorRotationDataReadRepositoryImpl
     `;
 
     const result = await this.databaseService.query(query, [sectorSymbol]);
+    const row = result.rows[0] as LatestDateRow | undefined;
 
-    if (
-      result.rows.length === 0 ||
-      !result.rows[0].latest_date ||
-      result.rows[0].latest_date === null
-    ) {
+    if (!row || !row.latest_date || row.latest_date === null) {
       return null;
     }
 
-    return new Date(result.rows[0].latest_date);
+    return new Date(row.latest_date);
   }
 
   async findExistingDates(
@@ -122,7 +124,7 @@ export class SectorRotationDataReadRepositoryImpl
       ...sectorSymbols,
     ]);
 
-    return new Set(result.rows.map((row) => row.date_str));
+    return new Set((result.rows as DateStringRow[]).map((row) => row.date_str));
   }
 
   private mapRowsToDataPoints(rows: DatabaseRow[]): SectorRotationDataPoint[] {

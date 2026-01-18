@@ -13,7 +13,6 @@ import { Quadrant } from '../../domain/value-objects/quadrant';
 import { Sector } from '../../domain/value-objects/sector';
 import { ZScoreNormalizer } from './z-score-normalizer.service';
 import { BenchmarkCalculator } from './benchmark-calculator.service';
-import { BenchmarkType } from '../../domain/value-objects/benchmark-type';
 import { WeekUtils } from '../utils/week-utils';
 import { EMACalculator } from '../utils/ema-calculator';
 import { RollingStatsCalculator, RollingStats } from '../utils/rolling-stats';
@@ -66,12 +65,8 @@ export class SectorRotationCalculationServiceImpl
     const sectorData = await this.fetchSectorData(sectors, extendedDateRange);
     this.validateSectorData(sectorData, requiredLookbackWeeks);
 
-    const benchmarkType = params.benchmarkType ?? BenchmarkType.EqualWeighted;
-    const benchmark = await this.benchmarkCalculator.calculate(
-      sectorData,
-      extendedDateRange,
-      benchmarkType,
-    );
+    const benchmark =
+      await this.benchmarkCalculator.calculate(extendedDateRange);
     this.validateBenchmark(benchmark);
 
     const relativeStrengths = this.calculateRelativeStrengths(

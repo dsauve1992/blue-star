@@ -21,9 +21,6 @@ const DEFAULT_SECTORS = [
 ];
 
 export default function SectorRotation() {
-  const [benchmarkType, setBenchmarkType] = useState<"equal-weighted" | "spx">(
-    "spx",
-  );
   const [showSettings, setShowSettings] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
@@ -37,7 +34,6 @@ export default function SectorRotation() {
     sectors: DEFAULT_SECTORS,
     startDate: startDate.toISOString().split("T")[0],
     endDate: endDate.toISOString().split("T")[0],
-    benchmarkType,
   });
 
   const uniqueDates = useMemo(() => {
@@ -230,21 +226,6 @@ export default function SectorRotation() {
               Calculation Parameters
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-              <div>
-                <label className="block text-sm font-medium mb-2">
-                  Benchmark
-                </label>
-                <select
-                  value={benchmarkType}
-                  onChange={(e) =>
-                    setBenchmarkType(e.target.value as "equal-weighted" | "spx")
-                  }
-                  className="w-full px-3 py-2 border border-border rounded-md bg-background"
-                >
-                  <option value="equal-weighted">Equal-Weighted Average</option>
-                  <option value="spx">S&P 500 (SPY)</option>
-                </select>
-              </div>
               <div className="text-sm text-muted-foreground">
                 <p>RRG Parameters (from RRGPy library):</p>
                 <ul className="list-disc list-inside mt-1">
