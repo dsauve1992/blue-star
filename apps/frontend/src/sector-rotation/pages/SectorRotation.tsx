@@ -4,7 +4,7 @@ import { Card, Button, LoadingSpinner, Alert } from "src/global/design-system";
 import { useSectorRotation } from "../hooks/use-sector-rotation";
 import { SectorRotationRRGChart } from "../components/SectorRotationRRGChart";
 import { SectorRotationTimeline } from "../components/SectorRotationTimeline";
-import { RefreshCw, Settings } from "lucide-react";
+import { RefreshCw } from "lucide-react";
 
 const DEFAULT_SECTORS = [
   { symbol: "XLK", name: "Technology" },
@@ -21,7 +21,6 @@ const DEFAULT_SECTORS = [
 ];
 
 export default function SectorRotation() {
-  const [showSettings, setShowSettings] = useState(false);
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
   const [enabledSectors, setEnabledSectors] = useState<Set<string>>(new Set());
@@ -205,38 +204,12 @@ export default function SectorRotation() {
             </p>
           </div>
           <div className="flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowSettings(!showSettings)}
-            >
-              <Settings className="w-4 h-4 mr-2" />
-              Settings
-            </Button>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
               <RefreshCw className="w-4 h-4 mr-2" />
               Refresh
             </Button>
           </div>
         </div>
-
-        {showSettings && (
-          <Card className="p-4">
-            <h3 className="text-lg font-semibold mb-4">
-              Calculation Parameters
-            </h3>
-            <div className="grid grid-cols-1 md:grid-cols-1 gap-4">
-              <div className="text-sm text-muted-foreground">
-                <p>RRG Parameters (from RRGPy library):</p>
-                <ul className="list-disc list-inside mt-1">
-                  <li>RS Smoothing (EMA): 5 weeks</li>
-                  <li>Normalization Window: 14 weeks</li>
-                  <li>Momentum Period: 1 week</li>
-                </ul>
-              </div>
-            </div>
-          </Card>
-        )}
 
         {fullRange.weeks.length > 0 && (
           <Card className="p-6">
