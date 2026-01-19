@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { PageContainer } from "src/global/design-system";
-import { Card, Button, LoadingSpinner, Alert, Badge } from "src/global/design-system";
+import { Card, Button, LoadingSpinner, Alert } from "src/global/design-system";
 import { useSectorRotation } from "../hooks/use-sector-rotation";
 import { useCompareSectorRotation } from "../hooks/use-compare-sector-rotation";
 import { SectorRotationRRGChart } from "../components/SectorRotationRRGChart";

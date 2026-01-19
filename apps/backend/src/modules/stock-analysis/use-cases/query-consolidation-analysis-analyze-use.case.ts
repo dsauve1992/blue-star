@@ -54,6 +54,8 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
           tickerFullName: r.tickerFullName,
           timeframe: r.timeframe,
           themes: themeNames,
+          sector: r.sector ?? undefined,
+          industry: r.industry ?? undefined,
         });
       }),
     );

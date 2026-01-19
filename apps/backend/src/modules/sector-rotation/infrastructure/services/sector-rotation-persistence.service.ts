@@ -105,7 +105,7 @@ export class SectorRotationPersistenceServiceImpl
     sectors: Sector[],
     dateRange: DateRange,
   ): Promise<SectorRotationResult> {
-    const sectorSymbols = sectors.map((s) => s.symbol);
+    const sectorSymbols = sectors.map((s) => s.etfSymbol);
     const existingDataPoints = await this.readRepository.findByDateRange(
       dateRange.startDate,
       dateRange.endDate,

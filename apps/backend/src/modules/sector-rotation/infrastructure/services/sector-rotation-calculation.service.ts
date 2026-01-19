@@ -106,7 +106,7 @@ export class SectorRotationCalculationServiceImpl
       dateRange.startDate,
       dateRange.endDate,
       outputDataPoints,
-      sectors.map((s) => s.symbol),
+      sectors.map((s) => s.etfSymbol),
     );
   }
 
@@ -141,7 +141,7 @@ export class SectorRotationCalculationServiceImpl
     for (const { sector, prices } of sectorData) {
       if (prices.length < minRequiredPoints) {
         throw new Error(
-          `Sector ${sector.symbol} has insufficient data: ${prices.length} points, need at least ${minRequiredPoints}`,
+          `Sector ${sector.etfSymbol} has insufficient data: ${prices.length} points, need at least ${minRequiredPoints}`,
         );
       }
     }
@@ -180,7 +180,7 @@ export class SectorRotationCalculationServiceImpl
       if (result.status === 'fulfilled') {
         sectorData.push(result.value);
       } else {
-        const errorMessage = `Failed to fetch data for sector ${sector.symbol}: ${result.reason || 'Unknown error'}`;
+        const errorMessage = `Failed to fetch data for sector ${sector.etfSymbol}: ${result.reason || 'Unknown error'}`;
         errors.push(errorMessage);
         console.warn(errorMessage);
       }
@@ -205,7 +205,7 @@ export class SectorRotationCalculationServiceImpl
     sector: Sector,
     dateRange: DateRange,
   ): Promise<SectorWeeklyData> {
-    const symbol = Symbol.of(sector.symbol);
+    const symbol = Symbol.of(sector.etfSymbol);
     const historicalData = await this.marketDataService.getHistoricalData(
       symbol,
       dateRange,
@@ -297,7 +297,7 @@ export class SectorRotationCalculationServiceImpl
         }
       }
 
-      relativeStrengths.set(sector.symbol, rsMap);
+      relativeStrengths.set(sector.etfSymbol, rsMap);
     }
 
     return relativeStrengths;
@@ -478,7 +478,7 @@ export class SectorRotationCalculationServiceImpl
         if (!dateToSectorPrices.has(dateTime)) {
           dateToSectorPrices.set(dateTime, new Map());
         }
-        dateToSectorPrices.get(dateTime)!.set(sector.symbol, priceData);
+        dateToSectorPrices.get(dateTime)!.set(sector.etfSymbol, priceData);
       }
     }
 

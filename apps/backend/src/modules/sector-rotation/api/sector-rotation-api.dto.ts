@@ -58,3 +58,26 @@ export interface ComparisonSummaryDto {
     relativeStrength: number;
   };
 }
+export interface SectorStatusDto {
+  name: string;
+  quadrant: QuadrantType;
+  x: number;
+  y: number;
+}
+
+export interface LatestSectorStatusApiResponseDto {
+  sectors: SectorStatusDto[];
+  date: string;
+}
+
+export interface SectorStatusDto {
+  name: string;
+  quadrant: QuadrantType;
+  x: number;
+  y: number;
+}
+
+export interface LatestSectorStatusApiResponseDto {
+  sectors: SectorStatusDto[];
+  date: string;
+}

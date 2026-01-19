@@ -73,6 +73,18 @@ export interface CompareSectorRotationResponse {
   summary: ComparisonSummary;
 }
 
+export interface SectorStatus {
+  name: string;
+  quadrant: QuadrantType;
+  x: number;
+  y: number;
+}
+
+export interface LatestSectorStatusResponse {
+  sectors: SectorStatus[];
+  date: string;
+}
+
 export class SectorRotationClient {
   async calculateSectorRotation(
     request: CalculateSectorRotationRequest = {},
@@ -112,6 +124,13 @@ export class SectorRotationClient {
 
     const response = await apiClient.get<CompareSectorRotationResponse>(
       `/sector-rotation/compare?${params.toString()}`,
+    );
+    return response.data;
+  }
+
+  async getLatestSectorStatus(): Promise<LatestSectorStatusResponse> {
+    const response = await apiClient.get<LatestSectorStatusResponse>(
+      `/sector-rotation/latest-status`,
     );
     return response.data;
   }

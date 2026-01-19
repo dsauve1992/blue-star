@@ -9,8 +9,10 @@ import { SectorRotationApiMapper } from './sector-rotation-api.mapper';
 import {
   CalculateSectorRotationApiResponseDto,
   CompareSectorRotationApiResponseDto,
+  LatestSectorStatusApiResponseDto,
 } from './sector-rotation-api.dto';
 import { RRG_PARAMETERS } from '../constants/rrg-parameters';
+import { Sector } from '../domain/value-objects/sector';
 
 const DEFAULT_SECTOR_ETFS = [
   { symbol: 'XLK', name: 'Technology' },
@@ -129,6 +131,57 @@ export class SectorRotationController {
         ),
         differences: useCaseResponse.differences,
         summary: useCaseResponse.summary,
+      };
+    } catch (error) {
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid request',
+      );
+    }
+  }
+
+  @Get('latest-status')
+  @Public()
+  async getLatestSectorStatus(): Promise<LatestSectorStatusApiResponseDto> {
+    try {
+      const sectors = DEFAULT_SECTOR_ETFS;
+      const endDate = new Date();
+      const startDate = new Date(
+        endDate.getTime() - 52 * 7 * 24 * 60 * 60 * 1000,
+      );
+
+      const request = {
+        sectors,
+        startDate,
+        endDate,
+      };
+
+      const useCaseResponse =
+        await this.getSectorRotationUseCase.execute(request);
+
+      const latestDataPoints = useCaseResponse.result.getLatestDataPoints();
+
+      if (latestDataPoints.length === 0) {
+        return {
+          sectors: [],
+          date: endDate.toISOString(),
+        };
+      }
+
+      const latestDate = latestDataPoints[0].date;
+
+      const sectorStatuses = latestDataPoints.map((point) => {
+        const sector = Sector.fromEtfSymbol(point.sectorSymbol);
+        return {
+          name: sector?.name ?? point.sectorSymbol,
+          quadrant: point.quadrant.value,
+          x: point.x,
+          y: point.y,
+        };
+      });
+
+      return {
+        sectors: sectorStatuses,
+        date: latestDate.toISOString(),
       };
     } catch (error) {
       throw new BadRequestException(

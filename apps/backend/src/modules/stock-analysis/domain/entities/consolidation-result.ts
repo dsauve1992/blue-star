@@ -7,6 +7,8 @@ export interface ConsolidationResultData {
   symbol: string;
   isNew: boolean;
   tickerFullName: string;
+  sector: string | null;
+  industry: string | null;
   createdAt: Date;
 }
 
@@ -18,6 +20,8 @@ export class ConsolidationResultEntity {
     public readonly symbol: string,
     public readonly isNew: boolean,
     public readonly tickerFullName: string,
+    public readonly sector: string | null,
+    public readonly industry: string | null,
     public readonly createdAt: Date,
   ) {}
 
@@ -27,6 +31,8 @@ export class ConsolidationResultEntity {
     symbol: string,
     isNew: boolean,
     tickerFullName: string,
+    sector: string | null,
+    industry: string | null,
   ): ConsolidationResultEntity {
     return new ConsolidationResultEntity(
       crypto.randomUUID(),
@@ -35,6 +41,8 @@ export class ConsolidationResultEntity {
       symbol,
       isNew,
       tickerFullName,
+      sector,
+      industry,
       new Date(),
     );
   }
@@ -47,6 +55,8 @@ export class ConsolidationResultEntity {
       data.symbol,
       data.isNew,
       data.tickerFullName,
+      data.sector,
+      data.industry,
       data.createdAt,
     );
   }

@@ -13,6 +13,8 @@ interface ConsolidationResultRow {
   symbol: string;
   is_new: boolean;
   ticker_full_name: string;
+  sector: string | null;
+  industry: string | null;
   created_at: string;
 }
 
@@ -49,11 +51,13 @@ export class ConsolidationResultRepositoryImpl
       for (const result of results) {
         await client.query(
           `INSERT INTO consolidation_results 
-           (id, timeframe, analysis_date, symbol, is_new, ticker_full_name, created_at)
-           VALUES ($1, $2, $3, $4, $5, $6, NOW())
+           (id, timeframe, analysis_date, symbol, is_new, ticker_full_name, sector, industry, created_at)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
            ON CONFLICT (timeframe, analysis_date, symbol) DO UPDATE SET
            is_new = EXCLUDED.is_new,
-           ticker_full_name = EXCLUDED.ticker_full_name`,
+           ticker_full_name = EXCLUDED.ticker_full_name,
+           sector = EXCLUDED.sector,
+           industry = EXCLUDED.industry`,
           [
             result.id,
             result.timeframe,
@@ -61,6 +65,8 @@ export class ConsolidationResultRepositoryImpl
             result.symbol,
             result.isNew,
             result.tickerFullName,
+            result.sector,
+            result.industry,
           ],
         );
       }
@@ -74,7 +80,7 @@ export class ConsolidationResultRepositoryImpl
     const analysisDateStr = analysisDate.toISOString();
 
     const result = (await this.databaseService.query(
-      `SELECT id, timeframe, analysis_date, symbol, is_new, ticker_full_name, created_at
+      `SELECT id, timeframe, analysis_date, symbol, is_new, ticker_full_name, sector, industry, created_at
        FROM consolidation_results
        WHERE timeframe = $1 AND analysis_date = $2
        ORDER BY symbol`,
@@ -89,6 +95,8 @@ export class ConsolidationResultRepositoryImpl
         symbol: row.symbol,
         isNew: row.is_new,
         tickerFullName: row.ticker_full_name,
+        sector: row.sector,
+        industry: row.industry,
         createdAt: new Date(row.created_at),
       }),
     );

@@ -5,6 +5,8 @@ export class ConsolidationResult {
     public readonly tickerFullName: string,
     public readonly timeframe: 'daily' | 'weekly',
     public readonly themes: string[],
+    public readonly sector: string | null,
+    public readonly industry: string | null,
   ) {}
 
   static of(data: {
@@ -13,6 +15,8 @@ export class ConsolidationResult {
     tickerFullName: string;
     timeframe: 'daily' | 'weekly';
     themes?: string[];
+    sector?: string;
+    industry?: string;
   }): ConsolidationResult {
     return new ConsolidationResult(
       data.symbol,
@@ -20,6 +24,8 @@ export class ConsolidationResult {
       data.tickerFullName,
       data.timeframe,
       data.themes || [],
+      data.sector || null,
+      data.industry || null,
     );
   }
 }

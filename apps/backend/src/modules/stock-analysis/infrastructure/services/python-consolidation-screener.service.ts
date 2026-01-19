@@ -15,9 +15,17 @@ interface ExecException extends Error {
   signal?: string;
 }
 
+interface PythonConsolidationItem {
+  symbol: string;
+  is_new: boolean;
+  ticker_full_name: string;
+  sector?: string;
+  industry?: string;
+}
+
 interface PythonResponse {
-  daily: Array<{ symbol: string; is_new: boolean; ticker_full_name: string }>;
-  weekly: Array<{ symbol: string; is_new: boolean; ticker_full_name: string }>;
+  daily: PythonConsolidationItem[];
+  weekly: PythonConsolidationItem[];
   dailyCount: number;
   weeklyCount: number;
   error?: string;
@@ -172,6 +180,8 @@ export class PythonConsolidationScreenerService
             isNew: item.is_new,
             tickerFullName: item.ticker_full_name,
             timeframe: 'daily',
+            sector: item.sector,
+            industry: item.industry,
           }),
         ),
         weekly: result.weekly.map((item) =>
@@ -180,6 +190,8 @@ export class PythonConsolidationScreenerService
             isNew: item.is_new,
             tickerFullName: item.ticker_full_name,
             timeframe: 'weekly',
+            sector: item.sector,
+            industry: item.industry,
           }),
         ),
       };

@@ -45,6 +45,8 @@ export class ConsolidationAnalysisServiceImpl
             result.symbol,
             result.isNew,
             result.tickerFullName,
+            result.sector,
+            result.industry,
           ),
         );
       }

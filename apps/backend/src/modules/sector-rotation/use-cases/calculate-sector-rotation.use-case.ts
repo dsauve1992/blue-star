@@ -30,7 +30,9 @@ export class CalculateSectorRotationUseCase {
   async execute(
     request: CalculateSectorRotationRequestDto,
   ): Promise<CalculateSectorRotationResponseDto> {
-    const sectors = request.sectors.map((s) => Sector.of(s.symbol, s.name));
+    const sectors = request.sectors
+      .map((s) => Sector.fromEtfSymbol(s.symbol))
+      .filter((s): s is Sector => s !== null);
     const dateRange = DateRange.of(request.startDate, request.endDate);
 
     const params: SectorRotationCalculationParams = {

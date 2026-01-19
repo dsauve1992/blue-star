@@ -7,10 +7,10 @@ import { SectorRotationDataReadRepository } from '../../domain/repositories/sect
 interface DatabaseRow {
   date: string;
   sector_symbol: string;
-  price: number;
-  relative_strength: number;
-  x: number;
-  y: number;
+  price: string | number;
+  relative_strength: string | number;
+  x: string | number;
+  y: string | number;
   quadrant: string;
 }
 
@@ -133,10 +133,10 @@ export class SectorRotationDataReadRepositoryImpl
       return SectorRotationDataPoint.of(
         new Date(row.date),
         row.sector_symbol,
-        row.price,
-        row.relative_strength,
-        row.x,
-        row.y,
+        parseFloat(String(row.price)),
+        parseFloat(String(row.relative_strength)),
+        parseFloat(String(row.x)),
+        parseFloat(String(row.y)),
         quadrant,
       );
     });

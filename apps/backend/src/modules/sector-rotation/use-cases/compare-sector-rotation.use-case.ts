@@ -10,6 +10,7 @@ import { SectorRotationPersistenceService } from '../domain/services/sector-rota
 import { SECTOR_ROTATION_CALCULATION_SERVICE } from '../constants/tokens';
 import { SECTOR_ROTATION_PERSISTENCE_SERVICE } from '../constants/tokens';
 import { RRG_PARAMETERS } from '../constants/rrg-parameters';
+import { SectorRotationDataPoint } from '../domain/value-objects/sector-rotation-data-point';
 
 export interface CompareSectorRotationRequestDto {
   sectors: Array<{ symbol: string; name: string }>;
@@ -65,7 +66,9 @@ export class CompareSectorRotationUseCase {
   async execute(
     request: CompareSectorRotationRequestDto,
   ): Promise<CompareSectorRotationResponseDto> {
-    const sectors = request.sectors.map((s) => Sector.of(s.symbol, s.name));
+    const sectors = request.sectors
+      .map((s) => Sector.fromEtfSymbol(s.symbol))
+      .filter((s): s is Sector => s !== null);
     const dateRange = DateRange.of(request.startDate, request.endDate);
 
     const requiredLookbackWeeks = Math.max(
@@ -121,9 +124,9 @@ export class CompareSectorRotationUseCase {
   ): ComparisonDifference[] {
     const persistedMap = new Map<
       string,
-      Map<string, (typeof persisted.dataPoints)[0]>
+      Map<string, SectorRotationDataPoint>
     >();
-    const liveMap = new Map<string, Map<string, (typeof live.dataPoints)[0]>>();
+    const liveMap = new Map<string, Map<string, SectorRotationDataPoint>>();
 
     for (const point of persisted.dataPoints) {
       const dateKey = point.date.toISOString().split('T')[0];
@@ -149,8 +152,10 @@ export class CompareSectorRotationUseCase {
     const differences: ComparisonDifference[] = [];
 
     for (const dateKey of allDates) {
-      const persistedSectors = persistedMap.get(dateKey) || new Map();
-      const liveSectors = liveMap.get(dateKey) || new Map();
+      const persistedSectors =
+        persistedMap.get(dateKey) || new Map<string, SectorRotationDataPoint>();
+      const liveSectors =
+        liveMap.get(dateKey) || new Map<string, SectorRotationDataPoint>();
       const allSectors = new Set([
         ...Array.from(persistedSectors.keys()),
         ...Array.from(liveSectors.keys()),

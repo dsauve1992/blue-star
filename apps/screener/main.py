@@ -7,13 +7,29 @@ import json
 import sys
 import argparse
 import time
-from typing import Any
+from typing import Any, Tuple
 
 import pandas as pd
 import numpy as np
+import yfinance as yf
 from screener_service import ScreenerService
 from yahoo_finance_service import YahooFinanceService
 from technical_analysis import calculate_sma, calculate_ema, calculate_adr_percentage
+
+
+def get_sector_info(symbol: str) -> Tuple[str, str]:
+    """
+    Get sector and industry information for a stock symbol using yfinance.
+    Returns a tuple of (sector, industry). Returns empty strings if info is not available.
+    """
+    try:
+        ticker = yf.Ticker(symbol)
+        info = ticker.info
+        sector = info.get('sector', '')
+        industry = info.get('industry', '')
+        return sector, industry
+    except Exception:
+        return '', ''
 
 
 def main():
@@ -222,10 +238,15 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
                 # Check if this is a new signal (true now but not in previous row)
                 is_new = previous is None or not previous['green_signal']
                 
+                # Get sector and industry information
+                sector, industry = get_sector_info(candidate['name'])
+                
                 green_candidates.append({
                     'symbol': candidate['name'],
                     'ticker_full_name': candidate['ticker_full_name'],
-                    'is_new': is_new
+                    'is_new': is_new,
+                    'sector': sector,
+                    'industry': industry
                 })
 
         except Exception as error:
@@ -365,10 +386,15 @@ def analyse_weekly_setup(screener_service: ScreenerService, yahoo_finance_servic
                 # Check if this is a new signal (true now but not in previous row)
                 is_new = previous is None or not previous['green_signal']
                 
+                # Get sector and industry information
+                sector, industry = get_sector_info(candidate['name'])
+                
                 green_candidates.append({
                     'symbol': candidate['name'],
                     'ticker_full_name': candidate['ticker_full_name'],
-                    'is_new': is_new
+                    'is_new': is_new,
+                    'sector': sector,
+                    'industry': industry
                 })
 
         except Exception as error:

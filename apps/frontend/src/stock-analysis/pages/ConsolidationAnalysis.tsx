@@ -11,6 +11,8 @@ import { useWatchlists, useAddTickerToWatchlist, useRemoveTickerFromWatchlist, u
 import TradingViewTapeCardWidget from "../components/new/TradingViewTapeCardWidget";
 import { FinancialReportSidePanel } from "../components/FinancialReportSidePanel";
 import type { ConsolidationResult } from "../api/consolidation.client";
+import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
+import type { SectorStatus, QuadrantType } from "src/sector-rotation/api/sector-rotation.client";
 import {
   RefreshCw,
   TrendingUp,
@@ -22,7 +24,53 @@ import {
   BookmarkPlus,
   Check,
   FileText,
+  Filter,
+  Highlighter,
 } from "lucide-react";
+
+type SectorFilterMode = "off" | "filter" | "highlight";
+
+const YFINANCE_TO_CANONICAL_SECTOR: Record<string, string> = {
+  Technology: "Technology",
+  Energy: "Energy",
+  Industrials: "Industrial",
+  "Consumer Cyclical": "Consumer Discretionary",
+  "Consumer Defensive": "Consumer Staples",
+  Healthcare: "Healthcare",
+  "Financial Services": "Financial",
+  "Basic Materials": "Materials",
+  Utilities: "Utilities",
+  "Real Estate": "Real Estate",
+  "Communication Services": "Communication Services",
+};
+
+function normalizeSectorName(yfinanceSector: string | null): string | null {
+  if (!yfinanceSector) return null;
+  return YFINANCE_TO_CANONICAL_SECTOR[yfinanceSector] ?? yfinanceSector;
+}
+
+function isFavorableSector(
+  sectorName: string | null,
+  sectorStatuses: SectorStatus[],
+): boolean {
+  if (!sectorName) return false;
+  const canonicalSector = normalizeSectorName(sectorName);
+  if (!canonicalSector) return false;
+  const status = sectorStatuses.find((s) => s.name === canonicalSector);
+  if (!status) return false;
+  return status.quadrant === "Leading" || status.quadrant === "Improving";
+}
+
+function getSectorQuadrant(
+  sectorName: string | null,
+  sectorStatuses: SectorStatus[],
+): QuadrantType | null {
+  if (!sectorName) return null;
+  const canonicalSector = normalizeSectorName(sectorName);
+  if (!canonicalSector) return null;
+  const status = sectorStatuses.find((s) => s.name === canonicalSector);
+  return status?.quadrant ?? null;
+}
 
 type AnalysisType = "daily" | "weekly";
 
@@ -48,6 +96,7 @@ export default function ConsolidationAnalysis() {
   const [showWatchlistDropdown, setShowWatchlistDropdown] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const [showFinancialReportPanel, setShowFinancialReportPanel] = useState(false);
+  const [sectorFilterMode, setSectorFilterMode] = useState<SectorFilterMode>("off");
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -61,12 +110,24 @@ export default function ConsolidationAnalysis() {
   const addTickerToWatchlist = useAddTickerToWatchlist();
   const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
   const createWatchlist = useCreateWatchlist();
+  const { data: sectorStatusData } = useLatestSectorStatus();
 
-  const consolidations = data?.hasData
+  const sectorStatuses = sectorStatusData?.sectors ?? [];
+
+  const rawConsolidations = data?.hasData
     ? analysisType === "daily"
       ? data.daily
       : data.weekly
     : [];
+
+  const consolidations = useMemo(() => {
+    if (sectorFilterMode === "filter" && sectorStatuses.length > 0) {
+      return rawConsolidations.filter((c) =>
+        isFavorableSector(c.sector, sectorStatuses),
+      );
+    }
+    return rawConsolidations;
+  }, [rawConsolidations, sectorFilterMode, sectorStatuses]);
 
   const currentIndex = consolidations.findIndex(
     (c) => c.tickerFullName === selectedTicker,
@@ -263,11 +324,29 @@ export default function ConsolidationAnalysis() {
     }
   };
 
+  const getQuadrantColor = (quadrant: QuadrantType | null) => {
+    switch (quadrant) {
+      case "Leading":
+        return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+      case "Improving":
+        return "bg-blue-500/20 text-blue-400 border-blue-500/30";
+      case "Weakening":
+        return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+      case "Lagging":
+        return "bg-red-500/20 text-red-400 border-red-500/30";
+      default:
+        return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+    }
+  };
+
   const renderTickerItem = (consolidation: ConsolidationResult) => {
     const isSelected = selectedTicker === consolidation.tickerFullName;
     const symbol = extractSymbol(consolidation.symbol);
     const logoUrl = getTickerLogoUrl(symbol);
     const logoFailed = failedLogos.has(symbol);
+    const sectorQuadrant = getSectorQuadrant(consolidation.sector, sectorStatuses);
+    const isInFavorableSector = sectorQuadrant === "Leading" || sectorQuadrant === "Improving";
+    const shouldHighlight = sectorFilterMode === "highlight" && isInFavorableSector;
 
     return (
       <div
@@ -285,7 +364,9 @@ export default function ConsolidationAnalysis() {
           transition-all duration-200 ease-out
           ${isSelected
             ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/50 shadow-lg shadow-blue-500/10"
-            : "hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50"
+            : shouldHighlight
+              ? "bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 hover:border-emerald-400/50"
+              : "hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50"
           }
         `}
       >
@@ -334,23 +415,32 @@ export default function ConsolidationAnalysis() {
           <span className="text-xs text-slate-400 truncate block">
             {consolidation.tickerFullName}
           </span>
-          {consolidation.themes && consolidation.themes.length > 0 && (
-            <div className="flex flex-wrap gap-1 mt-1.5">
-              {consolidation.themes.slice(0, 2).map((theme) => (
-                <span
-                  key={theme}
-                  className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                >
-                  {theme}
-                </span>
-              ))}
-              {consolidation.themes.length > 2 && (
-                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-700/50 text-slate-400 border border-slate-600/50">
-                  +{consolidation.themes.length - 2}
-                </span>
-              )}
-            </div>
-          )}
+          <div className="flex flex-wrap gap-1 mt-1.5">
+            {consolidation.sector && sectorQuadrant && (
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${getQuadrantColor(sectorQuadrant)}`}
+              >
+                {normalizeSectorName(consolidation.sector)} • {sectorQuadrant}
+              </span>
+            )}
+            {consolidation.themes && consolidation.themes.length > 0 && (
+              <>
+                {consolidation.themes.slice(0, 2).map((theme) => (
+                  <span
+                    key={theme}
+                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                  >
+                    {theme}
+                  </span>
+                ))}
+                {consolidation.themes.length > 2 && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-700/50 text-slate-400 border border-slate-600/50">
+                    +{consolidation.themes.length - 2}
+                  </span>
+                )}
+              </>
+            )}
+          </div>
         </div>
 
         {/* Selection Indicator */}
@@ -417,6 +507,61 @@ export default function ConsolidationAnalysis() {
                   <Calendar className="w-4 h-4" />
                   Weekly
                 </button>
+              </div>
+
+              {/* Sector Filter Toggle */}
+              <div className="mt-3">
+                <div className="text-xs font-medium text-slate-400 mb-2">Sector Rotation Filter</div>
+                <div className="flex gap-1 p-1 rounded-lg bg-slate-900/50 border border-slate-700/50">
+                  <button
+                    onClick={() => setSectorFilterMode("off")}
+                    className={`
+                      flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium
+                      transition-all duration-200
+                      ${sectorFilterMode === "off"
+                        ? "bg-slate-700 text-white"
+                        : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                      }
+                    `}
+                  >
+                    Off
+                  </button>
+                  <button
+                    onClick={() => setSectorFilterMode("filter")}
+                    className={`
+                      flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium
+                      transition-all duration-200
+                      ${sectorFilterMode === "filter"
+                        ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25"
+                        : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                      }
+                    `}
+                  >
+                    <Filter className="w-3 h-3" />
+                    Filter
+                  </button>
+                  <button
+                    onClick={() => setSectorFilterMode("highlight")}
+                    className={`
+                      flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium
+                      transition-all duration-200
+                      ${sectorFilterMode === "highlight"
+                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25"
+                        : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                      }
+                    `}
+                  >
+                    <Highlighter className="w-3 h-3" />
+                    Highlight
+                  </button>
+                </div>
+                {sectorFilterMode !== "off" && (
+                  <p className="text-xs text-slate-500 mt-2">
+                    {sectorFilterMode === "filter"
+                      ? "Showing only stocks in Leading or Improving sectors"
+                      : "Highlighting stocks in Leading or Improving sectors"}
+                  </p>
+                )}
               </div>
             </div>
 

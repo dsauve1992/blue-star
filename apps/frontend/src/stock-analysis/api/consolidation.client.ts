@@ -6,6 +6,8 @@ export interface ConsolidationResult {
   tickerFullName: string;
   timeframe: "daily" | "weekly";
   themes: string[];
+  sector: string | null;
+  industry: string | null;
 }
 
 export interface AnalyzeConsolidationsRequest {
