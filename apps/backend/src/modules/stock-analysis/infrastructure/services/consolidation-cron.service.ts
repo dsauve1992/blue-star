@@ -15,7 +15,7 @@ export class ConsolidationCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('0 17 * * 1-5')
+  @Cron('30 17 * * 1-5', { timeZone: 'America/Toronto' })
   async runDailyAnalysis() {
     const jobName = 'Daily Consolidation Analysis';
     this.logger.log(`Starting ${jobName}...`);
@@ -55,7 +55,7 @@ export class ConsolidationCronService {
     }
   }
 
-  @Cron('0 17 * * 5')
+  @Cron('30 17 * * 5', { timeZone: 'America/Toronto' })
   async runWeeklyAnalysis() {
     const jobName = 'Weekly Consolidation Analysis';
     this.logger.log(`Starting ${jobName}...`);

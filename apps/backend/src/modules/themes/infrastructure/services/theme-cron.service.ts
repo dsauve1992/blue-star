@@ -14,7 +14,9 @@ export class ThemeCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('0 17 * * 1-5')
+  @Cron('0 17 * * 1-5', {
+    timeZone: 'America/Toronto',
+  })
   async runWeeklyThemeExtraction() {
     const jobName = 'Weekly Theme Extraction';
     this.logger.log(`Starting ${jobName}...`);
