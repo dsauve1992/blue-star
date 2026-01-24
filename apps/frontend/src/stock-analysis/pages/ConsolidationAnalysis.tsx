@@ -7,25 +7,30 @@ import { Alert, AlertDescription } from "src/global/design-system";
 import { useConsolidations } from "../hooks/use-consolidations";
 import { useRunConsolidationAnalysis } from "../hooks/use-run-consolidation-analysis";
 import type { AnalyzeConsolidationsRequest } from "../api/consolidation.client";
-import { useWatchlists, useAddTickerToWatchlist, useRemoveTickerFromWatchlist, useCreateWatchlist } from "src/watchlist/hooks/use-watchlists";
+import {
+  useWatchlists,
+  useAddTickerToWatchlist,
+  useRemoveTickerFromWatchlist,
+  useCreateWatchlist,
+} from "src/watchlist/hooks/use-watchlists";
 import TradingViewTapeCardWidget from "../components/new/TradingViewTapeCardWidget";
-import { FinancialReportSidePanel } from "../components/FinancialReportSidePanel";
+import { FinancialReportChartFooter } from "../components/FinancialReportChartFooter";
+import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
 import type { ConsolidationResult } from "../api/consolidation.client";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
-import type { SectorStatus, QuadrantType } from "src/sector-rotation/api/sector-rotation.client";
+import type {
+  SectorStatus,
+  QuadrantType,
+} from "src/sector-rotation/api/sector-rotation.client";
 import {
   RefreshCw,
   TrendingUp,
-  Calendar,
   ChevronUp,
   ChevronDown,
   BarChart3,
   Sparkles,
   BookmarkPlus,
   Check,
-  FileText,
-  Filter,
-  Highlighter,
 } from "lucide-react";
 
 type SectorFilterMode = "off" | "filter" | "highlight";
@@ -85,18 +90,26 @@ function getTickerLogoUrl(symbol: string): string {
   return `https://images.financialmodelingprep.com/symbol/${symbol}.png`;
 }
 
+const SELECT_CHEVRON_STYLE: React.CSSProperties = {
+  backgroundImage:
+    "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke='%2394a3b8'%3E%3Cpath stroke-linecap='round' stroke-linejoin='round' stroke-width='2' d='M19 9l-7 7-7-7'/%3E%3C/svg%3E\")",
+  backgroundRepeat: "no-repeat",
+  backgroundPosition: "right 0.5rem center",
+  backgroundSize: "1rem",
+};
+
 export default function ConsolidationAnalysis() {
   const { type } = useParams<{ type: string }>();
   const navigate = useNavigate();
   // Default to daily if type is invalid or missing
-  const analysisType: AnalysisType = (type === "weekly" ? "weekly" : "daily");
+  const analysisType: AnalysisType = type === "weekly" ? "weekly" : "daily";
 
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
   const [failedLogos, setFailedLogos] = useState<Set<string>>(new Set());
   const [showWatchlistDropdown, setShowWatchlistDropdown] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
-  const [showFinancialReportPanel, setShowFinancialReportPanel] = useState(false);
-  const [sectorFilterMode, setSectorFilterMode] = useState<SectorFilterMode>("off");
+  const [sectorFilterMode, setSectorFilterMode] =
+    useState<SectorFilterMode>("off");
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -111,6 +124,12 @@ export default function ConsolidationAnalysis() {
   const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
   const createWatchlist = useCreateWatchlist();
   const { data: sectorStatusData } = useLatestSectorStatus();
+  const symbolToFetch = selectedTicker ? extractSymbol(selectedTicker) : null;
+  const {
+    data: financialData,
+    isLoading: financialLoading,
+    error: financialError,
+  } = useFinancialReport(symbolToFetch);
 
   const sectorStatuses = sectorStatusData?.sectors ?? [];
 
@@ -279,13 +298,18 @@ export default function ConsolidationAnalysis() {
     handleTickerSelect(newTicker);
   };
 
-  const handleToggleTickerInWatchlist = async (watchlistId: string, isTickerInWatchlist: boolean) => {
+  const handleToggleTickerInWatchlist = async (
+    watchlistId: string,
+    isTickerInWatchlist: boolean,
+  ) => {
     if (!selectedTicker) return;
 
     const tickerSymbol = extractSymbol(selectedTicker);
-    const tickerToUse = watchlistsData?.watchlists
-      .find((w) => w.id === watchlistId)
-      ?.tickers.find((t) => t === selectedTicker || t === tickerSymbol) || selectedTicker;
+    const tickerToUse =
+      watchlistsData?.watchlists
+        .find((w) => w.id === watchlistId)
+        ?.tickers.find((t) => t === selectedTicker || t === tickerSymbol) ||
+      selectedTicker;
 
     try {
       if (isTickerInWatchlist) {
@@ -300,7 +324,10 @@ export default function ConsolidationAnalysis() {
         });
       }
     } catch (error) {
-      console.error(`Failed to ${isTickerInWatchlist ? "remove" : "add"} ticker from watchlist:`, error);
+      console.error(
+        `Failed to ${isTickerInWatchlist ? "remove" : "add"} ticker from watchlist:`,
+        error,
+      );
     }
   };
 
@@ -312,12 +339,12 @@ export default function ConsolidationAnalysis() {
       const response = await createWatchlist.mutateAsync({
         name: newWatchlistName.trim(),
       });
-      
+
       await addTickerToWatchlist.mutateAsync({
         watchlistId: response.watchlistId,
         request: { ticker: selectedTicker },
       });
-      
+
       setNewWatchlistName("");
     } catch (error) {
       console.error("Failed to create watchlist:", error);
@@ -344,9 +371,14 @@ export default function ConsolidationAnalysis() {
     const symbol = extractSymbol(consolidation.symbol);
     const logoUrl = getTickerLogoUrl(symbol);
     const logoFailed = failedLogos.has(symbol);
-    const sectorQuadrant = getSectorQuadrant(consolidation.sector, sectorStatuses);
-    const isInFavorableSector = sectorQuadrant === "Leading" || sectorQuadrant === "Improving";
-    const shouldHighlight = sectorFilterMode === "highlight" && isInFavorableSector;
+    const sectorQuadrant = getSectorQuadrant(
+      consolidation.sector,
+      sectorStatuses,
+    );
+    const isInFavorableSector =
+      sectorQuadrant === "Leading" || sectorQuadrant === "Improving";
+    const shouldHighlight =
+      sectorFilterMode === "highlight" && isInFavorableSector;
 
     return (
       <div
@@ -360,82 +392,85 @@ export default function ConsolidationAnalysis() {
         }}
         onClick={() => handleTickerSelect(consolidation.tickerFullName)}
         className={`
-          group relative flex items-center gap-3 p-3 rounded-xl cursor-pointer
+          group relative flex items-center overflow-hidden rounded-lg cursor-pointer
           transition-all duration-200 ease-out
-          ${isSelected
-            ? "bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/50 shadow-lg shadow-blue-500/10"
-            : shouldHighlight
-              ? "bg-gradient-to-r from-emerald-500/10 to-blue-500/10 border border-emerald-500/30 hover:border-emerald-400/50"
-              : "hover:bg-slate-700/50 border border-transparent hover:border-slate-600/50"
+          ${
+            isSelected
+              ? "border border-blue-500/50 shadow-md shadow-blue-500/10"
+              : shouldHighlight
+                ? "border border-emerald-500/30 hover:border-emerald-400/50"
+                : "border border-transparent hover:border-slate-600/50"
           }
         `}
       >
-        {/* Ticker Logo */}
-        <div
-          className={`
-          flex items-center justify-center w-12 h-12 rounded-lg overflow-hidden
-          transition-all duration-200
-          ${isSelected
-              ? "bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg ring-2 ring-blue-400/50"
-              : "bg-slate-700 group-hover:bg-slate-600"
-            }
-        `}
-        >
-          {logoFailed ? (
-            <span className={`font-bold text-sm ${isSelected ? "text-white" : "text-slate-300"}`}>
-              {symbol.slice(0, 4)}
-            </span>
-          ) : (
+        {/* Company logo as card background */}
+        {!logoFailed ? (
+          <>
             <img
               src={logoUrl}
-              alt={symbol}
-              className="w-full h-full object-contain p-1"
+              alt=""
+              className="absolute inset-0 w-full h-full object-cover opacity-80 pointer-events-none"
               onError={() => {
                 setFailedLogos((prev) => new Set(prev).add(symbol));
               }}
             />
-          )}
-        </div>
+            <div
+              className={`absolute inset-0 pointer-events-none ${
+                isSelected
+                  ? "bg-gradient-to-r from-slate-900 via-slate-900/92 to-blue-900/40"
+                  : shouldHighlight
+                    ? "bg-gradient-to-r from-slate-900 via-slate-900/90 to-emerald-900/50"
+                    : "bg-gradient-to-r from-slate-900 via-slate-900/90 to-slate-800/70"
+              }`}
+            />
+          </>
+        ) : (
+          <div className="absolute inset-0 bg-slate-800 flex items-center justify-center pointer-events-none">
+            <span className="text-2xl font-bold text-slate-600/40 select-none">
+              {symbol.slice(0, 3)}
+            </span>
+          </div>
+        )}
 
         {/* Ticker Info */}
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
+        <div className="relative z-10 flex-1 min-w-0 p-2">
+          <div className="flex items-center gap-1 flex-wrap">
             <span
-              className={`font-semibold truncate ${isSelected ? "text-white" : "text-slate-100"}`}
+              className={`font-semibold text-xs truncate ${isSelected ? "text-white" : "text-slate-100"}`}
             >
               {consolidation.symbol}
             </span>
             {consolidation.isNew && (
-              <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                <Sparkles className="w-3 h-3" />
+              <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
+                <Sparkles className="w-2.5 h-2.5 flex-shrink-0" />
                 New
               </span>
             )}
           </div>
-          <span className="text-xs text-slate-400 truncate block">
+          <span className="text-[10px] text-slate-400 truncate block">
             {consolidation.tickerFullName}
           </span>
-          <div className="flex flex-wrap gap-1 mt-1.5">
+          <div className="flex flex-wrap gap-0.5 mt-1">
             {consolidation.sector && sectorQuadrant && (
               <span
-                className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${getQuadrantColor(sectorQuadrant)}`}
+                className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getQuadrantColor(sectorQuadrant)}`}
               >
-                {normalizeSectorName(consolidation.sector)} • {sectorQuadrant}
+                {sectorQuadrant}
               </span>
             )}
             {consolidation.themes && consolidation.themes.length > 0 && (
               <>
-                {consolidation.themes.slice(0, 2).map((theme) => (
+                {consolidation.themes.slice(0, 1).map((theme) => (
                   <span
                     key={theme}
-                    className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20"
+                    className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-blue-500/10 text-blue-400 border border-blue-500/20 truncate max-w-[80px]"
                   >
                     {theme}
                   </span>
                 ))}
-                {consolidation.themes.length > 2 && (
-                  <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-700/50 text-slate-400 border border-slate-600/50">
-                    +{consolidation.themes.length - 2}
+                {consolidation.themes.length > 1 && (
+                  <span className="inline-flex items-center px-1 py-0.5 rounded text-[10px] font-medium bg-slate-700/50 text-slate-400 border border-slate-600/50">
+                    +{consolidation.themes.length - 1}
                   </span>
                 )}
               </>
@@ -445,7 +480,7 @@ export default function ConsolidationAnalysis() {
 
         {/* Selection Indicator */}
         {isSelected && (
-          <div className="absolute right-0 top-1/2 -translate-y-1/2 w-1 h-8 bg-gradient-to-b from-blue-400 to-purple-500 rounded-l-full" />
+          <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-1 h-5 bg-gradient-to-b from-blue-400 to-purple-500 rounded-l-full" />
         )}
       </div>
     );
@@ -460,116 +495,64 @@ export default function ConsolidationAnalysis() {
 
         <div className="relative flex h-screen">
           {/* Left Sidebar - Ticker List */}
-          <aside className="w-80 flex-shrink-0 border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
+          <aside className="w-56 flex-shrink-0 border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
             {/* Sidebar Header */}
-            <div className="p-5 border-b border-slate-700/50">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-lg shadow-blue-500/25">
-                  <BarChart3 className="w-5 h-5 text-white" />
+            <div className="p-3 border-b border-slate-700/50 space-y-3">
+              <div className="flex items-center gap-2">
+                <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-md">
+                  <BarChart3 className="w-4 h-4 text-white" />
                 </div>
-                <div>
-                  <h1 className="text-lg font-bold text-white">
+                <div className="min-w-0">
+                  <h1 className="text-sm font-bold text-white truncate">
                     Consolidation Analysis
                   </h1>
-                  <p className="text-xs text-slate-400">
-                    Technical pattern detection
+                  <p className="text-[10px] text-slate-400">
+                    Technical patterns
                   </p>
                 </div>
               </div>
 
-              {/* Analysis Type Toggle */}
-              <div className="flex gap-2 p-1 rounded-xl bg-slate-900/50 border border-slate-700/50">
-                <button
-                  onClick={() => handleTypeChange("daily")}
-                  className={`
-                  flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
-                  transition-all duration-200
-                  ${analysisType === "daily"
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25"
-                      : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+              {/* Timeframe & Sector Filter – compact selects */}
+              <div className="grid grid-cols-1 gap-2">
+                <label className="block">
+                  <span className="sr-only">Timeframe</span>
+                  <select
+                    value={analysisType}
+                    onChange={(e) =>
+                      handleTypeChange(e.target.value as AnalysisType)
                     }
-                `}
-                >
-                  <TrendingUp className="w-4 h-4" />
-                  Daily
-                </button>
-                <button
-                  onClick={() => handleTypeChange("weekly")}
-                  className={`
-                  flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
-                  transition-all duration-200
-                  ${analysisType === "weekly"
-                      ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25"
-                      : "text-slate-400 hover:text-white hover:bg-slate-700/50"
+                    className="w-full appearance-none rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1.5 pr-8 text-sm text-slate-200 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer"
+                    style={SELECT_CHEVRON_STYLE}
+                  >
+                    <option value="daily">Daily</option>
+                    <option value="weekly">Weekly</option>
+                  </select>
+                </label>
+                <label className="block">
+                  <span className="block text-[10px] text-slate-500 mb-0.5">
+                    Sector
+                  </span>
+                  <select
+                    value={sectorFilterMode}
+                    onChange={(e) =>
+                      setSectorFilterMode(e.target.value as SectorFilterMode)
                     }
-                `}
-                >
-                  <Calendar className="w-4 h-4" />
-                  Weekly
-                </button>
-              </div>
-
-              {/* Sector Filter Toggle */}
-              <div className="mt-3">
-                <div className="text-xs font-medium text-slate-400 mb-2">Sector Rotation Filter</div>
-                <div className="flex gap-1 p-1 rounded-lg bg-slate-900/50 border border-slate-700/50">
-                  <button
-                    onClick={() => setSectorFilterMode("off")}
-                    className={`
-                      flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium
-                      transition-all duration-200
-                      ${sectorFilterMode === "off"
-                        ? "bg-slate-700 text-white"
-                        : "text-slate-400 hover:text-white hover:bg-slate-700/50"
-                      }
-                    `}
+                    className="w-full appearance-none rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1.5 pr-8 text-sm text-slate-200 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer"
+                    style={SELECT_CHEVRON_STYLE}
                   >
-                    Off
-                  </button>
-                  <button
-                    onClick={() => setSectorFilterMode("filter")}
-                    className={`
-                      flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium
-                      transition-all duration-200
-                      ${sectorFilterMode === "filter"
-                        ? "bg-gradient-to-r from-emerald-500 to-emerald-600 text-white shadow-lg shadow-emerald-500/25"
-                        : "text-slate-400 hover:text-white hover:bg-slate-700/50"
-                      }
-                    `}
-                  >
-                    <Filter className="w-3 h-3" />
-                    Filter
-                  </button>
-                  <button
-                    onClick={() => setSectorFilterMode("highlight")}
-                    className={`
-                      flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium
-                      transition-all duration-200
-                      ${sectorFilterMode === "highlight"
-                        ? "bg-gradient-to-r from-blue-500 to-blue-600 text-white shadow-lg shadow-blue-500/25"
-                        : "text-slate-400 hover:text-white hover:bg-slate-700/50"
-                      }
-                    `}
-                  >
-                    <Highlighter className="w-3 h-3" />
-                    Highlight
-                  </button>
-                </div>
-                {sectorFilterMode !== "off" && (
-                  <p className="text-xs text-slate-500 mt-2">
-                    {sectorFilterMode === "filter"
-                      ? "Showing only stocks in Leading or Improving sectors"
-                      : "Highlighting stocks in Leading or Improving sectors"}
-                  </p>
-                )}
+                    <option value="off">Off</option>
+                    <option value="filter">Filter</option>
+                    <option value="highlight">Highlight</option>
+                  </select>
+                </label>
               </div>
             </div>
 
             {/* Stats Bar */}
             {data?.hasData && (
-              <div className="px-5 py-3 border-b border-slate-700/50 bg-slate-900/30">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-slate-400">Total Signals</span>
+              <div className="px-3 py-2 border-b border-slate-700/50 bg-slate-900/30">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-slate-400">Signals</span>
                   <span className="font-semibold text-white">
                     {analysisType === "daily"
                       ? data.dailyCount
@@ -582,7 +565,7 @@ export default function ConsolidationAnalysis() {
             {/* Ticker List */}
             <div
               ref={listContainerRef}
-              className="flex-1 overflow-y-auto p-3 space-y-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent"
+              className="flex-1 overflow-y-auto p-2 space-y-0.5 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent"
               tabIndex={0}
             >
               {isLoading && (
@@ -620,7 +603,9 @@ export default function ConsolidationAnalysis() {
               {!isLoading && !error && !data?.hasData && (
                 <div className="flex flex-col items-center justify-center h-full text-center px-4">
                   <Alert
-                    variant={data?.runStatus === "failed" ? "danger" : "warning"}
+                    variant={
+                      data?.runStatus === "failed" ? "danger" : "warning"
+                    }
                     className="mb-4"
                   >
                     <AlertDescription>
@@ -632,8 +617,8 @@ export default function ConsolidationAnalysis() {
                       )}
                       {data?.runStatus === "failed" && (
                         <>
-                          Analysis failed: {data?.errorMessage || "Unknown error"}
-                          .
+                          Analysis failed:{" "}
+                          {data?.errorMessage || "Unknown error"}.
                         </>
                       )}
                       {data?.runStatus === "not_found" && (
@@ -662,34 +647,34 @@ export default function ConsolidationAnalysis() {
 
             {/* Navigation Footer */}
             {data?.hasData && consolidations.length > 0 && (
-              <div className="p-3 border-t border-slate-700/50 bg-slate-900/30">
-                <div className="flex items-center justify-between gap-2">
+              <div className="p-2 border-t border-slate-700/50 bg-slate-900/30">
+                <div className="flex items-center justify-between gap-1">
                   <button
                     onClick={() => navigateTicker("up")}
                     disabled={currentIndex <= 0}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium
                     bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white
                     disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                   >
-                    <ChevronUp className="w-4 h-4" />
+                    <ChevronUp className="w-3.5 h-3.5" />
                     Prev
                   </button>
-                  <span className="text-xs text-slate-500 min-w-[60px] text-center">
-                    {currentIndex + 1} / {consolidations.length}
+                  <span className="text-[10px] text-slate-500 min-w-[48px] text-center">
+                    {currentIndex + 1}/{consolidations.length}
                   </span>
                   <button
                     onClick={() => navigateTicker("down")}
                     disabled={currentIndex >= consolidations.length - 1}
-                    className="flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-sm font-medium
+                    className="flex-1 flex items-center justify-center gap-1 px-2 py-1.5 rounded-md text-xs font-medium
                     bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white
                     disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                   >
                     Next
-                    <ChevronDown className="w-4 h-4" />
+                    <ChevronDown className="w-3.5 h-3.5" />
                   </button>
                 </div>
-                <p className="text-xs text-slate-500 text-center mt-2">
-                  Use ↑↓ arrow keys to navigate
+                <p className="text-[10px] text-slate-500 text-center mt-1">
+                  ↑↓ to navigate
                 </p>
               </div>
             )}
@@ -710,11 +695,17 @@ export default function ConsolidationAnalysis() {
                           </div>
                         ) : (
                           <img
-                            src={getTickerLogoUrl(extractSymbol(selectedTicker))}
+                            src={getTickerLogoUrl(
+                              extractSymbol(selectedTicker),
+                            )}
                             alt={extractSymbol(selectedTicker)}
                             className="w-full h-full object-contain p-1"
                             onError={() => {
-                              setFailedLogos((prev) => new Set(prev).add(extractSymbol(selectedTicker)));
+                              setFailedLogos((prev) =>
+                                new Set(prev).add(
+                                  extractSymbol(selectedTicker),
+                                ),
+                              );
                             }}
                           />
                         )}
@@ -723,7 +714,9 @@ export default function ConsolidationAnalysis() {
                         <h2 className="text-xl font-bold text-white">
                           {extractSymbol(selectedTicker)}
                         </h2>
-                        <p className="text-sm text-slate-400">{selectedTicker}</p>
+                        <p className="text-sm text-slate-400">
+                          {selectedTicker}
+                        </p>
                       </div>
                     </div>
                     {consolidations.find(
@@ -768,17 +761,6 @@ export default function ConsolidationAnalysis() {
               <div className="flex items-center gap-2">
                 {selectedTicker && (
                   <>
-                    <button
-                      onClick={() => setShowFinancialReportPanel(!showFinancialReportPanel)}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
-                        showFinancialReportPanel
-                          ? "bg-purple-600/50 text-white hover:bg-purple-600/70 border border-purple-500/50"
-                          : "bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white border border-slate-600/50"
-                      }`}
-                    >
-                      <FileText className="w-4 h-4" />
-                      Financial Report
-                    </button>
                     <div className="relative" ref={dropdownRef}>
                       <button
                         onClick={(e) => {
@@ -793,71 +775,95 @@ export default function ConsolidationAnalysis() {
                         Add to Watchlist
                       </button>
 
-                    {showWatchlistDropdown && (
-                      <div className="absolute right-0 mt-2 w-64 rounded-lg bg-slate-800 border border-slate-700 shadow-xl z-[9999] overflow-hidden">
-                        {watchlistsData?.watchlists && watchlistsData.watchlists.length > 0 && (
-                          <div className="p-2">
-                            <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                              Select Watchlist
-                            </div>
-                            {watchlistsData.watchlists.map((watchlist) => {
-                              const tickerSymbol = extractSymbol(selectedTicker);
-                              const isTickerInWatchlist =
-                                watchlist.tickers.includes(selectedTicker) ||
-                                watchlist.tickers.includes(tickerSymbol);
-                              return (
-                                <button
-                                  key={watchlist.id}
-                                  onClick={() => handleToggleTickerInWatchlist(watchlist.id, isTickerInWatchlist)}
-                                  disabled={
-                                    addTickerToWatchlist.isPending ||
-                                    removeTickerFromWatchlist.isPending
-                                  }
-                                  className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-slate-200 hover:bg-slate-700/50 transition-colors
+                      {showWatchlistDropdown && (
+                        <div className="absolute right-0 mt-2 w-64 rounded-lg bg-slate-800 border border-slate-700 shadow-xl z-[9999] overflow-hidden">
+                          {watchlistsData?.watchlists &&
+                            watchlistsData.watchlists.length > 0 && (
+                              <div className="p-2">
+                                <div className="px-3 py-2 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                  Select Watchlist
+                                </div>
+                                {watchlistsData.watchlists.map((watchlist) => {
+                                  const tickerSymbol =
+                                    extractSymbol(selectedTicker);
+                                  const isTickerInWatchlist =
+                                    watchlist.tickers.includes(
+                                      selectedTicker,
+                                    ) ||
+                                    watchlist.tickers.includes(tickerSymbol);
+                                  return (
+                                    <button
+                                      key={watchlist.id}
+                                      onClick={() =>
+                                        handleToggleTickerInWatchlist(
+                                          watchlist.id,
+                                          isTickerInWatchlist,
+                                        )
+                                      }
+                                      disabled={
+                                        addTickerToWatchlist.isPending ||
+                                        removeTickerFromWatchlist.isPending
+                                      }
+                                      className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-slate-200 hover:bg-slate-700/50 transition-colors
                                   disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                  <span className="truncate">{watchlist.name}</span>
-                                  {isTickerInWatchlist && (
-                                    <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
-                                  )}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        )}
+                                    >
+                                      <span className="truncate">
+                                        {watchlist.name}
+                                      </span>
+                                      {isTickerInWatchlist && (
+                                        <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                                      )}
+                                    </button>
+                                  );
+                                })}
+                              </div>
+                            )}
 
-                        <div className="border-t border-slate-700/50 p-2">
-                          <form onSubmit={handleCreateWatchlist} className="space-y-2">
-                            <div className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
-                              Create New Watchlist
-                            </div>
-                            <input
-                              type="text"
-                              value={newWatchlistName}
-                              onChange={(e) => setNewWatchlistName(e.target.value)}
-                              placeholder="Watchlist name..."
-                              maxLength={255}
-                              disabled={createWatchlist.isPending}
-                              className="w-full px-3 py-2 rounded-md text-sm bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500
+                          <div className="border-t border-slate-700/50 p-2">
+                            <form
+                              onSubmit={handleCreateWatchlist}
+                              className="space-y-2"
+                            >
+                              <div className="px-3 py-1 text-xs font-semibold text-slate-400 uppercase tracking-wider">
+                                Create New Watchlist
+                              </div>
+                              <input
+                                type="text"
+                                value={newWatchlistName}
+                                onChange={(e) =>
+                                  setNewWatchlistName(e.target.value)
+                                }
+                                placeholder="Watchlist name..."
+                                maxLength={255}
+                                disabled={createWatchlist.isPending}
+                                className="w-full px-3 py-2 rounded-md text-sm bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500
                               focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50
                               disabled:opacity-50 disabled:cursor-not-allowed"
-                              autoFocus={watchlistsData?.watchlists && watchlistsData.watchlists.length === 0}
-                            />
-                            <button
-                              type="submit"
-                              disabled={!newWatchlistName.trim() || createWatchlist.isPending}
-                              className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium
+                                autoFocus={
+                                  watchlistsData?.watchlists &&
+                                  watchlistsData.watchlists.length === 0
+                                }
+                              />
+                              <button
+                                type="submit"
+                                disabled={
+                                  !newWatchlistName.trim() ||
+                                  createWatchlist.isPending
+                                }
+                                className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-md text-sm font-medium
                               bg-blue-600/50 text-white hover:bg-blue-600/70
                               disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                            >
-                              <BookmarkPlus className="w-4 h-4" />
-                              {createWatchlist.isPending ? "Creating..." : "Create & Add"}
-                            </button>
-                          </form>
+                              >
+                                <BookmarkPlus className="w-4 h-4" />
+                                {createWatchlist.isPending
+                                  ? "Creating..."
+                                  : "Create & Add"}
+                              </button>
+                            </form>
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
+                      )}
+                    </div>
                   </>
                 )}
 
@@ -878,40 +884,42 @@ export default function ConsolidationAnalysis() {
             </header>
 
             {/* Chart Content */}
-            <div className="flex-1 p-6 overflow-hidden">
-              {selectedTicker && tradingViewProps ? (
-                <div className="h-full rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
-                  <TradingViewTapeCardWidget
-                    exchange={tradingViewProps.exchange}
-                    symbol={tradingViewProps.symbol}
-                    interval={tradingViewProps.interval}
-                    range={tradingViewProps.range}
-                    movingAverages={movingAverages}
-                  />
-                </div>
-              ) : (
-                <div className="h-full flex flex-col items-center justify-center rounded-2xl border border-slate-700/50 border-dashed bg-slate-800/20">
-                  <div className="p-6 rounded-full bg-slate-700/30 mb-6">
-                    <BarChart3 className="w-16 h-16 text-slate-500" />
+            <div className="flex-1 flex flex-col min-h-0 p-6 overflow-hidden">
+              <div className="flex-1 min-h-0">
+                {selectedTicker && tradingViewProps ? (
+                  <div className="h-full rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
+                    <TradingViewTapeCardWidget
+                      exchange={tradingViewProps.exchange}
+                      symbol={tradingViewProps.symbol}
+                      interval={tradingViewProps.interval}
+                      range={tradingViewProps.range}
+                      movingAverages={movingAverages}
+                    />
                   </div>
-                  <h3 className="text-xl font-semibold text-slate-300 mb-2">
-                    No Ticker Selected
-                  </h3>
-                  <p className="text-slate-500 text-center max-w-md">
-                    Select a ticker from the list on the left to view its
-                    interactive chart with technical indicators.
-                  </p>
-                </div>
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center rounded-2xl border border-slate-700/50 border-dashed bg-slate-800/20">
+                    <div className="p-6 rounded-full bg-slate-700/30 mb-6">
+                      <BarChart3 className="w-16 h-16 text-slate-500" />
+                    </div>
+                    <h3 className="text-xl font-semibold text-slate-300 mb-2">
+                      No Ticker Selected
+                    </h3>
+                    <p className="text-slate-500 text-center max-w-md">
+                      Select a ticker from the list on the left to view its
+                      interactive chart with technical indicators.
+                    </p>
+                  </div>
+                )}
+              </div>
+              {selectedTicker && (
+                <FinancialReportChartFooter
+                  report={financialData?.report ?? null}
+                  isLoading={financialLoading}
+                  error={financialError}
+                />
               )}
             </div>
           </main>
-
-          {/* Financial Report Side Panel */}
-          <FinancialReportSidePanel
-            symbol={selectedTicker}
-            isOpen={showFinancialReportPanel}
-            onClose={() => setShowFinancialReportPanel(false)}
-          />
         </div>
       </div>
     </PageContainer>

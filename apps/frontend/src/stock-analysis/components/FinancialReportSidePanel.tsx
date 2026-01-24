@@ -10,15 +10,9 @@ interface FinancialReportSidePanelProps {
 }
 
 function formatNumber(num: number): string {
-  if (num >= 1e9) {
-    return `$${(num / 1e9).toFixed(2)}B`;
-  }
-  if (num >= 1e6) {
-    return `$${(num / 1e6).toFixed(2)}M`;
-  }
-  if (num >= 1e3) {
-    return `$${(num / 1e3).toFixed(2)}K`;
-  }
+  if (num >= 1e9) return `$${(num / 1e9).toFixed(2)}B`;
+  if (num >= 1e6) return `$${(num / 1e6).toFixed(2)}M`;
+  if (num >= 1e3) return `$${(num / 1e3).toFixed(2)}K`;
   return `$${num.toFixed(2)}`;
 }
 
@@ -73,138 +67,130 @@ export function FinancialReportSidePanel({
           </div>
 
           <div className="flex-1 overflow-y-auto p-4 min-w-0">
-        {isLoading && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <LoadingSpinner />
-            <p className="mt-4 text-sm text-slate-400">
-              Loading financial data...
-            </p>
-          </div>
-        )}
+            {isLoading && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <LoadingSpinner />
+                <p className="mt-4 text-sm text-slate-400">
+                  Loading financial data...
+                </p>
+              </div>
+            )}
 
-        {error && (
-          <Alert variant="danger">
-            <AlertDescription>
-              Failed to load financial report. Please try again.
-            </AlertDescription>
-          </Alert>
-        )}
+            {error && (
+              <Alert variant="danger">
+                <AlertDescription>
+                  Failed to load financial report. Please try again.
+                </AlertDescription>
+              </Alert>
+            )}
 
-        {data && data.report && (
-          <div className="space-y-4">
-            <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
-              <p className="text-xs text-slate-400">
-                Last 8 Quarters - Year-over-Year Growth
-              </p>
-            </div>
+            {data && data.report && (
+              <div className="space-y-4">
+                <div className="bg-slate-900/50 rounded-lg p-4 border border-slate-700">
+                  <p className="text-xs text-slate-400">
+                    Last 8 Quarters - Year-over-Year Growth
+                  </p>
+                </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-700">
-                    <th className="px-3 py-2 text-left text-xs font-semibold text-slate-400 uppercase">
-                      Quarter
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-slate-400 uppercase">
-                      EPS
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-slate-400 uppercase">
-                      Growth
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-slate-400 uppercase">
-                      Revenue
-                    </th>
-                    <th className="px-3 py-2 text-right text-xs font-semibold text-slate-400 uppercase">
-                      Growth
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-700">
-                  {data.report.quarterlyGrowths.map((quarter) => (
-                    <tr
-                      key={`${quarter.quarter}-${quarter.year}`}
-                      className="hover:bg-slate-700/30 transition-colors"
-                    >
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        <div className="flex flex-col">
-                          <span className="text-xs font-semibold text-white">
-                            {quarter.quarter}
-                          </span>
-                          <span className="text-xs text-slate-400">
-                            {quarter.year}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-right">
-                        <span className="text-xs font-medium text-white">
-                          ${quarter.eps.toFixed(2)}
-                        </span>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-right">
-                        <div
-                          className={`flex items-center justify-end gap-1 ${getGrowthColor(
-                            quarter.epsGrowthPercent,
-                          )}`}
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b border-slate-700">
+                        <th className="px-3 py-2 text-left text-xs font-semibold text-slate-400 uppercase">
+                          Quarter
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-semibold text-slate-400 uppercase">
+                          EPS
+                        </th>
+                        <th className="px-3 py-2 text-right text-xs font-semibold text-slate-400 uppercase">
+                          Revenue
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-700">
+                      {data.report.quarterlyGrowths.map((quarter) => (
+                        <tr
+                          key={`${quarter.quarter}-${quarter.year}`}
+                          className="hover:bg-slate-700/30 transition-colors"
                         >
-                          {quarter.epsGrowthPercent !== null &&
-                            (quarter.epsGrowthPercent >= 0 ? (
-                              <TrendingUp className="w-3 h-3" />
-                            ) : (
-                              <TrendingDown className="w-3 h-3" />
-                            ))}
-                          <span className="text-xs font-semibold">
-                            {formatPercent(quarter.epsGrowthPercent)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <DollarSign className="w-3 h-3 text-slate-400" />
-                          <span className="text-xs font-medium text-white">
-                            {formatNumber(quarter.revenue)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap text-right">
-                        <div
-                          className={`flex items-center justify-end gap-1 ${getGrowthColor(
-                            quarter.revenueGrowthPercent,
-                          )}`}
-                        >
-                          {quarter.revenueGrowthPercent !== null &&
-                            (quarter.revenueGrowthPercent >= 0 ? (
-                              <TrendingUp className="w-3 h-3" />
-                            ) : (
-                              <TrendingDown className="w-3 h-3" />
-                            ))}
-                          <span className="text-xs font-semibold">
-                            {formatPercent(quarter.revenueGrowthPercent)}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
+                          <td className="px-3 py-2 whitespace-nowrap">
+                            <div className="flex flex-col">
+                              <span className="text-xs font-semibold text-white">
+                                {quarter.quarter}
+                              </span>
+                              <span className="text-xs text-slate-400">
+                                {quarter.year}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-right">
+                            <div className="flex flex-col items-end gap-0.5">
+                              <div
+                                className={`flex items-center justify-end gap-1 ${getGrowthColor(
+                                  quarter.epsGrowthPercent,
+                                )}`}
+                              >
+                                {quarter.epsGrowthPercent !== null &&
+                                  (quarter.epsGrowthPercent >= 0 ? (
+                                    <TrendingUp className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <TrendingDown className="w-3.5 h-3.5" />
+                                  ))}
+                                <span className="text-sm font-semibold">
+                                  {formatPercent(quarter.epsGrowthPercent)}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-500">
+                                ${quarter.eps.toFixed(2)}
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-3 py-2 whitespace-nowrap text-right">
+                            <div className="flex flex-col items-end gap-0.5">
+                              <div
+                                className={`flex items-center justify-end gap-1 ${getGrowthColor(
+                                  quarter.revenueGrowthPercent,
+                                )}`}
+                              >
+                                {quarter.revenueGrowthPercent !== null &&
+                                  (quarter.revenueGrowthPercent >= 0 ? (
+                                    <TrendingUp className="w-3.5 h-3.5" />
+                                  ) : (
+                                    <TrendingDown className="w-3.5 h-3.5" />
+                                  ))}
+                                <span className="text-sm font-semibold">
+                                  {formatPercent(quarter.revenueGrowthPercent)}
+                                </span>
+                              </div>
+                              <span className="text-[11px] text-slate-500 flex items-center justify-end gap-0.5">
+                                <DollarSign className="w-3 h-3" />
+                                {formatNumber(quarter.revenue)}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
 
-        {!isLoading && !error && !data && symbol && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-sm text-slate-400">
-              No financial data available for this symbol
-            </p>
-          </div>
-        )}
+            {!isLoading && !error && !data && symbol && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <p className="text-sm text-slate-400">
+                  No financial data available for this symbol
+                </p>
+              </div>
+            )}
 
-        {!symbol && (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-sm text-slate-400">
-              Select a symbol to view financial report
-            </p>
-          </div>
-        )}
+            {!symbol && (
+              <div className="flex flex-col items-center justify-center py-12">
+                <p className="text-sm text-slate-400">
+                  Select a symbol to view financial report
+                </p>
+              </div>
+            )}
           </div>
         </>
       )}

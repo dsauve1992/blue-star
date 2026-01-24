@@ -75,9 +75,7 @@ export interface SectorStatusDto {
   quadrant: QuadrantType;
   x: number;
   y: number;
-}
-
-export interface LatestSectorStatusApiResponseDto {
+}export interface LatestSectorStatusApiResponseDto {
   sectors: SectorStatusDto[];
   date: string;
 }
