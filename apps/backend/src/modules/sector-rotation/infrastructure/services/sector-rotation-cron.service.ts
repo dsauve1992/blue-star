@@ -13,7 +13,7 @@ export class SectorRotationCronService {
     private readonly persistenceService: SectorRotationPersistenceService,
   ) {}
 
-  @Cron('0 2 * * 6')
+  @Cron('0 19 * * 5-6-7')
   async runWeeklyCalculation() {
     this.logger.log('Starting weekly sector rotation calculation...');
     console.log(
