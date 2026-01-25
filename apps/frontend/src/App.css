@@ -72,12 +72,12 @@
 
 @layer components {
   .app {
-    @apply min-h-screen flex flex-col bg-white dark:bg-slate-900;
+    @apply min-h-screen flex flex-row bg-white dark:bg-slate-900;
     transition: background-color 0.3s ease;
   }
 
   .main-content {
-    @apply flex-1 w-full;
+    @apply flex-1 min-w-0 flex flex-col;
   }
 
   .trading-grid {

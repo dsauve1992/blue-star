@@ -110,6 +110,7 @@ export default function ConsolidationAnalysis() {
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const [sectorFilterMode, setSectorFilterMode] =
     useState<SectorFilterMode>("off");
+  const [showFinancialFooter, setShowFinancialFooter] = useState(true);
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const dropdownRef = useRef<HTMLDivElement>(null);
@@ -688,7 +689,7 @@ export default function ConsolidationAnalysis() {
                 {selectedTicker ? (
                   <>
                     <div className="flex items-center gap-3">
-                      <div className="w-12 h-12 rounded-lg bg-slate-700/50 overflow-hidden border border-slate-600/50 shadow-lg flex items-center justify-center">
+                      <div className="w-6 h-6 rounded-lg bg-slate-700/50 overflow-hidden border border-slate-600/50 shadow-lg flex items-center justify-center">
                         {failedLogos.has(extractSymbol(selectedTicker)) ? (
                           <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-emerald-500 to-teal-600">
                             <TrendingUp className="w-6 h-6 text-white" />
@@ -714,9 +715,6 @@ export default function ConsolidationAnalysis() {
                         <h2 className="text-xl font-bold text-white">
                           {extractSymbol(selectedTicker)}
                         </h2>
-                        <p className="text-sm text-slate-400">
-                          {selectedTicker}
-                        </p>
                       </div>
                     </div>
                     {consolidations.find(
@@ -767,11 +765,11 @@ export default function ConsolidationAnalysis() {
                           e.stopPropagation();
                           setShowWatchlistDropdown(!showWatchlistDropdown);
                         }}
-                        className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                        className="flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium
                         bg-blue-600/50 text-white hover:bg-blue-600/70
                         border border-blue-500/50 transition-all duration-200"
                       >
-                        <BookmarkPlus className="w-4 h-4" />
+                        <BookmarkPlus className="w-3 h-3" />
                         Add to Watchlist
                       </button>
 
@@ -870,13 +868,13 @@ export default function ConsolidationAnalysis() {
                 <button
                   onClick={() => refetch()}
                   disabled={isLoading}
-                  className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium
+                  className="flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium
                   bg-slate-700/50 text-slate-300 hover:bg-slate-600/50 hover:text-white
                   border border-slate-600/50 transition-all duration-200
                   disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <RefreshCw
-                    className={`w-4 h-4 ${isLoading ? "animate-spin" : ""}`}
+                    className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`}
                   />
                   Refresh
                 </button>
@@ -884,7 +882,7 @@ export default function ConsolidationAnalysis() {
             </header>
 
             {/* Chart Content */}
-            <div className="flex-1 flex flex-col min-h-0 p-6 overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0 p-6 gap-2 overflow-hidden">
               <div className="flex-1 min-h-0">
                 {selectedTicker && tradingViewProps ? (
                   <div className="h-full rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
@@ -912,11 +910,40 @@ export default function ConsolidationAnalysis() {
                 )}
               </div>
               {selectedTicker && (
-                <FinancialReportChartFooter
-                  report={financialData?.report ?? null}
-                  isLoading={financialLoading}
-                  error={financialError}
-                />
+                <div className="flex-shrink-0">
+                  <button
+                    onClick={() => setShowFinancialFooter(!showFinancialFooter)}
+                    className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors duration-150 group"
+                    aria-expanded={showFinancialFooter}
+                    aria-label={
+                      showFinancialFooter
+                        ? "Hide financial data"
+                        : "Show financial data"
+                    }
+                  >
+                    <span className="opacity-70 group-hover:opacity-100 transition-opacity">
+                      {showFinancialFooter ? "Hide" : "Show"} Financials
+                    </span>
+                    <ChevronDown
+                      className={`w-3.5 h-3.5 transition-transform duration-200 ease-out ${
+                        showFinancialFooter ? "rotate-180" : ""
+                      }`}
+                    />
+                  </button>
+                  <div
+                    className={`overflow-hidden transition-all duration-200 ease-out ${
+                      showFinancialFooter
+                        ? "max-h-[500px] opacity-100"
+                        : "max-h-0 opacity-0"
+                    }`}
+                  >
+                    <FinancialReportChartFooter
+                      report={financialData?.report ?? null}
+                      isLoading={financialLoading}
+                      error={financialError}
+                    />
+                  </div>
+                </div>
               )}
             </div>
           </main>

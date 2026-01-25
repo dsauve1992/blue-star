@@ -3,14 +3,14 @@ import { AuthProvider } from "src/global/auth/AuthProvider";
 import { ThemeProvider } from "src/global/design-system/theme-provider";
 import { TokenProviderSetup } from "src/global/api/token-provider-setup";
 import "src/App.css";
-import Navigation from "src/global/routing/Navigation";
+import AppSidebar from "src/global/routing/AppSidebar";
 import { generateRoutes } from "src/global/routing/routeGenerator";
 import { AnimatedLayout } from "src/global/design-system/animated-layout";
 
 function Layout() {
   return (
     <div className="app">
-      <Navigation />
+      <AppSidebar />
       <main className="main-content">
         <AnimatedLayout>
           <Outlet />
