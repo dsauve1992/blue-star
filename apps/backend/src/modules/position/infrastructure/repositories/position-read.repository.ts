@@ -67,7 +67,7 @@ export class PositionReadRepository implements IPositionReadRepository {
               'stop_price', pe.stop_price,
               'note', pe.note,
               'created_at', pe.created_at
-            ) ORDER BY pe.timestamp
+            ) ORDER BY pe.timestamp, CASE pe.action WHEN 'BUY' THEN 0 WHEN 'STOP_LOSS' THEN 1 WHEN 'SELL' THEN 2 END
           ) FILTER (WHERE pe.id IS NOT NULL),
           '[]'::json
         ) as events
@@ -109,7 +109,7 @@ export class PositionReadRepository implements IPositionReadRepository {
               'stop_price', pe.stop_price,
               'note', pe.note,
               'created_at', pe.created_at
-            ) ORDER BY pe.timestamp
+            ) ORDER BY pe.timestamp, CASE pe.action WHEN 'BUY' THEN 0 WHEN 'STOP_LOSS' THEN 1 WHEN 'SELL' THEN 2 END
           ) FILTER (WHERE pe.id IS NOT NULL),
           '[]'::json
         ) as events
@@ -147,7 +147,7 @@ export class PositionReadRepository implements IPositionReadRepository {
               'stop_price', pe.stop_price,
               'note', pe.note,
               'created_at', pe.created_at
-            ) ORDER BY pe.timestamp
+            ) ORDER BY pe.timestamp, CASE pe.action WHEN 'BUY' THEN 0 WHEN 'STOP_LOSS' THEN 1 WHEN 'SELL' THEN 2 END
           ) FILTER (WHERE pe.id IS NOT NULL),
           '[]'::json
         ) as events
