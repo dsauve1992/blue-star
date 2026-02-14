@@ -6,6 +6,8 @@ import { PricePoint } from '../../domain/value-objects/price-point';
 import {
   HistoricalData,
   Interval,
+  isHistoricalApiInterval,
+  isIntradayInterval,
   MarketDataService,
 } from '../../domain/services/market-data.service';
 import { MarketDataCacheRepository } from '../../domain/repositories/market-data-cache.repository.interface';
@@ -28,46 +30,41 @@ export class YahooMarketDataService implements MarketDataService {
     _interval?: Interval,
   ): Promise<HistoricalData> {
     const interval = _interval ?? this.determineInterval(dateRange);
-
-    const cachedPricePoints =
-      await this.cacheRepository.findBySymbolAndDateRange(
+    const useCache = isHistoricalApiInterval(interval);
+    let cachedPricePoints: PricePoint[] = [];
+    if (useCache) {
+      cachedPricePoints = await this.cacheRepository.findBySymbolAndDateRange(
         symbol,
         dateRange.startDate,
         dateRange.endDate,
         interval,
       );
+    }
 
-    const hasCompleteCache = this.isCacheComplete(
-      cachedPricePoints,
-      dateRange,
-      interval,
-    );
+    const hasCompleteCache =
+      useCache && this.isCacheComplete(cachedPricePoints, dateRange, interval);
 
     let fetchedPricePoints: PricePoint[] = [];
 
     if (!hasCompleteCache) {
       try {
-        const result = await this.yahooFinance.historical(symbol.value, {
-          period1: dateRange.startDate,
-          period2: dateRange.endDate,
-          interval,
-        });
-
-        if (result && result.length > 0) {
-          fetchedPricePoints = result.map((data) => {
-            return PricePoint.of(
-              new Date(data.date),
-              data.open,
-              data.high,
-              data.low,
-              data.close,
-              data.volume || 0,
-            );
-          });
-
-          await this.cacheRepository.savePricePoints(
+        if (useCache) {
+          fetchedPricePoints = await this.fetchViaHistorical(
             symbol,
-            fetchedPricePoints,
+            dateRange,
+            interval as '1d' | '1wk' | '1mo',
+          );
+          if (fetchedPricePoints.length > 0) {
+            await this.cacheRepository.savePricePoints(
+              symbol,
+              fetchedPricePoints,
+              interval,
+            );
+          }
+        } else {
+          fetchedPricePoints = await this.fetchViaChart(
+            symbol,
+            dateRange,
             interval,
           );
         }
@@ -94,7 +91,10 @@ export class YahooMarketDataService implements MarketDataService {
       })
       .sort((a, b) => a.date.getTime() - b.date.getTime());
 
-    const uniquePricePoints = this.deduplicatePricePoints(allPricePoints);
+    const uniquePricePoints = this.deduplicatePricePoints(
+      allPricePoints,
+      interval,
+    );
 
     if (uniquePricePoints.length === 0) {
       throw new Error(`No historical data found for symbol ${symbol.value}`);
@@ -107,12 +107,80 @@ export class YahooMarketDataService implements MarketDataService {
     };
   }
 
+  private async fetchViaChart(
+    symbol: Symbol,
+    dateRange: DateRange,
+    interval: Interval,
+  ): Promise<PricePoint[]> {
+    const result = await this.yahooFinance.chart(symbol.value, {
+      period1: dateRange.startDate,
+      period2: dateRange.endDate,
+      interval,
+      return: 'array',
+    });
+
+    if (!result.quotes || result.quotes.length === 0) {
+      return [];
+    }
+
+    const points: PricePoint[] = [];
+    for (const q of result.quotes) {
+      const open = q.open ?? q.close;
+      const high = q.high ?? q.close;
+      const low = q.low ?? q.close;
+      const close = q.close;
+      const volume = q.volume ?? 0;
+      if (
+        open != null &&
+        high != null &&
+        low != null &&
+        close != null &&
+        Number.isFinite(open) &&
+        Number.isFinite(high) &&
+        Number.isFinite(low) &&
+        Number.isFinite(close)
+      ) {
+        points.push(
+          PricePoint.of(new Date(q.date), open, high, low, close, volume),
+        );
+      }
+    }
+    return points;
+  }
+
+  private async fetchViaHistorical(
+    symbol: Symbol,
+    dateRange: DateRange,
+    interval: '1d' | '1wk' | '1mo',
+  ): Promise<PricePoint[]> {
+    const result = await this.yahooFinance.historical(symbol.value, {
+      period1: dateRange.startDate,
+      period2: dateRange.endDate,
+      interval,
+    });
+
+    if (!result || result.length === 0) {
+      return [];
+    }
+
+    return result.map((data) =>
+      PricePoint.of(
+        new Date(data.date),
+        data.open,
+        data.high,
+        data.low,
+        data.close,
+        data.volume || 0,
+      ),
+    );
+  }
+
   private isCacheComplete(
     cachedPricePoints: PricePoint[],
     dateRange: DateRange,
     interval: Interval,
   ): boolean {
-    if (cachedPricePoints.length === 0) {
+    if (cachedPricePoints.length === 0 || !isHistoricalApiInterval(interval)) {
       return false;
     }
 
@@ -162,12 +230,18 @@ export class YahooMarketDataService implements MarketDataService {
     return true;
   }
 
-  private deduplicatePricePoints(pricePoints: PricePoint[]): PricePoint[] {
+  private deduplicatePricePoints(
+    pricePoints: PricePoint[],
+    interval: Interval,
+  ): PricePoint[] {
     const seen = new Set<string>();
     const unique: PricePoint[] = [];
+    const useTimestampKey = isIntradayInterval(interval);
 
     for (const point of pricePoints) {
-      const key = point.date.toISOString().split('T')[0];
+      const key = useTimestampKey
+        ? point.date.getTime().toString()
+        : point.date.toISOString().split('T')[0];
       if (!seen.has(key)) {
         seen.add(key);
         unique.push(point);
