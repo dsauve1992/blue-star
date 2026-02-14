@@ -11,6 +11,8 @@ import {
   WATCHLIST_READ_REPOSITORY,
   WATCHLIST_WRITE_REPOSITORY,
 } from './constants/tokens';
+
+export { WATCHLIST_READ_REPOSITORY };
 import { DatabaseModule } from '../../config/database.module';
 import { WatchlistWriteRepository } from './infrastructure/repositories/watchlist-write.repository';
 import { WatchlistReadRepository } from './infrastructure/repositories/watchlist-read.repository';
@@ -35,5 +37,6 @@ import { WatchlistReadRepository } from './infrastructure/repositories/watchlist
     ListWatchlistsUseCase,
     GetWatchlistByIdUseCase,
   ],
+  exports: [WATCHLIST_READ_REPOSITORY],
 })
 export class WatchlistModule {}
