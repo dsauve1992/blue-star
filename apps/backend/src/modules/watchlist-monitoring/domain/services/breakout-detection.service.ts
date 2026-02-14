@@ -1,5 +1,4 @@
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
-import { HistoricalData } from '../../../market-data/domain/services/market-data.service';
 
 export interface BreakoutDetectionResult {
   ticker: WatchlistTicker;
@@ -7,8 +6,5 @@ export interface BreakoutDetectionResult {
 }
 
 export interface BreakoutDetectionService {
-  detect(
-    ticker: WatchlistTicker,
-    historicalData: HistoricalData,
-  ): BreakoutDetectionResult;
+  detect(ticker: WatchlistTicker): Promise<BreakoutDetectionResult>;
 }
