@@ -9,16 +9,20 @@ import { NotificationMessage } from '../../../notification/domain/value-objects/
 import { NotificationTitle } from '../../../notification/domain/value-objects/notification-title';
 import { NotificationPriority } from '../../../notification/domain/services/notification.service';
 import type { WatchlistMonitoringReadRepository } from '../../domain/repositories/watchlist-monitoring-read.repository.interface';
+import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { WatchlistReadRepository } from '../../../watchlist/domain/repositories/watchlist-read.repository.interface';
 import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
 import type { NotificationService } from '../../../notification/domain/services/notification.service';
 import { WATCHLIST_MONITORING_READ_REPOSITORY } from '../../constants/tokens';
 import { BREAKOUT_DETECTION_SERVICE } from '../../constants/tokens';
+import { MONITORING_ALERT_LOG_REPOSITORY } from '../../constants/tokens';
 import { WATCHLIST_READ_REPOSITORY } from '../../../watchlist/constants/tokens';
 import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
 import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
 import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
+
+const MARKET_TIMEZONE = 'America/Toronto';
 
 @Injectable()
 export class WatchlistMonitoringCronService {
@@ -28,6 +32,8 @@ export class WatchlistMonitoringCronService {
   constructor(
     @Inject(WATCHLIST_MONITORING_READ_REPOSITORY)
     private readonly monitoringReadRepository: WatchlistMonitoringReadRepository,
+    @Inject(MONITORING_ALERT_LOG_REPOSITORY)
+    private readonly monitoringAlertLogRepository: MonitoringAlertLogRepository,
     @Inject(WATCHLIST_READ_REPOSITORY)
     private readonly watchlistReadRepository: WatchlistReadRepository,
     @Inject(MARKET_DATA_SERVICE)
@@ -120,8 +126,21 @@ export class WatchlistMonitoringCronService {
           historicalData,
         );
 
-        if (result.detected) {
+        const marketDate = this.getMarketDateKey();
+        if (
+          result.detected &&
+          !(await this.monitoringAlertLogRepository.hasAlerted(
+            ticker.value,
+            marketDate,
+            MonitoringType.BREAKOUT,
+          ))
+        ) {
           await this.sendBreakoutAlert(ticker.value, watchlist.name.value);
+          await this.monitoringAlertLogRepository.recordAlert(
+            ticker.value,
+            marketDate,
+            MonitoringType.BREAKOUT,
+          );
         }
       } catch (error) {
         const errorMessage =
@@ -158,10 +177,24 @@ export class WatchlistMonitoringCronService {
     }
   }
 
+  private getMarketDateKey(): string {
+    const now = new Date();
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: MARKET_TIMEZONE,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(now);
+    const year = parts.find((p) => p.type === 'year')?.value ?? '';
+    const month = parts.find((p) => p.type === 'month')?.value ?? '';
+    const day = parts.find((p) => p.type === 'day')?.value ?? '';
+    return `${year}-${month}-${day}`;
+  }
+
   private isWithinMarketHours(): boolean {
     const now = new Date();
     const torontoTime = new Date(
-      now.toLocaleString('en-US', { timeZone: 'America/Toronto' }),
+      now.toLocaleString('en-US', { timeZone: MARKET_TIMEZONE }),
     );
 
     const hours = torontoTime.getHours();
