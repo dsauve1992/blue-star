@@ -55,6 +55,18 @@ describe('BreakoutDetectionServiceImpl', () => {
     };
   }
 
+  function buildSessionBars(
+    day: number,
+    closes: number[],
+    volume: number,
+  ): PricePoint[] {
+    const sessionStart = new Date(Date.UTC(2025, 1, day, 14, 30));
+    return closes.map((close, index) => {
+      const barDate = new Date(sessionStart.getTime() + index * 5 * 60 * 1000);
+      return PricePoint.of(barDate, close, close, close, close, volume);
+    });
+  }
+
   it('should return detected false when price points are empty', async () => {
     const ticker = WatchlistTicker.of('AAPL');
     const data = historicalData([]);
@@ -117,18 +129,65 @@ describe('BreakoutDetectionServiceImpl', () => {
     expect(result.detected).toBe(false);
   });
 
-  it('should return detected true when crossover and both indicators rising', async () => {
+  it('should return detected true on fresh crossover with both indicators rising', async () => {
     const ticker = WatchlistTicker.of('AAPL');
-    const base = new Date('2025-02-14T14:30:00.000Z');
-    const closes = [100, 102, 104, 106, 108, 110, 112, 114, 116, 118];
-    const bars: PricePoint[] = closes.map((close, i) => {
-      const date = new Date(base.getTime() + i * 5 * 60 * 1000);
-      return PricePoint.of(date, close, close, close, close, 1000);
-    });
+    const priorSessionCloses = new Array(10).fill(100);
+    const currentSessionCloses = [
+      100, 100, 100, 100, 100, 100, 100, 100, 100, 105,
+    ];
+    const bars: PricePoint[] = [];
+
+    for (let day = 1; day <= 10; day++) {
+      bars.push(...buildSessionBars(day, priorSessionCloses, 100));
+    }
+    bars.push(...buildSessionBars(11, currentSessionCloses, 250));
+
     const data = historicalData(bars);
     marketDataService.getHistoricalData.mockResolvedValue(data);
     const result = await service.detect(ticker);
     expect(result.ticker).toEqual(ticker);
     expect(result.detected).toBe(true);
+  });
+
+  it('should return detected false when crossover is not fresh', async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    const priorSessionCloses = new Array(10).fill(100);
+    const currentSessionCloses = [
+      100, 102, 104, 106, 108, 110, 112, 114, 116, 118,
+    ];
+    const bars: PricePoint[] = [];
+
+    for (let day = 1; day <= 10; day++) {
+      bars.push(...buildSessionBars(day, priorSessionCloses, 100));
+    }
+    bars.push(...buildSessionBars(11, currentSessionCloses, 250));
+
+    const data = historicalData(bars);
+    marketDataService.getHistoricalData.mockResolvedValue(data);
+
+    const result = await service.detect(ticker);
+
+    expect(result.detected).toBe(false);
+  });
+
+  it('should return detected false when cumulative volume is below 1.5x lookback average', async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    const priorSessionCloses = new Array(10).fill(100);
+    const currentSessionCloses = [
+      100, 100, 100, 100, 100, 100, 100, 100, 100, 105,
+    ];
+    const bars: PricePoint[] = [];
+
+    for (let day = 1; day <= 10; day++) {
+      bars.push(...buildSessionBars(day, priorSessionCloses, 100));
+    }
+    bars.push(...buildSessionBars(11, currentSessionCloses, 120));
+
+    const data = historicalData(bars);
+    marketDataService.getHistoricalData.mockResolvedValue(data);
+
+    const result = await service.detect(ticker);
+
+    expect(result.detected).toBe(false);
   });
 });

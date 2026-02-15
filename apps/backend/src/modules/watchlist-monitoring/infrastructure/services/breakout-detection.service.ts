@@ -14,6 +14,10 @@ import { getMarketDateKey, getMarketOpenDateUtc } from './market-time.util';
 
 @Injectable()
 export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
+  private static readonly AVERAGE_VOLUME_LOOKBACK_SESSIONS = 10;
+  private static readonly INTRADAY_LOOKBACK_CALENDAR_DAYS = 30;
+  private static readonly VOLUME_MULTIPLIER_THRESHOLD = 1.5;
+
   constructor(
     @Inject(MARKET_DATA_SERVICE)
     private readonly marketDataService: MarketDataService,
@@ -56,10 +60,13 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     }
 
     const crossover = ema9Latest > vwapLatest;
+    const freshCrossover = ema9Previous <= vwapPrevious;
     const vwapRising = vwapLatest > vwapPrevious;
     const ema9Rising = ema9Latest > ema9Previous;
+    const volumeSurge = this.hasRequiredVolumeSurge(sessionBars, sorted);
 
-    const detected = crossover && vwapRising && ema9Rising;
+    const detected =
+      crossover && freshCrossover && vwapRising && ema9Rising && volumeSurge;
 
     return { ticker, detected };
   }
@@ -100,9 +107,80 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     return EMACalculator.calculate(values, sortedDates, 9);
   }
 
+  private hasRequiredVolumeSurge(
+    currentSessionBars: PricePoint[],
+    sortedPricePoints: PricePoint[],
+  ): boolean {
+    const barsElapsedInSession = currentSessionBars.length;
+    const currentSessionKey = getMarketDateKey(
+      currentSessionBars[currentSessionBars.length - 1].date,
+    );
+
+    const sessions = new Map<string, PricePoint[]>();
+    for (const pricePoint of sortedPricePoints) {
+      const sessionKey = getMarketDateKey(pricePoint.date);
+      const existingSessionBars = sessions.get(sessionKey) ?? [];
+      existingSessionBars.push(pricePoint);
+      sessions.set(sessionKey, existingSessionBars);
+    }
+
+    const orderedSessionKeys = Array.from(sessions.keys()).sort((a, b) =>
+      a.localeCompare(b),
+    );
+
+    const priorSessionKeys = orderedSessionKeys
+      .filter((sessionKey) => sessionKey !== currentSessionKey)
+      .filter((sessionKey) => {
+        const sessionBars = sessions.get(sessionKey) ?? [];
+        return sessionBars.length >= barsElapsedInSession;
+      });
+
+    if (
+      priorSessionKeys.length <
+      BreakoutDetectionServiceImpl.AVERAGE_VOLUME_LOOKBACK_SESSIONS
+    ) {
+      return false;
+    }
+
+    const lookbackSessionKeys = priorSessionKeys.slice(
+      -BreakoutDetectionServiceImpl.AVERAGE_VOLUME_LOOKBACK_SESSIONS,
+    );
+
+    const currentCumulativeVolume = currentSessionBars
+      .slice(0, barsElapsedInSession)
+      .reduce((sum, bar) => sum + bar.volume, 0);
+
+    const averageCumulativeVolume =
+      lookbackSessionKeys.reduce((sum, sessionKey) => {
+        const sessionBars = sessions.get(sessionKey) ?? [];
+        const sessionCumulativeVolume = sessionBars
+          .slice(0, barsElapsedInSession)
+          .reduce((sessionSum, bar) => sessionSum + bar.volume, 0);
+        return sum + sessionCumulativeVolume;
+      }, 0) / lookbackSessionKeys.length;
+
+    if (averageCumulativeVolume <= 0) {
+      return false;
+    }
+
+    return (
+      currentCumulativeVolume >=
+      averageCumulativeVolume *
+        BreakoutDetectionServiceImpl.VOLUME_MULTIPLIER_THRESHOLD
+    );
+  }
+
   private async fetchIntradayData(ticker: WatchlistTicker) {
     const now = new Date();
-    const marketOpen = getMarketOpenDateUtc(now);
+    const lookbackStart = new Date(
+      now.getTime() -
+        BreakoutDetectionServiceImpl.INTRADAY_LOOKBACK_CALENDAR_DAYS *
+          24 *
+          60 *
+          60 *
+          1000,
+    );
+    const marketOpen = getMarketOpenDateUtc(lookbackStart);
     const dateRange = DateRange.of(marketOpen, now);
     return this.marketDataService.getHistoricalData(
       Symbol.of(ticker.value),
