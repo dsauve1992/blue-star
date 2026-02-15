@@ -6,5 +6,5 @@ export interface BreakoutDetectionResult {
 }
 
 export interface BreakoutDetectionService {
-  detect(ticker: WatchlistTicker): Promise<BreakoutDetectionResult>;
+  detect(ticker: WatchlistTicker, now?: Date): Promise<BreakoutDetectionResult>;
 }

@@ -76,16 +76,32 @@ describe('BreakoutDetectionServiceImpl', () => {
     expect(result.detected).toBe(false);
   });
 
-  it('should fetch intraday market data internally', async () => {
+  it('should fetch intraday market data with a 30-day lookback from the given now', async () => {
     const ticker = WatchlistTicker.of('AAPL');
+    const now = new Date('2025-02-14T16:00:00.000Z');
     marketDataService.getHistoricalData.mockResolvedValue(historicalData([]));
-    await service.detect(ticker);
-    expect(marketDataService.getHistoricalData).toHaveBeenCalledTimes(1);
-    const [symbol, dateRange, interval] =
-      marketDataService.getHistoricalData.mock.calls[0];
-    expect(symbol).toEqual(Symbol.of('AAPL'));
-    expect(dateRange).toBeInstanceOf(DateRange);
-    expect(interval).toBe('5m');
+    await service.detect(ticker, now);
+    expect(marketDataService.getHistoricalData).toHaveBeenNthCalledWith(
+      1,
+      Symbol.of('AAPL'),
+      // 30 days back from Feb 14 = Jan 15, market open at 14:30 UTC (winter)
+      DateRange.of(new Date('2025-01-15T14:30:00.000Z'), now),
+      '5m',
+    );
+  });
+
+  it('should filter out bars outside market hours', async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    // 14:00 UTC in winter = 9:00 AM Toronto (before 9:30 open)
+    const preMarketBar = pricePoint(2025, 2, 14, 14, 0, 100, 1000);
+    // 21:30 UTC in winter = 4:30 PM Toronto (after 4:00 close)
+    const afterHoursBar = pricePoint(2025, 2, 14, 21, 30, 100, 1000);
+    // Only one bar within market hours -> should return detected false
+    const marketBar = pricePoint(2025, 2, 14, 14, 35, 100, 1000);
+    const data = historicalData([preMarketBar, marketBar, afterHoursBar]);
+    marketDataService.getHistoricalData.mockResolvedValue(data);
+    const result = await service.detect(ticker);
+    expect(result.detected).toBe(false);
   });
 
   it('should return detected false when only one bar in session', async () => {

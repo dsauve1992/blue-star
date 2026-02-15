@@ -1,6 +1,7 @@
 import {
   getMarketDateKey,
   getMarketOpenDateUtc,
+  isDuringMarketHours,
   isWithinMarketHours,
 } from './market-time.util';
 
@@ -33,6 +34,20 @@ describe('market-time.util', () => {
       true,
     );
     expect(isWithinMarketHours(new Date('2025-02-14T21:01:00.000Z'))).toBe(
+      false,
+    );
+  });
+
+  it('should identify pre-market bars as outside market hours', () => {
+    // 9:00 AM Toronto = 14:00 UTC in winter (before 9:30 open)
+    expect(isDuringMarketHours(new Date('2025-02-14T14:00:00.000Z'))).toBe(
+      false,
+    );
+  });
+
+  it('should identify after-hours bars as outside market hours', () => {
+    // 4:30 PM Toronto = 21:30 UTC in winter (after 4:00 close)
+    expect(isDuringMarketHours(new Date('2025-02-14T21:30:00.000Z'))).toBe(
       false,
     );
   });

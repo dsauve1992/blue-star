@@ -25,8 +25,12 @@ export function getMarketOpenDateUtc(now: Date = new Date()): Date {
 }
 
 export function isWithinMarketHours(now: Date = new Date()): boolean {
-  const torontoNow = DateTime.fromJSDate(now, { zone: MARKET_TIMEZONE });
-  const totalMinutes = torontoNow.hour * 60 + torontoNow.minute;
+  return isDuringMarketHours(now);
+}
+
+export function isDuringMarketHours(date: Date): boolean {
+  const torontoTime = DateTime.fromJSDate(date, { zone: MARKET_TIMEZONE });
+  const totalMinutes = torontoTime.hour * 60 + torontoTime.minute;
   const marketOpen = MARKET_OPEN_HOUR * 60 + MARKET_OPEN_MINUTE;
   const marketClose = MARKET_CLOSE_HOUR * 60 + MARKET_CLOSE_MINUTE;
   return totalMinutes >= marketOpen && totalMinutes <= marketClose;

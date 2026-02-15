@@ -10,7 +10,11 @@ import {
   BreakoutDetectionResult,
   BreakoutDetectionService as IBreakoutDetectionService,
 } from '../../domain/services/breakout-detection.service';
-import { getMarketDateKey, getMarketOpenDateUtc } from './market-time.util';
+import {
+  getMarketDateKey,
+  getMarketOpenDateUtc,
+  isDuringMarketHours,
+} from './market-time.util';
 
 @Injectable()
 export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
@@ -23,11 +27,14 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     private readonly marketDataService: MarketDataService,
   ) {}
 
-  async detect(ticker: WatchlistTicker): Promise<BreakoutDetectionResult> {
-    const historicalData = await this.fetchIntradayData(ticker);
-    const sorted = [...historicalData.pricePoints].sort(
-      (a, b) => a.date.getTime() - b.date.getTime(),
-    );
+  async detect(
+    ticker: WatchlistTicker,
+    now: Date = new Date(),
+  ): Promise<BreakoutDetectionResult> {
+    const historicalData = await this.fetchIntradayData(ticker, now);
+    const sorted = [...historicalData.pricePoints]
+      .filter((p) => isDuringMarketHours(p.date))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
     if (sorted.length === 0) {
       return { ticker, detected: false };
     }
@@ -124,6 +131,13 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
       sessions.set(sessionKey, existingSessionBars);
     }
 
+    for (const [key, bars] of sessions) {
+      sessions.set(
+        key,
+        bars.sort((a, b) => a.date.getTime() - b.date.getTime()),
+      );
+    }
+
     const orderedSessionKeys = Array.from(sessions.keys()).sort((a, b) =>
       a.localeCompare(b),
     );
@@ -170,8 +184,7 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     );
   }
 
-  private async fetchIntradayData(ticker: WatchlistTicker) {
-    const now = new Date();
+  private async fetchIntradayData(ticker: WatchlistTicker, now: Date) {
     const lookbackStart = new Date(
       now.getTime() -
         BreakoutDetectionServiceImpl.INTRADAY_LOOKBACK_CALENDAR_DAYS *
