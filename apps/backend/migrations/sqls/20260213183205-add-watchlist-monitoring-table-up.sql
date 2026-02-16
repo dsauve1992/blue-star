@@ -1,4 +1,6 @@
-CREATE TABLE IF NOT EXISTS watchlist_monitoring (
+DROP TABLE IF EXISTS watchlist_monitoring;
+
+CREATE TABLE watchlist_monitoring (
     id UUID PRIMARY KEY,
     watchlist_id UUID NOT NULL REFERENCES watchlists(id) ON DELETE CASCADE,
     type VARCHAR(50) NOT NULL,
