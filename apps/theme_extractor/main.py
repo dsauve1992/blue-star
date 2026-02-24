@@ -15,17 +15,28 @@ THEMES_URL = "https://www.stocktitan.net/stocks/themes"
 BASE_URL = "https://www.stocktitan.net"
 
 
-def get_page_content(url: str) -> BeautifulSoup:
-    """Fetch and parse HTML content from a URL."""
+def get_page_content(url: str, retries: int = 4, base_delay: float = 10.0) -> BeautifulSoup:
+    """Fetch and parse HTML content from a URL with exponential backoff retry."""
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
-    try:
-        response = requests.get(url, headers=headers, timeout=30)
-        response.raise_for_status()
-        return BeautifulSoup(response.content, 'html.parser')
-    except requests.RequestException as e:
-        raise Exception(f"Failed to fetch {url}: {str(e)}")
+    for attempt in range(retries):
+        try:
+            response = requests.get(url, headers=headers, timeout=30)
+            if response.status_code == 429:
+                wait = base_delay * (2 ** attempt)
+                print(f"   ⏳ Rate limited, waiting {wait:.0f}s before retry {attempt + 1}/{retries}...", file=sys.stderr)
+                time.sleep(wait)
+                continue
+            response.raise_for_status()
+            return BeautifulSoup(response.content, 'html.parser')
+        except requests.RequestException as e:
+            if attempt == retries - 1:
+                raise Exception(f"Failed to fetch {url}: {str(e)}")
+            wait = base_delay * (2 ** attempt)
+            print(f"   ⏳ Request error, waiting {wait:.0f}s before retry {attempt + 1}/{retries}...", file=sys.stderr)
+            time.sleep(wait)
+    raise Exception(f"Failed to fetch {url} after {retries} retries")
 
 
 def extract_themes() -> List[Dict[str, str]]:
@@ -136,7 +147,7 @@ def main():
                 })
             
             if i < len(themes):
-                time.sleep(1)
+                time.sleep(5)
         
         print(json.dumps(result, indent=2))
         
