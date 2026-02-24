@@ -16,7 +16,6 @@ import { BREAKOUT_DETECTION_SERVICE } from '../../constants/tokens';
 import { MONITORING_ALERT_LOG_REPOSITORY } from '../../constants/tokens';
 import { WATCHLIST_READ_REPOSITORY } from '../../../watchlist/constants/tokens';
 import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
-import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
 import { getMarketDateKey, isWithinMarketHours } from './market-time.util';
 
 @Injectable()
@@ -35,7 +34,6 @@ export class WatchlistMonitoringCronService {
     private readonly breakoutDetectionService: BreakoutDetectionService,
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationService: NotificationService,
-    private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
   @Cron('*/5 * * * 1-5', { timeZone: 'America/Toronto' })
@@ -46,12 +44,6 @@ export class WatchlistMonitoringCronService {
 
     const jobName = 'Watchlist Breakout Monitoring';
     this.logger.log(`Starting ${jobName}...`);
-
-    await this.cronJobNotificationService.notifyJobStart({
-      jobName,
-      jobType: 'breakout-monitoring',
-      frequency: 'intraday',
-    });
 
     try {
       const activeMonitorings =
@@ -66,26 +58,10 @@ export class WatchlistMonitoringCronService {
       for (const monitoring of activeMonitorings) {
         await this.processMonitoring(monitoring.watchlistId);
       }
-
-      await this.cronJobNotificationService.notifyJobSuccess({
-        jobName,
-        jobType: 'breakout-monitoring',
-        frequency: 'intraday',
-        additionalData: `${activeMonitorings.length} watchlists checked`,
-      });
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`${jobName} failed: ${errorMessage}`);
-
-      await this.cronJobNotificationService.notifyJobError(
-        {
-          jobName,
-          jobType: 'breakout-monitoring',
-          frequency: 'intraday',
-        },
-        error,
-      );
     }
   }
 

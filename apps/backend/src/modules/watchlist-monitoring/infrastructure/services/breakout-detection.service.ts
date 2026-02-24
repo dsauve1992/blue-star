@@ -20,7 +20,7 @@ import {
 export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
   private static readonly AVERAGE_VOLUME_LOOKBACK_SESSIONS = 10;
   private static readonly INTRADAY_LOOKBACK_CALENDAR_DAYS = 30;
-  private static readonly VOLUME_MULTIPLIER_THRESHOLD = 1.5;
+  private static readonly VOLUME_MULTIPLIER_THRESHOLD = 1.2;
 
   constructor(
     @Inject(MARKET_DATA_SERVICE)

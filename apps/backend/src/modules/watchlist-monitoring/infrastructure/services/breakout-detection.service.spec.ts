@@ -186,7 +186,7 @@ describe('BreakoutDetectionServiceImpl', () => {
     expect(result.detected).toBe(false);
   });
 
-  it('should return detected false when cumulative volume is below 1.5x lookback average', async () => {
+  it('should return detected false when cumulative volume is below 1.2x lookback average', async () => {
     const ticker = WatchlistTicker.of('AAPL');
     const priorSessionCloses = new Array(10).fill(100);
     const currentSessionCloses = [
@@ -197,7 +197,7 @@ describe('BreakoutDetectionServiceImpl', () => {
     for (let day = 1; day <= 10; day++) {
       bars.push(...buildSessionBars(day, priorSessionCloses, 100));
     }
-    bars.push(...buildSessionBars(11, currentSessionCloses, 120));
+    bars.push(...buildSessionBars(11, currentSessionCloses, 115));
 
     const data = historicalData(bars);
     marketDataService.getHistoricalData.mockResolvedValue(data);
