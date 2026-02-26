@@ -6,17 +6,21 @@ import "src/App.css";
 import AppSidebar from "src/global/routing/AppSidebar";
 import { generateRoutes } from "src/global/routing/routeGenerator";
 import { AnimatedLayout } from "src/global/design-system/animated-layout";
+import { MarketHealthBar } from "src/market-health/components/MarketHealthBar";
 
 function Layout() {
   return (
-    <div className="app">
-      <AppSidebar />
-      <main className="main-content">
-        <AnimatedLayout>
-          <Outlet />
-        </AnimatedLayout>
-      </main>
-    </div>
+    <>
+      <MarketHealthBar />
+      <div className="app">
+        <AppSidebar />
+        <main className="main-content">
+          <AnimatedLayout>
+            <Outlet />
+          </AnimatedLayout>
+        </main>
+      </div>
+    </>
   );
 }
 
