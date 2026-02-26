@@ -1,6 +1,7 @@
-import { Controller, Get, NotFoundException } from '@nestjs/common';
+import { Controller, Get, NotFoundException, Post } from '@nestjs/common';
 import { GetMarketHealthUseCase } from '../use-cases/get-market-health.use-case';
 import { MarketHealthApiMapper } from './market-health-api.mapper';
+import { MarketHealthCronService } from '../infrastructure/services/market-health-cron.service';
 import type { MarketHealthApiResponseDto } from './market-health-api.dto';
 
 @Controller('market-health')
@@ -8,6 +9,7 @@ export class MarketHealthController {
   constructor(
     private readonly getMarketHealthUseCase: GetMarketHealthUseCase,
     private readonly marketHealthApiMapper: MarketHealthApiMapper,
+    private readonly marketHealthCronService: MarketHealthCronService,
   ) {}
 
   @Get()
@@ -19,5 +21,10 @@ export class MarketHealthController {
     }
 
     return this.marketHealthApiMapper.mapToResponse(marketHealth);
+  }
+
+  @Post('compute')
+  async triggerComputation(): Promise<void> {
+    await this.marketHealthCronService.computeMarketHealth();
   }
 }
