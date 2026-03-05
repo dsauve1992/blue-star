@@ -18,9 +18,16 @@ import {
 
 @Injectable()
 export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
+  private static readonly EMA_PERIOD = 9;
+  // EMACalculator seeds on bar 0, so values are unreliable for the first ~1–2× period bars.
+  // Requiring 1× period (45 min) is the pragmatic warm-up gate; raise to 18 for stricter regimes.
+  private static readonly EMA_MINIMUM_BARS = 9;
   private static readonly AVERAGE_VOLUME_LOOKBACK_SESSIONS = 10;
   private static readonly INTRADAY_LOOKBACK_CALENDAR_DAYS = 30;
-  private static readonly VOLUME_MULTIPLIER_THRESHOLD = 1.2;
+  // 1.5× is a meaningful surge; 1.2× falls within normal session-to-session variance for liquid names.
+  private static readonly VOLUME_MULTIPLIER_THRESHOLD = 1.5;
+  // EMA must clear VWAP by at least 10bps to eliminate sub-spread noise crosses.
+  private static readonly MIN_EMA_VWAP_SPREAD_PCT = 0.001;
 
   constructor(
     @Inject(MARKET_DATA_SERVICE)
@@ -31,23 +38,26 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     ticker: WatchlistTicker,
     now: Date = new Date(),
   ): Promise<BreakoutDetectionResult> {
-    const historicalData = await this.fetchIntradayData(ticker, now);
-    const sorted = [...historicalData.pricePoints]
-      .filter((p) => isDuringMarketHours(p.date))
-      .sort((a, b) => a.date.getTime() - b.date.getTime());
+    const sorted = await this.fetchSortedMarketBars(ticker, now);
     if (sorted.length === 0) {
       return { ticker, detected: false };
     }
 
-    const sessionBars = this.getCurrentSessionBars(sorted);
-    if (sessionBars.length < 2) {
+    const sessions = this.buildSessionMap(sorted);
+    const orderedSessionKeys = Array.from(sessions.keys()).sort((a, b) =>
+      a.localeCompare(b),
+    );
+    const currentSessionKey = orderedSessionKeys[orderedSessionKeys.length - 1];
+    const sessionBars = sessions.get(currentSessionKey) ?? [];
+
+    if (sessionBars.length < BreakoutDetectionServiceImpl.EMA_MINIMUM_BARS) {
       return { ticker, detected: false };
     }
 
     const latestIndex = sessionBars.length - 1;
-    const previousIndex = latestIndex - 1;
-    const latestTs = sessionBars[latestIndex].date.getTime();
-    const previousTs = sessionBars[previousIndex].date.getTime();
+    const latestBar = sessionBars[latestIndex];
+    const latestTs = latestBar.date.getTime();
+    const previousTs = sessionBars[latestIndex - 1].date.getTime();
 
     const vwapSeries = this.sessionVwapSeries(sessionBars);
     const vwapLatest = vwapSeries.get(latestTs);
@@ -66,25 +76,63 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
       return { ticker, detected: false };
     }
 
-    const crossover = ema9Latest > vwapLatest;
+    const crossedAboveVwap = ema9Latest > vwapLatest;
     const freshCrossover = ema9Previous <= vwapPrevious;
     const vwapRising = vwapLatest > vwapPrevious;
     const ema9Rising = ema9Latest > ema9Previous;
-    const volumeSurge = this.hasRequiredVolumeSurge(sessionBars, sorted);
+    const spreadSufficient =
+      (ema9Latest - vwapLatest) / vwapLatest >=
+      BreakoutDetectionServiceImpl.MIN_EMA_VWAP_SPREAD_PCT;
+    const volumeSurge = this.hasRequiredVolumeSurge(
+      currentSessionKey,
+      sessionBars,
+      sessions,
+      orderedSessionKeys,
+    );
+    const priorSessionHigh = this.getPriorSessionHigh(
+      currentSessionKey,
+      sessions,
+      orderedSessionKeys,
+    );
+    // No prior session data means we cannot confirm a range breakout; allow the signal through
+    // rather than suppress indefinitely on first-day-of-data edge cases.
+    const abovePriorSessionHigh =
+      priorSessionHigh === undefined || latestBar.close > priorSessionHigh;
 
     const detected =
-      crossover && freshCrossover && vwapRising && ema9Rising && volumeSurge;
+      crossedAboveVwap &&
+      freshCrossover &&
+      vwapRising &&
+      ema9Rising &&
+      spreadSufficient &&
+      volumeSurge &&
+      abovePriorSessionHigh;
 
     return { ticker, detected };
   }
 
-  private getCurrentSessionBars(sortedPricePoints: PricePoint[]): PricePoint[] {
-    const lastBar = sortedPricePoints[sortedPricePoints.length - 1];
-    const lastSessionKey = getMarketDateKey(lastBar.date);
+  private async fetchSortedMarketBars(
+    ticker: WatchlistTicker,
+    now: Date,
+  ): Promise<PricePoint[]> {
+    const historicalData = await this.fetchIntradayData(ticker, now);
+    return [...historicalData.pricePoints]
+      .filter((p) => isDuringMarketHours(p.date))
+      .sort((a, b) => a.date.getTime() - b.date.getTime());
+  }
 
-    return sortedPricePoints.filter(
-      (p) => getMarketDateKey(p.date) === lastSessionKey,
-    );
+  // Input must be chronologically sorted; bars are inserted in order, preserving intra-session order.
+  private buildSessionMap(
+    sortedPricePoints: PricePoint[],
+  ): Map<string, PricePoint[]> {
+    const sessions = new Map<string, PricePoint[]>();
+    for (const pricePoint of sortedPricePoints) {
+      const key = getMarketDateKey(pricePoint.date);
+      const existing = sessions.get(key) ?? [];
+      existing.push(pricePoint);
+      sessions.set(key, existing);
+    }
+    return sessions;
   }
 
   private sessionVwapSeries(pricePoints: PricePoint[]): Map<number, number> {
@@ -103,51 +151,46 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
   }
 
   private sessionEma9(pricePoints: PricePoint[]): Map<number, number> {
-    const values = new Map<number, number>();
+    const closesByTs = new Map<number, number>();
     const sortedDates: number[] = [];
     for (const p of pricePoints) {
       const ts = p.date.getTime();
-      values.set(ts, p.close);
+      closesByTs.set(ts, p.close);
       sortedDates.push(ts);
     }
     sortedDates.sort((a, b) => a - b);
-    return EMACalculator.calculate(values, sortedDates, 9);
+    return EMACalculator.calculate(
+      closesByTs,
+      sortedDates,
+      BreakoutDetectionServiceImpl.EMA_PERIOD,
+    );
+  }
+
+  private getPriorSessionHigh(
+    currentSessionKey: string,
+    sessions: Map<string, PricePoint[]>,
+    orderedSessionKeys: string[],
+  ): number | undefined {
+    const priorKey = orderedSessionKeys
+      .filter((k) => k < currentSessionKey)
+      .at(-1);
+    if (!priorKey) return undefined;
+    const priorBars = sessions.get(priorKey) ?? [];
+    if (priorBars.length === 0) return undefined;
+    return Math.max(...priorBars.map((p) => p.high));
   }
 
   private hasRequiredVolumeSurge(
+    currentSessionKey: string,
     currentSessionBars: PricePoint[],
-    sortedPricePoints: PricePoint[],
+    sessions: Map<string, PricePoint[]>,
+    orderedSessionKeys: string[],
   ): boolean {
-    const barsElapsedInSession = currentSessionBars.length;
-    const currentSessionKey = getMarketDateKey(
-      currentSessionBars[currentSessionBars.length - 1].date,
-    );
-
-    const sessions = new Map<string, PricePoint[]>();
-    for (const pricePoint of sortedPricePoints) {
-      const sessionKey = getMarketDateKey(pricePoint.date);
-      const existingSessionBars = sessions.get(sessionKey) ?? [];
-      existingSessionBars.push(pricePoint);
-      sessions.set(sessionKey, existingSessionBars);
-    }
-
-    for (const [key, bars] of sessions) {
-      sessions.set(
-        key,
-        bars.sort((a, b) => a.date.getTime() - b.date.getTime()),
-      );
-    }
-
-    const orderedSessionKeys = Array.from(sessions.keys()).sort((a, b) =>
-      a.localeCompare(b),
-    );
+    const barsElapsed = currentSessionBars.length;
 
     const priorSessionKeys = orderedSessionKeys
-      .filter((sessionKey) => sessionKey !== currentSessionKey)
-      .filter((sessionKey) => {
-        const sessionBars = sessions.get(sessionKey) ?? [];
-        return sessionBars.length >= barsElapsedInSession;
-      });
+      .filter((key) => key !== currentSessionKey)
+      .filter((key) => (sessions.get(key) ?? []).length >= barsElapsed);
 
     if (
       priorSessionKeys.length <
@@ -160,28 +203,33 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
       -BreakoutDetectionServiceImpl.AVERAGE_VOLUME_LOOKBACK_SESSIONS,
     );
 
-    const currentCumulativeVolume = currentSessionBars
-      .slice(0, barsElapsedInSession)
-      .reduce((sum, bar) => sum + bar.volume, 0);
+    const currentCumulativeVolume = currentSessionBars.reduce(
+      (sum, bar) => sum + bar.volume,
+      0,
+    );
 
-    const averageCumulativeVolume =
-      lookbackSessionKeys.reduce((sum, sessionKey) => {
-        const sessionBars = sessions.get(sessionKey) ?? [];
-        const sessionCumulativeVolume = sessionBars
-          .slice(0, barsElapsedInSession)
-          .reduce((sessionSum, bar) => sessionSum + bar.volume, 0);
-        return sum + sessionCumulativeVolume;
-      }, 0) / lookbackSessionKeys.length;
+    const historicalCumulativeVolumes = lookbackSessionKeys.map((key) =>
+      (sessions.get(key) ?? [])
+        .slice(0, barsElapsed)
+        .reduce((sum, bar) => sum + bar.volume, 0),
+    );
 
-    if (averageCumulativeVolume <= 0) {
-      return false;
-    }
+    // Median is more robust than mean against outlier sessions (earnings, macro events).
+    const baselineVolume = this.medianOf(historicalCumulativeVolumes);
+    if (baselineVolume <= 0) return false;
 
     return (
       currentCumulativeVolume >=
-      averageCumulativeVolume *
-        BreakoutDetectionServiceImpl.VOLUME_MULTIPLIER_THRESHOLD
+      baselineVolume * BreakoutDetectionServiceImpl.VOLUME_MULTIPLIER_THRESHOLD
     );
+  }
+
+  private medianOf(values: number[]): number {
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 !== 0
+      ? sorted[mid]
+      : (sorted[mid - 1] + sorted[mid]) / 2;
   }
 
   private async fetchIntradayData(ticker: WatchlistTicker, now: Date) {

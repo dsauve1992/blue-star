@@ -69,13 +69,10 @@ export class MarketHealthCronService {
       const ema9Values = this.computeEma(closes, 9);
       const ema21Values = this.computeEma(closes, 21);
 
-      const lastIdx = ema9Values.length - 1;
-      const prevIdx = lastIdx - 1;
-
-      const currentEma9 = ema9Values[lastIdx];
-      const previousEma9 = ema9Values[prevIdx];
-      const currentEma21 = ema21Values[lastIdx];
-      const previousEma21 = ema21Values[prevIdx];
+      const currentEma9 = ema9Values[ema9Values.length - 1];
+      const previousEma9 = ema9Values[ema9Values.length - 2];
+      const currentEma21 = ema21Values[ema21Values.length - 1];
+      const previousEma21 = ema21Values[ema21Values.length - 2];
 
       const status = this.deriveStatus(
         currentEma9,
