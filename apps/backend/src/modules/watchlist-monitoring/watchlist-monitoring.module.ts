@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 import { WatchlistMonitoringController } from './api/watchlist-monitoring.controller';
 import { WatchlistMonitoringApiMapper } from './api/watchlist-monitoring-api.mapper';
 import { ActivateMonitoringUseCase } from './use-cases/activate-monitoring.use-case';
@@ -22,13 +21,7 @@ import { MarketDataModule } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [
-    ScheduleModule.forRoot(),
-    DatabaseModule,
-    WatchlistModule,
-    MarketDataModule,
-    NotificationModule,
-  ],
+  imports: [DatabaseModule, WatchlistModule, MarketDataModule, NotificationModule],
   controllers: [WatchlistMonitoringController],
   providers: [
     {

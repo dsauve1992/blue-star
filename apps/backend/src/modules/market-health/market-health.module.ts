@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from '../../config/database.module';
 import { MarketDataModule } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -11,12 +10,7 @@ import { MarketHealthCronService } from './infrastructure/services/market-health
 import { MARKET_HEALTH_REPOSITORY } from './constants/tokens';
 
 @Module({
-  imports: [
-    ScheduleModule.forRoot(),
-    DatabaseModule,
-    MarketDataModule,
-    NotificationModule,
-  ],
+  imports: [DatabaseModule, MarketDataModule, NotificationModule],
   controllers: [MarketHealthController],
   providers: [
     {

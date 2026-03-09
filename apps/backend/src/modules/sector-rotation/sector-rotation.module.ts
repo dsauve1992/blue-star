@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from '../../config/database.module';
 import { SectorRotationController } from './api/sector-rotation.controller';
 import { SectorRotationApiMapper } from './api/sector-rotation-api.mapper';
@@ -29,7 +28,7 @@ export {
 };
 
 @Module({
-  imports: [ScheduleModule.forRoot(), DatabaseModule, MarketDataModule],
+  imports: [DatabaseModule, MarketDataModule],
   controllers: [SectorRotationController],
   providers: [
     {

@@ -1,5 +1,4 @@
 import { Module } from '@nestjs/common';
-import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from '../../config/database.module';
 import { ThemesModule } from '../themes/themes.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -23,12 +22,7 @@ export {
 };
 
 @Module({
-  imports: [
-    ScheduleModule.forRoot(),
-    DatabaseModule,
-    ThemesModule,
-    NotificationModule,
-  ],
+  imports: [DatabaseModule, ThemesModule, NotificationModule],
   controllers: [StockAnalysisController],
   providers: [
     {

@@ -15,6 +15,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { WatchlistMonitoringModule } from './modules/watchlist-monitoring/watchlist-monitoring.module';
 import { MarketHealthModule } from './modules/market-health/market-health.module';
 import { AuthGuard } from './modules/auth/auth.guard';
+import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './config/database.module';
 
 @Module({
@@ -23,6 +24,7 @@ import { DatabaseModule } from './config/database.module';
       isGlobal: true,
       envFilePath: '.env',
     }),
+    ScheduleModule.forRoot(),
     DatabaseModule,
     PositionModule,
     MarketDataModule,
