@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect } from "react";
+import { parseLocalDate } from "../utils/parse-local-date";
 import { PageContainer } from "src/global/design-system";
 import { Card, Button, LoadingSpinner, Alert } from "src/global/design-system";
 import { useSectorRotation } from "../hooks/use-sector-rotation";
@@ -55,7 +56,7 @@ export default function SectorRotation() {
   const uniqueDates = useMemo(() => {
     if (!data?.result?.dataPoints) return [];
     const dates = Array.from(new Set(data.result.dataPoints.map((p) => p.date)))
-      .map((d) => new Date(d))
+      .map((d) => parseLocalDate(d))
       .sort((a, b) => a.getTime() - b.getTime());
     return dates;
   }, [data?.result?.dataPoints]);
@@ -486,7 +487,7 @@ export default function SectorRotation() {
                                   className="border-t border-slate-200 dark:border-slate-700"
                                 >
                                   <td className="p-2">
-                                    {new Date(diff.date).toLocaleDateString()}
+                                    {parseLocalDate(diff.date).toLocaleDateString()}
                                   </td>
                                   <td className="p-2">{diff.sectorSymbol}</td>
                                   <td className="p-2 text-right font-mono">

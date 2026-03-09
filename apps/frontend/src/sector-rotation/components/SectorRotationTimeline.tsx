@@ -1,6 +1,7 @@
 import { Card } from 'src/global/design-system';
 import { useTheme } from 'src/global/design-system';
 import type { SectorRotationDataPoint } from '../api/sector-rotation.client';
+import { parseLocalDate } from '../utils/parse-local-date';
 
 interface SectorRotationTimelineProps {
   dataPoints: SectorRotationDataPoint[];
@@ -83,7 +84,7 @@ export function SectorRotationTimeline({
                     key={date}
                     className="border border-border p-1 text-center text-xs font-medium min-w-[24px]"
                   >
-                    {new Date(date).toLocaleDateString('en-US', {
+                    {parseLocalDate(date).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
                     })}
@@ -122,7 +123,7 @@ export function SectorRotationTimeline({
                         className={`border border-border p-1 text-center text-xs ${getQuadrantColor(
                           quadrant,
                         )} ${isDarkMode ? 'opacity-80' : 'opacity-70'}`}
-                        title={`${symbol} - ${new Date(
+                        title={`${symbol} - ${parseLocalDate(
                           date,
                         ).toLocaleDateString()}: ${quadrant}`}
                       >

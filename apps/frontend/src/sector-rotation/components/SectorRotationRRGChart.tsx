@@ -3,6 +3,7 @@ import { Card } from "src/global/design-system";
 import { useTheme } from "src/global/design-system";
 import type { SectorRotationDataPoint } from "../api/sector-rotation.client";
 import { useMemo } from "react";
+import { parseLocalDate } from "../utils/parse-local-date";
 
 interface SectorRotationRRGChartProps {
   dataPoints: SectorRotationDataPoint[];
@@ -32,12 +33,12 @@ export function SectorRotationRRGChart({
     if (!startDate || !endDate) {
       if (filtered.length === 0) return filtered;
       const latestDate = new Date(
-        Math.max(...filtered.map((p) => new Date(p.date).getTime())),
+        Math.max(...filtered.map((p) => parseLocalDate(p.date).getTime())),
       );
       const fiveWeeksAgo = new Date(latestDate);
       fiveWeeksAgo.setDate(fiveWeeksAgo.getDate() - 5 * 7);
       return filtered.filter((p) => {
-        const pointDate = new Date(p.date);
+        const pointDate = parseLocalDate(p.date);
         return (
           pointDate.getTime() >= fiveWeeksAgo.getTime() &&
           pointDate.getTime() <= latestDate.getTime()
@@ -46,7 +47,7 @@ export function SectorRotationRRGChart({
     }
 
     return filtered.filter((p) => {
-      const pointDate = new Date(p.date);
+      const pointDate = parseLocalDate(p.date);
       return (
         pointDate.getTime() >= startDate.getTime() &&
         pointDate.getTime() <= endDate.getTime()
@@ -94,7 +95,7 @@ export function SectorRotationRRGChart({
   }, [filteredDataPoints]);
 
   const latestDate = new Date(
-    Math.max(...filteredDataPoints.map((p) => new Date(p.date).getTime())),
+    Math.max(...filteredDataPoints.map((p) => parseLocalDate(p.date).getTime())),
   );
 
   const sectorSymbols = useMemo(() => {
@@ -107,7 +108,7 @@ export function SectorRotationRRGChart({
         const symbolPoints = filteredDataPoints
           .filter((p) => p.sectorSymbol === symbol)
           .sort(
-            (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime(),
+            (a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime(),
           );
 
         if (symbolPoints.length === 0) {
