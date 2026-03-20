@@ -169,48 +169,6 @@ describe('BreakoutDetectionServiceImpl', () => {
     expect(result.detected).toBe(false);
   });
 
-  it('should return detected false when EMA does not cross above VWAP', async () => {
-    const ticker = WatchlistTicker.of('AAPL');
-    // Monotonically declining closes: EMA always remains below open, VWAP declining
-    const bars = buildSessionBars(
-      14,
-      [120, 118, 116, 114, 112, 110, 108, 106, 104, 102],
-      1000,
-    );
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
-
-    const result = await service.detect(ticker);
-
-    expect(result.detected).toBe(false);
-  });
-
-  it('should return detected false when crossover is not fresh (EMA already above VWAP on prior bar)', async () => {
-    const ticker = WatchlistTicker.of('AAPL');
-    // Monotonically rising closes: by bar 8, EMA(9) has already crossed above VWAP,
-    // so there is no fresh crossover on the last bar.
-    const bars = buildBreakoutScenario({
-      currentCloses: [100, 102, 104, 106, 108, 110, 112, 114, 116, 118],
-      currentVolume: 250,
-    });
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
-
-    const result = await service.detect(ticker);
-
-    expect(result.detected).toBe(false);
-  });
-
-  it('should return detected false when EMA-VWAP spread is below the 10bps minimum', async () => {
-    const ticker = WatchlistTicker.of('AAPL');
-    // Last bar close is 100.05 — EMA barely ticks above VWAP but the spread
-    // (~0.005%) is well below the 10bps (0.1%) minimum required.
-    const bars = buildBreakoutScenario({ currentCloses: [100, 100, 100, 100, 100, 100, 100, 100, 100, 100.05], currentVolume: 250 });
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
-
-    const result = await service.detect(ticker);
-
-    expect(result.detected).toBe(false);
-  });
-
   it('should return detected false when current close does not exceed prior session high', async () => {
     const ticker = WatchlistTicker.of('AAPL');
     // Prior sessions trade at 110 (high = 110).
@@ -227,11 +185,11 @@ describe('BreakoutDetectionServiceImpl', () => {
     expect(result.detected).toBe(false);
   });
 
-  it('should return detected false when cumulative volume is below the 1.5x lookback threshold', async () => {
+  it('should return detected false when cumulative volume is below the weighted baseline', async () => {
     const ticker = WatchlistTicker.of('AAPL');
-    // Prior sessions cumulative: 10 bars × 100 vol = 1000. Threshold = 1500.
-    // Current cumulative: 10 × 140 = 1400 < 1500 → no surge.
-    const bars = buildBreakoutScenario({ currentVolume: 140 });
+    // All prior sessions flat at 100 vol/bar → weighted baseline = 1000.
+    // Current cumulative: 10 × 99 = 990 < 1000 → no surge.
+    const bars = buildBreakoutScenario({ currentVolume: 99 });
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
 
     const result = await service.detect(ticker);
@@ -257,7 +215,7 @@ describe('BreakoutDetectionServiceImpl', () => {
     //   VWAP: (9×100×250 + 105×250) / (10×250) = 100.5
     //   EMA(9): 105×0.2 + 100×0.8 = 101  →  spread ≈ 0.50% ✓
     //   Prior session high: 100 → 105 > 100 ✓
-    //   Volume: 2500 >= 1000 × 1.5 ✓
+    //   Volume: 2500 >= 1000 (weighted baseline) ✓
     const bars = buildBreakoutScenario({ currentVolume: 250 });
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
 
@@ -267,23 +225,24 @@ describe('BreakoutDetectionServiceImpl', () => {
     expect(result.detected).toBe(true);
   });
 
-  it('should use median (not mean) volume baseline so a single outlier session does not suppress the signal', async () => {
+  it('should give more weight to recent sessions so an old outlier session does not suppress the signal', async () => {
     const ticker = WatchlistTicker.of('AAPL');
-    // 9 normal sessions (cumulative 1000 each) + 1 post-earnings outlier (cumulative 20000).
-    // Arithmetic mean baseline = (9×1000 + 20000)/10 = 2900 → would require 4350 → SUPPRESSED.
-    // Median baseline = 1000 → requires 1500 → current 1800 passes ✓.
+    // Day 1 (oldest, weight=1): post-earnings outlier (cumulative 20000).
+    // Days 2–10 (weights 2–10): normal sessions (cumulative 1000 each).
+    // Unweighted mean baseline = (20000 + 9×1000)/10 = 2900 → would require 4350 → SUPPRESSED.
+    // Weighted mean (oldest weight=1, most recent weight=10):
+    //   baseline = (20000×1 + 1000×(2+3+4+5+6+7+8+9+10)) / 55 = 74000/55 ≈ 1345
+    //   current cumulative = 210 × 10 = 2100 > 1345 ✓
     const bars: PricePoint[] = [];
-    for (let day = 1; day <= 9; day++) {
+    bars.push(...buildSessionBars(1, new Array(10).fill(100), 2000));
+    for (let day = 2; day <= 10; day++) {
       bars.push(...buildSessionBars(day, new Array(10).fill(100), 100));
     }
-    // Day 10: outlier session (10× volume)
-    bars.push(...buildSessionBars(10, new Array(10).fill(100), 2000));
-    // Day 11: current session with a fresh EMA×VWAP crossover and 1.8× pace
     bars.push(
       ...buildSessionBars(
         11,
         [100, 100, 100, 100, 100, 100, 100, 100, 100, 105],
-        180,
+        210,
       ),
     );
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));

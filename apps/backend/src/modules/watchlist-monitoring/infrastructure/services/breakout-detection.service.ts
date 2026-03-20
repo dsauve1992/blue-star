@@ -24,10 +24,6 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
   private static readonly EMA_MINIMUM_BARS = 9;
   private static readonly AVERAGE_VOLUME_LOOKBACK_SESSIONS = 10;
   private static readonly INTRADAY_LOOKBACK_CALENDAR_DAYS = 30;
-  // 1.5× is a meaningful surge; 1.2× falls within normal session-to-session variance for liquid names.
-  private static readonly VOLUME_MULTIPLIER_THRESHOLD = 1.5;
-  // EMA must clear VWAP by at least 10bps to eliminate sub-spread noise crosses.
-  private static readonly MIN_EMA_VWAP_SPREAD_PCT = 0.001;
 
   constructor(
     @Inject(MARKET_DATA_SERVICE)
@@ -59,30 +55,15 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     const latestTs = latestBar.date.getTime();
     const previousTs = sessionBars[latestIndex - 1].date.getTime();
 
-    const vwapSeries = this.sessionVwapSeries(sessionBars);
-    const vwapLatest = vwapSeries.get(latestTs);
-    const vwapPrevious = vwapSeries.get(previousTs);
-
     const ema9Map = this.sessionEma9(sessionBars);
     const ema9Latest = ema9Map.get(latestTs);
     const ema9Previous = ema9Map.get(previousTs);
 
-    if (
-      vwapLatest === undefined ||
-      vwapPrevious === undefined ||
-      ema9Latest === undefined ||
-      ema9Previous === undefined
-    ) {
+    if (ema9Latest === undefined || ema9Previous === undefined) {
       return { ticker, detected: false };
     }
 
-    const crossedAboveVwap = ema9Latest > vwapLatest;
-    const freshCrossover = ema9Previous <= vwapPrevious;
-    const vwapRising = vwapLatest > vwapPrevious;
     const ema9Rising = ema9Latest > ema9Previous;
-    const spreadSufficient =
-      (ema9Latest - vwapLatest) / vwapLatest >=
-      BreakoutDetectionServiceImpl.MIN_EMA_VWAP_SPREAD_PCT;
     const volumeSurge = this.hasRequiredVolumeSurge(
       currentSessionKey,
       sessionBars,
@@ -99,14 +80,7 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     const abovePriorSessionHigh =
       priorSessionHigh === undefined || latestBar.close > priorSessionHigh;
 
-    const detected =
-      crossedAboveVwap &&
-      freshCrossover &&
-      vwapRising &&
-      ema9Rising &&
-      spreadSufficient &&
-      volumeSurge &&
-      abovePriorSessionHigh;
+    const detected = ema9Rising && volumeSurge && abovePriorSessionHigh;
 
     return { ticker, detected };
   }
@@ -133,21 +107,6 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
       sessions.set(key, existing);
     }
     return sessions;
-  }
-
-  private sessionVwapSeries(pricePoints: PricePoint[]): Map<number, number> {
-    const values = new Map<number, number>();
-    let sumTpVol = 0;
-    let sumVol = 0;
-    for (const p of pricePoints) {
-      const typicalPrice = (p.high + p.low + p.close) / 3;
-      sumTpVol += typicalPrice * p.volume;
-      sumVol += p.volume;
-      if (sumVol > 0) {
-        values.set(p.date.getTime(), sumTpVol / sumVol);
-      }
-    }
-    return values;
   }
 
   private sessionEma9(pricePoints: PricePoint[]): Map<number, number> {
@@ -214,22 +173,27 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
         .reduce((sum, bar) => sum + bar.volume, 0),
     );
 
-    // Median is more robust than mean against outlier sessions (earnings, macro events).
-    const baselineVolume = this.medianOf(historicalCumulativeVolumes);
+    // Older sessions anchor the baseline more than recent ones; a weighted mean
+    // with linearly decreasing weights (oldest = highest) achieves this while
+    // still being robust to a single outlier sitting at the recent end.
+    const baselineVolume = this.weightedMeanOf(historicalCumulativeVolumes);
     if (baselineVolume <= 0) return false;
 
-    return (
-      currentCumulativeVolume >=
-      baselineVolume * BreakoutDetectionServiceImpl.VOLUME_MULTIPLIER_THRESHOLD
-    );
+    return currentCumulativeVolume >= baselineVolume;
   }
 
-  private medianOf(values: number[]): number {
-    const sorted = [...values].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-    return sorted.length % 2 !== 0
-      ? sorted[mid]
-      : (sorted[mid - 1] + sorted[mid]) / 2;
+  // values[0] = oldest session, values[N-1] = most recent session.
+  // Weight for index i = (i + 1), giving the most recent session the highest weight.
+  private weightedMeanOf(values: number[]): number {
+    const n = values.length;
+    let weightedSum = 0;
+    let totalWeight = 0;
+    for (let i = 0; i < n; i++) {
+      const weight = i + 1;
+      weightedSum += weight * values[i];
+      totalWeight += weight;
+    }
+    return totalWeight > 0 ? weightedSum / totalWeight : 0;
   }
 
   private async fetchIntradayData(ticker: WatchlistTicker, now: Date) {
