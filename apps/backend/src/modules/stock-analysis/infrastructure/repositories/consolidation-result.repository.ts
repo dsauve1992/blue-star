@@ -75,16 +75,16 @@ export class ConsolidationResultRepositoryImpl
 
   async getLatestResults(
     timeframe: 'daily' | 'weekly',
-    analysisDate: AnalysisDate,
   ): Promise<ConsolidationResultEntity[]> {
-    const analysisDateStr = analysisDate.toISOString();
-
     const result = (await this.databaseService.query(
       `SELECT id, timeframe, analysis_date, symbol, is_new, ticker_full_name, sector, industry, created_at
        FROM consolidation_results
-       WHERE timeframe = $1 AND analysis_date = $2
+       WHERE timeframe = $1
+         AND analysis_date = (
+           SELECT MAX(analysis_date) FROM consolidation_results WHERE timeframe = $1
+         )
        ORDER BY symbol`,
-      [timeframe, analysisDateStr],
+      [timeframe],
     )) as { rows: ConsolidationResultRow[] };
 
     return result.rows.map((row) =>
@@ -104,17 +104,14 @@ export class ConsolidationResultRepositoryImpl
 
   async getLatestRun(
     timeframe: 'daily' | 'weekly',
-    analysisDate: AnalysisDate,
   ): Promise<ConsolidationRun | null> {
-    const analysisDateStr = analysisDate.toISOString();
-
     const result = (await this.databaseService.query(
       `SELECT id, timeframe, analysis_date, status, error_message, created_at, completed_at
        FROM consolidation_runs
-       WHERE timeframe = $1 AND analysis_date = $2
-       ORDER BY created_at DESC
+       WHERE timeframe = $1
+       ORDER BY analysis_date DESC, created_at DESC
        LIMIT 1`,
-      [timeframe, analysisDateStr],
+      [timeframe],
     )) as { rows: ConsolidationRunRow[] };
 
     if (result.rows.length === 0) {

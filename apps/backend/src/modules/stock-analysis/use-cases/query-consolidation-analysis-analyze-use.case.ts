@@ -1,7 +1,6 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { ConsolidationResultRepository } from '../domain/repositories/consolidation-result.repository.interface';
 import { ConsolidationResult } from '../domain/value-objects/consolidation-result';
-import { AnalysisDate } from '../domain/value-objects/analysis-date';
 import { ConsolidationRunStatus } from '../domain/value-objects/consolidation-run-status';
 import { CONSOLIDATION_RESULT_REPOSITORY } from '../constants/tokens';
 import { ThemeRepository } from '../../themes/domain/repositories/theme.repository.interface';
@@ -33,15 +32,7 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
   async execute(
     request: QueryConsolidationAnalysisRequestDto,
   ): Promise<QueryConsolidationAnalysisResponseDto> {
-    const analysisDate =
-      request.type === 'daily'
-        ? AnalysisDate.today()
-        : AnalysisDate.forWeekly(new Date());
-
-    const results = await this.repository.getLatestResults(
-      request.type,
-      analysisDate,
-    );
+    const results = await this.repository.getLatestResults(request.type);
 
     const consolidationResults: ConsolidationResult[] = await Promise.all(
       results.map(async (r) => {
@@ -64,7 +55,7 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
 
     let runStatus: 'completed' | 'running' | 'failed' | 'not_found' | undefined;
     let errorMessage: string | undefined;
-    const run = await this.repository.getLatestRun(request.type, analysisDate);
+    const run = await this.repository.getLatestRun(request.type);
 
     if (run) {
       if (run.status === ConsolidationRunStatus.COMPLETED) {
