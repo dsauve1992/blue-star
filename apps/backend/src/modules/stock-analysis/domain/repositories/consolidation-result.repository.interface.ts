@@ -11,9 +11,7 @@ export interface ConsolidationResultRepository {
     timeframe: 'daily' | 'weekly',
   ): Promise<ConsolidationResultEntity[]>;
 
-  getLatestRun(
-    timeframe: 'daily' | 'weekly',
-  ): Promise<ConsolidationRun | null>;
+  getLatestRun(timeframe: 'daily' | 'weekly'): Promise<ConsolidationRun | null>;
 
   saveRun(run: ConsolidationRun): Promise<void>;
 }

@@ -10,9 +10,18 @@ function getTickerLogoUrl(symbol: string): string {
   return `https://images.financialmodelingprep.com/symbol/${symbol}.png`;
 }
 
+function getRsRatingColor(rsRating: number): string {
+  if (rsRating >= 80)
+    return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+  if (rsRating >= 50)
+    return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+  return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+}
+
 interface TickerListItemProps {
   ticker: string;
   isSelected: boolean;
+  rsRating?: number;
   onSelect: (ticker: string) => void;
   onRemove: (ticker: string) => void;
 }
@@ -20,6 +29,7 @@ interface TickerListItemProps {
 export function TickerListItem({
   ticker,
   isSelected,
+  rsRating,
   onSelect,
   onRemove,
 }: TickerListItemProps) {
@@ -65,6 +75,14 @@ export function TickerListItem({
       >
         {ticker}
       </span>
+
+      {rsRating !== undefined && (
+        <span
+          className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 ${getRsRatingColor(rsRating)}`}
+        >
+          {rsRating}
+        </span>
+      )}
 
       <button
         onClick={(e) => {

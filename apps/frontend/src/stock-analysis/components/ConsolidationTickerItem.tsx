@@ -14,11 +14,20 @@ function getTickerLogoUrl(symbol: string): string {
   return `https://images.financialmodelingprep.com/symbol/${symbol}.png`;
 }
 
+function getRsRatingColor(rsRating: number): string {
+  if (rsRating >= 80)
+    return "bg-emerald-500/20 text-emerald-400 border-emerald-500/30";
+  if (rsRating >= 50)
+    return "bg-amber-500/20 text-amber-400 border-amber-500/30";
+  return "bg-slate-500/20 text-slate-400 border-slate-500/30";
+}
+
 interface ConsolidationTickerItemProps {
   consolidation: ConsolidationResult;
   isSelected: boolean;
   sectorFilterMode: SectorFilterMode;
   sectorStatuses: SectorStatus[];
+  rsRating?: number;
   onSelect: (tickerFullName: string) => void;
 }
 
@@ -27,6 +36,7 @@ export function ConsolidationTickerItem({
   isSelected,
   sectorFilterMode,
   sectorStatuses,
+  rsRating,
   onSelect,
 }: ConsolidationTickerItemProps) {
   const [logoFailed, setLogoFailed] = useState(false);
@@ -102,6 +112,13 @@ export function ConsolidationTickerItem({
           {consolidation.tickerFullName}
         </span>
         <div className="flex flex-wrap gap-0.5 mt-1">
+          {rsRating !== undefined && (
+            <span
+              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getRsRatingColor(rsRating)}`}
+            >
+              RS {rsRating}
+            </span>
+          )}
           {consolidation.sector && sectorQuadrant && (
             <span
               className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getQuadrantColor(sectorQuadrant)}`}

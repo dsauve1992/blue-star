@@ -21,7 +21,12 @@ import { MarketDataModule } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
-  imports: [DatabaseModule, WatchlistModule, MarketDataModule, NotificationModule],
+  imports: [
+    DatabaseModule,
+    WatchlistModule,
+    MarketDataModule,
+    NotificationModule,
+  ],
   controllers: [WatchlistMonitoringController],
   providers: [
     {

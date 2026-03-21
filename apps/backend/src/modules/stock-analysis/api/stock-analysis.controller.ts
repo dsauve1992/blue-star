@@ -16,12 +16,19 @@ import {
   RunConsolidationAnalysisRequestDto,
   RunConsolidationAnalysisUseCase,
 } from '../use-cases/run-consolidation-analysis.use-case';
+import {
+  QueryRsRatingsUseCase,
+  QueryRsRatingsResponseDto,
+} from '../use-cases/query-rs-ratings.use-case';
+import { RunRsRatingsUseCase } from '../use-cases/run-rs-ratings.use-case';
 
 @Controller('stock-analysis')
 export class StockAnalysisController {
   constructor(
     private readonly analyzeConsolidationsUseCase: QueryConsolidationAnalysisAnalyzeUseCase,
     private readonly runConsolidationAnalysisUseCase: RunConsolidationAnalysisUseCase,
+    private readonly queryRsRatingsUseCase: QueryRsRatingsUseCase,
+    private readonly runRsRatingsUseCase: RunRsRatingsUseCase,
   ) {}
 
   @Get('consolidations')
@@ -64,6 +71,50 @@ export class StockAnalysisController {
 
       await this.runConsolidationAnalysisUseCase.execute(body);
       return { message: 'Analysis started successfully' };
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error(error);
+      throw new BadRequestException(error);
+    }
+  }
+
+  @Get('rs-ratings')
+  @Public()
+  async getRsRatings(
+    @Query('symbols') symbols: string,
+  ): Promise<QueryRsRatingsResponseDto> {
+    try {
+      if (!symbols || !symbols.trim()) {
+        throw new BadRequestException(
+          'symbols query parameter is required (comma-separated)',
+        );
+      }
+
+      const symbolList = symbols
+        .split(',')
+        .map((s) => s.trim())
+        .filter((s) => s.length > 0);
+
+      return await this.queryRsRatingsUseCase.execute({
+        symbols: symbolList,
+      });
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error(error);
+      throw new BadRequestException(error);
+    }
+  }
+
+  @Post('rs-ratings/run')
+  @Public()
+  async runRsRatings(): Promise<{ message: string }> {
+    try {
+      await this.runRsRatingsUseCase.execute();
+      return { message: 'RS rating computation started successfully' };
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;

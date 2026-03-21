@@ -1,4 +1,4 @@
-import { useCallback } from "react";
+import { useCallback, useMemo } from "react";
 import {
   ChevronUp,
   ChevronDown,
@@ -17,6 +17,7 @@ import type {
   SectorFilterMode,
 } from "../hooks/use-consolidation-selection";
 import { ConsolidationTickerItem } from "./ConsolidationTickerItem";
+import { useRsRatings } from "../hooks/use-rs-ratings";
 
 const SELECT_CHEVRON_STYLE: React.CSSProperties = {
   backgroundImage:
@@ -65,6 +66,26 @@ export function ConsolidationSidebar({
   tickerRefs,
   listContainerRef,
 }: ConsolidationSidebarProps) {
+  const rsSymbols = useMemo(
+    () => consolidations.map((c) => {
+      const parts = c.symbol.split(":");
+      return parts.length > 1 ? parts[1] : parts[0];
+    }),
+    [consolidations],
+  );
+
+  const { data: rsData } = useRsRatings(rsSymbols);
+
+  const rsRatingMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (rsData?.ratings) {
+      for (const r of rsData.ratings) {
+        map.set(r.symbol, r.rsRating);
+      }
+    }
+    return map;
+  }, [rsData]);
+
   const setTickerRef = useCallback(
     (ticker: string, el: HTMLDivElement | null) => {
       if (el) {
@@ -225,6 +246,11 @@ export function ConsolidationSidebar({
                 isSelected={selectedTicker === consolidation.tickerFullName}
                 sectorFilterMode={sectorFilterMode}
                 sectorStatuses={sectorStatuses}
+                rsRating={rsRatingMap.get(
+                  consolidation.symbol.includes(":")
+                    ? consolidation.symbol.split(":")[1]
+                    : consolidation.symbol,
+                )}
                 onSelect={onTickerSelect}
               />
             </div>

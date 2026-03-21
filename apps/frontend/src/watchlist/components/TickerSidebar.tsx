@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import {
   Bookmark,
   ChevronUp,
@@ -9,6 +9,7 @@ import {
 import { LoadingSpinner } from "src/global/design-system";
 import { Alert, AlertDescription } from "src/global/design-system";
 import { TickerListItem } from "./TickerListItem";
+import { useRsRatings } from "src/stock-analysis/hooks/use-rs-ratings";
 
 interface TickerSidebarProps {
   tickers: string[];
@@ -36,6 +37,26 @@ export function TickerSidebar({
   listContainerRef,
 }: TickerSidebarProps) {
   const [addTickerInput, setAddTickerInput] = useState("");
+
+  const rsSymbols = useMemo(
+    () => tickers.map((t) => {
+      const parts = t.split(":");
+      return parts.length > 1 ? parts[1] : parts[0];
+    }),
+    [tickers],
+  );
+
+  const { data: rsData } = useRsRatings(rsSymbols);
+
+  const rsRatingMap = useMemo(() => {
+    const map = new Map<string, number>();
+    if (rsData?.ratings) {
+      for (const r of rsData.ratings) {
+        map.set(r.symbol, r.rsRating);
+      }
+    }
+    return map;
+  }, [rsData]);
 
   const currentIndex = tickers.findIndex((t) => t === selectedTicker);
 
@@ -160,6 +181,9 @@ export function TickerSidebar({
               <TickerListItem
                 ticker={ticker}
                 isSelected={selectedTicker === ticker}
+                rsRating={rsRatingMap.get(
+                  ticker.includes(":") ? ticker.split(":")[1] : ticker,
+                )}
                 onSelect={handleTickerSelect}
                 onRemove={onRemoveTicker}
               />
