@@ -89,41 +89,25 @@ export default function SectorRotation() {
   const fullRange = useMemo(() => {
     if (uniqueDates.length === 0) return { start: null, end: null, weeks: [] };
 
-    const latestDate = uniqueDates[uniqueDates.length - 1];
-    const endWeek = new Date(latestDate);
-    endWeek.setDate(endWeek.getDate() - endWeek.getDay());
-
-    const weeks: Date[] = [];
-    for (let i = 51; i >= 0; i--) {
-      const weekStart = new Date(endWeek);
-      weekStart.setDate(weekStart.getDate() - i * 7);
-      weeks.push(weekStart);
-    }
-
     return {
-      start: weeks[0],
-      end: endWeek,
-      weeks,
+      start: uniqueDates[0],
+      end: uniqueDates[uniqueDates.length - 1],
+      weeks: uniqueDates,
     };
   }, [uniqueDates]);
 
   const initialTimeWindow = useMemo(() => {
-    if (uniqueDates.length === 0 || !fullRange.weeks.length)
+    if (!fullRange.weeks.length)
       return { start: null, end: null, sliderPosition: 0 };
 
-    const startWeek = fullRange.weeks[Math.max(0, fullRange.weeks.length - 5)];
-
-    const endDate = uniqueDates[uniqueDates.length - 1];
-    const startDate =
-      uniqueDates.find((date) => date.getTime() >= startWeek.getTime()) ||
-      uniqueDates[0];
+    const startIndex = Math.max(0, fullRange.weeks.length - 5);
 
     return {
-      start: startDate,
-      end: endDate,
-      sliderPosition: Math.max(0, fullRange.weeks.length - 5),
+      start: fullRange.weeks[startIndex],
+      end: fullRange.weeks[fullRange.weeks.length - 1],
+      sliderPosition: startIndex,
     };
-  }, [uniqueDates, fullRange]);
+  }, [fullRange]);
 
   const [sliderPosition, setSliderPosition] = useState<number>(0);
 
@@ -152,31 +136,13 @@ export default function SectorRotation() {
 
     setSliderPosition(position);
     const windowSize = 5;
-    const startWeekIndex = position;
-    const endWeekIndex = Math.min(
+    const endIndex = Math.min(
       position + windowSize - 1,
       fullRange.weeks.length - 1,
     );
 
-    const startWeek = fullRange.weeks[startWeekIndex];
-    const endWeek = fullRange.weeks[endWeekIndex];
-
-    if (startWeek && endWeek) {
-      const weekEndDate = new Date(endWeek);
-      weekEndDate.setDate(weekEndDate.getDate() + 7);
-
-      const actualStartDate =
-        uniqueDates.find((date) => date.getTime() >= startWeek.getTime()) ||
-        startWeek;
-
-      const actualEndDate =
-        uniqueDates.find((date) => date.getTime() >= weekEndDate.getTime()) ||
-        uniqueDates[uniqueDates.length - 1] ||
-        weekEndDate;
-
-      setSelectedStartDate(actualStartDate);
-      setSelectedEndDate(actualEndDate);
-    }
+    setSelectedStartDate(fullRange.weeks[position]);
+    setSelectedEndDate(fullRange.weeks[endIndex]);
   };
 
   if (isLoading) {
