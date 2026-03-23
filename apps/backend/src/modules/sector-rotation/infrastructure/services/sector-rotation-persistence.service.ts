@@ -107,9 +107,13 @@ export class SectorRotationPersistenceServiceImpl
     dateRange: DateRange,
   ): Promise<SectorRotationResult> {
     const sectorSymbols = sectors.map((s) => s.etfSymbol);
+    const lastFriday = WeekUtils.getMostRecentFriday(new Date());
+    const cappedEndDate =
+      dateRange.endDate > lastFriday ? lastFriday : dateRange.endDate;
+
     const existingDataPoints = await this.readRepository.findByDateRange(
       dateRange.startDate,
-      dateRange.endDate,
+      cappedEndDate,
     );
 
     const existingDates = new Set(
@@ -118,7 +122,7 @@ export class SectorRotationPersistenceServiceImpl
 
     const allDates = this.generateWeekDates(
       dateRange.startDate,
-      dateRange.endDate,
+      cappedEndDate,
     );
     const missingDates = allDates.filter(
       (date) => !existingDates.has(date.toISOString().split('T')[0]),
@@ -130,7 +134,7 @@ export class SectorRotationPersistenceServiceImpl
       );
       return SectorRotationResult.of(
         dateRange.startDate,
-        dateRange.endDate,
+        cappedEndDate,
         filteredDataPoints,
         sectorSymbols,
       );
@@ -147,7 +151,7 @@ export class SectorRotationPersistenceServiceImpl
       computeStartDate.getDate() - requiredLookbackWeeks * 7,
     );
 
-    const computeEndDate = new Date(dateRange.endDate);
+    const computeEndDate = new Date(cappedEndDate);
 
     const computeDateRange = DateRange.of(computeStartDate, computeEndDate);
     const params: SectorRotationCalculationParams = {
@@ -164,7 +168,7 @@ export class SectorRotationPersistenceServiceImpl
     const newDataPoints = computedResult.dataPoints.filter(
       (point) =>
         point.date >= dateRange.startDate &&
-        point.date <= dateRange.endDate &&
+        point.date <= cappedEndDate &&
         sectorSymbols.includes(point.sectorSymbol),
     );
 
@@ -174,7 +178,7 @@ export class SectorRotationPersistenceServiceImpl
       ...existingDataPoints.filter(
         (point) =>
           point.date >= dateRange.startDate &&
-          point.date <= dateRange.endDate &&
+          point.date <= cappedEndDate &&
           sectorSymbols.includes(point.sectorSymbol),
       ),
       ...newDataPoints,
@@ -184,7 +188,7 @@ export class SectorRotationPersistenceServiceImpl
 
     return SectorRotationResult.of(
       dateRange.startDate,
-      dateRange.endDate,
+      cappedEndDate,
       uniqueDataPoints,
       sectorSymbols,
     );
