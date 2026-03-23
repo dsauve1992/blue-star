@@ -163,7 +163,7 @@ export default function SectorRotation() {
 
     if (startWeek && endWeek) {
       const weekEndDate = new Date(endWeek);
-      weekEndDate.setDate(weekEndDate.getDate() + 6);
+      weekEndDate.setDate(weekEndDate.getDate() + 7);
 
       const actualStartDate =
         uniqueDates.find((date) => date.getTime() >= startWeek.getTime()) ||

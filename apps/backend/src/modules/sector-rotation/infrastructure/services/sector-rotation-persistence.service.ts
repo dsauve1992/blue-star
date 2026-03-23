@@ -16,6 +16,7 @@ import {
   SECTOR_ROTATION_DATA_WRITE_REPOSITORY,
 } from '../../constants/tokens';
 import { RRG_PARAMETERS } from '../../constants/rrg-parameters';
+import { WeekUtils } from '../utils/week-utils';
 
 @Injectable()
 export class SectorRotationPersistenceServiceImpl
@@ -31,8 +32,8 @@ export class SectorRotationPersistenceServiceImpl
   ) {}
 
   async initializeLast52Weeks(sectors: Sector[]): Promise<void> {
-    const endDate = new Date();
-    const startDate = new Date();
+    const endDate = WeekUtils.getMostRecentFriday(new Date());
+    const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - 52 * 7);
 
     const dateRange = DateRange.of(startDate, endDate);
@@ -58,9 +59,9 @@ export class SectorRotationPersistenceServiceImpl
       return;
     }
 
-    const today = new Date();
+    const lastFriday = WeekUtils.getMostRecentFriday(new Date());
     const daysSinceLatest = Math.floor(
-      (today.getTime() - latestDate.getTime()) / (1000 * 60 * 60 * 24),
+      (lastFriday.getTime() - latestDate.getTime()) / (1000 * 60 * 60 * 24),
     );
 
     if (daysSinceLatest < 5) {
@@ -78,7 +79,7 @@ export class SectorRotationPersistenceServiceImpl
       computeStartDate.getDate() - requiredLookbackWeeks * 7,
     );
 
-    const computeEndDate = new Date();
+    const computeEndDate = lastFriday;
 
     const dateRange = DateRange.of(computeStartDate, computeEndDate);
     const params: SectorRotationCalculationParams = {

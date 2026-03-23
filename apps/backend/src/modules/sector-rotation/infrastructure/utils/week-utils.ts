@@ -27,4 +27,20 @@ export class WeekUtils {
   static isMonday(date: Date): boolean {
     return date.getDay() === 1;
   }
+
+  /**
+   * Returns the most recent Friday (market weekly close).
+   * If today is Friday, returns today.
+   * If today is Saturday/Sunday, returns the Friday that just passed.
+   * If today is Monday–Thursday, returns the previous week's Friday.
+   * This ensures we never include an incomplete trading week.
+   */
+  static getMostRecentFriday(now: Date): Date {
+    const d = new Date(now);
+    const day = d.getDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
+    const daysToSubtract = day === 0 ? 2 : day >= 5 ? day - 5 : day + 2;
+    d.setDate(d.getDate() - daysToSubtract);
+    d.setHours(23, 59, 59, 999);
+    return d;
+  }
 }
