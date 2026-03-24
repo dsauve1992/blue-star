@@ -56,12 +56,12 @@ export function SectorRotationRRGChart({
   }, [dataPoints, startDate, endDate, enabledSectors]);
 
   const axisRanges = useMemo(() => {
-    if (!filteredDataPoints || filteredDataPoints.length === 0) {
+    if (!dataPoints || dataPoints.length === 0) {
       return { xMin: 95, xMax: 105, yMin: 95, yMax: 105 };
     }
 
-    const allXValues = filteredDataPoints.map((p) => p.x);
-    const allYValues = filteredDataPoints.map((p) => p.y);
+    const allXValues = dataPoints.map((p) => p.x);
+    const allYValues = dataPoints.map((p) => p.y);
 
     const xMin = Math.min(...allXValues);
     const xMax = Math.max(...allXValues);
@@ -80,11 +80,10 @@ export function SectorRotationRRGChart({
       Math.abs(yMin - centerY),
     );
 
-    const padding = 0.15;
-    const minRange = 20;
+    const padding = 0.1;
 
-    const xRange = Math.min(maxXDistance * (1 + padding * 2), minRange);
-    const yRange = Math.min(maxYDistance * (1 + padding * 2), minRange);
+    const xRange = maxXDistance * (1 + padding * 2);
+    const yRange = maxYDistance * (1 + padding * 2);
 
     return {
       xMin: centerX - xRange,
@@ -92,10 +91,12 @@ export function SectorRotationRRGChart({
       yMin: centerY - yRange,
       yMax: centerY + yRange,
     };
-  }, [filteredDataPoints]);
+  }, [dataPoints]);
 
   const latestDate = new Date(
-    Math.max(...filteredDataPoints.map((p) => parseLocalDate(p.date).getTime())),
+    Math.max(
+      ...filteredDataPoints.map((p) => parseLocalDate(p.date).getTime()),
+    ),
   );
 
   const sectorSymbols = useMemo(() => {
@@ -108,7 +109,9 @@ export function SectorRotationRRGChart({
         const symbolPoints = filteredDataPoints
           .filter((p) => p.sectorSymbol === symbol)
           .sort(
-            (a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime(),
+            (a, b) =>
+              parseLocalDate(a.date).getTime() -
+              parseLocalDate(b.date).getTime(),
           );
 
         if (symbolPoints.length === 0) {
