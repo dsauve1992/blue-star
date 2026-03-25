@@ -208,7 +208,7 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     const marketOpen = getMarketOpenDateUtc(lookbackStart);
     const dateRange = DateRange.of(marketOpen, now);
     return this.marketDataService.getHistoricalData(
-      Symbol.of(ticker.value),
+      Symbol.of(ticker.symbolOnly),
       dateRange,
       '5m',
     );

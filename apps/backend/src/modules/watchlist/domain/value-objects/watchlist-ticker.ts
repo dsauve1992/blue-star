@@ -21,6 +21,11 @@ export class WatchlistTicker {
     return new WatchlistTicker(trimmedTicker);
   }
 
+  get symbolOnly(): string {
+    const colonIndex = this.value.indexOf(':');
+    return colonIndex >= 0 ? this.value.substring(colonIndex + 1) : this.value;
+  }
+
   toString() {
     return this.value;
   }
