@@ -22,7 +22,8 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
   // EMACalculator seeds on bar 0, so values are unreliable for the first ~1–2× period bars.
   // Requiring 1× period (45 min) is the pragmatic warm-up gate; raise to 18 for stricter regimes.
   private static readonly EMA_MINIMUM_BARS = 9;
-  private static readonly AVERAGE_VOLUME_LOOKBACK_SESSIONS = 10;
+  private static readonly VOLUME_LOOKBACK_SESSIONS = 10;
+  private static readonly MINIMUM_DOWN_DAYS_FOR_BASELINE = 3;
   private static readonly INTRADAY_LOOKBACK_CALENDAR_DAYS = 30;
 
   constructor(
@@ -151,16 +152,28 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
       .filter((key) => key !== currentSessionKey)
       .filter((key) => (sessions.get(key) ?? []).length >= barsElapsed);
 
+    // Pocket Pivot: prefer down-day sessions (close < open) for the baseline.
+    // This compares today's buying volume against typical selling-day volume,
+    // answering: "Is buying demand overpowering recent selling pressure?"
+    const downDayKeys = priorSessionKeys.filter((key) =>
+      this.isDownDay(sessions.get(key) ?? []),
+    );
+
+    const useDownDays =
+      downDayKeys.length >=
+      BreakoutDetectionServiceImpl.MINIMUM_DOWN_DAYS_FOR_BASELINE;
+
+    const candidateKeys = useDownDays ? downDayKeys : priorSessionKeys;
+    const lookbackSessionKeys = candidateKeys.slice(
+      -BreakoutDetectionServiceImpl.VOLUME_LOOKBACK_SESSIONS,
+    );
+
     if (
-      priorSessionKeys.length <
-      BreakoutDetectionServiceImpl.AVERAGE_VOLUME_LOOKBACK_SESSIONS
+      lookbackSessionKeys.length <
+      BreakoutDetectionServiceImpl.MINIMUM_DOWN_DAYS_FOR_BASELINE
     ) {
       return false;
     }
-
-    const lookbackSessionKeys = priorSessionKeys.slice(
-      -BreakoutDetectionServiceImpl.AVERAGE_VOLUME_LOOKBACK_SESSIONS,
-    );
 
     const currentCumulativeVolume = currentSessionBars.reduce(
       (sum, bar) => sum + bar.volume,
@@ -173,13 +186,17 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
         .reduce((sum, bar) => sum + bar.volume, 0),
     );
 
-    // Older sessions anchor the baseline more than recent ones; a weighted mean
-    // with linearly decreasing weights (oldest = highest) achieves this while
-    // still being robust to a single outlier sitting at the recent end.
     const baselineVolume = this.weightedMeanOf(historicalCumulativeVolumes);
     if (baselineVolume <= 0) return false;
 
     return currentCumulativeVolume >= baselineVolume;
+  }
+
+  private isDownDay(sessionBars: PricePoint[]): boolean {
+    if (sessionBars.length === 0) return false;
+    const firstBar = sessionBars[0];
+    const lastBar = sessionBars[sessionBars.length - 1];
+    return lastBar.close < firstBar.open;
   }
 
   // values[0] = oldest session, values[N-1] = most recent session.
