@@ -56,9 +56,10 @@ describe('BreakoutDetectionServiceImpl', () => {
     const sessionStart = new Date(Date.UTC(2025, 1, day, 14, 30));
     return closes.map((close, index) => {
       const barDate = new Date(sessionStart.getTime() + index * 5 * 60 * 1000);
-      const open = index === 0 && options?.openPrice !== undefined
-        ? options.openPrice
-        : close;
+      const open =
+        index === 0 && options?.openPrice !== undefined
+          ? options.openPrice
+          : close;
       const high = Math.max(open, close);
       const low = Math.min(open, close);
       return PricePoint.of(barDate, open, high, low, close, volume);
@@ -94,12 +95,9 @@ describe('BreakoutDetectionServiceImpl', () => {
     const bars: PricePoint[] = [];
     for (let day = 1; day <= priorSessionCount; day++) {
       bars.push(
-        ...buildSessionBars(
-          day,
-          new Array(10).fill(priorClose),
-          priorVolume,
-          { openPrice: priorOpen },
-        ),
+        ...buildSessionBars(day, new Array(10).fill(priorClose), priorVolume, {
+          openPrice: priorOpen,
+        }),
       );
     }
     bars.push(
@@ -250,9 +248,16 @@ describe('BreakoutDetectionServiceImpl', () => {
     //   baseline = (20000×1 + 1000×(2+3+4+5+6+7+8+9+10)) / 55 = 74000/55 ≈ 1345
     //   current cumulative = 210 × 10 = 2100 > 1345 ✓
     const bars: PricePoint[] = [];
-    bars.push(...buildSessionBars(1, new Array(10).fill(100), 2000, { openPrice: 101 }));
+
+    bars.push(
+      ...buildSessionBars(1, new Array(10).fill(100), 2000, { openPrice: 101 }),
+    );
     for (let day = 2; day <= 10; day++) {
-      bars.push(...buildSessionBars(day, new Array(10).fill(100), 100, { openPrice: 101 }));
+      bars.push(
+        ...buildSessionBars(day, new Array(10).fill(100), 100, {
+          openPrice: 101,
+        }),
+      );
     }
     bars.push(
       ...buildSessionBars(
@@ -277,10 +282,18 @@ describe('BreakoutDetectionServiceImpl', () => {
     // With down-days only: baseline ≈ 800 → 900 >= 800 ✓
     const bars: PricePoint[] = [];
     for (let day = 1; day <= 5; day++) {
-      bars.push(...buildSessionBars(day, new Array(10).fill(100), 500, { openPrice: 99 }));
+      bars.push(
+        ...buildSessionBars(day, new Array(10).fill(100), 500, {
+          openPrice: 99,
+        }),
+      );
     }
     for (let day = 6; day <= 10; day++) {
-      bars.push(...buildSessionBars(day, new Array(10).fill(100), 80, { openPrice: 101 }));
+      bars.push(
+        ...buildSessionBars(day, new Array(10).fill(100), 80, {
+          openPrice: 101,
+        }),
+      );
     }
     bars.push(
       ...buildSessionBars(
@@ -304,10 +317,18 @@ describe('BreakoutDetectionServiceImpl', () => {
     // Current: volume 250/bar → cumulative 2500 >= 1000 ✓
     const bars: PricePoint[] = [];
     for (let day = 1; day <= 8; day++) {
-      bars.push(...buildSessionBars(day, new Array(10).fill(100), 100, { openPrice: 99 }));
+      bars.push(
+        ...buildSessionBars(day, new Array(10).fill(100), 100, {
+          openPrice: 99,
+        }),
+      );
     }
     for (let day = 9; day <= 10; day++) {
-      bars.push(...buildSessionBars(day, new Array(10).fill(100), 100, { openPrice: 101 }));
+      bars.push(
+        ...buildSessionBars(day, new Array(10).fill(100), 100, {
+          openPrice: 101,
+        }),
+      );
     }
     bars.push(
       ...buildSessionBars(
@@ -330,10 +351,18 @@ describe('BreakoutDetectionServiceImpl', () => {
     // Current: volume 90/bar → cumulative 900 < 1000 ✗
     const bars: PricePoint[] = [];
     for (let day = 1; day <= 8; day++) {
-      bars.push(...buildSessionBars(day, new Array(10).fill(100), 100, { openPrice: 99 }));
+      bars.push(
+        ...buildSessionBars(day, new Array(10).fill(100), 100, {
+          openPrice: 99,
+        }),
+      );
     }
     for (let day = 9; day <= 10; day++) {
-      bars.push(...buildSessionBars(day, new Array(10).fill(100), 100, { openPrice: 101 }));
+      bars.push(
+        ...buildSessionBars(day, new Array(10).fill(100), 100, {
+          openPrice: 101,
+        }),
+      );
     }
     bars.push(
       ...buildSessionBars(
