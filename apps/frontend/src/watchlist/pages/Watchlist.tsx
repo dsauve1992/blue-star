@@ -180,6 +180,7 @@ export default function Watchlist() {
             )}
 
             <ChartPanel
+              symbol={symbolToFetch}
               selectedTicker={selectedTicker}
               selectedWatchlist={selectedWatchlist}
               tradingViewProps={tradingViewProps}

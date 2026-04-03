@@ -4,8 +4,15 @@ import TradingViewTapeCardWidget from "src/stock-analysis/components/new/Trading
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
 import type { FinancialReportApiDto } from "src/fundamental/api/fundamental.client";
 import type { Watchlist } from "../api/watchlist.client";
+import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
+import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
+import {
+  getSectorQuadrant,
+  getQuadrantColor,
+} from "src/stock-analysis/utils/sector-utils";
 
 interface ChartPanelProps {
+  symbol: string | null;
   selectedTicker: string | null;
   selectedWatchlist: Watchlist | undefined;
   tradingViewProps: {
@@ -21,6 +28,7 @@ interface ChartPanelProps {
 }
 
 export function ChartPanel({
+  symbol,
   selectedTicker,
   selectedWatchlist,
   tradingViewProps,
@@ -31,9 +39,38 @@ export function ChartPanel({
 }: ChartPanelProps) {
   const [showFinancialFooter, setShowFinancialFooter] = useState(true);
 
+  const { data: profileData } = useCompanyProfile(symbol);
+  const { data: sectorStatusData } = useLatestSectorStatus();
+
+  const sectorName = profileData?.profile?.sector ?? null;
+  const quadrant = sectorStatusData?.sectors
+    ? getSectorQuadrant(sectorName, sectorStatusData.sectors)
+    : null;
+
   return (
     <main className="flex-1 flex flex-col min-w-0">
       <div className="flex-1 flex flex-col min-h-0 p-4 gap-2 overflow-hidden">
+        {selectedTicker && sectorName && (
+          <div className="flex-shrink-0 flex items-center gap-3 px-1 py-1">
+            <span className="text-xs text-slate-400">
+              {sectorName}
+              {profileData?.profile?.industry && (
+                <span className="text-slate-500">
+                  {" "}
+                  · {profileData.profile.industry}
+                </span>
+              )}
+            </span>
+            {quadrant && (
+              <span
+                className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getQuadrantColor(quadrant)}`}
+              >
+                {quadrant}
+              </span>
+            )}
+          </div>
+        )}
+
         <div className="flex-1 min-h-0">
           {selectedTicker && tradingViewProps ? (
             <div className="h-full rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">

@@ -9,13 +9,18 @@ import {
   ScreenStocksUseCase,
 } from '../use-cases/screen-stocks.use-case';
 import { MarketDataApiMapper } from './market-data-api.mapper';
-import { GetHistoricalDataApiResponseDto } from './market-data-api.dto';
+import {
+  GetHistoricalDataApiResponseDto,
+  GetCompanyProfileApiResponseDto,
+} from './market-data-api.dto';
+import { GetCompanyProfileUseCase } from '../use-cases/get-company-profile.use-case';
 
 @Controller('market-data')
 export class MarketDataController {
   constructor(
     private readonly getHistoricalDataUseCase: GetHistoricalDataUseCase,
     private readonly screenStocksUseCase: ScreenStocksUseCase,
+    private readonly getCompanyProfileUseCase: GetCompanyProfileUseCase,
     private readonly marketDataApiMapper: MarketDataApiMapper,
   ) {}
 
@@ -79,6 +84,21 @@ export class MarketDataController {
       if (limit) request.limit = parseInt(limit, 10);
 
       return await this.screenStocksUseCase.execute(request);
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
+
+  @Get('profile')
+  async getCompanyProfile(
+    @Query('symbol') symbol: string,
+  ): Promise<GetCompanyProfileApiResponseDto> {
+    try {
+      const symbolValueObject = Symbol.of(symbol);
+      const response = await this.getCompanyProfileUseCase.execute({
+        symbol: symbolValueObject,
+      });
+      return { profile: response.profile };
     } catch (error) {
       throw new BadRequestException(error);
     }

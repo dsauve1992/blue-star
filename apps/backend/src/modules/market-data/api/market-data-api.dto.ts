@@ -17,3 +17,13 @@ export interface HistoricalDataApiDto {
 export interface GetHistoricalDataApiResponseDto {
   historicalData: HistoricalDataApiDto;
 }
+
+export interface CompanyProfileApiDto {
+  symbol: string;
+  sector: string;
+  industry: string;
+}
+
+export interface GetCompanyProfileApiResponseDto {
+  profile: CompanyProfileApiDto;
+}
