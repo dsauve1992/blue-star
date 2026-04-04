@@ -20,8 +20,10 @@ import {
 import type { AnalyzeConsolidationsRequest } from "../api/consolidation.client";
 import { ConsolidationSidebar } from "../components/ConsolidationSidebar";
 import { ConsolidationChartHeader } from "../components/ConsolidationChartHeader";
-import TradingViewTapeCardWidget from "../components/new/TradingViewTapeCardWidget";
+import { LightweightChart } from "src/market-data/components/LightweightChart";
+import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { FinancialReportChartFooter } from "../components/FinancialReportChartFooter";
+import { LoadingSpinner } from "src/global/design-system";
 
 function extractSymbol(ticker: string): string {
   const parts = ticker.split(":");
@@ -88,15 +90,28 @@ export default function ConsolidationAnalysis() {
     [],
   );
 
-  const tradingViewProps = useMemo(() => {
+  const chartProps = useMemo(() => {
     if (!selectedTicker) return null;
     return {
       exchange: selectedTicker.split(":")[0] || "NASDAQ",
       symbol: selectedTicker.split(":")[1] || selectedTicker,
       interval: (analysisType === "daily" ? "D" : "W") as "D" | "W",
-      range: (analysisType === "daily" ? "6m" : "12m") as "6m" | "12m",
+      bars: analysisType === "daily" ? 130 : 52,
     };
   }, [selectedTicker, analysisType]);
+
+  const {
+    candles,
+    isLoading: chartLoading,
+    error: chartError,
+    loadMore,
+    isLoadingMore,
+  } = useChartData(
+    chartProps?.symbol ?? null,
+    chartProps?.exchange ?? null,
+    chartProps?.interval,
+    chartProps?.bars,
+  );
 
   // Handlers
   const handleTickerSelect = useCallback(
@@ -240,15 +255,24 @@ export default function ConsolidationAnalysis() {
             {/* Chart Content */}
             <div className="flex-1 flex flex-col min-h-0 p-6 gap-2 overflow-hidden">
               <div className="flex-1 min-h-0">
-                {selectedTicker && tradingViewProps ? (
+                {selectedTicker && chartProps ? (
                   <div className="h-full rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
-                    <TradingViewTapeCardWidget
-                      exchange={tradingViewProps.exchange}
-                      symbol={tradingViewProps.symbol}
-                      interval={tradingViewProps.interval}
-                      range={tradingViewProps.range}
-                      movingAverages={movingAverages}
-                    />
+                    {chartLoading ? (
+                      <div className="h-full flex items-center justify-center">
+                        <LoadingSpinner />
+                      </div>
+                    ) : chartError ? (
+                      <div className="h-full flex items-center justify-center text-red-400 text-sm">
+                        Failed to load chart data
+                      </div>
+                    ) : candles ? (
+                      <LightweightChart
+                        candles={candles}
+                        movingAverages={movingAverages}
+                        onLoadMore={loadMore}
+                        isLoadingMore={isLoadingMore}
+                      />
+                    ) : null}
                   </div>
                 ) : (
                   <div className="h-full flex flex-col items-center justify-center rounded-2xl border border-slate-700/50 border-dashed bg-slate-800/20">

@@ -66,13 +66,13 @@ export default function Watchlist() {
     [],
   );
 
-  const tradingViewProps = useMemo(() => {
+  const chartProps = useMemo(() => {
     if (!selectedTicker) return null;
     return {
       exchange: extractExchange(selectedTicker),
       symbol: extractSymbol(selectedTicker),
       interval: "D" as const,
-      range: "6m" as const,
+      bars: 130,
     };
   }, [selectedTicker]);
 
@@ -183,7 +183,7 @@ export default function Watchlist() {
               symbol={symbolToFetch}
               selectedTicker={selectedTicker}
               selectedWatchlist={selectedWatchlist}
-              tradingViewProps={tradingViewProps}
+              chartProps={chartProps}
               movingAverages={movingAverages}
               financialData={financialData}
               financialLoading={financialLoading}

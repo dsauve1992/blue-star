@@ -27,3 +27,23 @@ export interface CompanyProfileApiDto {
 export interface GetCompanyProfileApiResponseDto {
   profile: CompanyProfileApiDto;
 }
+
+export interface ChartCandleApiDto {
+  time: string | number;
+  open: number;
+  high: number;
+  low: number;
+  close: number;
+  volume: number;
+}
+
+export interface ChartDataApiDto {
+  symbol: string;
+  exchange: string;
+  interval: string;
+  candles: ChartCandleApiDto[];
+}
+
+export interface GetChartDataApiResponseDto {
+  chartData: ChartDataApiDto;
+}

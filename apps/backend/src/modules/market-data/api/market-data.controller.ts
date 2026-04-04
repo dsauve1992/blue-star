@@ -8,12 +8,26 @@ import {
   ScreenStocksResponseDto,
   ScreenStocksUseCase,
 } from '../use-cases/screen-stocks.use-case';
+import { GetChartDataUseCase } from '../use-cases/get-chart-data.use-case';
 import { MarketDataApiMapper } from './market-data-api.mapper';
 import {
   GetHistoricalDataApiResponseDto,
   GetCompanyProfileApiResponseDto,
+  GetChartDataApiResponseDto,
 } from './market-data-api.dto';
 import { GetCompanyProfileUseCase } from '../use-cases/get-company-profile.use-case';
+import { ChartInterval } from '../domain/services/chart-data.service';
+
+const VALID_CHART_INTERVALS: ChartInterval[] = [
+  '1',
+  '5',
+  '15',
+  '30',
+  '60',
+  'D',
+  'W',
+  'M',
+];
 
 @Controller('market-data')
 export class MarketDataController {
@@ -21,6 +35,7 @@ export class MarketDataController {
     private readonly getHistoricalDataUseCase: GetHistoricalDataUseCase,
     private readonly screenStocksUseCase: ScreenStocksUseCase,
     private readonly getCompanyProfileUseCase: GetCompanyProfileUseCase,
+    private readonly getChartDataUseCase: GetChartDataUseCase,
     private readonly marketDataApiMapper: MarketDataApiMapper,
   ) {}
 
@@ -99,6 +114,33 @@ export class MarketDataController {
         symbol: symbolValueObject,
       });
       return { profile: response.profile };
+    } catch (error) {
+      throw new BadRequestException(error);
+    }
+  }
+
+  @Get('chart')
+  async getChartData(
+    @Query('symbol') symbol: string,
+    @Query('exchange') exchange: string,
+    @Query('interval') interval: string = 'D',
+    @Query('bars') bars: string = '200',
+  ): Promise<GetChartDataApiResponseDto> {
+    try {
+      if (!VALID_CHART_INTERVALS.includes(interval as ChartInterval)) {
+        throw new Error(
+          `Invalid interval: ${interval}. Must be one of: ${VALID_CHART_INTERVALS.join(', ')}`,
+        );
+      }
+
+      const response = await this.getChartDataUseCase.execute({
+        symbol,
+        exchange,
+        interval: interval as ChartInterval,
+        bars: parseInt(bars, 10),
+      });
+
+      return this.marketDataApiMapper.mapGetChartDataResponse(response);
     } catch (error) {
       throw new BadRequestException(error);
     }

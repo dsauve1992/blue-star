@@ -1,8 +1,10 @@
 import { useState } from "react";
 import { ChevronDown, BarChart3 } from "lucide-react";
-import TradingViewTapeCardWidget from "src/stock-analysis/components/new/TradingViewTapeCardWidget";
+import { LightweightChart } from "src/market-data/components/LightweightChart";
+import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
 import type { FinancialReportApiDto } from "src/fundamental/api/fundamental.client";
+import type { ChartInterval } from "src/market-data/api/chart-data.client";
 import type { Watchlist } from "../api/watchlist.client";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
@@ -10,16 +12,17 @@ import {
   getSectorQuadrant,
   getQuadrantColor,
 } from "src/stock-analysis/utils/sector-utils";
+import { LoadingSpinner } from "src/global/design-system";
 
 interface ChartPanelProps {
   symbol: string | null;
   selectedTicker: string | null;
   selectedWatchlist: Watchlist | undefined;
-  tradingViewProps: {
+  chartProps: {
     exchange: string;
     symbol: string;
-    interval: "D" | "15" | "60" | "W";
-    range: "1m" | "3m" | "6m" | "12m" | "5d" | "1d" | "3Y" | "60m";
+    interval: ChartInterval;
+    bars: number;
   } | null;
   movingAverages: { type: "EMA" | "SMA"; length: number }[];
   financialData: { report: FinancialReportApiDto } | undefined;
@@ -31,7 +34,7 @@ export function ChartPanel({
   symbol,
   selectedTicker,
   selectedWatchlist,
-  tradingViewProps,
+  chartProps,
   movingAverages,
   financialData,
   financialLoading,
@@ -41,6 +44,18 @@ export function ChartPanel({
 
   const { data: profileData } = useCompanyProfile(symbol);
   const { data: sectorStatusData } = useLatestSectorStatus();
+  const {
+    candles,
+    isLoading: chartLoading,
+    error: chartError,
+    loadMore,
+    isLoadingMore,
+  } = useChartData(
+    chartProps?.symbol ?? null,
+    chartProps?.exchange ?? null,
+    chartProps?.interval,
+    chartProps?.bars,
+  );
 
   const sectorName = profileData?.profile?.sector ?? null;
   const quadrant = sectorStatusData?.sectors
@@ -72,15 +87,24 @@ export function ChartPanel({
         )}
 
         <div className="flex-1 min-h-0">
-          {selectedTicker && tradingViewProps ? (
+          {selectedTicker && chartProps ? (
             <div className="h-full rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
-              <TradingViewTapeCardWidget
-                exchange={tradingViewProps.exchange}
-                symbol={tradingViewProps.symbol}
-                interval={tradingViewProps.interval}
-                range={tradingViewProps.range}
-                movingAverages={movingAverages}
-              />
+              {chartLoading ? (
+                <div className="h-full flex items-center justify-center">
+                  <LoadingSpinner />
+                </div>
+              ) : chartError ? (
+                <div className="h-full flex items-center justify-center text-red-400 text-sm">
+                  Failed to load chart data
+                </div>
+              ) : candles ? (
+                <LightweightChart
+                  candles={candles}
+                  movingAverages={movingAverages}
+                  onLoadMore={loadMore}
+                  isLoadingMore={isLoadingMore}
+                />
+              ) : null}
             </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center rounded-xl border border-slate-700/50 border-dashed bg-slate-800/20">
