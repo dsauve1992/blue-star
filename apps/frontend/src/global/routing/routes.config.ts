@@ -68,6 +68,12 @@ export const routes: RouteConfig[] = [
     isProtected: true,
     showInNavigation: true,
   },
+  {
+    path: "/chart-sandbox",
+    label: "Chart Sandbox",
+    isProtected: true,
+    showInNavigation: true,
+  },
 ];
 
 export const getPublicRoutes = () =>
