@@ -26,10 +26,10 @@ export function getDefaultMovingAverages(
   return base;
 }
 
-export interface MansfieldRSResult {
-  /** Mansfield RS values: (RS / SMA(RS)) * 100 - 100 */
+export interface RSResult {
+  /** Raw relative strength ratio (stock close / benchmark close) */
   rsLine: (number | null)[];
-  /** SMA of the Mansfield RS line */
+  /** SMA of the RS line */
   rsSma: (number | null)[];
   /** Indices where RS makes a new high within the lookback window */
   newHighIndices: Set<number>;
@@ -74,56 +74,42 @@ export function computeSMA(data: number[], period: number): (number | null)[] {
   return result;
 }
 
-// ── Mansfield Relative Strength ───────────────────────────────────────
+// ── Relative Strength (raw ratio) ─────────────────────────────────────
 
-export function computeMansfieldRS(
+export function computeRS(
   stockCandles: ChartCandleDto[],
   benchmarkCandles: ChartCandleDto[],
   smaPeriod: number,
   lookback: number,
-): MansfieldRSResult {
+): RSResult {
   const benchmarkByTime = new Map<string, number>();
   for (const c of benchmarkCandles) {
     benchmarkByTime.set(String(c.time), c.close);
   }
 
   // Raw RS ratio aligned to stock's time axis
-  const rawRS: (number | null)[] = [];
+  const rsLine: (number | null)[] = [];
   for (const c of stockCandles) {
     const benchClose = benchmarkByTime.get(String(c.time));
     if (benchClose && benchClose > 0) {
-      rawRS.push(c.close / benchClose);
+      rsLine.push(c.close / benchClose);
     } else {
-      rawRS.push(null);
+      rsLine.push(null);
     }
   }
 
   // Forward-fill nulls so SMA can compute smoothly
   const filled: number[] = [];
   let lastValid = 0;
-  for (const v of rawRS) {
+  for (const v of rsLine) {
     if (v !== null) {
       lastValid = v;
       filled.push(v);
     } else filled.push(lastValid);
   }
 
-  // SMA of the raw RS ratio
-  const rsSmaRaw = computeSMA(filled, smaPeriod);
-
-  // Mansfield RS = (RS / SMA(RS)) * 100 - 100
-  const rsLine: (number | null)[] = [];
-  for (let i = 0; i < stockCandles.length; i++) {
-    if (rawRS[i] === null || rsSmaRaw[i] === null) {
-      rsLine.push(null);
-    } else {
-      rsLine.push((rawRS[i]! / rsSmaRaw[i]!) * 100 - 100);
-    }
-  }
-
-  // SMA of the Mansfield RS line for trend
-  const rsValid = rsLine.map((v) => v ?? 0);
-  const rsSma = computeSMA(rsValid, smaPeriod);
+  // SMA of the RS ratio
+  const rsSma = computeSMA(filled, smaPeriod);
   for (let i = 0; i < rsSma.length; i++) {
     if (rsLine[i] === null) rsSma[i] = null;
   }

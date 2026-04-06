@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback, useState } from "react";
+import { useRef, useMemo, useCallback, useState, useEffect } from "react";
 import { useParams, useNavigate } from "react-router";
 import { ChevronDown, BarChart3 } from "lucide-react";
 import { PageContainer } from "src/global/design-system/page-container";
@@ -18,6 +18,7 @@ import {
   useCreateWatchlist,
 } from "src/watchlist/hooks/use-watchlists";
 import type { AnalyzeConsolidationsRequest } from "../api/consolidation.client";
+import type { ChartInterval } from "src/market-data/api/chart-data.client";
 import { ConsolidationSidebar } from "../components/ConsolidationSidebar";
 import { ConsolidationChartHeader } from "../components/ConsolidationChartHeader";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
@@ -25,6 +26,9 @@ import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { FinancialReportChartFooter } from "../components/FinancialReportChartFooter";
 import { LoadingSpinner } from "src/global/design-system";
+
+const BENCHMARK_SYMBOL = "SPY";
+const BENCHMARK_EXCHANGE = "AMEX";
 
 function extractSymbol(ticker: string): string {
   const parts = ticker.split(":");
@@ -83,18 +87,30 @@ export default function ConsolidationAnalysis() {
     (c) => c.tickerFullName === selectedTicker,
   );
 
-  const interval = analysisType === "daily" ? "D" : "W";
-  const movingAverages = useMemo(() => getDefaultMovingAverages(interval as "D" | "W"), [interval]);
+  const defaultInterval: ChartInterval = analysisType === "daily" ? "D" : "W";
+  const [interval, setInterval] = useState<ChartInterval>(defaultInterval);
+
+  // Reset timeframe when switching between daily/weekly screener
+  useEffect(() => {
+    setInterval(defaultInterval);
+  }, [defaultInterval]);
+
+  const movingAverages = useMemo(
+    () => getDefaultMovingAverages(interval),
+    [interval],
+  );
+
+  const bars = interval === "W" ? 156 : 520;
 
   const chartProps = useMemo(() => {
     if (!selectedTicker) return null;
     return {
       exchange: selectedTicker.split(":")[0] || "NASDAQ",
       symbol: selectedTicker.split(":")[1] || selectedTicker,
-      interval: (analysisType === "daily" ? "D" : "W") as "D" | "W",
-      bars: analysisType === "daily" ? 130 : 52,
+      interval,
+      bars,
     };
-  }, [selectedTicker, analysisType]);
+  }, [selectedTicker, interval, bars]);
 
   const {
     candles,
@@ -108,6 +124,17 @@ export default function ConsolidationAnalysis() {
     chartProps?.interval,
     chartProps?.bars,
   );
+
+  const {
+    candles: spyCandles,
+    loadMore: loadMoreSpy,
+    isLoadingMore: isLoadingMoreSpy,
+  } = useChartData(BENCHMARK_SYMBOL, BENCHMARK_EXCHANGE, interval, bars);
+
+  const handleLoadMore = useCallback(() => {
+    loadMore();
+    loadMoreSpy();
+  }, [loadMore, loadMoreSpy]);
 
   // Handlers
   const handleTickerSelect = useCallback(
@@ -264,11 +291,23 @@ export default function ConsolidationAnalysis() {
                     ) : candles ? (
                       <TechnicalChart
                         candles={candles}
-                        movingAverages={movingAverages}
-                        volume={{ show: true }}
-                        onLoadMore={loadMore}
-                        isLoadingMore={isLoadingMore}
                         ticker={chartProps?.symbol}
+                        movingAverages={movingAverages}
+                        visibleBars={interval === "W" ? 52 : 130}
+                        volume={{ show: true }}
+                        rs={spyCandles ? {
+                          benchmarkCandles: spyCandles,
+                          smaPeriod: 50,
+                          lookback: interval === "W" ? 52 : 260,
+                          benchmarkLabel: BENCHMARK_SYMBOL,
+                        } : undefined}
+                        timeframe={{
+                          value: interval,
+                          onChange: setInterval,
+                          options: ["D", "W"],
+                        }}
+                        onLoadMore={handleLoadMore}
+                        isLoadingMore={isLoadingMore || isLoadingMoreSpy}
                       />
                     ) : null}
                   </div>

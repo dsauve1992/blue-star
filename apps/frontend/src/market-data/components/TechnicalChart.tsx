@@ -15,14 +15,13 @@ import {
   type MouseEventParams,
   ColorType,
   CrosshairMode,
-  LineStyle,
 } from "lightweight-charts";
 import type { ChartCandleDto, ChartInterval } from "../api/chart-data.client";
 import type { MovingAverageConfig } from "../utils/chart-utils";
 import {
   computeEMA,
   computeSMA,
-  computeMansfieldRS,
+  computeRS,
   computeVolumeHeatmapColor,
   toLineData,
   fmt,
@@ -57,6 +56,8 @@ export interface TechnicalChartProps {
   volume?: VolumeConfig;
   rs?: RSConfig;
   timeframe?: TimeframeConfig;
+  /** Number of bars to show initially. Defaults to all (fitContent). */
+  visibleBars?: number;
   showLegend?: boolean;
   showTooltip?: boolean;
   showExport?: boolean;
@@ -97,6 +98,7 @@ function TechnicalChartInner({
   volume = { show: true, heatmap: false },
   rs,
   timeframe,
+  visibleBars,
   showLegend = true,
   showTooltip = true,
   showExport = true,
@@ -122,10 +124,16 @@ function TechnicalChartInner({
   volumeRef.current = volume;
   const movingAveragesRef = useRef(movingAverages);
   movingAveragesRef.current = movingAverages;
+  const visibleBarsRef = useRef(visibleBars);
+  visibleBarsRef.current = visibleBars;
 
   // Stable key to detect when data actually changes
   const dataKey = useMemo(
-    () => `${candles.length}-${rs?.benchmarkCandles?.length ?? 0}`,
+    () => {
+      const first = candles[0];
+      const last = candles[candles.length - 1];
+      return `${candles.length}-${first?.time}-${last?.close}-${rs?.benchmarkCandles?.length ?? 0}`;
+    },
     [candles, rs?.benchmarkCandles],
   );
 
@@ -217,7 +225,7 @@ function TechnicalChartInner({
 
     const chart = createChart(containerRef.current, {
       layout: {
-        background: { type: ColorType.Solid, color: "transparent" },
+        background: { type: ColorType.Solid, color: C.surface },
         textColor: C.text,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10,
@@ -376,7 +384,7 @@ function TechnicalChartInner({
       const lookback = currentRS.lookback ?? 52;
       const benchmarkLabel = currentRS.benchmarkLabel ?? "SPY";
 
-      const rsResult = computeMansfieldRS(candles, currentRS.benchmarkCandles, smaPeriod, lookback);
+      const rsResult = computeRS(candles, currentRS.benchmarkCandles, smaPeriod, lookback);
 
       // RS line (pane 1)
       const rsLineSeries = chart.addSeries(LineSeries, {
@@ -400,12 +408,6 @@ function TechnicalChartInner({
       rsSmaSeries.setData(toLineData(candles, rsResult.rsSma));
       rsSmaSeriesRef.current = rsSmaSeries;
       rsPaneSeriesRefs.current.push(rsSmaSeries);
-
-      // Zero line
-      rsLineSeries.createPriceLine({
-        price: 0, color: C.textMuted, lineWidth: 1,
-        lineStyle: LineStyle.Dashed, axisLabelVisible: false, title: "",
-      });
 
       // New high dots (pane 1)
       if (rsResult.newHighIndices.size > 0) {
@@ -476,7 +478,7 @@ function TechnicalChartInner({
       })),
     };
     if (currentRS && currentRS.benchmarkCandles.length > 0) {
-      const rsResult = computeMansfieldRS(candles, currentRS.benchmarkCandles, currentRS.smaPeriod ?? 50, currentRS.lookback ?? 52);
+      const rsResult = computeRS(candles, currentRS.benchmarkCandles, currentRS.smaPeriod ?? 50, currentRS.lookback ?? 52);
       lastLegend.rs = rsResult.rsLine.filter((v): v is number => v !== null).pop() ?? null;
       lastLegend.rsSma = rsResult.rsSma.filter((v): v is number => v !== null).pop() ?? null;
     }
@@ -487,6 +489,11 @@ function TechnicalChartInner({
       chart.timeScale().setVisibleLogicalRange({
         from: savedLogicalRange.from + newBarsCount,
         to: savedLogicalRange.to + newBarsCount,
+      });
+    } else if (visibleBarsRef.current && candles.length > visibleBarsRef.current) {
+      chart.timeScale().setVisibleLogicalRange({
+        from: candles.length - visibleBarsRef.current,
+        to: candles.length,
       });
     } else {
       chart.timeScale().fitContent();

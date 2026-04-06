@@ -5,19 +5,21 @@ import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import type { ChartInterval } from "src/market-data/api/chart-data.client";
 
-const DEMO_SYMBOL = "AAPL";
-const DEMO_EXCHANGE = "NASDAQ";
+const DEMO_SYMBOL = "PL";
+const DEMO_EXCHANGE = "NYSE";
 const BENCHMARK_SYMBOL = "SPY";
 const BENCHMARK_EXCHANGE = "AMEX";
 
 export default function ChartSandbox() {
   const [interval, setInterval] = useState<ChartInterval>("D");
 
+  const bars = interval === "W" ? 156 : 520;
+
   const { candles, isLoading, error, loadMore, isLoadingMore } = useChartData(
     DEMO_SYMBOL,
     DEMO_EXCHANGE,
     interval,
-    500,
+    bars,
   );
   const {
     candles: spyCandles,
@@ -25,7 +27,7 @@ export default function ChartSandbox() {
     error: spyError,
     loadMore: loadMoreSpy,
     isLoadingMore: isLoadingMoreSpy,
-  } = useChartData(BENCHMARK_SYMBOL, BENCHMARK_EXCHANGE, interval, 500);
+  } = useChartData(BENCHMARK_SYMBOL, BENCHMARK_EXCHANGE, interval, bars);
 
   const movingAverages = useMemo(
     () => getDefaultMovingAverages(interval),
@@ -61,6 +63,7 @@ export default function ChartSandbox() {
             candles={candles}
             ticker={DEMO_SYMBOL}
             movingAverages={movingAverages}
+            visibleBars={interval === "W" ? 52 : 130}
             volume={{ show: true, heatmap: false }}
             rs={{
               benchmarkCandles: spyCandles,

@@ -1,10 +1,12 @@
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { ChevronDown, BarChart3 } from "lucide-react";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
 import type { FinancialReportApiDto } from "src/fundamental/api/fundamental.client";
 import type { ChartInterval } from "src/market-data/api/chart-data.client";
+import type { ChartCandleDto } from "src/market-data/api/chart-data.client";
+import type { MovingAverageConfig } from "src/market-data/utils/chart-utils";
 import type { Watchlist } from "../api/watchlist.client";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
@@ -13,6 +15,8 @@ import {
   getQuadrantColor,
 } from "src/stock-analysis/utils/sector-utils";
 import { LoadingSpinner } from "src/global/design-system";
+
+const BENCHMARK_SYMBOL = "SPY";
 
 interface ChartPanelProps {
   symbol: string | null;
@@ -24,10 +28,15 @@ interface ChartPanelProps {
     interval: ChartInterval;
     bars: number;
   } | null;
-  movingAverages: { type: "EMA" | "SMA"; length: number }[];
+  movingAverages: MovingAverageConfig[];
   financialData: { report: FinancialReportApiDto } | undefined;
   financialLoading: boolean;
   financialError: Error | null;
+  spyCandles?: ChartCandleDto[];
+  interval: ChartInterval;
+  onIntervalChange: (interval: ChartInterval) => void;
+  onLoadMoreSpy: () => void;
+  isLoadingMoreSpy: boolean;
 }
 
 export function ChartPanel({
@@ -39,6 +48,11 @@ export function ChartPanel({
   financialData,
   financialLoading,
   financialError,
+  spyCandles,
+  interval,
+  onIntervalChange,
+  onLoadMoreSpy,
+  isLoadingMoreSpy,
 }: ChartPanelProps) {
   const [showFinancialFooter, setShowFinancialFooter] = useState(true);
 
@@ -56,6 +70,11 @@ export function ChartPanel({
     chartProps?.interval,
     chartProps?.bars,
   );
+
+  const handleLoadMore = useCallback(() => {
+    loadMore();
+    onLoadMoreSpy();
+  }, [loadMore, onLoadMoreSpy]);
 
   const sectorName = profileData?.profile?.sector ?? null;
   const quadrant = sectorStatusData?.sectors
@@ -100,11 +119,23 @@ export function ChartPanel({
               ) : candles ? (
                 <TechnicalChart
                   candles={candles}
-                  movingAverages={movingAverages}
-                  volume={{ show: true }}
-                  onLoadMore={loadMore}
-                  isLoadingMore={isLoadingMore}
                   ticker={chartProps?.symbol}
+                  movingAverages={movingAverages}
+                  visibleBars={interval === "W" ? 52 : 130}
+                  volume={{ show: true }}
+                  rs={spyCandles ? {
+                    benchmarkCandles: spyCandles,
+                    smaPeriod: 50,
+                    lookback: interval === "W" ? 52 : 260,
+                    benchmarkLabel: BENCHMARK_SYMBOL,
+                  } : undefined}
+                  timeframe={{
+                    value: interval,
+                    onChange: onIntervalChange,
+                    options: ["D", "W"],
+                  }}
+                  onLoadMore={handleLoadMore}
+                  isLoadingMore={isLoadingMore || isLoadingMoreSpy}
                 />
               ) : null}
             </div>
