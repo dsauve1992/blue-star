@@ -43,10 +43,7 @@ export default function ChartSandbox() {
   }, [loadMore, loadMoreSpy]);
 
   return (
-    <PageContainer
-      title="Chart Sandbox"
-      subtitle={`${DEMO_SYMBOL} — Mansfield RS vs ${BENCHMARK_SYMBOL}`}
-    >
+    <PageContainer>
       <div className="h-[calc(100vh-160px)] rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl overflow-hidden">
         {loading && (
           <div className="flex items-center justify-center h-full text-slate-400">
