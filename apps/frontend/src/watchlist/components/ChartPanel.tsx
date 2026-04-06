@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { ChevronDown, BarChart3 } from "lucide-react";
-import { LightweightChart } from "src/market-data/components/LightweightChart";
+import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
 import type { FinancialReportApiDto } from "src/fundamental/api/fundamental.client";
@@ -98,11 +98,13 @@ export function ChartPanel({
                   Failed to load chart data
                 </div>
               ) : candles ? (
-                <LightweightChart
+                <TechnicalChart
                   candles={candles}
                   movingAverages={movingAverages}
+                  volume={{ show: true }}
                   onLoadMore={loadMore}
                   isLoadingMore={isLoadingMore}
+                  ticker={chartProps?.symbol}
                 />
               ) : null}
             </div>

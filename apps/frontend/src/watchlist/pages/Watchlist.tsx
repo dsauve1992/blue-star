@@ -9,6 +9,7 @@ import {
 import { useWatchlistSelection } from "../hooks/use-watchlist-selection";
 import { useTickerKeyboardNavigation } from "../hooks/use-ticker-keyboard-navigation";
 import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
+import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { PageContainer } from "src/global/design-system/page-container";
 import { WatchlistCardBar } from "../components/WatchlistCardBar";
 import { TickerSidebar } from "../components/TickerSidebar";
@@ -58,13 +59,7 @@ export default function Watchlist() {
     error: financialError,
   } = useFinancialReport(symbolToFetch);
 
-  const movingAverages = useMemo(
-    () => [
-      { type: "EMA" as const, length: 10 },
-      { type: "EMA" as const, length: 20 },
-    ],
-    [],
-  );
+  const movingAverages = useMemo(() => getDefaultMovingAverages("D"), []);
 
   const chartProps = useMemo(() => {
     if (!selectedTicker) return null;

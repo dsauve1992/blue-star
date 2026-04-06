@@ -20,8 +20,9 @@ import {
 import type { AnalyzeConsolidationsRequest } from "../api/consolidation.client";
 import { ConsolidationSidebar } from "../components/ConsolidationSidebar";
 import { ConsolidationChartHeader } from "../components/ConsolidationChartHeader";
-import { LightweightChart } from "src/market-data/components/LightweightChart";
+import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
+import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { FinancialReportChartFooter } from "../components/FinancialReportChartFooter";
 import { LoadingSpinner } from "src/global/design-system";
 
@@ -82,13 +83,8 @@ export default function ConsolidationAnalysis() {
     (c) => c.tickerFullName === selectedTicker,
   );
 
-  const movingAverages = useMemo(
-    () => [
-      { type: "EMA" as const, length: 10 },
-      { type: "EMA" as const, length: 20 },
-    ],
-    [],
-  );
+  const interval = analysisType === "daily" ? "D" : "W";
+  const movingAverages = useMemo(() => getDefaultMovingAverages(interval as "D" | "W"), [interval]);
 
   const chartProps = useMemo(() => {
     if (!selectedTicker) return null;
@@ -266,11 +262,13 @@ export default function ConsolidationAnalysis() {
                         Failed to load chart data
                       </div>
                     ) : candles ? (
-                      <LightweightChart
+                      <TechnicalChart
                         candles={candles}
                         movingAverages={movingAverages}
+                        volume={{ show: true }}
                         onLoadMore={loadMore}
                         isLoadingMore={isLoadingMore}
+                        ticker={chartProps?.symbol}
                       />
                     ) : null}
                   </div>
