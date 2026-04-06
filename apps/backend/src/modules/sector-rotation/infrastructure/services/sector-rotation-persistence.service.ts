@@ -120,10 +120,7 @@ export class SectorRotationPersistenceServiceImpl
       existingDataPoints.map((point) => point.date.toISOString().split('T')[0]),
     );
 
-    const allDates = this.generateWeekDates(
-      dateRange.startDate,
-      cappedEndDate,
-    );
+    const allDates = this.generateWeekDates(dateRange.startDate, cappedEndDate);
     const missingDates = allDates.filter(
       (date) => !existingDates.has(date.toISOString().split('T')[0]),
     );
