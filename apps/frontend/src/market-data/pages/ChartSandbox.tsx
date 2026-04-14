@@ -1,6 +1,6 @@
 import { useState, useCallback, useMemo } from "react";
 import { PageContainer } from "src/global/design-system";
-import { TechnicalChart } from "src/market-data/components/TechnicalChart";
+import { TechnicalChart, type ChartDrawingTool, type LongPositionSummary } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import type { ChartInterval } from "src/market-data/api/chart-data.client";
@@ -12,6 +12,8 @@ const BENCHMARK_EXCHANGE = "AMEX";
 
 export default function ChartSandbox() {
   const [interval, setInterval] = useState<ChartInterval>("D");
+  const [activeTool, setActiveTool] = useState<ChartDrawingTool>("none");
+  const [riskAmount, setRiskAmount] = useState(1000);
 
   const bars = interval === "W" ? 156 : 520;
 
@@ -42,8 +44,33 @@ export default function ChartSandbox() {
     loadMoreSpy();
   }, [loadMore, loadMoreSpy]);
 
+  const handleSubmitLongPosition = useCallback((summary: LongPositionSummary) => {
+    alert(
+      `Long Position — ${DEMO_SYMBOL}\n` +
+      `━━━━━━━━━━━━━━━━━━━━━━\n` +
+      `Entry:       $${summary.entry.toFixed(2)}\n` +
+      `Stop Loss:   $${summary.stop.toFixed(2)}\n` +
+      `Take Profit: $${summary.target.toFixed(2)}\n` +
+      `R:R Ratio:   ${summary.riskReward.toFixed(2)}:1\n` +
+      `Risk $:      $${summary.riskAmount.toLocaleString()}\n` +
+      `Qty:         ${summary.qty} shares`,
+    );
+  }, []);
+
   return (
     <PageContainer>
+      {/* Risk amount input — only visible when long-position tool is active */}
+      {activeTool === "long-position" && (
+        <div className="flex items-center gap-3 mb-2">
+          <label className="text-xs text-slate-400 font-mono">Risk $</label>
+          <input
+            type="number"
+            value={riskAmount}
+            onChange={(e) => setRiskAmount(Math.max(0, Number(e.target.value)))}
+            className="w-24 px-2 py-1 text-xs font-mono rounded border border-slate-600 bg-slate-800 text-slate-200 focus:border-blue-500 focus:outline-none"
+          />
+        </div>
+      )}
       <div className="h-[calc(100vh-160px)] rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl overflow-hidden">
         {loading && (
           <div className="flex items-center justify-center h-full text-slate-400">
@@ -72,6 +99,13 @@ export default function ChartSandbox() {
               value: interval,
               onChange: setInterval,
               options: ["1", "5", "15", "60", "D", "W", "M"],
+            }}
+            drawingTool={{
+              activeTool,
+              onToolChange: setActiveTool,
+              riskAmount,
+              onRiskAmountChange: setRiskAmount,
+              onSubmitLongPosition: handleSubmitLongPosition,
             }}
             onLoadMore={handleLoadMore}
             isLoadingMore={isLoadingMore || isLoadingMoreSpy}

@@ -28,6 +28,10 @@ import {
   fmtVol,
 } from "../utils/chart-utils";
 import { getChartColors, MA_DEFAULT_COLORS, type ChartColorPalette } from "../utils/chart-colors";
+import { MeasureTool } from "./chart-primitives/MeasureTool";
+import { LongPositionTool } from "./chart-primitives/LongPositionTool";
+
+export type ChartDrawingTool = "none" | "measure" | "long-position";
 
 // ── Props ─────────────────────────────────────────────────────────────
 
@@ -49,6 +53,25 @@ export interface TimeframeConfig {
   options?: ChartInterval[];
 }
 
+export interface LongPositionSummary {
+  entry: number;
+  stop: number;
+  target: number;
+  riskReward: number;
+  riskAmount: number;
+  qty: number;
+}
+
+export interface DrawingToolConfig {
+  activeTool: ChartDrawingTool;
+  onToolChange: (tool: ChartDrawingTool) => void;
+  /** Dollar amount at risk for long position sizing. Defaults to 1000. */
+  riskAmount?: number;
+  onRiskAmountChange?: (amount: number) => void;
+  /** Called when the user clicks the "Submit" action on a long position */
+  onSubmitLongPosition?: (summary: LongPositionSummary) => void;
+}
+
 export interface TechnicalChartProps {
   candles: ChartCandleDto[];
   ticker?: string;
@@ -56,6 +79,7 @@ export interface TechnicalChartProps {
   volume?: VolumeConfig;
   rs?: RSConfig;
   timeframe?: TimeframeConfig;
+  drawingTool?: DrawingToolConfig;
   /** Number of bars to show initially. Defaults to all (fitContent). */
   visibleBars?: number;
   showLegend?: boolean;
@@ -98,6 +122,7 @@ function TechnicalChartInner({
   volume = { show: true, heatmap: false },
   rs,
   timeframe,
+  drawingTool,
   visibleBars,
   showLegend = true,
   showTooltip = true,
@@ -126,6 +151,12 @@ function TechnicalChartInner({
   movingAveragesRef.current = movingAverages;
   const visibleBarsRef = useRef(visibleBars);
   visibleBarsRef.current = visibleBars;
+
+  // Drawing tool refs
+  const measureToolRef = useRef<MeasureTool>(new MeasureTool());
+  const longPositionToolRef = useRef<LongPositionTool>(new LongPositionTool());
+  const drawingToolRef = useRef(drawingTool);
+  drawingToolRef.current = drawingTool;
 
   // Stable key to detect when data actually changes
   const dataKey = useMemo(
@@ -194,6 +225,118 @@ function TechnicalChartInner({
     }
   }, []);
 
+  // ── Drawing tool: measure drag state ────────────────────────────
+  const isMeasureDragging = useRef(false);
+
+  const handleCrosshairMoveForTools = useCallback((param: MouseEventParams) => {
+    const chart = chartRef.current;
+    const cs = csRef.current;
+    if (!chart || !cs || !param.point) return;
+
+    const activeTool = drawingToolRef.current?.activeTool;
+
+    // Measure tool: update rubber-band while dragging
+    if (activeTool === "measure" && isMeasureDragging.current) {
+      const price = cs.coordinateToPrice(param.point.y as unknown as number);
+      const logical = chart.timeScale().coordinateToLogical(param.point.x as unknown as number);
+      const time = chart.timeScale().coordinateToTime(param.point.x as unknown as number);
+      if (price !== null && logical !== null) {
+        measureToolRef.current.updateDrawing(price as number, logical as number, time ?? ("" as Time));
+      }
+    }
+
+    // Long position: update hover highlight (even when tool is not active, so handles glow)
+    const lpt = longPositionToolRef.current;
+    if (lpt.hasPosition && !lpt.isDragging) {
+      lpt.updateHover(param.point.y);
+    }
+  }, []);
+
+  const handleChartClick = useCallback((param: MouseEventParams) => {
+    const chart = chartRef.current;
+    const cs = csRef.current;
+    if (!chart || !cs || !param.point) return;
+
+    const activeTool = drawingToolRef.current?.activeTool;
+
+    // Measure tool: click-to-start, click-to-finish
+    if (activeTool === "measure") {
+      const price = cs.coordinateToPrice(param.point.y as unknown as number);
+      const logical = chart.timeScale().coordinateToLogical(param.point.x as unknown as number);
+      const time = chart.timeScale().coordinateToTime(param.point.x as unknown as number);
+      if (price === null || logical === null) return;
+
+      if (!isMeasureDragging.current) {
+        measureToolRef.current.clear();
+        measureToolRef.current.startDrawing(price as number, logical as number, time ?? ("" as Time));
+        isMeasureDragging.current = true;
+      } else {
+        measureToolRef.current.finishDrawing();
+        isMeasureDragging.current = false;
+      }
+    }
+
+    // Long position: single click places the position, then auto-deactivate tool
+    if (activeTool === "long-position") {
+      const lpt = longPositionToolRef.current;
+      // Don't place a new one if we clicked on an existing handle
+      if (lpt.hasPosition && lpt.hoveredHandle) return;
+
+      const price = cs.coordinateToPrice(param.point.y as unknown as number);
+      const logical = chart.timeScale().coordinateToLogical(param.point.x as unknown as number);
+      if (price === null || logical === null) return;
+
+      lpt.place(price as number, logical as number);
+      drawingToolRef.current?.onToolChange("none");
+    }
+  }, []);
+
+  // ── Long position: DOM-level drag for handles ─────────────────────
+
+  const handleContainerMouseDown = useCallback((e: React.MouseEvent) => {
+    const lpt = longPositionToolRef.current;
+    const chart = chartRef.current;
+    if (!lpt.hasPosition || !lpt.hoveredHandle || !chart) return;
+
+    if (lpt.startDrag()) {
+      e.preventDefault();
+      e.stopPropagation();
+      // Freeze chart scrolling/scaling so the pane doesn't move while dragging
+      chart.applyOptions({
+        handleScroll: false,
+        handleScale: false,
+      });
+    }
+  }, []);
+
+  const handleContainerMouseMove = useCallback((e: React.MouseEvent) => {
+    const lpt = longPositionToolRef.current;
+    const cs = csRef.current;
+    if (!lpt.isDragging || !cs) return;
+
+    const rect = containerRef.current?.getBoundingClientRect();
+    if (!rect) return;
+
+    const cssY = e.clientY - rect.top;
+    const price = cs.coordinateToPrice(cssY as unknown as number);
+    if (price !== null) {
+      lpt.drag(price as number);
+    }
+  }, []);
+
+  const handleContainerMouseUp = useCallback(() => {
+    const lpt = longPositionToolRef.current;
+    const chart = chartRef.current;
+    if (lpt.isDragging && chart) {
+      // Re-enable chart scrolling/scaling
+      chart.applyOptions({
+        handleScroll: true,
+        handleScale: true,
+      });
+    }
+    lpt.endDrag();
+  }, []);
+
   // ── Load-more handler (with delay guard) ──────────────────────────
 
   const loadMoreEnabledRef = useRef(false);
@@ -248,11 +391,15 @@ function TechnicalChartInner({
 
     chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
     chart.subscribeCrosshairMove(handleCrosshairMove);
+    chart.subscribeCrosshairMove(handleCrosshairMoveForTools);
+    chart.subscribeClick(handleChartClick);
     chartRef.current = chart;
 
     return () => {
       chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
       chart.unsubscribeCrosshairMove(handleCrosshairMove);
+      chart.unsubscribeCrosshairMove(handleCrosshairMoveForTools);
+      chart.unsubscribeClick(handleChartClick);
       chart.remove();
       chartRef.current = null;
       csRef.current = null;
@@ -261,7 +408,7 @@ function TechnicalChartInner({
       rsLineSeriesRef.current = null;
       rsSmaSeriesRef.current = null;
     };
-  }, [C, handleVisibleLogicalRangeChange, handleCrosshairMove]);
+  }, [C, handleVisibleLogicalRangeChange, handleCrosshairMove, handleCrosshairMoveForTools, handleChartClick]);
 
   // ── Watermark ────────────────────────────────────────────────────
 
@@ -286,6 +433,21 @@ function TechnicalChartInner({
 
     return () => { watermark.detach(); };
   }, [ticker]);
+
+  // ── Drawing tool sync ─────────────────────────────────────────────
+
+  const activeTool = drawingTool?.activeTool ?? "none";
+  const riskAmount = drawingTool?.riskAmount ?? 1000;
+
+  useEffect(() => {
+    // Clear measure tool when switching away from it; long position persists
+    measureToolRef.current.clear();
+    isMeasureDragging.current = false;
+  }, [activeTool]);
+
+  useEffect(() => {
+    longPositionToolRef.current.setRiskAmount(riskAmount);
+  }, [riskAmount]);
 
   // ── Data update ──────────────────────────────────────────────────
   // Depends on `dataKey` (candle counts) and `C` (theme). Config objects
@@ -337,6 +499,10 @@ function TechnicalChartInner({
         time: c.time as Time, open: c.open, high: c.high, low: c.low, close: c.close,
       })));
     csRef.current = cs;
+
+    // ── Attach drawing tool primitives ────────────────────────────
+    cs.attachPrimitive(measureToolRef.current);
+    cs.attachPrimitive(longPositionToolRef.current);
 
     // ── Moving averages (pane 0) ─────────────────────────────────
     const closes = candles.map((c) => c.close);
@@ -515,7 +681,13 @@ function TechnicalChartInner({
   const clr = isUp ? C.up : C.down;
 
   return (
-    <div style={{ position: "relative", width: "100%", height: "100%" }}>
+    <div
+      style={{ position: "relative", width: "100%", height: "100%" }}
+      onMouseDown={handleContainerMouseDown}
+      onMouseMove={handleContainerMouseMove}
+      onMouseUp={handleContainerMouseUp}
+      onMouseLeave={handleContainerMouseUp}
+    >
       <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
 
       {/* ── Legend — top-left ── */}
@@ -529,11 +701,27 @@ function TechnicalChartInner({
       )}
 
       {/* ── Toolbar — top-right ── */}
-      {(timeframe || showExport) && (
+      {(timeframe || showExport || drawingTool) && (
         <ChartToolbar
           timeframe={timeframe}
           showExport={showExport}
           onScreenshot={handleScreenshot}
+          drawingTool={drawingTool}
+          onClearLongPosition={longPositionToolRef.current.hasPosition ? () => longPositionToolRef.current.clear() : undefined}
+          onSubmitLongPosition={longPositionToolRef.current.hasPosition && drawingTool?.onSubmitLongPosition ? () => {
+            const s = longPositionToolRef.current.state;
+            if (!s) return;
+            const riskPerShare = Math.abs(s.entry - s.stop);
+            const rewardPerShare = Math.abs(s.target - s.entry);
+            drawingTool!.onSubmitLongPosition!({
+              entry: s.entry,
+              stop: s.stop,
+              target: s.target,
+              riskReward: riskPerShare > 0 ? rewardPerShare / riskPerShare : 0,
+              riskAmount: s.riskAmount,
+              qty: riskPerShare > 0 ? Math.floor(s.riskAmount / riskPerShare) : 0,
+            });
+          } : undefined}
           colors={C}
         />
       )}
@@ -653,15 +841,26 @@ function ChartTooltip({ tooltip, colors: C }: { tooltip: TooltipState; colors: C
   );
 }
 
+const DRAWING_TOOLS: { id: ChartDrawingTool; label: string; title: string }[] = [
+  { id: "measure", label: "Measure", title: "Measure: click start, click end" },
+  { id: "long-position", label: "Long", title: "Long Position: click to place, then drag handles" },
+];
+
 function ChartToolbar({
   timeframe,
   showExport,
   onScreenshot,
+  drawingTool,
+  onClearLongPosition,
+  onSubmitLongPosition,
   colors: C,
 }: {
   timeframe?: TimeframeConfig;
   showExport?: boolean;
   onScreenshot: () => void;
+  drawingTool?: DrawingToolConfig;
+  onClearLongPosition?: () => void;
+  onSubmitLongPosition?: () => void;
   colors: ChartColorPalette;
 }) {
   return (
@@ -669,6 +868,58 @@ function ChartToolbar({
       position: "absolute", top: 8, right: 8, zIndex: 10,
       display: "flex", gap: 2, alignItems: "center",
     }}>
+      {/* Drawing tools */}
+      {drawingTool && DRAWING_TOOLS.map((tool) => {
+        const isActive = drawingTool.activeTool === tool.id;
+        return (
+          <button
+            key={tool.id}
+            onClick={() => drawingTool.onToolChange(isActive ? "none" : tool.id)}
+            title={tool.title}
+            style={{
+              padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
+              borderRadius: 4, border: `1px solid ${isActive ? "rgba(59,130,246,0.6)" : "rgba(51,65,85,0.5)"}`,
+              cursor: "pointer",
+              background: isActive ? "rgba(59,130,246,0.2)" : "rgba(15,23,42,0.7)",
+              color: isActive ? "#60a5fa" : C.textMuted,
+              transition: "all 150ms",
+            }}
+          >
+            {tool.label}
+          </button>
+        );
+      })}
+      {onSubmitLongPosition && (
+        <button
+          onClick={onSubmitLongPosition}
+          title="Submit long position order"
+          style={{
+            padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4, border: "1px solid rgba(34,197,94,0.6)",
+            cursor: "pointer", background: "rgba(34,197,94,0.15)",
+            color: "#22c55e", fontWeight: 600, transition: "all 150ms",
+          }}
+        >
+          Submit
+        </button>
+      )}
+      {onClearLongPosition && (
+        <button
+          onClick={onClearLongPosition}
+          title="Clear long position"
+          style={{
+            padding: "3px 6px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4, border: "1px solid rgba(239,68,68,0.4)",
+            cursor: "pointer", background: "rgba(239,68,68,0.1)",
+            color: "#ef4444", transition: "all 150ms",
+          }}
+        >
+          Clear
+        </button>
+      )}
+      {drawingTool && timeframe && (
+        <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
+      )}
       {timeframe && (timeframe.options ?? ["D", "W", "M"]).map((tf) => (
         <button
           key={tf}
