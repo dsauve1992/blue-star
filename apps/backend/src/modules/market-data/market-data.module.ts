@@ -21,7 +21,12 @@ import {
 } from './constants/tokens';
 import { GetCompanyProfileUseCase } from './use-cases/get-company-profile.use-case';
 
-export { MARKET_DATA_SERVICE, SCREENER_SERVICE, FUNDAMENTAL_SERVICE };
+export {
+  MARKET_DATA_SERVICE,
+  SCREENER_SERVICE,
+  FUNDAMENTAL_SERVICE,
+  MARKET_DATA_CACHE_REPOSITORY,
+};
 
 @Module({
   imports: [DatabaseModule],
@@ -57,6 +62,11 @@ export { MARKET_DATA_SERVICE, SCREENER_SERVICE, FUNDAMENTAL_SERVICE };
     GetCompanyProfileUseCase,
     GetChartDataUseCase,
   ],
-  exports: [MARKET_DATA_SERVICE, SCREENER_SERVICE, FUNDAMENTAL_SERVICE],
+  exports: [
+    MARKET_DATA_SERVICE,
+    SCREENER_SERVICE,
+    FUNDAMENTAL_SERVICE,
+    MARKET_DATA_CACHE_REPOSITORY,
+  ],
 })
 export class MarketDataModule {}

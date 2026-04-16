@@ -1,14 +1,14 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Symbol } from '../../../market-data/domain/value-objects/symbol';
 import { DateRange } from '../../../market-data/domain/value-objects/date-range';
-import { MarketDataService } from '../../../market-data/domain/services/market-data.service';
-import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
+import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
 import { WeekUtils } from '../utils/week-utils';
+import { SECTOR_ROTATION_MARKET_DATA_SERVICE } from '../../constants/tokens';
 
 @Injectable()
 export class BenchmarkCalculator {
   constructor(
-    @Inject(MARKET_DATA_SERVICE)
+    @Inject(SECTOR_ROTATION_MARKET_DATA_SERVICE)
     private readonly marketDataService: MarketDataService,
   ) {}
 

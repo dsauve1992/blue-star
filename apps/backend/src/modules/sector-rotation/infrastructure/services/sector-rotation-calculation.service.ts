@@ -1,8 +1,7 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Symbol } from '../../../market-data/domain/value-objects/symbol';
 import { DateRange } from '../../../market-data/domain/value-objects/date-range';
-import { MarketDataService } from '../../../market-data/domain/services/market-data.service';
-import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
+import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
 import {
   SectorRotationCalculationService,
   SectorRotationCalculationParams,
@@ -17,6 +16,7 @@ import { WeekUtils } from '../utils/week-utils';
 import { EMACalculator } from '../utils/ema-calculator';
 import { RollingStatsCalculator, RollingStats } from '../utils/rolling-stats';
 import { RRG_PARAMETERS } from '../../constants/rrg-parameters';
+import { SECTOR_ROTATION_MARKET_DATA_SERVICE } from '../../constants/tokens';
 
 interface WeeklyPriceData {
   date: Date;
@@ -37,7 +37,7 @@ export class SectorRotationCalculationServiceImpl
   implements SectorRotationCalculationService
 {
   constructor(
-    @Inject(MARKET_DATA_SERVICE)
+    @Inject(SECTOR_ROTATION_MARKET_DATA_SERVICE)
     private readonly marketDataService: MarketDataService,
     private readonly zScoreNormalizer: ZScoreNormalizer,
     private readonly benchmarkCalculator: BenchmarkCalculator,

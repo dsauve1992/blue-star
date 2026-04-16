@@ -10,11 +10,13 @@ import { SectorRotationPersistenceServiceImpl } from './infrastructure/services/
 import { SectorRotationCronService } from './infrastructure/services/sector-rotation-cron.service';
 import { ZScoreNormalizer } from './infrastructure/services/z-score-normalizer.service';
 import { BenchmarkCalculator } from './infrastructure/services/benchmark-calculator.service';
+import { SectorRotationCachedMarketDataService } from './infrastructure/services/sector-rotation-cached-market-data.service';
 import { SectorRotationDataReadRepositoryImpl } from './infrastructure/repositories/sector-rotation-data-read.repository';
 import { SectorRotationDataWriteRepositoryImpl } from './infrastructure/repositories/sector-rotation-data-write.repository';
 import {
   SECTOR_ROTATION_CALCULATION_SERVICE,
   SECTOR_ROTATION_DATA_READ_REPOSITORY,
+  SECTOR_ROTATION_MARKET_DATA_SERVICE,
   SECTOR_ROTATION_DATA_WRITE_REPOSITORY,
   SECTOR_ROTATION_PERSISTENCE_SERVICE,
 } from './constants/tokens';
@@ -23,6 +25,7 @@ import { MarketDataModule } from '../market-data/market-data.module';
 export {
   SECTOR_ROTATION_CALCULATION_SERVICE,
   SECTOR_ROTATION_DATA_READ_REPOSITORY,
+  SECTOR_ROTATION_MARKET_DATA_SERVICE,
   SECTOR_ROTATION_DATA_WRITE_REPOSITORY,
   SECTOR_ROTATION_PERSISTENCE_SERVICE,
 };
@@ -46,6 +49,10 @@ export {
     {
       provide: SECTOR_ROTATION_PERSISTENCE_SERVICE,
       useClass: SectorRotationPersistenceServiceImpl,
+    },
+    {
+      provide: SECTOR_ROTATION_MARKET_DATA_SERVICE,
+      useClass: SectorRotationCachedMarketDataService,
     },
     ZScoreNormalizer,
     BenchmarkCalculator,
