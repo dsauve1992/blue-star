@@ -22,6 +22,10 @@ const DEFAULT_SECTORS = [
   { symbol: "XLC", name: "Communication Services" },
 ];
 
+const SECTOR_NAMES: Record<string, string> = Object.fromEntries(
+  DEFAULT_SECTORS.map(({ symbol, name }) => [symbol, name]),
+);
+
 export default function SectorRotation() {
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
@@ -281,6 +285,7 @@ export default function SectorRotation() {
             startDate={displayStartDate}
             endDate={displayEndDate}
             enabledSectors={enabledSectors}
+            sectorNames={SECTOR_NAMES}
           />
         </Card>
 
@@ -288,6 +293,7 @@ export default function SectorRotation() {
           dataPoints={data.result.dataPoints}
           enabledSectors={enabledSectors}
           onToggleSector={handleToggleSector}
+          sectorNames={SECTOR_NAMES}
         />
 
         {showComparison && (

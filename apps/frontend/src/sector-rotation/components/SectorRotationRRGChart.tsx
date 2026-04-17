@@ -11,6 +11,7 @@ interface SectorRotationRRGChartProps {
   startDate?: Date | null;
   endDate?: Date | null;
   enabledSectors?: Set<string>;
+  sectorNames?: Record<string, string>;
 }
 
 export function SectorRotationRRGChart({
@@ -19,6 +20,7 @@ export function SectorRotationRRGChart({
   startDate,
   endDate,
   enabledSectors,
+  sectorNames = {},
 }: SectorRotationRRGChartProps) {
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
@@ -125,8 +127,11 @@ export function SectorRotationRRGChart({
         );
         const trailPoints = symbolPoints.slice(trailStartIndex);
 
+        const displayName = sectorNames[symbol]
+          ? `${sectorNames[symbol]} (${symbol})`
+          : symbol;
         return {
-          name: symbol,
+          name: displayName,
           value: [latestPoint.x, latestPoint.y],
           symbolSize: 12,
           itemStyle: {
@@ -315,9 +320,12 @@ export function SectorRotationRRGChart({
         trigger: "item",
         formatter: (params: { seriesType?: string; name?: string }) => {
           if (params.seriesType === "scatter") {
-            const point = filteredDataPoints.find(
-              (p) => p.sectorSymbol === params.name,
-            );
+            const point = filteredDataPoints.find((p) => {
+              const displayName = sectorNames[p.sectorSymbol]
+                ? `${sectorNames[p.sectorSymbol]} (${p.sectorSymbol})`
+                : p.sectorSymbol;
+              return displayName === params.name;
+            });
             if (point) {
               return `
               <div style="padding: 8px;">

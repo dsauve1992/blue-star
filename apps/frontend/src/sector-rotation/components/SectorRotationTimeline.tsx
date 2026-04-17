@@ -7,12 +7,14 @@ interface SectorRotationTimelineProps {
   dataPoints: SectorRotationDataPoint[];
   enabledSectors: Set<string>;
   onToggleSector: (sectorSymbol: string) => void;
+  sectorNames?: Record<string, string>;
 }
 
 export function SectorRotationTimeline({
   dataPoints,
   enabledSectors,
   onToggleSector,
+  sectorNames = {},
 }: SectorRotationTimelineProps) {
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
@@ -109,7 +111,11 @@ export function SectorRotationTimeline({
                           className="w-4 h-4 cursor-pointer"
                           aria-label={`Toggle ${symbol} sector`}
                         />
-                        <span>{symbol}</span>
+                        <span>
+                          {sectorNames[symbol]
+                            ? `${sectorNames[symbol]} (${symbol})`
+                            : symbol}
+                        </span>
                       </div>
                     </td>
                   {uniqueDates.map((date) => {
@@ -123,7 +129,7 @@ export function SectorRotationTimeline({
                         className={`border border-border p-1 text-center text-xs ${getQuadrantColor(
                           quadrant,
                         )} ${isDarkMode ? 'opacity-80' : 'opacity-70'}`}
-                        title={`${symbol} - ${parseLocalDate(
+                        title={`${sectorNames[symbol] ? `${sectorNames[symbol]} (${symbol})` : symbol} - ${parseLocalDate(
                           date,
                         ).toLocaleDateString()}: ${quadrant}`}
                       >
