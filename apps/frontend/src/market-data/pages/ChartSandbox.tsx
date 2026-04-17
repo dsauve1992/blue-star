@@ -89,6 +89,7 @@ export default function ChartSandbox() {
             movingAverages={movingAverages}
             visibleBars={interval === "W" ? 52 : 130}
             volume={{ show: true, heatmap: false }}
+            showTradingView
             rs={{
               benchmarkCandles: spyCandles,
               smaPeriod: 50,
