@@ -948,7 +948,7 @@ function ChartToolbar({
       )}
       {showTradingView && ticker && (
         <button
-          onClick={() => window.open(`https://www.tradingview.com/chart/?symbol=${ticker}`, "_blank", "noopener,noreferrer")}
+          onClick={() => window.open(`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker)}`, "_blank", "noopener,noreferrer")}
           style={{
             padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
             borderRadius: 4, border: "1px solid rgba(51,65,85,0.5)", background: "rgba(15,23,42,0.7)",
