@@ -123,6 +123,7 @@ export function ChartPanel({
                   movingAverages={movingAverages}
                   visibleBars={interval === "W" ? 52 : 130}
                   volume={{ show: true }}
+                  showTradingView
                   rs={spyCandles ? {
                     benchmarkCandles: spyCandles,
                     smaPeriod: 50,
