@@ -85,6 +85,7 @@ export interface TechnicalChartProps {
   showLegend?: boolean;
   showTooltip?: boolean;
   showExport?: boolean;
+  showTradingView?: boolean;
   theme?: "dark";
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
@@ -127,6 +128,7 @@ function TechnicalChartInner({
   showLegend = true,
   showTooltip = true,
   showExport = true,
+  showTradingView,
   theme = "dark",
   onLoadMore,
   isLoadingMore = false,
@@ -701,10 +703,12 @@ function TechnicalChartInner({
       )}
 
       {/* ── Toolbar — top-right ── */}
-      {(timeframe || showExport || drawingTool) && (
+      {(timeframe || showExport || showTradingView || drawingTool) && (
         <ChartToolbar
           timeframe={timeframe}
           showExport={showExport}
+          showTradingView={showTradingView}
+          ticker={ticker}
           onScreenshot={handleScreenshot}
           drawingTool={drawingTool}
           onClearLongPosition={longPositionToolRef.current.hasPosition ? () => longPositionToolRef.current.clear() : undefined}
@@ -849,6 +853,8 @@ const DRAWING_TOOLS: { id: ChartDrawingTool; label: string; title: string }[] = 
 function ChartToolbar({
   timeframe,
   showExport,
+  showTradingView,
+  ticker,
   onScreenshot,
   drawingTool,
   onClearLongPosition,
@@ -857,6 +863,8 @@ function ChartToolbar({
 }: {
   timeframe?: TimeframeConfig;
   showExport?: boolean;
+  showTradingView?: boolean;
+  ticker?: string;
   onScreenshot: () => void;
   drawingTool?: DrawingToolConfig;
   onClearLongPosition?: () => void;
@@ -935,8 +943,23 @@ function ChartToolbar({
           {TIMEFRAME_LABELS[tf] ?? tf}
         </button>
       ))}
-      {timeframe && showExport && (
+      {timeframe && (showExport || (showTradingView && ticker)) && (
         <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
+      )}
+      {showTradingView && ticker && (
+        <button
+          onClick={() => window.open(`https://www.tradingview.com/chart/?symbol=${ticker}`, "_blank", "noopener,noreferrer")}
+          style={{
+            padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4, border: "1px solid rgba(51,65,85,0.5)", background: "rgba(15,23,42,0.7)",
+            color: C.textMuted, cursor: "pointer", opacity: 0.6, transition: "opacity 150ms",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; }}
+          title={`Open ${ticker} on TradingView`}
+        >
+          TV
+        </button>
       )}
       {showExport && (
         <button
