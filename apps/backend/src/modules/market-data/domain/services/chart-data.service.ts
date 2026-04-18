@@ -15,5 +15,6 @@ export interface ChartDataService {
     exchange: string,
     interval: ChartInterval,
     bars: number,
+    includeExtendedHours?: boolean,
   ): Promise<ChartData>;
 }

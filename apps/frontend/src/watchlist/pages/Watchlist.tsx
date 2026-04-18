@@ -58,6 +58,7 @@ export default function Watchlist() {
   });
 
   const [interval, setInterval] = useState<ChartInterval>("D");
+  const [includeExtendedHours, setIncludeExtendedHours] = useState(true);
 
   const symbolToFetch = selectedTicker ? extractSymbol(selectedTicker) : null;
   const {
@@ -87,7 +88,13 @@ export default function Watchlist() {
     candles: spyCandles,
     loadMore: loadMoreSpy,
     isLoadingMore: isLoadingMoreSpy,
-  } = useChartData(BENCHMARK_SYMBOL, BENCHMARK_EXCHANGE, interval, bars);
+  } = useChartData(
+    BENCHMARK_SYMBOL,
+    BENCHMARK_EXCHANGE,
+    interval,
+    bars,
+    includeExtendedHours,
+  );
 
   const handleCreateWatchlist = useCallback(
     async (name: string) => {
@@ -206,6 +213,8 @@ export default function Watchlist() {
               onIntervalChange={setInterval}
               onLoadMoreSpy={loadMoreSpy}
               isLoadingMoreSpy={isLoadingMoreSpy}
+              includeExtendedHours={includeExtendedHours}
+              onIncludeExtendedHoursChange={setIncludeExtendedHours}
             />
           </div>
         </div>

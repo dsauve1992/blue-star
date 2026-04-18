@@ -46,6 +46,7 @@ export class YahooChartDataService implements ChartDataService {
     exchange: string,
     interval: ChartInterval,
     bars: number,
+    includeExtendedHours = true,
   ): Promise<ChartData> {
     const yahooInterval = CHART_TO_YAHOO_INTERVAL[interval];
     const daysBack = BARS_TO_DAYS[interval](bars);
@@ -61,6 +62,7 @@ export class YahooChartDataService implements ChartDataService {
       symbolVO,
       dateRange,
       yahooInterval,
+      { includePrePost: includeExtendedHours },
     );
 
     // Take only the last N bars requested

@@ -40,6 +40,8 @@ interface ChartPanelProps {
   onIntervalChange: (interval: ChartInterval) => void;
   onLoadMoreSpy: () => void;
   isLoadingMoreSpy: boolean;
+  includeExtendedHours: boolean;
+  onIncludeExtendedHoursChange: (value: boolean) => void;
 }
 
 export function ChartPanel({
@@ -56,6 +58,8 @@ export function ChartPanel({
   onIntervalChange,
   onLoadMoreSpy,
   isLoadingMoreSpy,
+  includeExtendedHours,
+  onIncludeExtendedHoursChange,
 }: ChartPanelProps) {
   const [showFinancialFooter, setShowFinancialFooter] = useState(true);
 
@@ -72,6 +76,7 @@ export function ChartPanel({
     chartProps?.exchange ?? null,
     chartProps?.interval,
     chartProps?.bars,
+    includeExtendedHours,
   );
 
   const handleLoadMore = useCallback(() => {
@@ -138,6 +143,10 @@ export function ChartPanel({
                     value: interval,
                     onChange: onIntervalChange,
                     options: MAIN_CHART_TIMEFRAME_OPTIONS,
+                  }}
+                  extendedHours={{
+                    includeExtendedHours,
+                    onIncludeExtendedHoursChange,
                   }}
                   onLoadMore={handleLoadMore}
                   isLoadingMore={isLoadingMore || isLoadingMoreSpy}

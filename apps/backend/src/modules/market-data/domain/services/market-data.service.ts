@@ -78,10 +78,15 @@ export function deduplicatePricePoints(
   return unique;
 }
 
+export interface HistoricalDataFetchOptions {
+  includePrePost?: boolean;
+}
+
 export interface MarketDataService {
   getHistoricalData(
     symbol: Symbol,
     dateRange: DateRange,
     _interval?: Interval,
+    options?: HistoricalDataFetchOptions,
   ): Promise<HistoricalData>;
 }

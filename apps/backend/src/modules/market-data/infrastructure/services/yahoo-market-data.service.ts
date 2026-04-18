@@ -7,6 +7,7 @@ import {
   deduplicatePricePoints,
   determineInterval,
   HistoricalData,
+  HistoricalDataFetchOptions,
   Interval,
   MarketDataService,
 } from '../../domain/services/market-data.service';
@@ -23,12 +24,14 @@ export class YahooMarketDataService implements MarketDataService {
     symbol: Symbol,
     dateRange: DateRange,
     _interval?: Interval,
+    options?: HistoricalDataFetchOptions,
   ): Promise<HistoricalData> {
     const interval = _interval ?? determineInterval(dateRange);
     const fetchedPricePoints = await this.fetchViaChart(
       symbol,
       dateRange,
       interval,
+      options,
     );
     const uniquePricePoints = deduplicatePricePoints(
       fetchedPricePoints,
@@ -50,12 +53,14 @@ export class YahooMarketDataService implements MarketDataService {
     symbol: Symbol,
     dateRange: DateRange,
     interval: Interval,
+    options?: HistoricalDataFetchOptions,
   ): Promise<PricePoint[]> {
     const result = await this.yahooFinance.chart(symbol.value, {
       period1: dateRange.startDate,
       period2: dateRange.endDate,
       interval,
       return: 'array',
+      includePrePost: options?.includePrePost ?? true,
     });
 
     if (!result.quotes || result.quotes.length === 0) {

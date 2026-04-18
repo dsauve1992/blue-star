@@ -16,7 +16,11 @@ import {
   ColorType,
   CrosshairMode,
 } from "lightweight-charts";
-import type { ChartCandleDto, ChartInterval } from "../api/chart-data.client";
+import {
+  isIntradayChartInterval,
+  type ChartCandleDto,
+  type ChartInterval,
+} from "../api/chart-data.client";
 import type { MovingAverageConfig } from "../utils/chart-utils";
 import {
   computeEMA,
@@ -51,6 +55,11 @@ export interface TimeframeConfig {
   value: ChartInterval;
   onChange: (interval: ChartInterval) => void;
   options?: ChartInterval[];
+}
+
+export interface ExtendedHoursSessionControl {
+  includeExtendedHours: boolean;
+  onIncludeExtendedHoursChange: (value: boolean) => void;
 }
 
 export interface LongPositionSummary {
@@ -89,6 +98,7 @@ export interface TechnicalChartProps {
   volume?: VolumeConfig;
   rs?: RSConfig;
   timeframe?: TimeframeConfig;
+  extendedHours?: ExtendedHoursSessionControl;
   drawingTool?: DrawingToolConfig;
   /** Number of bars to show initially. Defaults to all (fitContent). */
   visibleBars?: number;
@@ -134,6 +144,7 @@ function TechnicalChartInner({
   volume = { show: true, heatmap: false },
   rs,
   timeframe,
+  extendedHours,
   drawingTool,
   visibleBars,
   showLegend = true,
@@ -703,9 +714,10 @@ function TechnicalChartInner({
         minHeight: 0,
       }}
     >
-      {(timeframe || showExport || showTradingView || drawingTool) && (
+      {(timeframe || showExport || showTradingView || drawingTool || extendedHours) && (
         <ChartToolbar
           timeframe={timeframe}
+          extendedHours={extendedHours}
           showExport={showExport}
           showTradingView={showTradingView}
           ticker={ticker}
@@ -874,6 +886,7 @@ const DRAWING_TOOLS: { id: ChartDrawingTool; label: string; title: string }[] = 
 
 function ChartToolbar({
   timeframe,
+  extendedHours,
   showExport,
   showTradingView,
   ticker,
@@ -885,6 +898,7 @@ function ChartToolbar({
   colors: C,
 }: {
   timeframe?: TimeframeConfig;
+  extendedHours?: ExtendedHoursSessionControl;
   showExport?: boolean;
   showTradingView?: boolean;
   ticker?: string;
@@ -976,6 +990,40 @@ function ChartToolbar({
           {TIMEFRAME_LABELS[tf] ?? tf}
         </button>
       ))}
+      {extendedHours &&
+        timeframe &&
+        isIntradayChartInterval(timeframe.value) && (
+        <>
+          <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
+          <button
+            type="button"
+            onClick={() =>
+              extendedHours.onIncludeExtendedHoursChange(
+                !extendedHours.includeExtendedHours,
+              )}
+            title={
+              extendedHours.includeExtendedHours
+                ? "Including pre-market and post-market bars (Yahoo). Click for regular session only."
+                : "Regular session only. Click to include pre-market and post-market bars."
+            }
+            style={{
+              padding: "3px 8px",
+              fontSize: 10,
+              fontFamily: "'JetBrains Mono', monospace",
+              borderRadius: 4,
+              border: `1px solid ${extendedHours.includeExtendedHours ? "rgba(59,130,246,0.5)" : "rgba(51,65,85,0.5)"}`,
+              cursor: "pointer",
+              background: extendedHours.includeExtendedHours
+                ? "rgba(59,130,246,0.15)"
+                : "rgba(15,23,42,0.7)",
+              color: extendedHours.includeExtendedHours ? "#93c5fd" : C.textMuted,
+              transition: "all 150ms",
+            }}
+          >
+            {extendedHours.includeExtendedHours ? "Pre/Post" : "RTH"}
+          </button>
+        </>
+      )}
       {timeframe && (showExport || (showTradingView && ticker)) && (
         <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
       )}

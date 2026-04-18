@@ -9,6 +9,7 @@ export const MARKET_DATA_QUERY_KEYS = {
     exchange: string,
     interval: string,
     bars: number,
+    includeExtendedHours: boolean,
   ) =>
     [
       ...MARKET_DATA_QUERY_KEYS.charts(),
@@ -16,5 +17,6 @@ export const MARKET_DATA_QUERY_KEYS = {
       exchange,
       interval,
       bars,
+      includeExtendedHours,
     ] as const,
 } as const;

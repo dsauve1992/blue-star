@@ -47,6 +47,7 @@ describe('YahooMarketDataService', () => {
       period2: dateRange.endDate,
       interval: '1d',
       return: 'array',
+      includePrePost: true,
     });
     expect(result.symbol).toEqual(symbol);
     expect(result.dateRange).toEqual(dateRange);
@@ -81,10 +82,35 @@ describe('YahooMarketDataService', () => {
       period2: dateRange.endDate,
       interval: '5m',
       return: 'array',
+      includePrePost: true,
     });
     expect(result.symbol).toEqual(symbol);
     expect(result.dateRange).toEqual(dateRange);
     expect(result.pricePoints).toHaveLength(1);
     expect(result.pricePoints[0].close).toBe(100.5);
+  });
+
+  it('should pass includePrePost false when options request regular session only', async () => {
+    const { service, yahooFinance } = createService();
+    const symbol = Symbol.of('AAPL');
+    const dateRange = DateRange.of(
+      new Date('2025-01-02T14:30:00.000Z'),
+      new Date('2025-01-02T16:00:00.000Z'),
+    );
+    yahooFinance.chart.mockResolvedValue({ quotes: [] });
+
+    await expect(
+      service.getHistoricalData(symbol, dateRange, '5m', {
+        includePrePost: false,
+      }),
+    ).rejects.toThrow();
+
+    expect(yahooFinance.chart).toHaveBeenCalledWith(symbol.value, {
+      period1: dateRange.startDate,
+      period2: dateRange.endDate,
+      interval: '5m',
+      return: 'array',
+      includePrePost: false,
+    });
   });
 });

@@ -92,6 +92,7 @@ export default function ConsolidationAnalysis() {
 
   const defaultInterval: ChartInterval = analysisType === "daily" ? "D" : "W";
   const [interval, setInterval] = useState<ChartInterval>(defaultInterval);
+  const [includeExtendedHours, setIncludeExtendedHours] = useState(true);
 
   // Reset timeframe when switching between daily/weekly screener
   useEffect(() => {
@@ -126,13 +127,20 @@ export default function ConsolidationAnalysis() {
     chartProps?.exchange ?? null,
     chartProps?.interval,
     chartProps?.bars,
+    includeExtendedHours,
   );
 
   const {
     candles: spyCandles,
     loadMore: loadMoreSpy,
     isLoadingMore: isLoadingMoreSpy,
-  } = useChartData(BENCHMARK_SYMBOL, BENCHMARK_EXCHANGE, interval, bars);
+  } = useChartData(
+    BENCHMARK_SYMBOL,
+    BENCHMARK_EXCHANGE,
+    interval,
+    bars,
+    includeExtendedHours,
+  );
 
   const handleLoadMore = useCallback(() => {
     loadMore();
@@ -310,6 +318,10 @@ export default function ConsolidationAnalysis() {
                           value: interval,
                           onChange: setInterval,
                           options: MAIN_CHART_TIMEFRAME_OPTIONS,
+                        }}
+                        extendedHours={{
+                          includeExtendedHours,
+                          onIncludeExtendedHoursChange: setIncludeExtendedHours,
                         }}
                         onLoadMore={handleLoadMore}
                         isLoadingMore={isLoadingMore || isLoadingMoreSpy}

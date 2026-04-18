@@ -120,6 +120,7 @@ describe('SectorRotationCachedMarketDataService', () => {
       symbol,
       dateRange,
       '1wk',
+      undefined,
     );
     expect(cacheRepository.savePricePoints).toHaveBeenNthCalledWith(
       1,
@@ -241,6 +242,7 @@ describe('SectorRotationCachedMarketDataService', () => {
       symbol,
       dateRange,
       '5m',
+      undefined,
     );
     expect(result).toEqual(historicalData(symbol, dateRange, intradayPoints));
   });

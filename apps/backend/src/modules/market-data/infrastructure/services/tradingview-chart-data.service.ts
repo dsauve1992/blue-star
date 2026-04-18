@@ -72,7 +72,9 @@ export class TradingViewChartDataService implements ChartDataService {
     exchange: string,
     interval: ChartInterval,
     bars: number,
+    _includeExtendedHours = true,
   ): Promise<ChartData> {
+    void _includeExtendedHours;
     const command = `${this.pythonExecutable} ${this.scriptPath} --symbol=${symbol} --exchange=${exchange} --interval=${interval} --bars=${bars}`;
 
     let stdout: string;
