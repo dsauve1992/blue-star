@@ -44,6 +44,12 @@ export const routes: RouteConfig[] = [
     showInNavigation: true,
   },
   {
+    path: "/risk",
+    label: "Risk",
+    isProtected: true,
+    showInNavigation: true,
+  },
+  {
     path: "/positions/:positionId",
     label: "Position Detail",
     isProtected: true,
