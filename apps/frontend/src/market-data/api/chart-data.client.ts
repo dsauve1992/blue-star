@@ -22,6 +22,15 @@ export interface GetChartDataResponse {
 
 export type ChartInterval = "1" | "5" | "15" | "30" | "60" | "D" | "W" | "M";
 
+/** Timeframe buttons on watchlist and consolidation charts. */
+export const MAIN_CHART_TIMEFRAME_OPTIONS: ChartInterval[] = [
+  "5",
+  "15",
+  "60",
+  "D",
+  "W",
+];
+
 export class ChartDataClient {
   async getChartData(
     symbol: string,

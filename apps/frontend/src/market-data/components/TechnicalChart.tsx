@@ -72,9 +72,19 @@ export interface DrawingToolConfig {
   onSubmitLongPosition?: (summary: LongPositionSummary) => void;
 }
 
+function tradingViewChartSymbol(ticker: string, exchange?: string): string {
+  const t = ticker.trim();
+  if (!t) return "";
+  if (t.includes(":")) return t;
+  const e = exchange?.trim();
+  return e ? `${e}:${t}` : t;
+}
+
 export interface TechnicalChartProps {
   candles: ChartCandleDto[];
   ticker?: string;
+  /** Used with `ticker` for TradingView deep links (`EXCHANGE:SYMBOL`). */
+  exchange?: string;
   movingAverages?: MovingAverageConfig[];
   volume?: VolumeConfig;
   rs?: RSConfig;
@@ -119,6 +129,7 @@ interface TooltipState {
 function TechnicalChartInner({
   candles,
   ticker,
+  exchange,
   movingAverages = [],
   volume = { show: true, heatmap: false },
   rs,
@@ -374,7 +385,7 @@ function TechnicalChartInner({
         textColor: C.text,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10,
-        attributionLogo: false,
+        attributionLogo: true,
         panes: { separatorColor: C.border },
       },
       grid: {
@@ -684,31 +695,21 @@ function TechnicalChartInner({
 
   return (
     <div
-      style={{ position: "relative", width: "100%", height: "100%" }}
-      onMouseDown={handleContainerMouseDown}
-      onMouseMove={handleContainerMouseMove}
-      onMouseUp={handleContainerMouseUp}
-      onMouseLeave={handleContainerMouseUp}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        minHeight: 0,
+      }}
     >
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-
-      {/* ── Legend — top-left ── */}
-      {showLegend && legend && (
-        <ChartLegend legend={legend} clr={clr} colors={C} />
-      )}
-
-      {/* ── Tooltip — follows cursor ── */}
-      {showTooltip && tooltip && (
-        <ChartTooltip tooltip={tooltip} colors={C} />
-      )}
-
-      {/* ── Toolbar — top-right ── */}
       {(timeframe || showExport || showTradingView || drawingTool) && (
         <ChartToolbar
           timeframe={timeframe}
           showExport={showExport}
           showTradingView={showTradingView}
           ticker={ticker}
+          exchange={exchange}
           onScreenshot={handleScreenshot}
           drawingTool={drawingTool}
           onClearLongPosition={longPositionToolRef.current.hasPosition ? () => longPositionToolRef.current.clear() : undefined}
@@ -729,6 +730,27 @@ function TechnicalChartInner({
           colors={C}
         />
       )}
+      <div
+        style={{
+          position: "relative",
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          width: "100%",
+        }}
+        onMouseDown={handleContainerMouseDown}
+        onMouseMove={handleContainerMouseMove}
+        onMouseUp={handleContainerMouseUp}
+        onMouseLeave={handleContainerMouseUp}
+      >
+        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+        {showLegend && legend && (
+          <ChartLegend legend={legend} clr={clr} colors={C} />
+        )}
+        {showTooltip && tooltip && (
+          <ChartTooltip tooltip={tooltip} colors={C} />
+        )}
+      </div>
     </div>
   );
 }
@@ -855,6 +877,7 @@ function ChartToolbar({
   showExport,
   showTradingView,
   ticker,
+  exchange,
   onScreenshot,
   drawingTool,
   onClearLongPosition,
@@ -865,6 +888,7 @@ function ChartToolbar({
   showExport?: boolean;
   showTradingView?: boolean;
   ticker?: string;
+  exchange?: string;
   onScreenshot: () => void;
   drawingTool?: DrawingToolConfig;
   onClearLongPosition?: () => void;
@@ -873,8 +897,17 @@ function ChartToolbar({
 }) {
   return (
     <div style={{
-      position: "absolute", top: 8, right: 8, zIndex: 10,
-      display: "flex", gap: 2, alignItems: "center",
+      flexShrink: 0,
+      width: "100%",
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 6,
+      alignItems: "center",
+      justifyContent: "flex-end",
+      padding: "6px 8px",
+      borderBottom: `1px solid ${C.border}`,
+      background: "rgba(15, 23, 42, 0.85)",
+      boxSizing: "border-box",
     }}>
       {/* Drawing tools */}
       {drawingTool && DRAWING_TOOLS.map((tool) => {
@@ -948,7 +981,15 @@ function ChartToolbar({
       )}
       {showTradingView && ticker && (
         <button
-          onClick={() => window.open(`https://www.tradingview.com/chart/?symbol=${encodeURIComponent(ticker)}`, "_blank", "noopener,noreferrer")}
+          type="button"
+          onClick={() => {
+            const symbol = tradingViewChartSymbol(ticker, exchange);
+            window.open(
+              `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+          }}
           style={{
             padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
             borderRadius: 4, border: "1px solid rgba(51,65,85,0.5)", background: "rgba(15,23,42,0.7)",
@@ -956,7 +997,7 @@ function ChartToolbar({
           }}
           onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
           onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; }}
-          title={`Open ${ticker} on TradingView`}
+          title={`Open ${tradingViewChartSymbol(ticker, exchange)} on TradingView`}
         >
           TV
         </button>

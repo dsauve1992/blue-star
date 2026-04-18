@@ -4,7 +4,10 @@ import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
 import type { FinancialReportApiDto } from "src/fundamental/api/fundamental.client";
-import type { ChartInterval } from "src/market-data/api/chart-data.client";
+import {
+  MAIN_CHART_TIMEFRAME_OPTIONS,
+  type ChartInterval,
+} from "src/market-data/api/chart-data.client";
 import type { ChartCandleDto } from "src/market-data/api/chart-data.client";
 import type { MovingAverageConfig } from "src/market-data/utils/chart-utils";
 import type { Watchlist } from "../api/watchlist.client";
@@ -120,6 +123,7 @@ export function ChartPanel({
                 <TechnicalChart
                   candles={candles}
                   ticker={chartProps?.symbol}
+                  exchange={chartProps?.exchange}
                   movingAverages={movingAverages}
                   visibleBars={interval === "W" ? 52 : 130}
                   volume={{ show: true }}
@@ -133,7 +137,7 @@ export function ChartPanel({
                   timeframe={{
                     value: interval,
                     onChange: onIntervalChange,
-                    options: ["D", "W"],
+                    options: MAIN_CHART_TIMEFRAME_OPTIONS,
                   }}
                   onLoadMore={handleLoadMore}
                   isLoadingMore={isLoadingMore || isLoadingMoreSpy}

@@ -86,6 +86,7 @@ export default function ChartSandbox() {
           <TechnicalChart
             candles={candles}
             ticker={DEMO_SYMBOL}
+            exchange={DEMO_EXCHANGE}
             movingAverages={movingAverages}
             visibleBars={interval === "W" ? 52 : 130}
             volume={{ show: true, heatmap: false }}

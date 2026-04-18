@@ -18,7 +18,10 @@ import {
   useCreateWatchlist,
 } from "src/watchlist/hooks/use-watchlists";
 import type { AnalyzeConsolidationsRequest } from "../api/consolidation.client";
-import type { ChartInterval } from "src/market-data/api/chart-data.client";
+import {
+  MAIN_CHART_TIMEFRAME_OPTIONS,
+  type ChartInterval,
+} from "src/market-data/api/chart-data.client";
 import { ConsolidationSidebar } from "../components/ConsolidationSidebar";
 import { ConsolidationChartHeader } from "../components/ConsolidationChartHeader";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
@@ -292,6 +295,7 @@ export default function ConsolidationAnalysis() {
                       <TechnicalChart
                         candles={candles}
                         ticker={chartProps?.symbol}
+                        exchange={chartProps?.exchange}
                         movingAverages={movingAverages}
                         visibleBars={interval === "W" ? 52 : 130}
                         volume={{ show: true }}
@@ -305,7 +309,7 @@ export default function ConsolidationAnalysis() {
                         timeframe={{
                           value: interval,
                           onChange: setInterval,
-                          options: ["D", "W"],
+                          options: MAIN_CHART_TIMEFRAME_OPTIONS,
                         }}
                         onLoadMore={handleLoadMore}
                         isLoadingMore={isLoadingMore || isLoadingMoreSpy}
