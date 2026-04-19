@@ -1,68 +1,207 @@
-import { useMemo, useState } from "react";
+import { useMemo, useState, type ReactNode } from "react";
 import ReactECharts from "echarts-for-react";
 import {
-  Alert,
+  Badge,
   Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
+  cn,
+  useTheme,
 } from "src/global/design-system";
 import { PageContainer } from "src/global/design-system/page-container";
-import { useTheme } from "src/global/design-system";
 import { ProjectionCalculatorModal } from "src/position/components/ProjectionCalculatorModal";
 import {
   REFERENCE_SCENARIO,
   bookStatsToProjectionSnapshot,
 } from "src/position/lib/projection-calculator-initial";
+import { DEMO_JOURNAL_TRADES } from "src/position/lib/risk-journal-demo";
+import { analyzeJournalTrades } from "src/position/lib/risk-journal-analytics";
 import {
-  MOCK_CLOSED_TRADES,
-  summarizeBook,
-} from "src/position/lib/risk-mock-book";
-import { Calculator } from "lucide-react";
-
-function binWinnerRs() {
-  const labels = ["1.0–1.5", "1.5–2.0", "2.0–2.5", "2.5–3.0", "3.0+"];
-  const counts = new Array(labels.length).fill(0);
-  for (const t of MOCK_CLOSED_TRADES) {
-    if (!t.won) continue;
-    const r = t.rNet;
-    if (r < 1.5) counts[0]++;
-    else if (r < 2) counts[1]++;
-    else if (r < 2.5) counts[2]++;
-    else if (r < 3) counts[3]++;
-    else counts[4]++;
-  }
-  return { labels, counts };
-}
-
-function winnerMeanBinLabel(mean: number): string {
-  if (mean < 1.5) return "1.0–1.5";
-  if (mean < 2) return "1.5–2.0";
-  if (mean < 2.5) return "2.0–2.5";
-  if (mean < 3) return "2.5–3.0";
-  return "3.0+";
-}
+  Activity,
+  Calculator,
+  ChevronRight,
+  Flame,
+  ShieldCheck,
+  Sparkles,
+  Target,
+  TriangleAlert,
+  Trophy,
+} from "lucide-react";
 
 function chartPalette(isDark: boolean) {
   return {
-    text: isDark ? "#f1f5f9" : "#0f172a",
+    text: isDark ? "#f8fafc" : "#0f172a",
     muted: isDark ? "#94a3b8" : "#64748b",
-    border: isDark ? "#334155" : "#e2e8f0",
-    win: "#10b981",
-    loss: "#ef4444",
-    accent: "#3b82f6",
-    warn: "#f59e0b",
+    border: isDark ? "#334155" : "#dbe4f0",
+    win: "#34d399",
+    loss: "#fb7185",
+    accent: "#60a5fa",
+    warn: "#fbbf24",
+    card: isDark ? "rgba(2, 6, 23, 0.52)" : "rgba(255, 255, 255, 0.84)",
     gridBg: "transparent",
   };
+}
+
+function formatSignedR(value: number | null | undefined) {
+  if (value == null) return "—";
+  return `${value >= 0 ? "+" : ""}${value.toFixed(2)}R`;
+}
+
+function formatDate(value: string | null) {
+  if (!value) return "—";
+  return new Date(value).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+function metricToneClass(tone: "blue" | "green" | "amber" | "violet") {
+  switch (tone) {
+    case "green":
+      return "from-emerald-500/20 to-emerald-400/5 border-emerald-400/25";
+    case "amber":
+      return "from-amber-500/20 to-amber-400/5 border-amber-400/25";
+    case "violet":
+      return "from-violet-500/20 to-fuchsia-400/5 border-violet-400/25";
+    default:
+      return "from-sky-500/20 to-blue-400/5 border-sky-400/25";
+  }
+}
+
+function HeroMetricCard({
+  title,
+  value,
+  detail,
+  tone,
+}: {
+  title: string;
+  value: string;
+  detail: string;
+  tone: "blue" | "green" | "amber" | "violet";
+}) {
+  return (
+    <div
+      className={cn(
+        "rounded-3xl border bg-gradient-to-br p-5 shadow-[0_20px_60px_rgba(15,23,42,0.22)]",
+        metricToneClass(tone),
+      )}
+    >
+      <div className="text-[11px] uppercase tracking-[0.18em] text-slate-300">
+        {title}
+      </div>
+      <div className="mt-3 text-3xl font-semibold text-white">{value}</div>
+      <div className="mt-2 text-sm leading-6 text-slate-300">{detail}</div>
+      <div className="mt-4 flex gap-1">
+        {[50, 62, 58, 69, 76, 71, 82].map((height, index) => (
+          <div
+            key={`${title}-${index}`}
+            className="w-full rounded-full bg-white/10"
+            style={{ height: `${Math.max(18, Math.round(height / 2.5))}px` }}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function SectionCard({
+  title,
+  subtitle,
+  className,
+  children,
+}: {
+  title: string;
+  subtitle: string;
+  className?: string;
+  children: ReactNode;
+}) {
+  return (
+    <Card
+      className={cn(
+        "border-white/10 bg-slate-950/45 text-slate-50 backdrop-blur-sm",
+        className,
+      )}
+    >
+      <CardContent className="p-5">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <div className="text-base font-semibold text-white">{title}</div>
+            <div className="mt-1 text-sm text-slate-400">{subtitle}</div>
+          </div>
+          <div className="mt-1 h-2.5 w-2.5 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.8)]" />
+        </div>
+        <div className="mt-5">{children}</div>
+      </CardContent>
+    </Card>
+  );
+}
+
+function InsightCard({
+  title,
+  body,
+  tone,
+}: {
+  title: string;
+  body: string;
+  tone: "positive" | "warning" | "neutral";
+}) {
+  const toneClass =
+    tone === "positive"
+      ? "border-emerald-400/20 bg-emerald-500/10 text-emerald-100"
+      : tone === "warning"
+        ? "border-amber-400/20 bg-amber-500/10 text-amber-100"
+        : "border-sky-400/20 bg-sky-500/10 text-sky-100";
+
+  return (
+    <div className={cn("rounded-2xl border p-4", toneClass)}>
+      <div className="text-sm font-semibold">{title}</div>
+      <div className="mt-2 text-sm leading-6 text-slate-200">{body}</div>
+    </div>
+  );
+}
+
+function ProgressMetric({
+  label,
+  value,
+  suffix = "%",
+  toneClass,
+  detail,
+}: {
+  label: string;
+  value: number;
+  suffix?: string;
+  toneClass: string;
+  detail: string;
+}) {
+  const normalized = suffix === "%" ? value : Math.min(100, value * 20);
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between text-sm">
+        <span className="text-slate-300">{label}</span>
+        <span className="font-medium text-white">
+          {value.toFixed(1)}
+          {suffix}
+        </span>
+      </div>
+      <div className="h-2 rounded-full bg-white/10">
+        <div
+          className={cn("h-2 rounded-full", toneClass)}
+          style={{ width: `${Math.max(4, normalized)}%` }}
+        />
+      </div>
+      <div className="mt-2 text-xs text-slate-400">{detail}</div>
+    </div>
+  );
 }
 
 export default function RiskManagementDashboard() {
   const { theme } = useTheme();
   const isDark = theme === "dark";
   const c = useMemo(() => chartPalette(isDark), [isDark]);
-  const book = useMemo(() => summarizeBook(MOCK_CLOSED_TRADES), []);
-  const hist = useMemo(() => binWinnerRs(), []);
+  const analysis = useMemo(() => analyzeJournalTrades(DEMO_JOURNAL_TRADES), []);
+  const { book, trades, insights, holdBuckets, setupPerformance, topWinners, topLosers } =
+    analysis;
 
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [calculatorInstance, setCalculatorInstance] = useState(0);
@@ -73,343 +212,136 @@ export default function RiskManagementDashboard() {
   );
 
   const openCalculator = () => {
-    setCalculatorInstance((k) => k + 1);
+    setCalculatorInstance((value) => value + 1);
     setCalculatorOpen(true);
   };
 
-  const aheadOfRefWinRate = book.winRate >= REFERENCE_SCENARIO.winRatePct / 100 - 1e-9;
-  const aheadOfRefAvgR =
-    book.avgWinR != null && book.avgWinR >= REFERENCE_SCENARIO.rewardRisk - 1e-9;
+  const strongestSetup = setupPerformance[0];
+  const winRateVsReference = book.winRate * 100 - REFERENCE_SCENARIO.winRatePct;
+  const rewardRiskVsReference =
+    (book.rewardRisk ?? 0) - REFERENCE_SCENARIO.rewardRisk;
 
-  const perTradeBarOption = useMemo(
+  const realizedROption = useMemo(
     () => ({
       backgroundColor: c.gridBg,
       textStyle: { color: c.text, fontFamily: "Inter, sans-serif", fontSize: 10 },
       tooltip: {
         trigger: "axis",
         axisPointer: { type: "shadow" },
-        backgroundColor: isDark ? "#1e293b" : "#fff",
+        backgroundColor: isDark ? "#0f172a" : "#fff",
         borderColor: c.border,
         textStyle: { color: c.text },
+        formatter: (items: Array<{ dataIndex: number }>) => {
+          const trade = trades[items[0]?.dataIndex ?? 0];
+          return [
+            `<strong>${trade.symbol}</strong>`,
+            `${trade.setup} · ${trade.holdDays}d hold`,
+            `Realized ${formatSignedR(trade.realizedR)}`,
+            `Planned risk $${trade.plannedRiskCapital.toFixed(0)}`,
+          ].join("<br/>");
+        },
       },
-      grid: { left: 44, right: 12, top: 8, bottom: 56, containLabel: false },
+      grid: { left: 42, right: 14, top: 8, bottom: 56 },
       xAxis: {
         type: "category",
-        data: MOCK_CLOSED_TRADES.map((t, i) => `${i + 1}\n${t.symbol}`),
+        data: trades.map((trade) => `${trade.symbol}\n${trade.holdDays}d`),
         axisLabel: { color: c.muted, interval: 0, fontSize: 9 },
         axisLine: { lineStyle: { color: c.border } },
       },
       yAxis: {
         type: "value",
-        name: "R / trade",
-        axisLabel: { color: c.muted },
-        nameTextStyle: { color: c.muted },
-        splitLine: { lineStyle: { color: c.border, opacity: 0.35 } },
-        axisLine: { show: true, lineStyle: { color: c.border } },
-      },
-      series: [
-        {
-          type: "bar",
-          data: MOCK_CLOSED_TRADES.map((t) => ({
-            value: t.rNet,
-            itemStyle: { color: t.won ? c.win : c.loss, borderRadius: [3, 3, 0, 0] },
-          })),
-          barMaxWidth: 28,
-        },
-      ],
-    }),
-    [c, isDark],
-  );
-
-  const grossROption = useMemo(
-    () => ({
-      backgroundColor: c.gridBg,
-      textStyle: { color: c.text, fontFamily: "Inter, sans-serif", fontSize: 11 },
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "shadow" },
-        backgroundColor: isDark ? "#1e293b" : "#fff",
-        borderColor: c.border,
-        textStyle: { color: c.text },
-      },
-      grid: { left: 120, right: 24, top: 16, bottom: 32 },
-      xAxis: {
-        type: "value",
-        name: "R",
-        axisLabel: { color: c.muted },
-        nameTextStyle: { color: c.muted },
-        splitLine: { lineStyle: { color: c.border, opacity: 0.35 } },
-        axisLine: { show: true, lineStyle: { color: c.border } },
-      },
-      yAxis: {
-        type: "category",
-        data: ["From winning trades", "Lost to losers (|R|)"],
-        axisLabel: { color: c.muted, fontSize: 11 },
-        axisLine: { show: false },
-        axisTick: { show: false },
-      },
-      series: [
-        {
-          type: "bar",
-          data: [
-            {
-              value: MOCK_CLOSED_TRADES.filter((t) => t.won).reduce((s, t) => s + t.rNet, 0),
-              itemStyle: { color: c.win, borderRadius: [0, 6, 6, 0] },
-            },
-            {
-              value: MOCK_CLOSED_TRADES.filter((t) => !t.won).reduce((s, t) => s + Math.abs(t.rNet), 0),
-              itemStyle: { color: c.loss, borderRadius: [0, 6, 6, 0] },
-            },
-          ],
-          barWidth: 28,
-        },
-      ],
-    }),
-    [c, isDark],
-  );
-
-  const winRateVsBreakevenOption = useMemo(() => {
-    const be = book.breakevenAtBookAvgR;
-    return {
-      backgroundColor: c.gridBg,
-      textStyle: { color: c.text, fontSize: 11 },
-      tooltip: { trigger: "axis" },
-      grid: { left: 24, right: 12, top: 8, bottom: 36 },
-      xAxis: {
-        type: "value",
-        min: 0,
-        max: 100,
-        axisLabel: { color: c.muted, formatter: "{value}%" },
-        splitLine: { lineStyle: { color: c.border, opacity: 0.35 } },
-        axisLine: { lineStyle: { color: c.border } },
-      },
-      yAxis: {
-        type: "category",
-        data: ["Win rate"],
-        axisLabel: { show: false },
-        axisLine: { show: false },
-        axisTick: { show: false },
-      },
-      series: [
-        {
-          type: "bar",
-          data: [{ value: book.winRate * 100, itemStyle: { color: c.accent, borderRadius: [0, 4, 4, 0] } }],
-          barWidth: 32,
-          markLine:
-            be != null
-              ? {
-                  symbol: "none",
-                  lineStyle: { color: c.warn, width: 2 },
-                  label: {
-                    formatter: `Breakeven ${(be * 100).toFixed(1)}%`,
-                    color: c.warn,
-                    fontSize: 10,
-                  },
-                  data: [{ xAxis: be * 100 }],
-                }
-              : undefined,
-        },
-      ],
-    };
-  }, [book.breakevenAtBookAvgR, book.winRate, c]);
-
-  const expectancyBarOption = useMemo(() => {
-    const ev = book.expectancyRPerTrade ?? 0;
-    const pad = Math.max(0.35, Math.abs(ev) * 1.25, 0.05);
-    const minX = Math.min(-pad, ev - 0.05);
-    const maxX = Math.max(pad, ev + 0.05);
-    return {
-      backgroundColor: c.gridBg,
-      textStyle: { color: c.text, fontSize: 11 },
-      tooltip: {
-        trigger: "item",
-        backgroundColor: isDark ? "#1e293b" : "#fff",
-        borderColor: c.border,
-        textStyle: { color: c.text },
-      },
-      grid: { left: 24, right: 24, top: 20, bottom: 48 },
-      xAxis: {
-        type: "value",
-        min: minX,
-        max: maxX,
-        axisLine: { onZero: true, lineStyle: { color: c.border } },
-        splitLine: { show: false },
+        name: "Realized R",
         axisLabel: {
           color: c.muted,
-          formatter: (v: number) => `${v >= 0 ? "+" : ""}${v.toFixed(2)}R`,
+          formatter: (value: number) => `${value >= 0 ? "+" : ""}${value}`,
         },
-      },
-      yAxis: {
-        type: "category",
-        data: ["Expectancy / trade"],
-        axisLabel: { show: false },
-        axisLine: { show: false },
-        axisTick: { show: false },
+        nameTextStyle: { color: c.muted },
+        splitLine: { lineStyle: { color: c.border, opacity: 0.3 } },
+        axisLine: { show: true, lineStyle: { color: c.border } },
       },
       series: [
         {
           type: "bar",
-          data: [
-            {
-              value: ev,
-              itemStyle: {
-                color: ev > 0 ? c.win : ev < 0 ? c.loss : c.muted,
-                borderRadius: ev >= 0 ? [0, 4, 4, 0] : [4, 0, 0, 4],
-              },
+          data: trades.map((trade) => ({
+            value: trade.realizedR,
+            itemStyle: {
+              color: trade.isWin ? c.win : c.loss,
+              borderRadius: trade.realizedR >= 0 ? [8, 8, 0, 0] : [0, 0, 8, 8],
             },
-          ],
-          barWidth: 40,
+          })),
+          barMaxWidth: 28,
           markLine: {
             symbol: "none",
-            lineStyle: { color: c.border, width: 2 },
-            label: { formatter: "0", color: c.muted, fontSize: 10, position: "end" },
-            data: [{ xAxis: 0 }],
+            lineStyle: { color: c.border, width: 1.5 },
+            label: { show: false },
+            data: [{ yAxis: 0 }],
           },
         },
       ],
-    };
-  }, [book.expectancyRPerTrade, c, isDark]);
+    }),
+    [c, isDark, trades],
+  );
 
-  const winnerHistOption = useMemo(() => {
-    const mean = book.avgWinR ?? 0;
-    return {
+  const holdBucketsOption = useMemo(
+    () => ({
       backgroundColor: c.gridBg,
-      textStyle: { color: c.text, fontSize: 11 },
+      textStyle: { color: c.text, fontFamily: "Inter, sans-serif", fontSize: 10 },
       tooltip: {
         trigger: "axis",
-        backgroundColor: isDark ? "#1e293b" : "#fff",
+        axisPointer: { type: "shadow" },
+        backgroundColor: isDark ? "#0f172a" : "#fff",
         borderColor: c.border,
         textStyle: { color: c.text },
       },
-      grid: { left: 44, right: 16, top: 24, bottom: 40 },
+      legend: {
+        data: ["Winners", "Losers"],
+        bottom: 0,
+        textStyle: { color: c.muted },
+      },
+      grid: { left: 40, right: 16, top: 10, bottom: 48 },
       xAxis: {
         type: "category",
-        data: hist.labels,
-        axisLabel: { color: c.muted, fontSize: 10 },
+        data: holdBuckets.map((bucket) => bucket.label),
+        axisLabel: { color: c.muted },
         axisLine: { lineStyle: { color: c.border } },
       },
       yAxis: {
         type: "value",
-        name: "# wins",
         minInterval: 1,
         axisLabel: { color: c.muted },
-        nameTextStyle: { color: c.muted },
-        splitLine: { lineStyle: { color: c.border, opacity: 0.35 } },
+        splitLine: { lineStyle: { color: c.border, opacity: 0.3 } },
         axisLine: { show: true, lineStyle: { color: c.border } },
       },
       series: [
         {
+          name: "Winners",
           type: "bar",
-          data: hist.counts.map((v: number) => ({
-            value: v,
-            itemStyle: {
-              color: {
-                type: "linear",
-                x: 0,
-                y: 1,
-                x2: 0,
-                y2: 0,
-                colorStops: [
-                  { offset: 0, color: "#059669" },
-                  { offset: 1, color: "#34d399" },
-                ],
-              },
-              borderRadius: [4, 4, 0, 0],
-            },
-          })),
-          barMaxWidth: 40,
-          markLine:
-            book.avgWinR != null
-              ? {
-                  symbol: "none",
-                  lineStyle: { type: "dashed", color: c.accent, width: 2 },
-                  label: {
-                    formatter: `Mean ${mean.toFixed(2)}R`,
-                    color: c.accent,
-                    fontSize: 10,
-                  },
-                  data: [{ xAxis: winnerMeanBinLabel(mean) }],
-                }
-              : undefined,
+          stack: "holds",
+          data: holdBuckets.map((bucket) => bucket.winners),
+          itemStyle: {
+            color: c.win,
+            borderRadius: [8, 8, 0, 0],
+          },
+          barMaxWidth: 36,
         },
-      ],
-    };
-  }, [book.avgWinR, c, hist.labels, hist.counts, isDark]);
-
-  const winRateCompareOption = useMemo(() => {
-    const wrBook = book.winRate * 100;
-    const ref = REFERENCE_SCENARIO.winRatePct;
-    const cap = Math.min(100, Math.max(8, ref, wrBook) * 1.15);
-    return {
-      backgroundColor: c.gridBg,
-      textStyle: { color: c.text, fontSize: 11 },
-      tooltip: { trigger: "axis" },
-      grid: { left: 48, right: 12, top: 8, bottom: 28 },
-      xAxis: {
-        type: "category",
-        data: ["Reference", "Mock book"],
-        axisLabel: { color: c.muted },
-        axisLine: { lineStyle: { color: c.border } },
-      },
-      yAxis: {
-        type: "value",
-        name: "%",
-        max: cap,
-        axisLabel: { color: c.muted, formatter: "{value}%" },
-        splitLine: { lineStyle: { color: c.border, opacity: 0.35 } },
-        nameTextStyle: { color: c.muted },
-      },
-      series: [
         {
+          name: "Losers",
           type: "bar",
-          data: [
-            { value: ref, itemStyle: { color: c.accent, borderRadius: [4, 4, 0, 0] } },
-            { value: wrBook, itemStyle: { color: c.warn, borderRadius: [4, 4, 0, 0] } },
-          ],
-          barWidth: 36,
+          stack: "holds",
+          data: holdBuckets.map((bucket) => bucket.losers),
+          itemStyle: {
+            color: c.loss,
+            borderRadius: [8, 8, 0, 0],
+          },
+          barMaxWidth: 36,
         },
       ],
-    };
-  }, [book.winRate, c]);
-
-  const avgRCompareOption = useMemo(() => {
-    const rrBook = book.avgWinR ?? 0;
-    const ref = REFERENCE_SCENARIO.rewardRisk;
-    const cap = Math.max(6, ref, rrBook) * 1.12;
-    return {
-      backgroundColor: c.gridBg,
-      textStyle: { color: c.text, fontSize: 11 },
-      tooltip: { trigger: "axis" },
-      grid: { left: 48, right: 12, top: 8, bottom: 28 },
-      xAxis: {
-        type: "category",
-        data: ["Reference R:R", "Mock avg win"],
-        axisLabel: { color: c.muted, fontSize: 10 },
-        axisLine: { lineStyle: { color: c.border } },
-      },
-      yAxis: {
-        type: "value",
-        name: "R",
-        max: cap,
-        axisLabel: { color: c.muted },
-        splitLine: { lineStyle: { color: c.border, opacity: 0.35 } },
-        nameTextStyle: { color: c.muted },
-      },
-      series: [
-        {
-          type: "bar",
-          data: [
-            { value: ref, itemStyle: { color: c.accent, borderRadius: [4, 4, 0, 0] } },
-            { value: rrBook, itemStyle: { color: c.warn, borderRadius: [4, 4, 0, 0] } },
-          ],
-          barWidth: 36,
-        },
-      ],
-    };
-  }, [book.avgWinR, c]);
+    }),
+    [c, holdBuckets, isDark],
+  );
 
   return (
-    <PageContainer fullWidth className="max-w-[1600px] mx-auto">
+    <PageContainer fullWidth className="mx-auto max-w-[1700px]">
       <ProjectionCalculatorModal
         open={calculatorOpen}
         onOpenChange={setCalculatorOpen}
@@ -417,148 +349,420 @@ export default function RiskManagementDashboard() {
         instanceKey={calculatorInstance}
       />
 
-      <div className="space-y-4">
-        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-50 sm:text-3xl">
-              Risk dashboard
-            </h1>
-            <p className="text-sm text-slate-600 dark:text-slate-400 max-w-2xl mt-1">
-              Book-level charts from mock closes. Open the projection calculator
-              to run a Monte Carlo from your stats (or tweak assumptions).
-            </p>
-          </div>
-          <div className="flex flex-wrap gap-2 shrink-0">
-            <Button type="button" variant="default" size="sm" onClick={openCalculator}>
-              <Calculator className="h-4 w-4 mr-1.5" />
-              Projection calculator
-            </Button>
-          </div>
-        </div>
+      <div className="rounded-[36px] border border-slate-700/60 bg-[radial-gradient(circle_at_top_left,_rgba(59,130,246,0.24),_transparent_30%),radial-gradient(circle_at_bottom_right,_rgba(16,185,129,0.14),_transparent_28%),linear-gradient(180deg,_#0f172a,_#020617)] p-5 shadow-[0_30px_120px_rgba(2,6,23,0.75)] sm:p-6">
+        <div className="space-y-6">
+          <div className="flex flex-col gap-4 xl:flex-row xl:items-start xl:justify-between">
+            <div className="max-w-4xl">
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="success" className="rounded-full">
+                  Journal-derived demo
+                </Badge>
+                <Badge variant="outline" className="rounded-full border-white/15 text-slate-300">
+                  Swing trading
+                </Badge>
+                <Badge variant="outline" className="rounded-full border-white/15 text-slate-300">
+                  {book.n} closed trades
+                </Badge>
+              </div>
 
-        <Alert variant="warning" className="py-3 text-sm">
-          Mock trades only — wire real history when ready. Reference bars use a{" "}
-          {REFERENCE_SCENARIO.winRatePct}% / 1:{REFERENCE_SCENARIO.rewardRisk}{" "}
-          baseline for comparison.
-        </Alert>
-
-        <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
-          <Card className="xl:col-span-7 flex flex-col">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-base">Result per trade (R)</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 pt-2 min-h-[280px]">
-              <ReactECharts
-                option={perTradeBarOption}
-                style={{ height: "260px", width: "100%" }}
-                opts={{ renderer: "canvas" }}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="xl:col-span-5 flex flex-col">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-base">R stacked: wins vs losses</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 pt-2 min-h-[280px]">
-              <ReactECharts
-                option={grossROption}
-                style={{ height: "260px", width: "100%" }}
-                opts={{ renderer: "canvas" }}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="xl:col-span-4 flex flex-col">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-base">Win rate vs breakeven</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 pt-2 min-h-[200px]">
-              <ReactECharts
-                option={winRateVsBreakevenOption}
-                style={{ height: "160px", width: "100%" }}
-                opts={{ renderer: "canvas" }}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="xl:col-span-4 flex flex-col">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-base">Expectancy / trade</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 pt-2 min-h-[200px]">
-              <ReactECharts
-                option={expectancyBarOption}
-                style={{ height: "160px", width: "100%" }}
-                opts={{ renderer: "canvas" }}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="xl:col-span-4 flex flex-col">
-            <CardHeader className="pb-0">
-              <CardTitle className="text-base">Winner size distribution</CardTitle>
-            </CardHeader>
-            <CardContent className="flex-1 pt-2 min-h-[220px]">
-              <ReactECharts
-                option={winnerHistOption}
-                style={{ height: "200px", width: "100%" }}
-                opts={{ renderer: "canvas" }}
-              />
-            </CardContent>
-          </Card>
-
-          <Card className="xl:col-span-12">
-            <CardHeader>
-              <CardTitle className="text-base">Reference plan vs mock book</CardTitle>
-              <p className="text-xs font-normal text-slate-500 dark:text-slate-400">
-                Reference = {REFERENCE_SCENARIO.winRatePct}% win rate and 1:
-                {REFERENCE_SCENARIO.rewardRisk} R:R (your Claude-style baseline).
+              <h1 className="mt-4 text-3xl font-bold tracking-tight text-white sm:text-4xl">
+                Risk dashboard
+              </h1>
+              <p className="mt-3 max-w-3xl text-base leading-7 text-slate-300">
+                Strategy Command Center for swing trades. This demo reads
+                journal-style entries, adds, stop raises, partial exits, and
+                final sells to assess whether your edge is real and where your
+                execution is leaking.
               </p>
-            </CardHeader>
-            <CardContent className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Win rate</p>
-                <ReactECharts
-                  option={winRateCompareOption}
-                  style={{ height: "140px", width: "100%" }}
-                  opts={{ renderer: "canvas" }}
+
+              <div className="mt-4 flex flex-wrap gap-2 text-xs text-slate-300">
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                  Sample window: {formatDate(book.sampleStart)} to {formatDate(book.sampleEnd)}
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                  Annualized pace: ~{book.annualizedTradeCount} trades/year
+                </span>
+                <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1.5">
+                  No live equity, only realized journal behavior
+                </span>
+              </div>
+            </div>
+
+            <div className="flex flex-wrap gap-2">
+              <Button type="button" size="sm" className="rounded-full px-4" onClick={openCalculator}>
+                <Calculator className="mr-2 h-4 w-4" />
+                Projection calculator
+              </Button>
+            </div>
+          </div>
+
+          <div className="rounded-3xl border border-white/10 bg-white/5 p-4 text-sm leading-6 text-slate-300">
+            The dashboard is intentionally not a mark-to-market equity screen. It is
+            a post-trade swing review surface built from entry risk, stop
+            discipline, adds, partial exits, hold time, and realized outcome in R.
+          </div>
+
+          <div className="grid gap-4 xl:grid-cols-4">
+            <HeroMetricCard
+              title="System health"
+              value={`${book.edgeScore.toFixed(0)}/100`}
+              detail={`${book.systemStatus}. ${strongestSetup ? `${strongestSetup.setup} setups are leading at ${formatSignedR(strongestSetup.averageR)}.` : "Edge score blends expectancy, payoff, and discipline."}`}
+              tone="blue"
+            />
+            <HeroMetricCard
+              title="Expectancy / trade"
+              value={formatSignedR(book.expectancyRPerTrade)}
+              detail={`Profit factor ${book.profitFactor?.toFixed(2) ?? "—"} with ${formatSignedR(book.avgWinR)} average winner.`}
+              tone="green"
+            />
+            <HeroMetricCard
+              title="Win rate vs breakeven"
+              value={`${(book.winRate * 100).toFixed(1)}%`}
+              detail={`Breakeven sits at ${book.breakevenAtBookAvgR != null ? `${(book.breakevenAtBookAvgR * 100).toFixed(1)}%` : "—"}, leaving a ${book.breakevenBufferPct?.toFixed(1) ?? "0.0"} point buffer.`}
+              tone="amber"
+            />
+            <HeroMetricCard
+              title="Payoff profile"
+              value={`1:${book.rewardRisk?.toFixed(2) ?? "—"}`}
+              detail={`Avg winner ${book.avgWinR?.toFixed(2) ?? "—"}R vs avg loser ${book.avgLossRAbs?.toFixed(2) ?? "—"}R.`}
+              tone="violet"
+            />
+          </div>
+
+          <div className="grid grid-cols-1 gap-4 xl:grid-cols-12">
+            <SectionCard
+              title="Realized R by closed swing trade"
+              subtitle="The featured chart shows actual outcome per journal-derived trade, not live equity fluctuation."
+              className="xl:col-span-8"
+            >
+              <ReactECharts
+                option={realizedROption}
+                style={{ height: "310px", width: "100%" }}
+                opts={{ renderer: "canvas" }}
+              />
+            </SectionCard>
+
+            <SectionCard
+              title="System read"
+              subtitle="A single place to interpret the book before drilling into diagnostics."
+              className="xl:col-span-4"
+            >
+              <div className="rounded-3xl border border-emerald-400/15 bg-emerald-500/10 p-5">
+                <div className="flex items-center gap-3">
+                  <div className="rounded-2xl bg-emerald-400/15 p-3 text-emerald-300">
+                    <ShieldCheck className="h-6 w-6" />
+                  </div>
+                  <div>
+                    <div className="text-sm text-slate-300">Current read</div>
+                    <div className="text-2xl font-semibold text-white">
+                      {book.systemStatus}
+                    </div>
+                  </div>
+                </div>
+                <p className="mt-4 text-sm leading-6 text-slate-200">
+                  {book.expectancyRPerTrade != null && book.expectancyRPerTrade > 0
+                    ? "The journal suggests a positive swing edge, but the right-tail still needs more room to develop."
+                    : "The book is not generating positive expectancy yet, so process fixes matter more than projections."}
+                </p>
+              </div>
+
+              <div className="mt-4 grid gap-3 sm:grid-cols-2">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
+                    Gross R balance
+                  </div>
+                  <div className="mt-2 text-xl font-semibold text-white">
+                    +{book.grossProfitR.toFixed(1)}R / -{book.grossLossRAbs.toFixed(1)}R
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
+                    Hold profile
+                  </div>
+                  <div className="mt-2 text-xl font-semibold text-white">
+                    {book.averageHoldDays?.toFixed(1) ?? "—"}d avg
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
+                    Winner hold
+                  </div>
+                  <div className="mt-2 text-xl font-semibold text-white">
+                    {book.medianWinHoldDays?.toFixed(0) ?? "—"}d median
+                  </div>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4">
+                  <div className="text-xs uppercase tracking-[0.18em] text-slate-400">
+                    Loser hold
+                  </div>
+                  <div className="mt-2 text-xl font-semibold text-white">
+                    {book.medianLossHoldDays?.toFixed(0) ?? "—"}d median
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Edge overview"
+              subtitle="Core swing metrics derived from realized journal outcomes."
+              className="xl:col-span-4"
+            >
+              <div className="space-y-4">
+                <ProgressMetric
+                  label="Win rate"
+                  value={book.winRate * 100}
+                  toneClass="bg-gradient-to-r from-sky-500 to-cyan-300"
+                  detail="Hit rate only matters in context of payoff and discipline."
+                />
+                <ProgressMetric
+                  label="Payoff ratio"
+                  value={book.rewardRisk ?? 0}
+                  suffix="R"
+                  toneClass="bg-gradient-to-r from-violet-500 to-fuchsia-300"
+                  detail="Average winner divided by average loser."
+                />
+                <ProgressMetric
+                  label="Profit factor"
+                  value={book.profitFactor ?? 0}
+                  suffix="x"
+                  toneClass="bg-gradient-to-r from-emerald-500 to-teal-300"
+                  detail="Gross profit over gross loss across the sample."
                 />
               </div>
-              <div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mb-1">Avg win (R)</p>
-                <ReactECharts
-                  option={avgRCompareOption}
-                  style={{ height: "140px", width: "100%" }}
-                  opts={{ renderer: "canvas" }}
+            </SectionCard>
+
+            <SectionCard
+              title="Holding time distribution"
+              subtitle="Swing trades should let winners stay alive longer than failed setups."
+              className="xl:col-span-4"
+            >
+              <ReactECharts
+                option={holdBucketsOption}
+                style={{ height: "230px", width: "100%" }}
+                opts={{ renderer: "canvas" }}
+              />
+            </SectionCard>
+
+            <SectionCard
+              title="Execution behaviors"
+              subtitle="How often your process shows pyramiding, stop progression, and partial exits."
+              className="xl:col-span-4"
+            >
+              <div className="space-y-4">
+                <ProgressMetric
+                  label="Trades with adds"
+                  value={book.tradesWithAddsPct}
+                  toneClass="bg-gradient-to-r from-sky-500 to-blue-300"
+                  detail="Higher is only good if add-on trades outperform the base book."
+                />
+                <ProgressMetric
+                  label="Trades with stop raises"
+                  value={book.tradesWithStopRaisePct}
+                  toneClass="bg-gradient-to-r from-emerald-500 to-green-300"
+                  detail="Trailing discipline should increase as swings confirm."
+                />
+                <ProgressMetric
+                  label="Trades with partial exits"
+                  value={book.tradesWithPartialExitsPct}
+                  toneClass="bg-gradient-to-r from-violet-500 to-fuchsia-300"
+                  detail="Partials can reduce emotion, but too much trimming can flatten the right tail."
+                />
+                <ProgressMetric
+                  label="Oversized losses"
+                  value={book.oversizedLossPct}
+                  toneClass="bg-gradient-to-r from-rose-500 to-red-300"
+                  detail="Anything above 0% deserves attention because it breaks the R framework."
                 />
               </div>
-              <div className="sm:col-span-2 grid grid-cols-1 gap-2 sm:grid-cols-2 text-sm">
-                <div
-                  className={`rounded-lg px-3 py-2 ${
-                    aheadOfRefWinRate
-                      ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200"
-                      : "bg-amber-50 dark:bg-amber-950/30 text-amber-950 dark:text-amber-100"
-                  }`}
-                >
-                  Win rate {(book.winRate * 100).toFixed(1)}% vs reference{" "}
-                  {REFERENCE_SCENARIO.winRatePct}%
-                  {aheadOfRefWinRate ? " — at or above reference." : " — below reference."}
+            </SectionCard>
+
+            <SectionCard
+              title="Advice from the journal"
+              subtitle="Coaching is generated from the computed metrics, not generic copy."
+              className="xl:col-span-5"
+            >
+              <div className="space-y-3">
+                {insights.map((insight) => (
+                  <InsightCard
+                    key={insight.title}
+                    title={insight.title}
+                    body={insight.body}
+                    tone={insight.tone}
+                  />
+                ))}
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Top drivers"
+              subtitle="Which trades are carrying the edge and which ones are doing the damage."
+              className="xl:col-span-4"
+            >
+              <div className="space-y-5">
+                <div>
+                  <div className="mb-3 flex items-center gap-2 text-sm font-medium text-emerald-300">
+                    <Trophy className="h-4 w-4" />
+                    Best swings
+                  </div>
+                  <div className="space-y-3">
+                    {topWinners.map((trade) => (
+                      <div
+                        key={trade.id}
+                        className="flex items-start justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                      >
+                        <div>
+                          <div className="text-sm font-semibold text-white">
+                            {trade.symbol}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            {trade.setup} · {trade.holdDays}d · {trade.hasAdd ? "with add" : "single entry"}
+                          </div>
+                        </div>
+                        <div className="text-sm font-semibold text-emerald-300">
+                          {formatSignedR(trade.realizedR)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <div
-                  className={`rounded-lg px-3 py-2 ${
-                    aheadOfRefAvgR
-                      ? "bg-emerald-50 dark:bg-emerald-950/40 text-emerald-900 dark:text-emerald-200"
-                      : "bg-amber-50 dark:bg-amber-950/30 text-amber-950 dark:text-amber-100"
-                  }`}
-                >
-                  Avg win {book.avgWinR?.toFixed(2) ?? "—"}R vs reference 1:
-                  {REFERENCE_SCENARIO.rewardRisk}
-                  {aheadOfRefAvgR ? " — at or above reference." : " — below reference."}
+
+                <div>
+                  <div className="mb-3 flex items-center gap-2 text-sm font-medium text-rose-300">
+                    <TriangleAlert className="h-4 w-4" />
+                    Biggest draggers
+                  </div>
+                  <div className="space-y-3">
+                    {topLosers.map((trade) => (
+                      <div
+                        key={trade.id}
+                        className="flex items-start justify-between rounded-2xl border border-white/10 bg-white/5 px-4 py-3"
+                      >
+                        <div>
+                          <div className="text-sm font-semibold text-white">
+                            {trade.symbol}
+                          </div>
+                          <div className="text-xs text-slate-400">
+                            {trade.setup} · {trade.holdDays}d · {trade.exceededPlannedRisk ? "exceeded 1R" : "within plan"}
+                          </div>
+                        </div>
+                        <div className="text-sm font-semibold text-rose-300">
+                          {formatSignedR(trade.realizedR)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
                 </div>
               </div>
-            </CardContent>
-          </Card>
+            </SectionCard>
+
+            <SectionCard
+              title="Projection scenario"
+              subtitle="Monte Carlo should extend your edge review, not replace it."
+              className="xl:col-span-3"
+            >
+              <div className="rounded-3xl border border-blue-400/15 bg-blue-500/10 p-5">
+                <div className="flex items-center gap-2 text-sm text-blue-200">
+                  <Sparkles className="h-4 w-4" />
+                  Scenario seeded from the journal
+                </div>
+                <div className="mt-3 text-3xl font-semibold text-white">
+                  {formatSignedR(book.expectancyRPerTrade)}
+                </div>
+                <div className="mt-2 text-sm leading-6 text-slate-200">
+                  Use your journal-derived win rate, payoff ratio, and trade pace
+                  to project what happens if this swing edge persists.
+                </div>
+                <div className="mt-4 space-y-2 text-sm text-slate-200">
+                  <div className="flex items-center justify-between rounded-2xl bg-white/5 px-3 py-2">
+                    <span>Win rate</span>
+                    <span>{(book.winRate * 100).toFixed(1)}%</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl bg-white/5 px-3 py-2">
+                    <span>Payoff ratio</span>
+                    <span>1:{book.rewardRisk?.toFixed(2) ?? "—"}</span>
+                  </div>
+                  <div className="flex items-center justify-between rounded-2xl bg-white/5 px-3 py-2">
+                    <span>Trades / year</span>
+                    <span>{book.annualizedTradeCount}</span>
+                  </div>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  className="mt-5 w-full border-white/15 bg-white/5 text-white hover:bg-white/10"
+                  onClick={openCalculator}
+                >
+                  Open projection calculator
+                  <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              </div>
+            </SectionCard>
+
+            <SectionCard
+              title="Reference check"
+              subtitle={`Reference baseline remains ${REFERENCE_SCENARIO.winRatePct}% win rate and 1:${REFERENCE_SCENARIO.rewardRisk} payoff.`}
+              className="xl:col-span-12"
+            >
+              <div className="grid gap-4 lg:grid-cols-4">
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                    <Target className="h-4 w-4 text-sky-300" />
+                    Win rate gap
+                  </div>
+                  <div className="mt-3 text-3xl font-semibold text-white">
+                    {winRateVsReference >= 0 ? "+" : ""}
+                    {winRateVsReference.toFixed(1)} pts
+                  </div>
+                  <div className="mt-2 text-sm text-slate-400">
+                    Journal book vs reference baseline.
+                  </div>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                    <Activity className="h-4 w-4 text-violet-300" />
+                    Payoff gap
+                  </div>
+                  <div className="mt-3 text-3xl font-semibold text-white">
+                    {rewardRiskVsReference >= 0 ? "+" : ""}
+                    {rewardRiskVsReference.toFixed(2)}R
+                  </div>
+                  <div className="mt-2 text-sm text-slate-400">
+                    Average payoff ratio against the benchmark.
+                  </div>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                    <Flame className="h-4 w-4 text-emerald-300" />
+                    Adds delta
+                  </div>
+                  <div className="mt-3 text-3xl font-semibold text-white">
+                    {analysis.averageRWithAdds != null &&
+                    analysis.averageRWithoutAdds != null
+                      ? `${analysis.averageRWithAdds >= analysis.averageRWithoutAdds ? "+" : ""}${(
+                          analysis.averageRWithAdds - analysis.averageRWithoutAdds
+                        ).toFixed(2)}R`
+                      : "—"}
+                  </div>
+                  <div className="mt-2 text-sm text-slate-400">
+                    Average outcome of add-on trades vs single-entry swings.
+                  </div>
+                </div>
+                <div className="rounded-3xl border border-white/10 bg-white/5 p-5">
+                  <div className="flex items-center gap-2 text-sm text-slate-300">
+                    <Sparkles className="h-4 w-4 text-amber-300" />
+                    Main coaching theme
+                  </div>
+                  <div className="mt-3 text-lg font-semibold text-white">
+                    Let the right tail work harder
+                  </div>
+                  <div className="mt-2 text-sm text-slate-400">
+                    Average winners are positive, but too many finish below 1R for a swing system.
+                  </div>
+                </div>
+              </div>
+            </SectionCard>
+          </div>
         </div>
       </div>
     </PageContainer>

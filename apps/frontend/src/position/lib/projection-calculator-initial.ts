@@ -1,4 +1,4 @@
-import type { BookStats } from "src/position/lib/risk-mock-book";
+import type { BookStats } from "src/position/lib/risk-journal-analytics";
 
 export type ProjectionInputsSnapshot = {
   portfolio: number;
@@ -26,10 +26,14 @@ export function bookStatsToProjectionSnapshot(book: BookStats): ProjectionInputs
   const winRatePct = Math.min(95, Math.max(5, Math.round(book.winRate * 100)));
   const rewardRisk = Math.min(
     8,
-    Math.max(1, Math.round((book.avgWinR ?? defaults.rewardRisk) * 10) / 10),
+    Math.max(
+      1,
+      Math.round(((book.rewardRisk ?? book.avgWinR ?? defaults.rewardRisk) as number) * 10) /
+        10,
+    ),
   );
   const tradesFromActivity = Math.round(
-    Math.min(250, Math.max(20, book.n * 10)),
+    Math.min(250, Math.max(20, book.annualizedTradeCount)),
   );
 
   return {
