@@ -11,6 +11,7 @@ export interface GetChartDataRequestDto {
   exchange: string;
   interval: ChartInterval;
   bars: number;
+  includeExtendedHours?: boolean;
 }
 
 export interface GetChartDataResponseDto {
@@ -27,11 +28,13 @@ export class GetChartDataUseCase {
   async execute(
     request: GetChartDataRequestDto,
   ): Promise<GetChartDataResponseDto> {
+    const includeExtendedHours = request.includeExtendedHours ?? true;
     const chartData = await this.chartDataService.getChartData(
       request.symbol,
       request.exchange,
       request.interval,
       request.bars,
+      includeExtendedHours,
     );
 
     return { chartData };

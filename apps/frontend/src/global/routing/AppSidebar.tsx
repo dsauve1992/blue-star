@@ -14,11 +14,13 @@ import {
   LogOut,
   LogIn,
   TrendingUp,
+  ShieldAlert,
 } from "lucide-react";
 
 const MAIN_NAV_BASE = [
   "/dashboard",
   "/positions",
+  "/risk",
   "/stock-analysis",
   "/watchlists",
   "/sector-rotation",
@@ -28,6 +30,7 @@ const PATH_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   "/": Home,
   "/dashboard": LayoutDashboard,
   "/positions": Briefcase,
+  "/risk": ShieldAlert,
   "/stock-analysis": BarChart3,
   "/watchlists": Bookmark,
   "/sector-rotation": PieChart,

@@ -14,6 +14,7 @@ export default function ChartSandbox() {
   const [interval, setInterval] = useState<ChartInterval>("D");
   const [activeTool, setActiveTool] = useState<ChartDrawingTool>("none");
   const [riskAmount, setRiskAmount] = useState(1000);
+  const [includeExtendedHours, setIncludeExtendedHours] = useState(true);
 
   const bars = interval === "W" ? 156 : 520;
 
@@ -22,6 +23,7 @@ export default function ChartSandbox() {
     DEMO_EXCHANGE,
     interval,
     bars,
+    includeExtendedHours,
   );
   const {
     candles: spyCandles,
@@ -29,7 +31,13 @@ export default function ChartSandbox() {
     error: spyError,
     loadMore: loadMoreSpy,
     isLoadingMore: isLoadingMoreSpy,
-  } = useChartData(BENCHMARK_SYMBOL, BENCHMARK_EXCHANGE, interval, bars);
+  } = useChartData(
+    BENCHMARK_SYMBOL,
+    BENCHMARK_EXCHANGE,
+    interval,
+    bars,
+    includeExtendedHours,
+  );
 
   const movingAverages = useMemo(
     () => getDefaultMovingAverages(interval),
@@ -86,9 +94,11 @@ export default function ChartSandbox() {
           <TechnicalChart
             candles={candles}
             ticker={DEMO_SYMBOL}
+            exchange={DEMO_EXCHANGE}
             movingAverages={movingAverages}
             visibleBars={interval === "W" ? 52 : 130}
             volume={{ show: true, heatmap: false }}
+            showTradingView
             rs={{
               benchmarkCandles: spyCandles,
               smaPeriod: 50,
@@ -99,6 +109,10 @@ export default function ChartSandbox() {
               value: interval,
               onChange: setInterval,
               options: ["1", "5", "15", "60", "D", "W", "M"],
+            }}
+            extendedHours={{
+              includeExtendedHours,
+              onIncludeExtendedHoursChange: setIncludeExtendedHours,
             }}
             drawingTool={{
               activeTool,

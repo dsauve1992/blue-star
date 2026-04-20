@@ -9,6 +9,7 @@ import Dashboard from "../pages/Dashboard";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
 import Position from "../../position/pages/Position";
+import RiskManagementDashboard from "../../position/pages/RiskManagementDashboard";
 import { PositionDetail } from "../../position/pages/PositionDetail";
 import ConsolidationAnalysis from "../../stock-analysis/pages/ConsolidationAnalysis";
 import Watchlist from "../../watchlist/pages/Watchlist";
@@ -23,6 +24,7 @@ const componentMap = {
   "/profile": Profile,
   "/settings": Settings,
   "/positions": Position,
+  "/risk": RiskManagementDashboard,
   "/positions/:positionId": PositionDetail,
   "/stock-analysis/:type": ConsolidationAnalysis,
   "/watchlists": Watchlist,

@@ -16,13 +16,14 @@ export function useChartData(
   exchange: string | null,
   interval: ChartInterval = "D",
   initialBars: number = 200,
+  includeExtendedHours = true,
 ) {
   const [bars, setBars] = useState(initialBars);
 
   // Reset bars when symbol/interval changes
   useEffect(() => {
     setBars(initialBars);
-  }, [symbol, exchange, interval, initialBars]);
+  }, [symbol, exchange, interval, initialBars, includeExtendedHours]);
 
   const query = useQuery({
     queryKey: MARKET_DATA_QUERY_KEYS.chart(
@@ -30,9 +31,16 @@ export function useChartData(
       exchange ?? "",
       interval,
       bars,
+      includeExtendedHours,
     ),
     queryFn: () =>
-      chartDataClient.getChartData(symbol!, exchange!, interval, bars),
+      chartDataClient.getChartData(
+        symbol!,
+        exchange!,
+        interval,
+        bars,
+        includeExtendedHours,
+      ),
     enabled: !!symbol && !!exchange,
     staleTime: 5 * 60 * 1000,
     placeholderData: (previousData) => previousData,

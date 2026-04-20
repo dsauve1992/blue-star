@@ -29,6 +29,14 @@ const VALID_CHART_INTERVALS: ChartInterval[] = [
   'M',
 ];
 
+function parseIncludeExtendedHours(raw?: string): boolean {
+  if (raw == null || raw === '') return true;
+  const v = raw.toLowerCase();
+  if (v === 'false' || v === '0' || v === 'no') return false;
+  if (v === 'true' || v === '1' || v === 'yes') return true;
+  return true;
+}
+
 @Controller('market-data')
 export class MarketDataController {
   constructor(
@@ -125,6 +133,7 @@ export class MarketDataController {
     @Query('exchange') exchange: string,
     @Query('interval') interval: string = 'D',
     @Query('bars') bars: string = '200',
+    @Query('includeExtendedHours') includeExtendedHours?: string,
   ): Promise<GetChartDataApiResponseDto> {
     try {
       if (!VALID_CHART_INTERVALS.includes(interval as ChartInterval)) {
@@ -138,6 +147,7 @@ export class MarketDataController {
         exchange,
         interval: interval as ChartInterval,
         bars: parseInt(bars, 10),
+        includeExtendedHours: parseIncludeExtendedHours(includeExtendedHours),
       });
 
       return this.marketDataApiMapper.mapGetChartDataResponse(response);

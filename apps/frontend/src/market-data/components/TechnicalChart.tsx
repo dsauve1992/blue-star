@@ -16,7 +16,11 @@ import {
   ColorType,
   CrosshairMode,
 } from "lightweight-charts";
-import type { ChartCandleDto, ChartInterval } from "../api/chart-data.client";
+import {
+  isIntradayChartInterval,
+  type ChartCandleDto,
+  type ChartInterval,
+} from "../api/chart-data.client";
 import type { MovingAverageConfig } from "../utils/chart-utils";
 import {
   computeEMA,
@@ -53,6 +57,11 @@ export interface TimeframeConfig {
   options?: ChartInterval[];
 }
 
+export interface ExtendedHoursSessionControl {
+  includeExtendedHours: boolean;
+  onIncludeExtendedHoursChange: (value: boolean) => void;
+}
+
 export interface LongPositionSummary {
   entry: number;
   stop: number;
@@ -72,19 +81,31 @@ export interface DrawingToolConfig {
   onSubmitLongPosition?: (summary: LongPositionSummary) => void;
 }
 
+function tradingViewChartSymbol(ticker: string, exchange?: string): string {
+  const t = ticker.trim();
+  if (!t) return "";
+  if (t.includes(":")) return t;
+  const e = exchange?.trim();
+  return e ? `${e}:${t}` : t;
+}
+
 export interface TechnicalChartProps {
   candles: ChartCandleDto[];
   ticker?: string;
+  /** Used with `ticker` for TradingView deep links (`EXCHANGE:SYMBOL`). */
+  exchange?: string;
   movingAverages?: MovingAverageConfig[];
   volume?: VolumeConfig;
   rs?: RSConfig;
   timeframe?: TimeframeConfig;
+  extendedHours?: ExtendedHoursSessionControl;
   drawingTool?: DrawingToolConfig;
   /** Number of bars to show initially. Defaults to all (fitContent). */
   visibleBars?: number;
   showLegend?: boolean;
   showTooltip?: boolean;
   showExport?: boolean;
+  showTradingView?: boolean;
   theme?: "dark";
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
@@ -118,15 +139,18 @@ interface TooltipState {
 function TechnicalChartInner({
   candles,
   ticker,
+  exchange,
   movingAverages = [],
   volume = { show: true, heatmap: false },
   rs,
   timeframe,
+  extendedHours,
   drawingTool,
   visibleBars,
   showLegend = true,
   showTooltip = true,
   showExport = true,
+  showTradingView,
   theme = "dark",
   onLoadMore,
   isLoadingMore = false,
@@ -372,7 +396,7 @@ function TechnicalChartInner({
         textColor: C.text,
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 10,
-        attributionLogo: false,
+        attributionLogo: true,
         panes: { separatorColor: C.border },
       },
       grid: {
@@ -682,29 +706,22 @@ function TechnicalChartInner({
 
   return (
     <div
-      style={{ position: "relative", width: "100%", height: "100%" }}
-      onMouseDown={handleContainerMouseDown}
-      onMouseMove={handleContainerMouseMove}
-      onMouseUp={handleContainerMouseUp}
-      onMouseLeave={handleContainerMouseUp}
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        width: "100%",
+        height: "100%",
+        minHeight: 0,
+      }}
     >
-      <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
-
-      {/* ── Legend — top-left ── */}
-      {showLegend && legend && (
-        <ChartLegend legend={legend} clr={clr} colors={C} />
-      )}
-
-      {/* ── Tooltip — follows cursor ── */}
-      {showTooltip && tooltip && (
-        <ChartTooltip tooltip={tooltip} colors={C} />
-      )}
-
-      {/* ── Toolbar — top-right ── */}
-      {(timeframe || showExport || drawingTool) && (
+      {(timeframe || showExport || showTradingView || drawingTool || extendedHours) && (
         <ChartToolbar
           timeframe={timeframe}
+          extendedHours={extendedHours}
           showExport={showExport}
+          showTradingView={showTradingView}
+          ticker={ticker}
+          exchange={exchange}
           onScreenshot={handleScreenshot}
           drawingTool={drawingTool}
           onClearLongPosition={longPositionToolRef.current.hasPosition ? () => longPositionToolRef.current.clear() : undefined}
@@ -725,6 +742,27 @@ function TechnicalChartInner({
           colors={C}
         />
       )}
+      <div
+        style={{
+          position: "relative",
+          flex: 1,
+          minHeight: 0,
+          minWidth: 0,
+          width: "100%",
+        }}
+        onMouseDown={handleContainerMouseDown}
+        onMouseMove={handleContainerMouseMove}
+        onMouseUp={handleContainerMouseUp}
+        onMouseLeave={handleContainerMouseUp}
+      >
+        <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
+        {showLegend && legend && (
+          <ChartLegend legend={legend} clr={clr} colors={C} />
+        )}
+        {showTooltip && tooltip && (
+          <ChartTooltip tooltip={tooltip} colors={C} />
+        )}
+      </div>
     </div>
   );
 }
@@ -848,7 +886,11 @@ const DRAWING_TOOLS: { id: ChartDrawingTool; label: string; title: string }[] = 
 
 function ChartToolbar({
   timeframe,
+  extendedHours,
   showExport,
+  showTradingView,
+  ticker,
+  exchange,
   onScreenshot,
   drawingTool,
   onClearLongPosition,
@@ -856,7 +898,11 @@ function ChartToolbar({
   colors: C,
 }: {
   timeframe?: TimeframeConfig;
+  extendedHours?: ExtendedHoursSessionControl;
   showExport?: boolean;
+  showTradingView?: boolean;
+  ticker?: string;
+  exchange?: string;
   onScreenshot: () => void;
   drawingTool?: DrawingToolConfig;
   onClearLongPosition?: () => void;
@@ -865,8 +911,17 @@ function ChartToolbar({
 }) {
   return (
     <div style={{
-      position: "absolute", top: 8, right: 8, zIndex: 10,
-      display: "flex", gap: 2, alignItems: "center",
+      flexShrink: 0,
+      width: "100%",
+      display: "flex",
+      flexWrap: "wrap",
+      gap: 6,
+      alignItems: "center",
+      justifyContent: "flex-end",
+      padding: "6px 8px",
+      borderBottom: `1px solid ${C.border}`,
+      background: "rgba(15, 23, 42, 0.85)",
+      boxSizing: "border-box",
     }}>
       {/* Drawing tools */}
       {drawingTool && DRAWING_TOOLS.map((tool) => {
@@ -935,8 +990,65 @@ function ChartToolbar({
           {TIMEFRAME_LABELS[tf] ?? tf}
         </button>
       ))}
-      {timeframe && showExport && (
+      {extendedHours &&
+        timeframe &&
+        isIntradayChartInterval(timeframe.value) && (
+        <>
+          <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
+          <button
+            type="button"
+            onClick={() =>
+              extendedHours.onIncludeExtendedHoursChange(
+                !extendedHours.includeExtendedHours,
+              )}
+            title={
+              extendedHours.includeExtendedHours
+                ? "Including pre-market and post-market bars (Yahoo). Click for regular session only."
+                : "Regular session only. Click to include pre-market and post-market bars."
+            }
+            style={{
+              padding: "3px 8px",
+              fontSize: 10,
+              fontFamily: "'JetBrains Mono', monospace",
+              borderRadius: 4,
+              border: `1px solid ${extendedHours.includeExtendedHours ? "rgba(59,130,246,0.5)" : "rgba(51,65,85,0.5)"}`,
+              cursor: "pointer",
+              background: extendedHours.includeExtendedHours
+                ? "rgba(59,130,246,0.15)"
+                : "rgba(15,23,42,0.7)",
+              color: extendedHours.includeExtendedHours ? "#93c5fd" : C.textMuted,
+              transition: "all 150ms",
+            }}
+          >
+            {extendedHours.includeExtendedHours ? "Pre/Post" : "RTH"}
+          </button>
+        </>
+      )}
+      {timeframe && (showExport || (showTradingView && ticker)) && (
         <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
+      )}
+      {showTradingView && ticker && (
+        <button
+          type="button"
+          onClick={() => {
+            const symbol = tradingViewChartSymbol(ticker, exchange);
+            window.open(
+              `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`,
+              "_blank",
+              "noopener,noreferrer",
+            );
+          }}
+          style={{
+            padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4, border: "1px solid rgba(51,65,85,0.5)", background: "rgba(15,23,42,0.7)",
+            color: C.textMuted, cursor: "pointer", opacity: 0.6, transition: "opacity 150ms",
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
+          onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; }}
+          title={`Open ${tradingViewChartSymbol(ticker, exchange)} on TradingView`}
+        >
+          TV
+        </button>
       )}
       {showExport && (
         <button

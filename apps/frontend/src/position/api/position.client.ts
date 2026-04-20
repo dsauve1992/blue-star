@@ -50,10 +50,17 @@ export interface BuySharesResponse {
 
 export interface Position {
   id: string;
-  userId: string;
+  userId?: string;
   instrument: string;
   currentQty: number;
   isClosed: boolean;
+  initialBuyEvent?: {
+    action: string;
+    timestamp: string;
+    quantity: number;
+    price: number;
+    note?: string;
+  };
   events: Array<{
     action: string;
     timestamp: string;
@@ -62,6 +69,8 @@ export interface Position {
     stopPrice?: number;
     note?: string;
   }>;
+  createdAt?: string;
+  updatedAt?: string;
 }
 
 export interface GetPositionsResponse {

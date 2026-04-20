@@ -6,6 +6,7 @@ import {
 import type { MarketDataCacheRepository } from '../../../market-data/domain/repositories/market-data-cache.repository.interface';
 import type {
   HistoricalData,
+  HistoricalDataFetchOptions,
   Interval,
   MarketDataService,
 } from '../../../market-data/domain/services/market-data.service';
@@ -37,6 +38,7 @@ export class SectorRotationCachedMarketDataService
     symbol: Symbol,
     dateRange: DateRange,
     _interval?: Interval,
+    options?: HistoricalDataFetchOptions,
   ): Promise<HistoricalData> {
     const interval = _interval ?? determineInterval(dateRange);
 
@@ -45,6 +47,7 @@ export class SectorRotationCachedMarketDataService
         symbol,
         dateRange,
         interval,
+        options,
       );
     }
 
@@ -69,6 +72,7 @@ export class SectorRotationCachedMarketDataService
           symbol,
           dateRange,
           interval,
+          options,
         );
         fetchedPricePoints = historicalData.pricePoints;
 
