@@ -200,8 +200,7 @@ export default function RiskManagementDashboard() {
   const isDark = theme === "dark";
   const c = useMemo(() => chartPalette(isDark), [isDark]);
   const analysis = useMemo(() => analyzeJournalTrades(DEMO_JOURNAL_TRADES), []);
-  const { book, trades, insights, holdBuckets, setupPerformance, topWinners, topLosers } =
-    analysis;
+  const { book, trades, insights, holdBuckets, topWinners, topLosers } = analysis;
 
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [calculatorInstance, setCalculatorInstance] = useState(0);
@@ -216,7 +215,6 @@ export default function RiskManagementDashboard() {
     setCalculatorOpen(true);
   };
 
-  const strongestSetup = setupPerformance[0];
   const winRateVsReference = book.winRate * 100 - REFERENCE_SCENARIO.winRatePct;
   const rewardRiskVsReference =
     (book.rewardRisk ?? 0) - REFERENCE_SCENARIO.rewardRisk;
@@ -235,7 +233,7 @@ export default function RiskManagementDashboard() {
           const trade = trades[items[0]?.dataIndex ?? 0];
           return [
             `<strong>${trade.symbol}</strong>`,
-            `${trade.setup} · ${trade.holdDays}d hold`,
+            `${trade.holdDays}d hold · ${trade.hasAdd ? "with add" : "single entry"}`,
             `Realized ${formatSignedR(trade.realizedR)}`,
             `Planned risk $${trade.plannedRiskCapital.toFixed(0)}`,
           ].join("<br/>");
@@ -406,7 +404,7 @@ export default function RiskManagementDashboard() {
             <HeroMetricCard
               title="System health"
               value={`${book.edgeScore.toFixed(0)}/100`}
-              detail={`${book.systemStatus}. ${strongestSetup ? `${strongestSetup.setup} setups are leading at ${formatSignedR(strongestSetup.averageR)}.` : "Edge score blends expectancy, payoff, and discipline."}`}
+              detail={`${book.systemStatus}. Score blends expectancy, payoff, and discipline across ${book.n} closed trade${book.n === 1 ? "" : "s"}.`}
               tone="blue"
             />
             <HeroMetricCard
@@ -615,7 +613,7 @@ export default function RiskManagementDashboard() {
                             {trade.symbol}
                           </div>
                           <div className="text-xs text-slate-400">
-                            {trade.setup} · {trade.holdDays}d · {trade.hasAdd ? "with add" : "single entry"}
+                            {trade.holdDays}d · {trade.hasAdd ? "with add" : "single entry"}
                           </div>
                         </div>
                         <div className="text-sm font-semibold text-emerald-300">
@@ -642,7 +640,7 @@ export default function RiskManagementDashboard() {
                             {trade.symbol}
                           </div>
                           <div className="text-xs text-slate-400">
-                            {trade.setup} · {trade.holdDays}d · {trade.exceededPlannedRisk ? "exceeded 1R" : "within plan"}
+                            {trade.holdDays}d · {trade.exceededPlannedRisk ? "exceeded 1R" : "within plan"}
                           </div>
                         </div>
                         <div className="text-sm font-semibold text-rose-300">

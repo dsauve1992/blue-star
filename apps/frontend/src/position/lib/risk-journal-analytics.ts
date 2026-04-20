@@ -1,15 +1,11 @@
 import type {
   JournalEntry,
   JournalTrade,
-  JournalTradeSetup,
 } from "src/position/lib/risk-journal-demo";
 
 export type DerivedJournalTrade = {
   id: string;
   symbol: string;
-  setup: JournalTradeSetup;
-  thesis: string;
-  tags: string[];
   openedAt: string;
   closedAt: string;
   holdDays: number;
@@ -27,7 +23,6 @@ export type DerivedJournalTrade = {
   hasAdd: boolean;
   usedStopRaise: boolean;
   exceededPlannedRisk: boolean;
-  winnerCutShort: boolean;
   initialStopPrice: number;
 };
 
@@ -70,18 +65,11 @@ export type HoldBucket = {
   losers: number;
 };
 
-export type SetupPerformance = {
-  setup: JournalTradeSetup;
-  count: number;
-  averageR: number;
-};
-
 export type JournalAnalytics = {
   book: BookStats;
   trades: DerivedJournalTrade[];
   insights: CoachingInsight[];
   holdBuckets: HoldBucket[];
-  setupPerformance: SetupPerformance[];
   averageRWithAdds: number | null;
   averageRWithoutAdds: number | null;
   topWinners: DerivedJournalTrade[];
@@ -185,9 +173,6 @@ function deriveTrade(trade: JournalTrade): DerivedJournalTrade {
   return {
     id: trade.id,
     symbol: trade.symbol,
-    setup: trade.setup,
-    thesis: trade.thesis,
-    tags: trade.tags,
     openedAt,
     closedAt,
     holdDays,
@@ -202,10 +187,9 @@ function deriveTrade(trade: JournalTrade): DerivedJournalTrade {
     addCount: Math.max(0, sortedEntries.length - 1),
     stopRaiseCount,
     partialExitCount: Math.max(0, sortedExits.length - 1),
-    hasAdd: sortedEntries.some((entry) => entry.type === "add"),
+    hasAdd: sortedEntries.length > 1,
     usedStopRaise: stopRaiseCount > 0,
     exceededPlannedRisk: realizedR < -1.05,
-    winnerCutShort: realizedPnl > 0 && holdDays <= 6 && realizedR < 1.2,
     initialStopPrice: trade.initialStopPrice,
   };
 }
@@ -233,24 +217,6 @@ function createHoldBuckets(trades: DerivedJournalTrade[]): HoldBucket[] {
   }
 
   return buckets;
-}
-
-function createSetupPerformance(trades: DerivedJournalTrade[]): SetupPerformance[] {
-  const grouped = new Map<JournalTradeSetup, number[]>();
-
-  for (const trade of trades) {
-    const values = grouped.get(trade.setup) ?? [];
-    values.push(trade.realizedR);
-    grouped.set(trade.setup, values);
-  }
-
-  return Array.from(grouped.entries())
-    .map(([setup, values]) => ({
-      setup,
-      count: values.length,
-      averageR: round(average(values) ?? 0, 2),
-    }))
-    .sort((left, right) => right.averageR - left.averageR);
 }
 
 function createInsights(
@@ -336,8 +302,8 @@ function createInsights(
     const bestTrade = [...trades].sort((left, right) => right.realizedR - left.realizedR)[0];
     if (bestTrade) {
       insights.push({
-        title: "Your best trades follow patient management",
-        body: `${bestTrade.symbol} produced ${bestTrade.realizedR.toFixed(2)}R over ${bestTrade.holdDays} days, reinforcing that patient holds matter for this swing style.`,
+        title: "Your best trade so far",
+        body: `${bestTrade.symbol} produced ${bestTrade.realizedR.toFixed(2)}R over ${bestTrade.holdDays} days — the right tail this system needs more of.`,
         tone: "positive",
       });
     }
@@ -482,7 +448,6 @@ export function analyzeJournalTrades(trades: JournalTrade[]): JournalAnalytics {
     trades: derivedTrades,
     insights: createInsights(book, derivedTrades, averageRWithAdds, averageRWithoutAdds),
     holdBuckets: createHoldBuckets(derivedTrades),
-    setupPerformance: createSetupPerformance(derivedTrades),
     averageRWithAdds:
       averageRWithAdds == null ? null : round(averageRWithAdds, 2),
     averageRWithoutAdds:
