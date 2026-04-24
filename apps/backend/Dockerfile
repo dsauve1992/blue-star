@@ -25,6 +25,9 @@ COPY apps/screener ./apps/screener
 # Copy theme_extractor (Python dependency)
 COPY apps/theme_extractor ./apps/theme_extractor
 
+# Copy leader-scan (Python dependency)
+COPY apps/leader-scan ./apps/leader-scan
+
 # Build the application
 RUN npm run build --workspace=backend
 
@@ -60,6 +63,9 @@ COPY apps/screener ./apps/screener
 
 # Copy theme_extractor
 COPY apps/theme_extractor ./apps/theme_extractor
+
+# Copy leader-scan (requests is already installed via py3-requests)
+COPY apps/leader-scan ./apps/leader-scan
 
 # Copy database migrations
 COPY apps/backend/database.json ./apps/backend/
