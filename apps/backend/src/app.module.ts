@@ -14,6 +14,7 @@ import { FundamentalModule } from './modules/fundamental/fundamental.module';
 import { NotificationModule } from './modules/notification/notification.module';
 import { WatchlistMonitoringModule } from './modules/watchlist-monitoring/watchlist-monitoring.module';
 import { MarketHealthModule } from './modules/market-health/market-health.module';
+import { LeaderScanModule } from './modules/leader-scan/leader-scan.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './config/database.module';
@@ -37,6 +38,7 @@ import { DatabaseModule } from './config/database.module';
     NotificationModule,
     WatchlistMonitoringModule,
     MarketHealthModule,
+    LeaderScanModule,
   ],
   controllers: [AppController],
   providers: [

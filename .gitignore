@@ -38,3 +38,8 @@ yarn-error.log*
 *.pem
 
 .idea
+
+# Python
+__pycache__/
+*.pyc
+venv/
