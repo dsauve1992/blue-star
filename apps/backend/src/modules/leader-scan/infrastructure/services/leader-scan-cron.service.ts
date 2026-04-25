@@ -15,7 +15,7 @@ export class LeaderScanCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('30 19 * * 5', { timeZone: 'America/New_York' })
+  @Cron('30 19 * * 5', { timeZone: 'America/Toronto' })
   async runWeeklyScan(): Promise<void> {
     const jobName = 'Weekly Leader Scan';
     this.logger.log(`Starting ${jobName}`);
