@@ -40,7 +40,7 @@ export class WeekUtils {
     const day = d.getDay(); // 0=Sun, 1=Mon, ..., 5=Fri, 6=Sat
     const daysToSubtract = day === 0 ? 2 : day >= 5 ? day - 5 : day + 2;
     d.setDate(d.getDate() - daysToSubtract);
-    d.setHours(23, 59, 59, 999);
+    d.setHours(0, 0, 0, 0);
     return d;
   }
 }
