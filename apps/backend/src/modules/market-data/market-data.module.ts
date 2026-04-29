@@ -4,7 +4,7 @@ import { MarketDataApiMapper } from './api/market-data-api.mapper';
 import { GetHistoricalDataUseCase } from './use-cases/get-historical-data.use-case';
 import { GetChartDataUseCase } from './use-cases/get-chart-data.use-case';
 import { YahooMarketDataService } from './infrastructure/services/yahoo-market-data.service';
-import { FinancialModelingPrepFundamentalService } from './infrastructure/services/financial-modeling-prep-fundamental.service';
+import { FinnhubFundamentalService } from './infrastructure/services/finnhub-fundamental.service';
 import { FinancialModelingPrepCompanyProfileService } from './infrastructure/services/financial-modeling-prep-company-profile.service';
 import { YahooChartDataService } from './infrastructure/services/yahoo-chart-data.service';
 import { MarketDataCacheRepositoryImpl } from './infrastructure/repositories/market-data-cache.repository';
@@ -34,7 +34,7 @@ export {
     },
     {
       provide: FUNDAMENTAL_SERVICE,
-      useClass: FinancialModelingPrepFundamentalService,
+      useClass: FinnhubFundamentalService,
     },
     {
       provide: MARKET_DATA_CACHE_REPOSITORY,
