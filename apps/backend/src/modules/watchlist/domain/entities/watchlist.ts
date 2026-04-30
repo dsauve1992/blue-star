@@ -13,7 +13,7 @@ export class Watchlist {
   private constructor(
     public readonly id: WatchlistId,
     public readonly userId: UserId,
-    public readonly name: WatchlistName,
+    private _name: WatchlistName,
     private _tickers: WatchlistTicker[],
     public readonly createdAt: Date,
     private _updatedAt: Date,
@@ -43,6 +43,12 @@ export class Watchlist {
     );
   }
 
+  rename(name: WatchlistName): void {
+    if (this._name.value === name.value) return;
+    this._name = name;
+    this._updatedAt = new Date();
+  }
+
   addTicker(ticker: WatchlistTicker): void {
     if (this.hasTicker(ticker)) {
       throw new StateError(
@@ -64,6 +70,10 @@ export class Watchlist {
 
   hasTicker(ticker: WatchlistTicker): boolean {
     return this._tickers.some((t) => t.value === ticker.value);
+  }
+
+  get name(): WatchlistName {
+    return this._name;
   }
 
   get tickers(): ReadonlyArray<WatchlistTicker> {

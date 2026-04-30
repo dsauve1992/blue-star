@@ -18,10 +18,25 @@ export interface RemoveTickerFromWatchlistApiResponseDto {
   watchlist: WatchlistApiDto;
 }
 
+export interface RenameWatchlistApiResponseDto {
+  watchlist: WatchlistApiDto;
+}
+
 export interface DeleteWatchlistApiResponseDto {
   success: boolean;
 }
 
 export interface ListWatchlistsApiResponseDto {
   watchlists: WatchlistApiDto[];
+}
+
+export interface SymbolSearchResultApiDto {
+  symbol: string;
+  description: string;
+  exchange: string;
+  fullSymbol: string;
+}
+
+export interface SymbolSearchApiResponseDto {
+  results: SymbolSearchResultApiDto[];
 }

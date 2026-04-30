@@ -4,6 +4,7 @@ import { WATCHLIST_QUERY_KEYS } from '../constants';
 import type {
   CreateWatchlistRequest,
   AddTickerToWatchlistRequest,
+  RenameWatchlistRequest,
 } from '../api/watchlist.client';
 
 const watchlistClient = new WatchlistClient();
@@ -83,6 +84,26 @@ export function useDeleteWatchlist() {
       watchlistClient.deleteWatchlist(watchlistId),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: WATCHLIST_QUERY_KEYS.all });
+    },
+  });
+}
+
+export function useRenameWatchlist() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      watchlistId,
+      request,
+    }: {
+      watchlistId: string;
+      request: RenameWatchlistRequest;
+    }) => watchlistClient.renameWatchlist(watchlistId, request),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: WATCHLIST_QUERY_KEYS.all });
+      queryClient.invalidateQueries({
+        queryKey: WATCHLIST_QUERY_KEYS.detail(variables.watchlistId),
+      });
     },
   });
 }

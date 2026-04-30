@@ -5,6 +5,7 @@ import {
   useRemoveTickerFromWatchlist,
   useCreateWatchlist,
   useDeleteWatchlist,
+  useRenameWatchlist,
 } from "../hooks/use-watchlists";
 import { useWatchlistSelection } from "../hooks/use-watchlist-selection";
 import { useTickerKeyboardNavigation } from "../hooks/use-ticker-keyboard-navigation";
@@ -36,6 +37,7 @@ export default function Watchlist() {
   const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
   const createWatchlist = useCreateWatchlist();
   const deleteWatchlist = useDeleteWatchlist();
+  const renameWatchlist = useRenameWatchlist();
 
   const {
     selectedWatchlistId,
@@ -128,6 +130,20 @@ export default function Watchlist() {
     [deleteWatchlist, selectedWatchlistId, data, setSelectedWatchlistId],
   );
 
+  const handleRenameWatchlist = useCallback(
+    async (watchlistId: string, name: string) => {
+      try {
+        await renameWatchlist.mutateAsync({
+          watchlistId,
+          request: { name },
+        });
+      } catch (err) {
+        console.error("Failed to rename watchlist:", err);
+      }
+    },
+    [renameWatchlist],
+  );
+
   const handleRemoveTicker = useCallback(
     async (ticker: string) => {
       if (!selectedWatchlistId) return;
@@ -181,6 +197,7 @@ export default function Watchlist() {
             onSelectWatchlist={setSelectedWatchlistId}
             onDeleteWatchlist={handleDeleteWatchlist}
             onCreateWatchlist={handleCreateWatchlist}
+            onRenameWatchlist={handleRenameWatchlist}
           />
 
           <div className="flex-1 flex min-h-0">

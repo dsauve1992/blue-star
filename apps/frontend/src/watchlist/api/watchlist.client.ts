@@ -32,6 +32,14 @@ export interface DeleteWatchlistResponse {
   success: boolean;
 }
 
+export interface RenameWatchlistRequest {
+  name: string;
+}
+
+export interface RenameWatchlistResponse {
+  watchlist: Watchlist;
+}
+
 export interface ListWatchlistsResponse {
   watchlists: Watchlist[];
 }
@@ -89,6 +97,17 @@ export class WatchlistClient {
       `/watchlists/${watchlistId}`,
     );
     return response.data || response;
+  }
+
+  async renameWatchlist(
+    watchlistId: string,
+    request: RenameWatchlistRequest,
+  ): Promise<RenameWatchlistResponse> {
+    const response = await apiClient.patch<
+      RenameWatchlistResponse,
+      RenameWatchlistRequest
+    >(`/watchlists/${watchlistId}`, request);
+    return response.data;
   }
 }
 

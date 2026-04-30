@@ -4,7 +4,9 @@ import {
   Delete,
   Get,
   Param,
+  Patch,
   Post,
+  Query,
   Req,
 } from '@nestjs/common';
 import { WatchlistId } from '../domain/value-objects/watchlist-id';
@@ -19,8 +21,11 @@ import {
   DeleteWatchlistApiResponseDto,
   ListWatchlistsApiResponseDto,
   RemoveTickerFromWatchlistApiResponseDto,
+  RenameWatchlistApiResponseDto,
+  SymbolSearchApiResponseDto,
   WatchlistApiDto,
 } from './watchlist-api.dto';
+import { TradingViewSymbolSearchService } from '../infrastructure/services/tradingview-symbol-search.service';
 import {
   CreateWatchlistRequestDto,
   CreateWatchlistUseCase,
@@ -37,6 +42,10 @@ import {
   DeleteWatchlistRequestDto,
   DeleteWatchlistUseCase,
 } from '../use-cases/delete-watchlist.use-case';
+import {
+  RenameWatchlistRequestDto,
+  RenameWatchlistUseCase,
+} from '../use-cases/rename-watchlist.use-case';
 import { ListWatchlistsUseCase } from '../use-cases/list-watchlists.use-case';
 import {
   GetWatchlistByIdRequestDto,
@@ -50,8 +59,10 @@ export class WatchlistController {
     private readonly addTickerToWatchlistUseCase: AddTickerToWatchlistUseCase,
     private readonly removeTickerFromWatchlistUseCase: RemoveTickerFromWatchlistUseCase,
     private readonly deleteWatchlistUseCase: DeleteWatchlistUseCase,
+    private readonly renameWatchlistUseCase: RenameWatchlistUseCase,
     private readonly listWatchlistsUseCase: ListWatchlistsUseCase,
     private readonly getWatchlistByIdUseCase: GetWatchlistByIdUseCase,
+    private readonly symbolSearchService: TradingViewSymbolSearchService,
     private readonly watchlistApiMapper: WatchlistApiMapper,
   ) {}
 
@@ -67,6 +78,18 @@ export class WatchlistController {
     const useCaseResponse =
       await this.listWatchlistsUseCase.execute(authContext);
     return this.watchlistApiMapper.mapListWatchlistsResponse(useCaseResponse);
+  }
+
+  @Get('symbol-search')
+  async searchSymbols(
+    @Query('q') q: string,
+  ): Promise<SymbolSearchApiResponseDto> {
+    const query = (q ?? '').trim();
+    if (query.length < 2) {
+      return { results: [] };
+    }
+    const results = await this.symbolSearchService.search(query);
+    return { results };
   }
 
   @Get(':watchlistId')
@@ -167,6 +190,32 @@ export class WatchlistController {
     return this.watchlistApiMapper.mapRemoveTickerFromWatchlistResponse(
       useCaseResponse,
     );
+  }
+
+  @Patch(':watchlistId')
+  async renameWatchlist(
+    @Param('watchlistId') watchlistId: string,
+    @Body()
+    body: {
+      name: string;
+    },
+    @Req() req: AuthenticatedRequest,
+  ): Promise<RenameWatchlistApiResponseDto> {
+    const user = req.user;
+    const authContext: AuthContext = {
+      userId: user.userId,
+    };
+
+    const request: RenameWatchlistRequestDto = {
+      watchlistId: WatchlistId.of(watchlistId),
+      name: WatchlistName.of(body.name),
+    };
+
+    const useCaseResponse = await this.renameWatchlistUseCase.execute(
+      request,
+      authContext,
+    );
+    return this.watchlistApiMapper.mapRenameWatchlistResponse(useCaseResponse);
   }
 
   @Delete(':watchlistId')

@@ -6,6 +6,7 @@ import {
   DeleteWatchlistApiResponseDto,
   ListWatchlistsApiResponseDto,
   RemoveTickerFromWatchlistApiResponseDto,
+  RenameWatchlistApiResponseDto,
   WatchlistApiDto,
 } from './watchlist-api.dto';
 import { CreateWatchlistResponseDto } from '../use-cases/create-watchlist.use-case';
@@ -13,6 +14,7 @@ import { AddTickerToWatchlistResponseDto } from '../use-cases/add-ticker-to-watc
 import { RemoveTickerFromWatchlistResponseDto } from '../use-cases/remove-ticker-from-watchlist.use-case';
 import { DeleteWatchlistResponseDto } from '../use-cases/delete-watchlist.use-case';
 import { ListWatchlistsResponseDto } from '../use-cases/list-watchlists.use-case';
+import { RenameWatchlistResponseDto } from '../use-cases/rename-watchlist.use-case';
 
 @Injectable()
 export class WatchlistApiMapper {
@@ -45,6 +47,14 @@ export class WatchlistApiMapper {
   mapRemoveTickerFromWatchlistResponse(
     useCaseResponse: RemoveTickerFromWatchlistResponseDto,
   ): RemoveTickerFromWatchlistApiResponseDto {
+    return {
+      watchlist: this.mapWatchlistToApiDto(useCaseResponse.watchlist),
+    };
+  }
+
+  mapRenameWatchlistResponse(
+    useCaseResponse: RenameWatchlistResponseDto,
+  ): RenameWatchlistApiResponseDto {
     return {
       watchlist: this.mapWatchlistToApiDto(useCaseResponse.watchlist),
     };

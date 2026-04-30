@@ -1,14 +1,9 @@
-import { useState, useCallback, useMemo } from "react";
-import {
-  Bookmark,
-  ChevronUp,
-  ChevronDown,
-  Plus,
-  Search,
-} from "lucide-react";
+import { useCallback, useMemo } from "react";
+import { Bookmark, ChevronUp, ChevronDown } from "lucide-react";
 import { LoadingSpinner } from "src/global/design-system";
 import { Alert, AlertDescription } from "src/global/design-system";
 import { TickerListItem } from "./TickerListItem";
+import { TickerSearchCombobox } from "./TickerSearchCombobox";
 import { useRsRatings } from "src/stock-analysis/hooks/use-rs-ratings";
 
 interface TickerSidebarProps {
@@ -36,8 +31,6 @@ export function TickerSidebar({
   tickerRefs,
   listContainerRef,
 }: TickerSidebarProps) {
-  const [addTickerInput, setAddTickerInput] = useState("");
-
   const rsSymbols = useMemo(
     () => tickers.map((t) => {
       const parts = t.split(":");
@@ -87,13 +80,6 @@ export function TickerSidebar({
     handleTickerSelect(tickers[newIndex]);
   };
 
-  const handleAddTickerSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!addTickerInput.trim()) return;
-    await onAddTicker(addTickerInput.trim().toUpperCase());
-    setAddTickerInput("");
-  };
-
   const setTickerRef = useCallback(
     (ticker: string, el: HTMLDivElement | null) => {
       if (el) {
@@ -107,32 +93,12 @@ export function TickerSidebar({
 
   return (
     <aside className="w-56 flex-shrink-0 border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
-      {/* Add Ticker Input */}
+      {/* Add Ticker Search */}
       <div className="px-3 py-2 border-b border-slate-700/50">
-        <form
-          onSubmit={handleAddTickerSubmit}
-          className="flex items-center gap-1.5"
-        >
-          <div className="relative flex-1">
-            <Search className="absolute left-2 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-500" />
-            <input
-              type="text"
-              value={addTickerInput}
-              onChange={(e) => setAddTickerInput(e.target.value)}
-              placeholder="Add ticker..."
-              maxLength={50}
-              disabled={isAddingTicker}
-              className="w-full pl-7 pr-2 py-1.5 rounded-md text-xs bg-slate-900/50 border border-slate-600/50 text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
-            />
-          </div>
-          <button
-            type="submit"
-            disabled={!addTickerInput.trim() || isAddingTicker}
-            className="p-1.5 rounded-md bg-blue-600/50 text-white hover:bg-blue-600/70 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex-shrink-0"
-          >
-            <Plus className="w-3.5 h-3.5" />
-          </button>
-        </form>
+        <TickerSearchCombobox
+          isAddingTicker={isAddingTicker}
+          onAddTicker={onAddTicker}
+        />
       </div>
 
       {/* Ticker List */}

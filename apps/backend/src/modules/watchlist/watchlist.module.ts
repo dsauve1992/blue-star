@@ -5,6 +5,7 @@ import { CreateWatchlistUseCase } from './use-cases/create-watchlist.use-case';
 import { AddTickerToWatchlistUseCase } from './use-cases/add-ticker-to-watchlist.use-case';
 import { RemoveTickerFromWatchlistUseCase } from './use-cases/remove-ticker-from-watchlist.use-case';
 import { DeleteWatchlistUseCase } from './use-cases/delete-watchlist.use-case';
+import { RenameWatchlistUseCase } from './use-cases/rename-watchlist.use-case';
 import { ListWatchlistsUseCase } from './use-cases/list-watchlists.use-case';
 import { GetWatchlistByIdUseCase } from './use-cases/get-watchlist-by-id.use-case';
 import {
@@ -16,6 +17,7 @@ export { WATCHLIST_READ_REPOSITORY };
 import { DatabaseModule } from '../../config/database.module';
 import { WatchlistWriteRepository } from './infrastructure/repositories/watchlist-write.repository';
 import { WatchlistReadRepository } from './infrastructure/repositories/watchlist-read.repository';
+import { TradingViewSymbolSearchService } from './infrastructure/services/tradingview-symbol-search.service';
 
 @Module({
   imports: [DatabaseModule],
@@ -30,10 +32,12 @@ import { WatchlistReadRepository } from './infrastructure/repositories/watchlist
       useClass: WatchlistReadRepository,
     },
     WatchlistApiMapper,
+    TradingViewSymbolSearchService,
     CreateWatchlistUseCase,
     AddTickerToWatchlistUseCase,
     RemoveTickerFromWatchlistUseCase,
     DeleteWatchlistUseCase,
+    RenameWatchlistUseCase,
     ListWatchlistsUseCase,
     GetWatchlistByIdUseCase,
   ],

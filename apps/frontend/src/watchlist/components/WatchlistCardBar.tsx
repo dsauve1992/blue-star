@@ -1,8 +1,9 @@
-import { useState, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   Bookmark,
   ChevronLeft,
   ChevronRight,
+  Pencil,
   Plus,
   Trash2,
   X,
@@ -24,6 +25,7 @@ interface WatchlistCardBarProps {
   onSelectWatchlist: (id: string) => void;
   onDeleteWatchlist: (id: string) => void;
   onCreateWatchlist: (name: string) => Promise<void>;
+  onRenameWatchlist: (id: string, name: string) => Promise<void>;
 }
 
 export function WatchlistCardBar({
@@ -33,6 +35,7 @@ export function WatchlistCardBar({
   onSelectWatchlist,
   onDeleteWatchlist,
   onCreateWatchlist,
+  onRenameWatchlist,
 }: WatchlistCardBarProps) {
   const [scrollOffset, setScrollOffset] = useState(0);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -93,6 +96,7 @@ export function WatchlistCardBar({
                   isSelected={selectedWatchlistId === watchlist.id}
                   onSelect={() => onSelectWatchlist(watchlist.id)}
                   onDelete={() => onDeleteWatchlist(watchlist.id)}
+                  onRename={(name) => onRenameWatchlist(watchlist.id, name)}
                 />
               ))}
 
@@ -162,6 +166,7 @@ interface WatchlistCardProps {
   isSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
+  onRename: (name: string) => Promise<void>;
 }
 
 function WatchlistCard({
@@ -169,6 +174,7 @@ function WatchlistCard({
   isSelected,
   onSelect,
   onDelete,
+  onRename,
 }: WatchlistCardProps) {
   const { data: monitoringData } = useMonitoringStatus(watchlist.id);
   const activateMonitoring = useActivateMonitoring();
@@ -197,6 +203,50 @@ function WatchlistCard({
   const isToggling =
     activateMonitoring.isPending || deactivateMonitoring.isPending;
 
+  const [isEditing, setIsEditing] = useState(false);
+  const [draftName, setDraftName] = useState(watchlist.name);
+  const [isSaving, setIsSaving] = useState(false);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (!isEditing) setDraftName(watchlist.name);
+  }, [watchlist.name, isEditing]);
+
+  useEffect(() => {
+    if (isEditing) {
+      inputRef.current?.focus();
+      inputRef.current?.select();
+    }
+  }, [isEditing]);
+
+  const startEdit = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setDraftName(watchlist.name);
+    setIsEditing(true);
+  };
+
+  const cancelEdit = () => {
+    setDraftName(watchlist.name);
+    setIsEditing(false);
+  };
+
+  const commitEdit = async () => {
+    const trimmed = draftName.trim();
+    if (!trimmed || trimmed === watchlist.name) {
+      cancelEdit();
+      return;
+    }
+    setIsSaving(true);
+    try {
+      await onRename(trimmed);
+      setIsEditing(false);
+    } catch {
+      // parent logs; keep edit mode open so user can retry
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
   return (
     <div
       onClick={onSelect}
@@ -214,9 +264,45 @@ function WatchlistCard({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <Bookmark className="w-3 h-3 text-blue-400 flex-shrink-0" />
-            <h3 className="text-xs font-semibold text-white truncate">
-              {watchlist.name}
-            </h3>
+            {isEditing ? (
+              <input
+                ref={inputRef}
+                type="text"
+                value={draftName}
+                onClick={(e) => e.stopPropagation()}
+                onChange={(e) => setDraftName(e.target.value)}
+                onBlur={() => void commitEdit()}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    void commitEdit();
+                  } else if (e.key === "Escape") {
+                    e.preventDefault();
+                    cancelEdit();
+                  }
+                }}
+                disabled={isSaving}
+                maxLength={255}
+                className="flex-1 min-w-0 text-xs font-semibold text-white bg-slate-900/60 border border-blue-500/50 rounded px-1 py-0 focus:outline-none focus:ring-1 focus:ring-blue-500/50 disabled:opacity-50"
+              />
+            ) : (
+              <h3
+                onDoubleClick={startEdit}
+                title="Double-click to rename"
+                className="text-xs font-semibold text-white truncate"
+              >
+                {watchlist.name}
+              </h3>
+            )}
+            {!isEditing && (
+              <button
+                onClick={startEdit}
+                title="Rename watchlist"
+                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-700/50 text-slate-500 hover:text-blue-400 transition-all flex-shrink-0"
+              >
+                <Pencil className="w-2.5 h-2.5" />
+              </button>
+            )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5">
             <p className="text-[10px] text-slate-400">
