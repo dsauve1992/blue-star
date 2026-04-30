@@ -15,12 +15,15 @@ npm ci
 # Build all apps
 npm run build
 
-# Run all apps in dev mode
+# Run all apps in dev mode (requires Docker Desktop running — starts Postgres, runs migrations, then backend + frontend)
 npm run dev
 
-# Run backend only / frontend only
+# Run backend only / frontend only (do NOT bring up Postgres or run migrations)
 npm run dev:backend
 npm run dev:frontend
+
+# Stop the local Postgres container
+npm run db:down --workspace=backend
 
 # Lint and type-check
 npm run lint
@@ -66,6 +69,7 @@ npx tsc --noEmit && npm run lint && npm run test
 
 - PostgreSQL with `db-migrate` (SQL migrations in `apps/backend/migrations/sqls/`)
 - UUID primary keys; event sourcing: `positions` + `position_events` tables
+- Local dev runs Postgres in Docker via `apps/backend/docker-compose.yml` (port 5432, db `blue_star_db`). `npm run dev` brings it up automatically; `npm run dev:backend`/`dev:frontend` do not.
 
 ### Deployment
 

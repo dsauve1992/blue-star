@@ -17,6 +17,8 @@
     "test:cov": "jest --coverage",
     "test:debug": "node --inspect-brk -r tsconfig-paths/register -r ts-node/register node_modules/.bin/jest --runInBand",
     "test:e2e": "jest --config ./test/jest-e2e.json",
+    "db:up": "docker compose up -d --wait",
+    "db:down": "docker compose down",
     "migrate:up": "db-migrate up --env dev",
     "migrate:down": "db-migrate down --env dev",
     "migrate:create": "db-migrate create --env dev",
