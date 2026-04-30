@@ -17,6 +17,7 @@ import {
   useActivateMonitoring,
   useDeactivateMonitoring,
 } from "src/watchlist-monitoring/hooks/use-watchlist-monitoring";
+import { TICKER_DRAG_MIME } from "./TickerListItem";
 
 interface WatchlistCardBarProps {
   watchlists: Watchlist[];
@@ -26,6 +27,11 @@ interface WatchlistCardBarProps {
   onDeleteWatchlist: (id: string) => void;
   onCreateWatchlist: (name: string) => Promise<void>;
   onRenameWatchlist: (id: string, name: string) => Promise<void>;
+  onDropTicker: (
+    targetWatchlistId: string,
+    ticker: string,
+    sourceWatchlistId: string,
+  ) => void;
 }
 
 export function WatchlistCardBar({
@@ -36,6 +42,7 @@ export function WatchlistCardBar({
   onDeleteWatchlist,
   onCreateWatchlist,
   onRenameWatchlist,
+  onDropTicker,
 }: WatchlistCardBarProps) {
   const [scrollOffset, setScrollOffset] = useState(0);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -97,6 +104,7 @@ export function WatchlistCardBar({
                   onSelect={() => onSelectWatchlist(watchlist.id)}
                   onDelete={() => onDeleteWatchlist(watchlist.id)}
                   onRename={(name) => onRenameWatchlist(watchlist.id, name)}
+                  onDropTicker={onDropTicker}
                 />
               ))}
 
@@ -167,6 +175,11 @@ interface WatchlistCardProps {
   onSelect: () => void;
   onDelete: () => void;
   onRename: (name: string) => Promise<void>;
+  onDropTicker: (
+    targetWatchlistId: string,
+    ticker: string,
+    sourceWatchlistId: string,
+  ) => void;
 }
 
 function WatchlistCard({
@@ -175,6 +188,7 @@ function WatchlistCard({
   onSelect,
   onDelete,
   onRename,
+  onDropTicker,
 }: WatchlistCardProps) {
   const { data: monitoringData } = useMonitoringStatus(watchlist.id);
   const activateMonitoring = useActivateMonitoring();
@@ -206,7 +220,46 @@ function WatchlistCard({
   const [isEditing, setIsEditing] = useState(false);
   const [draftName, setDraftName] = useState(watchlist.name);
   const [isSaving, setIsSaving] = useState(false);
+  const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
+
+  const isTickerDrag = (e: React.DragEvent<HTMLDivElement>) =>
+    e.dataTransfer.types.includes(TICKER_DRAG_MIME);
+
+  const handleDragEnter = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isTickerDrag(e)) return;
+    e.preventDefault();
+    setIsDragOver(true);
+  };
+
+  const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isTickerDrag(e)) return;
+    e.preventDefault();
+    e.dataTransfer.dropEffect = "move";
+  };
+
+  const handleDragLeave = (e: React.DragEvent<HTMLDivElement>) => {
+    if (e.currentTarget.contains(e.relatedTarget as Node)) return;
+    setIsDragOver(false);
+  };
+
+  const handleDrop = (e: React.DragEvent<HTMLDivElement>) => {
+    if (!isTickerDrag(e)) return;
+    e.preventDefault();
+    setIsDragOver(false);
+    const raw = e.dataTransfer.getData(TICKER_DRAG_MIME);
+    if (!raw) return;
+    try {
+      const parsed = JSON.parse(raw) as {
+        ticker: string;
+        sourceWatchlistId: string;
+      };
+      if (parsed.sourceWatchlistId === watchlist.id) return;
+      onDropTicker(watchlist.id, parsed.ticker, parsed.sourceWatchlistId);
+    } catch {
+      // ignore malformed drag payloads
+    }
+  };
 
   useEffect(() => {
     if (!isEditing) setDraftName(watchlist.name);
@@ -250,13 +303,19 @@ function WatchlistCard({
   return (
     <div
       onClick={onSelect}
+      onDragEnter={handleDragEnter}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
+      onDrop={handleDrop}
       className={`
         group relative flex-shrink-0 w-36 px-2.5 py-1.5 rounded cursor-pointer
         border transition-all duration-200
         ${
-          isSelected
-            ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-blue-500/50 shadow-lg"
-            : "bg-slate-800/50 border-slate-700/50 hover:border-slate-600"
+          isDragOver
+            ? "ring-2 ring-blue-400/70 scale-[1.02] border-blue-400/70 bg-blue-500/10"
+            : isSelected
+              ? "bg-gradient-to-br from-blue-500/20 to-purple-500/20 border-blue-500/50 shadow-lg"
+              : "bg-slate-800/50 border-slate-700/50 hover:border-slate-600"
         }
       `}
     >

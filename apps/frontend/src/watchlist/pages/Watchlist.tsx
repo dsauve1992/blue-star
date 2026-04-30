@@ -6,6 +6,8 @@ import {
   useCreateWatchlist,
   useDeleteWatchlist,
   useRenameWatchlist,
+  useMoveTicker,
+  useCopyTicker,
 } from "../hooks/use-watchlists";
 import { useWatchlistSelection } from "../hooks/use-watchlist-selection";
 import { useTickerKeyboardNavigation } from "../hooks/use-ticker-keyboard-navigation";
@@ -38,6 +40,8 @@ export default function Watchlist() {
   const createWatchlist = useCreateWatchlist();
   const deleteWatchlist = useDeleteWatchlist();
   const renameWatchlist = useRenameWatchlist();
+  const moveTicker = useMoveTicker();
+  const copyTicker = useCopyTicker();
 
   const {
     selectedWatchlistId,
@@ -184,6 +188,77 @@ export default function Watchlist() {
     [selectedWatchlistId, addTickerToWatchlist],
   );
 
+  const moveTickerBetween = useCallback(
+    async (
+      sourceWatchlistId: string,
+      targetWatchlistId: string,
+      ticker: string,
+    ) => {
+      if (sourceWatchlistId === targetWatchlistId) return;
+      try {
+        await moveTicker.mutateAsync({
+          sourceWatchlistId,
+          targetWatchlistId,
+          ticker,
+        });
+        if (
+          sourceWatchlistId === selectedWatchlistId &&
+          selectedTicker === ticker
+        ) {
+          const remaining = tickers.filter((t) => t !== ticker);
+          setSelectedTicker(remaining.length > 0 ? remaining[0] : null);
+        }
+      } catch (err) {
+        console.error("Failed to move ticker:", err);
+      }
+    },
+    [
+      selectedWatchlistId,
+      selectedTicker,
+      tickers,
+      moveTicker,
+      setSelectedTicker,
+    ],
+  );
+
+  const handleMoveTicker = useCallback(
+    async (ticker: string, targetWatchlistId: string) => {
+      if (!selectedWatchlistId) return;
+      await moveTickerBetween(selectedWatchlistId, targetWatchlistId, ticker);
+    },
+    [selectedWatchlistId, moveTickerBetween],
+  );
+
+  const handleDropTickerOnWatchlist = useCallback(
+    (
+      targetWatchlistId: string,
+      ticker: string,
+      sourceWatchlistId: string,
+    ) => {
+      void moveTickerBetween(sourceWatchlistId, targetWatchlistId, ticker);
+    },
+    [moveTickerBetween],
+  );
+
+  const handleCopyTicker = useCallback(
+    async (ticker: string, targetWatchlistId: string) => {
+      try {
+        await copyTicker.mutateAsync({ targetWatchlistId, ticker });
+      } catch (err) {
+        console.error("Failed to copy ticker:", err);
+      }
+    },
+    [copyTicker],
+  );
+
+  const otherWatchlists = useMemo(
+    () =>
+      (data?.watchlists ?? [])
+        .filter((w) => w.id !== selectedWatchlistId)
+        .map((w) => ({ id: w.id, name: w.name })),
+    [data, selectedWatchlistId],
+  );
+
   return (
     <PageContainer fullWidth noPadding>
       <div className="w-full relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -198,6 +273,7 @@ export default function Watchlist() {
             onDeleteWatchlist={handleDeleteWatchlist}
             onCreateWatchlist={handleCreateWatchlist}
             onRenameWatchlist={handleRenameWatchlist}
+            onDropTicker={handleDropTickerOnWatchlist}
           />
 
           <div className="flex-1 flex min-h-0">
@@ -208,9 +284,13 @@ export default function Watchlist() {
                 isLoading={isLoading}
                 error={error}
                 isAddingTicker={addTickerToWatchlist.isPending}
+                sourceWatchlistId={selectedWatchlist.id}
+                otherWatchlists={otherWatchlists}
                 onTickerSelect={setSelectedTicker}
                 onRemoveTicker={handleRemoveTicker}
                 onAddTicker={handleAddTicker}
+                onMoveTicker={handleMoveTicker}
+                onCopyTicker={handleCopyTicker}
                 tickerRefs={tickerRefs}
                 listContainerRef={listContainerRef}
               />

@@ -108,3 +108,55 @@ export function useRenameWatchlist() {
   });
 }
 
+export function useCopyTicker() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      targetWatchlistId,
+      ticker,
+    }: {
+      targetWatchlistId: string;
+      ticker: string;
+    }) =>
+      watchlistClient.addTickerToWatchlist(targetWatchlistId, { ticker }),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: WATCHLIST_QUERY_KEYS.all });
+      queryClient.invalidateQueries({
+        queryKey: WATCHLIST_QUERY_KEYS.detail(variables.targetWatchlistId),
+      });
+    },
+  });
+}
+
+export function useMoveTicker() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async ({
+      sourceWatchlistId,
+      targetWatchlistId,
+      ticker,
+    }: {
+      sourceWatchlistId: string;
+      targetWatchlistId: string;
+      ticker: string;
+    }) => {
+      await watchlistClient.addTickerToWatchlist(targetWatchlistId, { ticker });
+      await watchlistClient.removeTickerFromWatchlist(
+        sourceWatchlistId,
+        ticker,
+      );
+    },
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: WATCHLIST_QUERY_KEYS.all });
+      queryClient.invalidateQueries({
+        queryKey: WATCHLIST_QUERY_KEYS.detail(variables.sourceWatchlistId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: WATCHLIST_QUERY_KEYS.detail(variables.targetWatchlistId),
+      });
+    },
+  });
+}
+

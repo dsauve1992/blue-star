@@ -1,5 +1,6 @@
 import { useState } from "react";
-import { X } from "lucide-react";
+import { MoreVertical, X } from "lucide-react";
+import { TickerActionMenu } from "./TickerActionMenu";
 
 function extractSymbol(ticker: string): string {
   const parts = ticker.split(":");
@@ -18,31 +19,69 @@ function getRsRatingColor(rsRating: number): string {
   return "bg-slate-500/20 text-slate-400 border-slate-500/30";
 }
 
+interface WatchlistOption {
+  id: string;
+  name: string;
+}
+
+export const TICKER_DRAG_MIME = "application/x-blue-star-ticker";
+
 interface TickerListItemProps {
   ticker: string;
   isSelected: boolean;
   rsRating?: number;
+  sourceWatchlistId: string;
+  otherWatchlists: WatchlistOption[];
   onSelect: (ticker: string) => void;
   onRemove: (ticker: string) => void;
+  onMoveTicker: (ticker: string, targetWatchlistId: string) => void;
+  onCopyTicker: (ticker: string, targetWatchlistId: string) => void;
 }
 
 export function TickerListItem({
   ticker,
   isSelected,
   rsRating,
+  sourceWatchlistId,
+  otherWatchlists,
   onSelect,
   onRemove,
+  onMoveTicker,
+  onCopyTicker,
 }: TickerListItemProps) {
   const [logoFailed, setLogoFailed] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
   const symbol = extractSymbol(ticker);
   const logoUrl = getTickerLogoUrl(symbol);
 
+  const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
+    if ((e.target as HTMLElement).closest("button")) {
+      e.preventDefault();
+      return;
+    }
+    e.dataTransfer.setData(
+      TICKER_DRAG_MIME,
+      JSON.stringify({ ticker, sourceWatchlistId }),
+    );
+    e.dataTransfer.effectAllowed = "move";
+    setIsDragging(true);
+  };
+
+  const handleDragEnd = () => {
+    setIsDragging(false);
+  };
+
   return (
     <div
+      draggable
+      onDragStart={handleDragStart}
+      onDragEnd={handleDragEnd}
       onClick={() => onSelect(ticker)}
       className={`
         group relative flex items-center gap-2 px-2 py-1.5 cursor-pointer
         transition-colors duration-150
+        ${isDragging ? "opacity-50" : ""}
         ${
           isSelected
             ? "bg-slate-700/50 border-l-2 border-l-blue-500"
@@ -83,6 +122,30 @@ export function TickerListItem({
           {rsRating}
         </span>
       )}
+
+      <div className="relative flex-shrink-0">
+        <button
+          onClick={(e) => {
+            e.stopPropagation();
+            setIsMenuOpen((open) => !open);
+          }}
+          className={`p-0.5 rounded hover:bg-slate-600/50 text-slate-500 hover:text-slate-200 transition-all ${
+            isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+          }`}
+          aria-label={`More actions for ${ticker}`}
+        >
+          <MoreVertical className="w-3 h-3" />
+        </button>
+        {isMenuOpen && (
+          <TickerActionMenu
+            ticker={ticker}
+            otherWatchlists={otherWatchlists}
+            onMove={(targetId) => onMoveTicker(ticker, targetId)}
+            onCopy={(targetId) => onCopyTicker(ticker, targetId)}
+            onClose={() => setIsMenuOpen(false)}
+          />
+        )}
+      </div>
 
       <button
         onClick={(e) => {

@@ -6,15 +6,24 @@ import { TickerListItem } from "./TickerListItem";
 import { TickerSearchCombobox } from "./TickerSearchCombobox";
 import { useRsRatings } from "src/stock-analysis/hooks/use-rs-ratings";
 
+interface WatchlistOption {
+  id: string;
+  name: string;
+}
+
 interface TickerSidebarProps {
   tickers: string[];
   selectedTicker: string | null;
   isLoading: boolean;
   error: Error | null;
   isAddingTicker: boolean;
+  sourceWatchlistId: string;
+  otherWatchlists: WatchlistOption[];
   onTickerSelect: (ticker: string) => void;
   onRemoveTicker: (ticker: string) => void;
   onAddTicker: (ticker: string) => Promise<void>;
+  onMoveTicker: (ticker: string, targetWatchlistId: string) => void;
+  onCopyTicker: (ticker: string, targetWatchlistId: string) => void;
   tickerRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   listContainerRef: React.RefObject<HTMLDivElement | null>;
 }
@@ -25,9 +34,13 @@ export function TickerSidebar({
   isLoading,
   error,
   isAddingTicker,
+  sourceWatchlistId,
+  otherWatchlists,
   onTickerSelect,
   onRemoveTicker,
   onAddTicker,
+  onMoveTicker,
+  onCopyTicker,
   tickerRefs,
   listContainerRef,
 }: TickerSidebarProps) {
@@ -150,8 +163,12 @@ export function TickerSidebar({
                 rsRating={rsRatingMap.get(
                   ticker.includes(":") ? ticker.split(":")[1] : ticker,
                 )}
+                sourceWatchlistId={sourceWatchlistId}
+                otherWatchlists={otherWatchlists}
                 onSelect={handleTickerSelect}
                 onRemove={onRemoveTicker}
+                onMoveTicker={onMoveTicker}
+                onCopyTicker={onCopyTicker}
               />
             </div>
           ))}
