@@ -171,10 +171,6 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
             historical_data['price_vs_ema10_perc'] = abs(historical_data['close'] - historical_data['ema_10']) / historical_data['ema_10'] * 100
             historical_data['price_vs_ema20_perc'] = abs(historical_data['close'] - historical_data['ema_20']) / historical_data['ema_20'] * 100
 
-            # EMA trends (rising/falling)
-            historical_data['ema10_rising'] = historical_data['ema_10'] > historical_data['ema_10'].shift(1)
-            historical_data['ema20_rising'] = historical_data['ema_20'] > historical_data['ema_20'].shift(1)
-
             historical_data['basic_signal'] = (
                     (historical_data['adr_perc_20'] * 1.5 > historical_data['price_vs_ema10_perc']) &
                     (historical_data['ema_10'] > historical_data['ema_20'])
@@ -226,9 +222,7 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
             historical_data['green_signal'] = (
                     historical_data['consecutive_signal_with_30_perc'] &
                     (historical_data['adr_perc_20'] > historical_data['adr_perc_5']) &
-                    historical_data['low_volume'] &
-                    historical_data['ema10_rising'] &
-                    historical_data['ema20_rising']
+                    historical_data['low_volume']
             )
 
             latest = historical_data.iloc[-1]
@@ -318,10 +312,6 @@ def analyse_weekly_setup(screener_service: ScreenerService, yahoo_finance_servic
             historical_data['price_vs_ema10_perc'] = abs(historical_data['close'] - historical_data['ema_10']) / historical_data['ema_10'] * 100
             historical_data['price_vs_ema20_perc'] = abs(historical_data['close'] - historical_data['ema_20']) / historical_data['ema_20'] * 100
 
-            # EMA trends (rising/falling)
-            historical_data['ema10_rising'] = historical_data['ema_10'] > historical_data['ema_10'].shift(1)
-            historical_data['ema20_rising'] = historical_data['ema_20'] > historical_data['ema_20'].shift(1)
-
             historical_data['basic_signal'] = (
                     (historical_data['adr_perc_20'] > historical_data['price_vs_ema10_perc']) &
                     (historical_data['adr_perc_20'] * 1.5 > historical_data['price_vs_ema10_perc']) &
@@ -374,9 +364,7 @@ def analyse_weekly_setup(screener_service: ScreenerService, yahoo_finance_servic
             historical_data['green_signal'] = (
                     (historical_data['adr_perc_20'] > historical_data['adr_perc_5']) &
                     historical_data['consecutive_signal_with_30_perc'] &
-                    historical_data['low_volume'] &
-                    historical_data['ema10_rising'] &
-                    historical_data['ema20_rising']
+                    historical_data['low_volume']
             )
 
             latest = historical_data.iloc[-1]
