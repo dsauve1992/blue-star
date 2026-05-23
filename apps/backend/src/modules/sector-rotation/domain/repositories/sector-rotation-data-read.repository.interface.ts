@@ -2,17 +2,23 @@ import { SectorRotationDataPoint } from '../value-objects/sector-rotation-data-p
 
 export interface SectorRotationDataReadRepository {
   findByDateRange(
+    universeId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<SectorRotationDataPoint[]>;
   findBySectorAndDateRange(
+    universeId: string,
     sectorSymbol: string,
     startDate: Date,
     endDate: Date,
   ): Promise<SectorRotationDataPoint[]>;
-  findLatestDate(): Promise<Date | null>;
-  findLatestDateBySector(sectorSymbol: string): Promise<Date | null>;
+  findLatestDate(universeId: string): Promise<Date | null>;
+  findLatestDateBySector(
+    universeId: string,
+    sectorSymbol: string,
+  ): Promise<Date | null>;
   findExistingDates(
+    universeId: string,
     startDate: Date,
     endDate: Date,
     sectorSymbols: string[],

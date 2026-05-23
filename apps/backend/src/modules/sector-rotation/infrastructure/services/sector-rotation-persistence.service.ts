@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Sector } from '../../domain/value-objects/sector';
+import { RotationUniverse } from '../../domain/value-objects/rotation-universe';
 import { SectorRotationResult } from '../../domain/value-objects/sector-rotation-result';
 import { SectorRotationDataPoint } from '../../domain/value-objects/sector-rotation-data-point';
 import { DateRange } from '../../../market-data/domain/value-objects/date-range';
@@ -31,7 +31,7 @@ export class SectorRotationPersistenceServiceImpl
     private readonly writeRepository: SectorRotationDataWriteRepository,
   ) {}
 
-  async initializeLast52Weeks(sectors: Sector[]): Promise<void> {
+  async initializeLast52Weeks(universe: RotationUniverse): Promise<void> {
     const endDate = WeekUtils.getMostRecentFriday(new Date());
     const startDate = new Date(endDate);
     startDate.setDate(startDate.getDate() - 52 * 7);
@@ -43,19 +43,19 @@ export class SectorRotationPersistenceServiceImpl
     };
 
     const result = await this.calculationService.calculate(
-      sectors,
+      universe,
       dateRange,
       params,
     );
 
-    await this.writeRepository.saveMany(result.dataPoints);
+    await this.writeRepository.saveMany(universe.id, result.dataPoints);
   }
 
-  async computeAndSaveIncremental(sectors: Sector[]): Promise<void> {
-    const latestDate = await this.readRepository.findLatestDate();
+  async computeAndSaveIncremental(universe: RotationUniverse): Promise<void> {
+    const latestDate = await this.readRepository.findLatestDate(universe.id);
 
     if (!latestDate) {
-      await this.initializeLast52Weeks(sectors);
+      await this.initializeLast52Weeks(universe);
       return;
     }
 
@@ -88,7 +88,7 @@ export class SectorRotationPersistenceServiceImpl
     };
 
     const result = await this.calculationService.calculate(
-      sectors,
+      universe,
       dateRange,
       params,
     );
@@ -98,20 +98,21 @@ export class SectorRotationPersistenceServiceImpl
     );
 
     if (newDataPoints.length > 0) {
-      await this.writeRepository.saveMany(newDataPoints);
+      await this.writeRepository.saveMany(universe.id, newDataPoints);
     }
   }
 
   async getOrCompute(
-    sectors: Sector[],
+    universe: RotationUniverse,
     dateRange: DateRange,
   ): Promise<SectorRotationResult> {
-    const sectorSymbols = sectors.map((s) => s.etfSymbol);
+    const memberSymbols = universe.members.map((m) => m.symbol);
     const lastFriday = WeekUtils.getMostRecentFriday(new Date());
     const cappedEndDate =
       dateRange.endDate > lastFriday ? lastFriday : dateRange.endDate;
 
     const existingDataPoints = await this.readRepository.findByDateRange(
+      universe.id,
       dateRange.startDate,
       cappedEndDate,
     );
@@ -127,13 +128,13 @@ export class SectorRotationPersistenceServiceImpl
 
     if (missingDates.length === 0) {
       const filteredDataPoints = existingDataPoints.filter((point) =>
-        sectorSymbols.includes(point.sectorSymbol),
+        memberSymbols.includes(point.sectorSymbol),
       );
       return SectorRotationResult.of(
         dateRange.startDate,
         cappedEndDate,
         filteredDataPoints,
-        sectorSymbols,
+        memberSymbols,
       );
     }
 
@@ -157,7 +158,7 @@ export class SectorRotationPersistenceServiceImpl
     };
 
     const computedResult = await this.calculationService.calculate(
-      sectors,
+      universe,
       computeDateRange,
       params,
     );
@@ -166,17 +167,17 @@ export class SectorRotationPersistenceServiceImpl
       (point) =>
         point.date >= dateRange.startDate &&
         point.date <= cappedEndDate &&
-        sectorSymbols.includes(point.sectorSymbol),
+        memberSymbols.includes(point.sectorSymbol),
     );
 
-    await this.writeRepository.saveMany(newDataPoints);
+    await this.writeRepository.saveMany(universe.id, newDataPoints);
 
     const allDataPoints = [
       ...existingDataPoints.filter(
         (point) =>
           point.date >= dateRange.startDate &&
           point.date <= cappedEndDate &&
-          sectorSymbols.includes(point.sectorSymbol),
+          memberSymbols.includes(point.sectorSymbol),
       ),
       ...newDataPoints,
     ];
@@ -187,7 +188,7 @@ export class SectorRotationPersistenceServiceImpl
       dateRange.startDate,
       cappedEndDate,
       uniqueDataPoints,
-      sectorSymbols,
+      memberSymbols,
     );
   }
 

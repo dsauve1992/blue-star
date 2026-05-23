@@ -1,12 +1,12 @@
-import { Sector } from '../value-objects/sector';
+import { RotationUniverse } from '../value-objects/rotation-universe';
 import { SectorRotationResult } from '../value-objects/sector-rotation-result';
 import { DateRange } from '../../../market-data/domain/value-objects/date-range';
 
 export interface SectorRotationPersistenceService {
-  initializeLast52Weeks(sectors: Sector[]): Promise<void>;
-  computeAndSaveIncremental(sectors: Sector[]): Promise<void>;
+  initializeLast52Weeks(universe: RotationUniverse): Promise<void>;
+  computeAndSaveIncremental(universe: RotationUniverse): Promise<void>;
   getOrCompute(
-    sectors: Sector[],
+    universe: RotationUniverse,
     dateRange: DateRange,
   ): Promise<SectorRotationResult>;
 }

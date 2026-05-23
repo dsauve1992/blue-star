@@ -29,17 +29,19 @@ export class SectorRotationDataReadRepositoryImpl
   constructor(private readonly databaseService: DatabaseService) {}
 
   async findByDateRange(
+    universeId: string,
     startDate: Date,
     endDate: Date,
   ): Promise<SectorRotationDataPoint[]> {
     const query = `
       SELECT date, sector_symbol, price, relative_strength, x, y, quadrant
       FROM sector_rotation_data_points
-      WHERE date >= $1 AND date <= $2
+      WHERE universe_id = $1 AND date >= $2 AND date <= $3
       ORDER BY date ASC, sector_symbol ASC
     `;
 
     const result = await this.databaseService.query(query, [
+      universeId,
       startDate.toISOString().split('T')[0],
       endDate.toISOString().split('T')[0],
     ]);
@@ -48,6 +50,7 @@ export class SectorRotationDataReadRepositoryImpl
   }
 
   async findBySectorAndDateRange(
+    universeId: string,
     sectorSymbol: string,
     startDate: Date,
     endDate: Date,
@@ -55,11 +58,12 @@ export class SectorRotationDataReadRepositoryImpl
     const query = `
       SELECT date, sector_symbol, price, relative_strength, x, y, quadrant
       FROM sector_rotation_data_points
-      WHERE sector_symbol = $1 AND date >= $2 AND date <= $3
+      WHERE universe_id = $1 AND sector_symbol = $2 AND date >= $3 AND date <= $4
       ORDER BY date ASC
     `;
 
     const result = await this.databaseService.query(query, [
+      universeId,
       sectorSymbol,
       startDate.toISOString().split('T')[0],
       endDate.toISOString().split('T')[0],
@@ -68,13 +72,14 @@ export class SectorRotationDataReadRepositoryImpl
     return this.mapRowsToDataPoints(result.rows as DatabaseRow[]);
   }
 
-  async findLatestDate(): Promise<Date | null> {
+  async findLatestDate(universeId: string): Promise<Date | null> {
     const query = `
       SELECT MAX(date) as latest_date
       FROM sector_rotation_data_points
+      WHERE universe_id = $1
     `;
 
-    const result = await this.databaseService.query(query);
+    const result = await this.databaseService.query(query, [universeId]);
     const row = result.rows[0] as LatestDateRow | undefined;
 
     if (!row || !row.latest_date || row.latest_date === null) {
@@ -84,14 +89,20 @@ export class SectorRotationDataReadRepositoryImpl
     return new Date(row.latest_date);
   }
 
-  async findLatestDateBySector(sectorSymbol: string): Promise<Date | null> {
+  async findLatestDateBySector(
+    universeId: string,
+    sectorSymbol: string,
+  ): Promise<Date | null> {
     const query = `
       SELECT MAX(date) as latest_date
       FROM sector_rotation_data_points
-      WHERE sector_symbol = $1
+      WHERE universe_id = $1 AND sector_symbol = $2
     `;
 
-    const result = await this.databaseService.query(query, [sectorSymbol]);
+    const result = await this.databaseService.query(query, [
+      universeId,
+      sectorSymbol,
+    ]);
     const row = result.rows[0] as LatestDateRow | undefined;
 
     if (!row || !row.latest_date || row.latest_date === null) {
@@ -102,6 +113,7 @@ export class SectorRotationDataReadRepositoryImpl
   }
 
   async findExistingDates(
+    universeId: string,
     startDate: Date,
     endDate: Date,
     sectorSymbols: string[],
@@ -110,15 +122,17 @@ export class SectorRotationDataReadRepositoryImpl
       return new Set();
     }
 
-    const placeholders = sectorSymbols.map((_, i) => `$${i + 3}`).join(', ');
+    const placeholders = sectorSymbols.map((_, i) => `$${i + 4}`).join(', ');
     const query = `
       SELECT DISTINCT date::text as date_str
       FROM sector_rotation_data_points
-      WHERE date >= $1 AND date <= $2
+      WHERE universe_id = $1
+        AND date >= $2 AND date <= $3
         AND sector_symbol IN (${placeholders})
     `;
 
     const result = await this.databaseService.query(query, [
+      universeId,
       startDate.toISOString().split('T')[0],
       endDate.toISOString().split('T')[0],
       ...sectorSymbols,

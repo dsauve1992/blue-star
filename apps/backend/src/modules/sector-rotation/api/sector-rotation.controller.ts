@@ -12,21 +12,7 @@ import {
   LatestSectorStatusApiResponseDto,
 } from './sector-rotation-api.dto';
 import { RRG_PARAMETERS } from '../constants/rrg-parameters';
-import { Sector } from '../domain/value-objects/sector';
-
-const DEFAULT_SECTOR_ETFS = [
-  { symbol: 'XLK', name: 'Technology' },
-  { symbol: 'XLE', name: 'Energy' },
-  { symbol: 'XLI', name: 'Industrial' },
-  { symbol: 'XLY', name: 'Consumer Discretionary' },
-  { symbol: 'XLP', name: 'Consumer Staples' },
-  { symbol: 'XLV', name: 'Healthcare' },
-  { symbol: 'XLF', name: 'Financial' },
-  { symbol: 'XLB', name: 'Materials' },
-  { symbol: 'XLU', name: 'Utilities' },
-  { symbol: 'XLRE', name: 'Real Estate' },
-  { symbol: 'XLC', name: 'Communication Services' },
-];
+import { RotationUniverseRegistry } from '../infrastructure/universes/rotation-universe.registry';
 
 @Controller('sector-rotation')
 export class SectorRotationController {
@@ -35,6 +21,7 @@ export class SectorRotationController {
     private readonly getSectorRotationUseCase: GetSectorRotationUseCase,
     private readonly compareSectorRotationUseCase: CompareSectorRotationUseCase,
     private readonly sectorRotationApiMapper: SectorRotationApiMapper,
+    private readonly universeRegistry: RotationUniverseRegistry,
   ) {}
 
   @Get('calculate')
@@ -44,11 +31,14 @@ export class SectorRotationController {
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
     @Query('mode') mode?: string,
+    @Query('universe') universeId?: string,
   ): Promise<CalculateSectorRotationApiResponseDto> {
     try {
+      const resolvedUniverseId =
+        universeId ?? RotationUniverseRegistry.defaultUniverseId();
       const sectors = sectorsParam
         ? this.parseSectors(sectorsParam)
-        : DEFAULT_SECTOR_ETFS;
+        : this.defaultSectorsForUniverse(resolvedUniverseId);
 
       const endDateObj = endDate ? new Date(endDate) : new Date();
       const requestedStartDate = startDate
@@ -62,6 +52,7 @@ export class SectorRotationController {
           sectors,
           startDate: requestedStartDate,
           endDate: endDateObj,
+          universeId: resolvedUniverseId,
         };
 
         const useCaseResponse =
@@ -82,6 +73,7 @@ export class SectorRotationController {
         sectors,
         startDate: startDateObj,
         endDate: endDateObj,
+        universeId: resolvedUniverseId,
       };
 
       const useCaseResponse =
@@ -102,11 +94,14 @@ export class SectorRotationController {
     @Query('sectors') sectorsParam?: string,
     @Query('startDate') startDate?: string,
     @Query('endDate') endDate?: string,
+    @Query('universe') universeId?: string,
   ): Promise<CompareSectorRotationApiResponseDto> {
     try {
+      const resolvedUniverseId =
+        universeId ?? RotationUniverseRegistry.defaultUniverseId();
       const sectors = sectorsParam
         ? this.parseSectors(sectorsParam)
-        : DEFAULT_SECTOR_ETFS;
+        : this.defaultSectorsForUniverse(resolvedUniverseId);
 
       const endDateObj = endDate ? new Date(endDate) : new Date();
       const requestedStartDate = startDate
@@ -117,6 +112,7 @@ export class SectorRotationController {
         sectors,
         startDate: requestedStartDate,
         endDate: endDateObj,
+        universeId: resolvedUniverseId,
       };
 
       const useCaseResponse =
@@ -141,9 +137,14 @@ export class SectorRotationController {
 
   @Get('latest-status')
   @Public()
-  async getLatestSectorStatus(): Promise<LatestSectorStatusApiResponseDto> {
+  async getLatestSectorStatus(
+    @Query('universe') universeId?: string,
+  ): Promise<LatestSectorStatusApiResponseDto> {
     try {
-      const sectors = DEFAULT_SECTOR_ETFS;
+      const resolvedUniverseId =
+        universeId ?? RotationUniverseRegistry.defaultUniverseId();
+      const universe = this.universeRegistry.get(resolvedUniverseId);
+      const sectors = this.defaultSectorsForUniverse(resolvedUniverseId);
       const endDate = new Date();
       const startDate = new Date(
         endDate.getTime() - 52 * 7 * 24 * 60 * 60 * 1000,
@@ -153,6 +154,7 @@ export class SectorRotationController {
         sectors,
         startDate,
         endDate,
+        universeId: resolvedUniverseId,
       };
 
       const useCaseResponse =
@@ -170,9 +172,9 @@ export class SectorRotationController {
       const latestDate = latestDataPoints[0].date;
 
       const sectorStatuses = latestDataPoints.map((point) => {
-        const sector = Sector.fromEtfSymbol(point.sectorSymbol);
+        const member = universe.findBySymbol(point.sectorSymbol);
         return {
-          name: sector?.name ?? point.sectorSymbol,
+          name: member?.name ?? point.sectorSymbol,
           quadrant: point.quadrant.value,
           x: point.x,
           y: point.y,
@@ -188,6 +190,13 @@ export class SectorRotationController {
         error instanceof Error ? error.message : 'Invalid request',
       );
     }
+  }
+
+  private defaultSectorsForUniverse(
+    universeId: string,
+  ): Array<{ symbol: string; name: string }> {
+    const universe = this.universeRegistry.get(universeId);
+    return universe.members.map((m) => ({ symbol: m.symbol, name: m.name }));
   }
 
   private parseSectors(

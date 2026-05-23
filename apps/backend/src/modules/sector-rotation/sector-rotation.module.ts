@@ -13,6 +13,7 @@ import { BenchmarkCalculator } from './infrastructure/services/benchmark-calcula
 import { SectorRotationCachedMarketDataService } from './infrastructure/services/sector-rotation-cached-market-data.service';
 import { SectorRotationDataReadRepositoryImpl } from './infrastructure/repositories/sector-rotation-data-read.repository';
 import { SectorRotationDataWriteRepositoryImpl } from './infrastructure/repositories/sector-rotation-data-write.repository';
+import { RotationUniverseRegistry } from './infrastructure/universes/rotation-universe.registry';
 import {
   SECTOR_ROTATION_CALCULATION_SERVICE,
   SECTOR_ROTATION_DATA_READ_REPOSITORY,
@@ -61,6 +62,7 @@ export {
     GetSectorRotationUseCase,
     CompareSectorRotationUseCase,
     SectorRotationCronService,
+    RotationUniverseRegistry,
   ],
 })
 export class SectorRotationModule {}
