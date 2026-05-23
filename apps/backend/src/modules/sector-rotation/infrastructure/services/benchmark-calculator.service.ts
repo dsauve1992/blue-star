@@ -12,16 +12,13 @@ export class BenchmarkCalculator {
     private readonly marketDataService: MarketDataService,
   ) {}
 
-  async calculate(dateRange: DateRange): Promise<Map<number, number>> {
-    return this.calculateSPX(dateRange);
-  }
-
-  private async calculateSPX(
+  async calculate(
+    benchmarkSymbol: string,
     dateRange: DateRange,
   ): Promise<Map<number, number>> {
-    const spxSymbol = Symbol.of('SPY');
+    const symbol = Symbol.of(benchmarkSymbol);
     const historicalData = await this.marketDataService.getHistoricalData(
-      spxSymbol,
+      symbol,
       dateRange,
       '1wk',
     );

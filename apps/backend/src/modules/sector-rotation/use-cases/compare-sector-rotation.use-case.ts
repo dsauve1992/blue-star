@@ -1,7 +1,6 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { DateRange } from '../../market-data/domain/value-objects/date-range';
 import { SectorRotationResult } from '../domain/value-objects/sector-rotation-result';
-import { Sector } from '../domain/value-objects/sector';
 import {
   SectorRotationCalculationService,
   SectorRotationCalculationParams,
@@ -11,11 +10,14 @@ import { SECTOR_ROTATION_CALCULATION_SERVICE } from '../constants/tokens';
 import { SECTOR_ROTATION_PERSISTENCE_SERVICE } from '../constants/tokens';
 import { RRG_PARAMETERS } from '../constants/rrg-parameters';
 import { SectorRotationDataPoint } from '../domain/value-objects/sector-rotation-data-point';
+import { RotationUniverseRegistry } from '../infrastructure/universes/rotation-universe.registry';
+import { restrictUniverseToRequestedSymbols } from './calculate-sector-rotation.use-case';
 
 export interface CompareSectorRotationRequestDto {
   sectors: Array<{ symbol: string; name: string }>;
   startDate: Date;
   endDate: Date;
+  universeId?: string;
 }
 
 export interface ComparisonDifference {
@@ -61,14 +63,18 @@ export class CompareSectorRotationUseCase {
     private readonly calculationService: SectorRotationCalculationService,
     @Inject(SECTOR_ROTATION_PERSISTENCE_SERVICE)
     private readonly persistenceService: SectorRotationPersistenceService,
+    private readonly universeRegistry: RotationUniverseRegistry,
   ) {}
 
   async execute(
     request: CompareSectorRotationRequestDto,
   ): Promise<CompareSectorRotationResponseDto> {
-    const sectors = request.sectors
-      .map((s) => Sector.fromEtfSymbol(s.symbol))
-      .filter((s): s is Sector => s !== null);
+    const universeId =
+      request.universeId ?? RotationUniverseRegistry.defaultUniverseId();
+    const universe = restrictUniverseToRequestedSymbols(
+      this.universeRegistry.get(universeId),
+      request.sectors,
+    );
     const dateRange = DateRange.of(request.startDate, request.endDate);
 
     const requiredLookbackWeeks = Math.max(
@@ -89,8 +95,8 @@ export class CompareSectorRotationUseCase {
     };
 
     const [persistedResult, liveResult] = await Promise.all([
-      this.persistenceService.getOrCompute(sectors, dateRange),
-      this.calculationService.calculate(sectors, computeDateRange, params),
+      this.persistenceService.getOrCompute(universe, dateRange),
+      this.calculationService.calculate(universe, computeDateRange, params),
     ]);
 
     const filteredLiveResult = SectorRotationResult.of(

@@ -9,7 +9,8 @@ import {
 import { SectorRotationResult } from '../../domain/value-objects/sector-rotation-result';
 import { SectorRotationDataPoint } from '../../domain/value-objects/sector-rotation-data-point';
 import { Quadrant } from '../../domain/value-objects/quadrant';
-import { Sector } from '../../domain/value-objects/sector';
+import { RotationMember } from '../../domain/value-objects/rotation-member';
+import { RotationUniverse } from '../../domain/value-objects/rotation-universe';
 import { ZScoreNormalizer } from './z-score-normalizer.service';
 import { BenchmarkCalculator } from './benchmark-calculator.service';
 import { WeekUtils } from '../utils/week-utils';
@@ -23,8 +24,8 @@ interface WeeklyPriceData {
   price: number;
 }
 
-interface SectorWeeklyData {
-  sector: Sector;
+interface MemberWeeklyData {
+  member: RotationMember;
   prices: WeeklyPriceData[];
 }
 
@@ -44,12 +45,12 @@ export class SectorRotationCalculationServiceImpl
   ) {}
 
   async calculate(
-    sectors: Sector[],
+    universe: RotationUniverse,
     dateRange: DateRange,
     params: SectorRotationCalculationParams,
   ): Promise<SectorRotationResult> {
     this.validateParams(params);
-    this.validateSectors(sectors);
+    this.validateUniverse(universe);
 
     const requiredLookbackWeeks = Math.max(
       params.normalizationWindowWeeks,
@@ -62,15 +63,20 @@ export class SectorRotationCalculationServiceImpl
       requiredLookbackWeeks,
     );
 
-    const sectorData = await this.fetchSectorData(sectors, extendedDateRange);
-    this.validateSectorData(sectorData, requiredLookbackWeeks);
+    const memberData = await this.fetchMemberData(
+      universe.members,
+      extendedDateRange,
+    );
+    this.validateMemberData(memberData, requiredLookbackWeeks);
 
-    const benchmark =
-      await this.benchmarkCalculator.calculate(extendedDateRange);
+    const benchmark = await this.benchmarkCalculator.calculate(
+      universe.benchmarkSymbol,
+      extendedDateRange,
+    );
     this.validateBenchmark(benchmark);
 
     const relativeStrengths = this.calculateRelativeStrengths(
-      sectorData,
+      memberData,
       benchmark,
     );
     const xValues = this.calculateXValues(
@@ -82,7 +88,7 @@ export class SectorRotationCalculationServiceImpl
       params.normalizationWindowWeeks,
     );
     const allDataPoints = this.createDataPoints(
-      sectorData,
+      memberData,
       relativeStrengths,
       xValues,
       yValues,
@@ -106,7 +112,7 @@ export class SectorRotationCalculationServiceImpl
       dateRange.startDate,
       dateRange.endDate,
       outputDataPoints,
-      sectors.map((s) => s.etfSymbol),
+      universe.members.map((m) => m.symbol),
     );
   }
 
@@ -123,25 +129,25 @@ export class SectorRotationCalculationServiceImpl
     }
   }
 
-  private validateSectors(sectors: Sector[]): void {
-    if (!sectors || sectors.length === 0) {
+  private validateUniverse(universe: RotationUniverse): void {
+    if (!universe || universe.members.length === 0) {
       throw new Error('At least one sector is required');
     }
   }
 
-  private validateSectorData(
-    sectorData: SectorWeeklyData[],
+  private validateMemberData(
+    memberData: MemberWeeklyData[],
     requiredLookbackWeeks: number,
   ): void {
-    if (sectorData.length === 0) {
+    if (memberData.length === 0) {
       throw new Error('No sector data available after fetching');
     }
 
     const minRequiredPoints = requiredLookbackWeeks + MIN_DATA_POINTS_REQUIRED;
-    for (const { sector, prices } of sectorData) {
+    for (const { member, prices } of memberData) {
       if (prices.length < minRequiredPoints) {
         throw new Error(
-          `Sector ${sector.etfSymbol} has insufficient data: ${prices.length} points, need at least ${minRequiredPoints}`,
+          `Sector ${member.symbol} has insufficient data: ${prices.length} points, need at least ${minRequiredPoints}`,
         );
       }
     }
@@ -161,32 +167,32 @@ export class SectorRotationCalculationServiceImpl
     }
   }
 
-  private async fetchSectorData(
-    sectors: Sector[],
+  private async fetchMemberData(
+    members: ReadonlyArray<RotationMember>,
     dateRange: DateRange,
-  ): Promise<SectorWeeklyData[]> {
-    const fetchPromises = sectors.map((sector) =>
-      this.fetchSingleSector(sector, dateRange),
+  ): Promise<MemberWeeklyData[]> {
+    const fetchPromises = members.map((member) =>
+      this.fetchSingleMember(member, dateRange),
     );
 
     const results = await Promise.allSettled(fetchPromises);
-    const sectorData: SectorWeeklyData[] = [];
+    const memberData: MemberWeeklyData[] = [];
     const errors: string[] = [];
 
     for (let i = 0; i < results.length; i++) {
       const result = results[i];
-      const sector = sectors[i];
+      const member = members[i];
 
       if (result.status === 'fulfilled') {
-        sectorData.push(result.value);
+        memberData.push(result.value);
       } else {
-        const errorMessage = `Failed to fetch data for sector ${sector.etfSymbol}: ${result.reason || 'Unknown error'}`;
+        const errorMessage = `Failed to fetch data for sector ${member.symbol}: ${result.reason || 'Unknown error'}`;
         errors.push(errorMessage);
         console.warn(errorMessage);
       }
     }
 
-    if (sectorData.length === 0) {
+    if (memberData.length === 0) {
       throw new Error(
         `Failed to fetch data for all sectors. Errors: ${errors.join('; ')}`,
       );
@@ -194,18 +200,18 @@ export class SectorRotationCalculationServiceImpl
 
     if (errors.length > 0) {
       console.warn(
-        `Some sectors failed to load (${errors.length}/${sectors.length}). Continuing with available data.`,
+        `Some sectors failed to load (${errors.length}/${members.length}). Continuing with available data.`,
       );
     }
 
-    return sectorData;
+    return memberData;
   }
 
-  private async fetchSingleSector(
-    sector: Sector,
+  private async fetchSingleMember(
+    member: RotationMember,
     dateRange: DateRange,
-  ): Promise<SectorWeeklyData> {
-    const symbol = Symbol.of(sector.etfSymbol);
+  ): Promise<MemberWeeklyData> {
+    const symbol = Symbol.of(member.symbol);
     const historicalData = await this.marketDataService.getHistoricalData(
       symbol,
       dateRange,
@@ -220,7 +226,7 @@ export class SectorRotationCalculationServiceImpl
     );
 
     return {
-      sector,
+      member,
       prices: weeklyPrices,
     };
   }
@@ -279,12 +285,12 @@ export class SectorRotationCalculationServiceImpl
   }
 
   private calculateRelativeStrengths(
-    sectorData: SectorWeeklyData[],
+    memberData: MemberWeeklyData[],
     benchmark: Map<number, number>,
   ): Map<string, Map<number, number>> {
     const relativeStrengths = new Map<string, Map<number, number>>();
 
-    for (const { sector, prices } of sectorData) {
+    for (const { member, prices } of memberData) {
       const rsMap = new Map<number, number>();
 
       for (const { date, price } of prices) {
@@ -297,7 +303,7 @@ export class SectorRotationCalculationServiceImpl
         }
       }
 
-      relativeStrengths.set(sector.etfSymbol, rsMap);
+      relativeStrengths.set(member.symbol, rsMap);
     }
 
     return relativeStrengths;
@@ -309,7 +315,7 @@ export class SectorRotationCalculationServiceImpl
   ): Map<string, Map<number, number>> {
     const xValues = new Map<string, Map<number, number>>();
 
-    for (const [sectorSymbol, rsMap] of relativeStrengths.entries()) {
+    for (const [symbol, rsMap] of relativeStrengths.entries()) {
       const sortedDates = Array.from(rsMap.keys()).sort((a, b) => a - b);
 
       const rsSmoothed = EMACalculator.calculate(
@@ -324,7 +330,7 @@ export class SectorRotationCalculationServiceImpl
         normalizationWindowWeeks,
       );
 
-      xValues.set(sectorSymbol, xNormalizedMap);
+      xValues.set(symbol, xNormalizedMap);
     }
 
     return xValues;
@@ -379,7 +385,7 @@ export class SectorRotationCalculationServiceImpl
   ): Map<string, Map<number, number>> {
     const yValues = new Map<string, Map<number, number>>();
 
-    for (const [sectorSymbol, xMap] of xValues.entries()) {
+    for (const [symbol, xMap] of xValues.entries()) {
       const sortedDates = Array.from(xMap.keys()).sort((a, b) => a - b);
       const rsRatioDiffMap = new Map<number, number>();
 
@@ -413,7 +419,7 @@ export class SectorRotationCalculationServiceImpl
         normalizationWindowWeeks,
       );
 
-      yValues.set(sectorSymbol, yNormalizedMap);
+      yValues.set(symbol, yNormalizedMap);
     }
 
     return yValues;
@@ -464,35 +470,35 @@ export class SectorRotationCalculationServiceImpl
   }
 
   private createDataPoints(
-    sectorData: SectorWeeklyData[],
+    memberData: MemberWeeklyData[],
     relativeStrengths: Map<string, Map<number, number>>,
     xValues: Map<string, Map<number, number>>,
     yValues: Map<string, Map<number, number>>,
   ): SectorRotationDataPoint[] {
     const dataPoints: SectorRotationDataPoint[] = [];
-    const dateToSectorPrices = new Map<number, Map<string, WeeklyPriceData>>();
+    const dateToMemberPrices = new Map<number, Map<string, WeeklyPriceData>>();
 
-    for (const { sector, prices } of sectorData) {
+    for (const { member, prices } of memberData) {
       for (const priceData of prices) {
         const dateTime = priceData.date.getTime();
-        if (!dateToSectorPrices.has(dateTime)) {
-          dateToSectorPrices.set(dateTime, new Map());
+        if (!dateToMemberPrices.has(dateTime)) {
+          dateToMemberPrices.set(dateTime, new Map());
         }
-        dateToSectorPrices.get(dateTime)!.set(sector.etfSymbol, priceData);
+        dateToMemberPrices.get(dateTime)!.set(member.symbol, priceData);
       }
     }
 
-    const sortedDates = Array.from(dateToSectorPrices.keys()).sort(
+    const sortedDates = Array.from(dateToMemberPrices.keys()).sort(
       (a, b) => a - b,
     );
 
     for (const dateTime of sortedDates) {
-      const sectorPricesAtDate = dateToSectorPrices.get(dateTime)!;
+      const memberPricesAtDate = dateToMemberPrices.get(dateTime)!;
 
-      for (const [sectorSymbol, priceData] of sectorPricesAtDate.entries()) {
-        const rs = relativeStrengths.get(sectorSymbol)?.get(dateTime);
-        const x = xValues.get(sectorSymbol)?.get(dateTime);
-        const y = yValues.get(sectorSymbol)?.get(dateTime);
+      for (const [symbol, priceData] of memberPricesAtDate.entries()) {
+        const rs = relativeStrengths.get(symbol)?.get(dateTime);
+        const x = xValues.get(symbol)?.get(dateTime);
+        const y = yValues.get(symbol)?.get(dateTime);
 
         if (
           rs !== undefined &&
@@ -506,7 +512,7 @@ export class SectorRotationCalculationServiceImpl
           const quadrant = Quadrant.fromCoordinates(x, y);
           const dataPoint = SectorRotationDataPoint.of(
             priceData.date,
-            sectorSymbol,
+            symbol,
             priceData.price,
             rs,
             x,

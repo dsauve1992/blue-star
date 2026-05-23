@@ -1,6 +1,6 @@
 import { DateRange } from '../../../market-data/domain/value-objects/date-range';
 import { SectorRotationResult } from '../value-objects/sector-rotation-result';
-import { Sector } from '../value-objects/sector';
+import { RotationUniverse } from '../value-objects/rotation-universe';
 
 export interface SectorRotationCalculationParams {
   momentumWeeks: number;
@@ -9,7 +9,7 @@ export interface SectorRotationCalculationParams {
 
 export interface SectorRotationCalculationService {
   calculate(
-    sectors: Sector[],
+    universe: RotationUniverse,
     dateRange: DateRange,
     params: SectorRotationCalculationParams,
   ): Promise<SectorRotationResult>;
