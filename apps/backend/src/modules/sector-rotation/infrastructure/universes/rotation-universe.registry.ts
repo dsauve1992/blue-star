@@ -4,11 +4,16 @@ import {
   GICS_SECTOR_UNIVERSE,
   GICS_SECTOR_UNIVERSE_ID,
 } from './gics-sector.universe';
+import {
+  GICS_INDUSTRY_GROUP_UNIVERSE,
+  GICS_INDUSTRY_GROUP_UNIVERSE_ID,
+} from './gics-industry-group.universe';
 
 @Injectable()
 export class RotationUniverseRegistry {
   private readonly universes = new Map<string, RotationUniverse>([
     [GICS_SECTOR_UNIVERSE_ID, GICS_SECTOR_UNIVERSE],
+    [GICS_INDUSTRY_GROUP_UNIVERSE_ID, GICS_INDUSTRY_GROUP_UNIVERSE],
   ]);
 
   get(id: string): RotationUniverse {
