@@ -4,15 +4,12 @@ import { SECTOR_ROTATION_QUERY_KEYS } from "../constants/query-keys";
 
 const sectorRotationClient = new SectorRotationClient();
 
-export function useLatestSectorStatus(
-  universeId?: string,
-  enabled: boolean = true,
-) {
+export function useRotationUniverses() {
   return useQuery({
-    queryKey: SECTOR_ROTATION_QUERY_KEYS.latestStatus(universeId),
-    queryFn: () => sectorRotationClient.getLatestSectorStatus(universeId),
-    enabled: enabled,
-    staleTime: 5 * 60 * 1000,
+    queryKey: SECTOR_ROTATION_QUERY_KEYS.universes(),
+    queryFn: () => sectorRotationClient.listUniverses(),
+    // Universes are config — long stale time is fine.
+    staleTime: 60 * 60 * 1000,
     retry: 2,
   });
 }

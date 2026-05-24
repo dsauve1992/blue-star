@@ -8,8 +8,12 @@ export class Symbol {
 
     const trimmedSymbol = symbol.trim().toUpperCase();
 
-    // Basic validation for stock symbols (supports exchange prefixes like NYSE:CIEN)
-    if (!/^[A-Z0-9.:-]+$/.test(trimmedSymbol)) {
+    // Basic validation for stock symbols. Supports:
+    //   - plain tickers (AAPL, SPY)
+    //   - exchange prefixes (NYSE:CIEN)
+    //   - Yahoo Finance indices and subindices, which use a leading caret
+    //     (^GSPC, ^SP500-4530 for the GICS Semiconductors industry group)
+    if (!/^\^?[A-Z0-9.:-]+$/.test(trimmedSymbol)) {
       throw new Error(`Invalid symbol format: ${symbol}`);
     }
 

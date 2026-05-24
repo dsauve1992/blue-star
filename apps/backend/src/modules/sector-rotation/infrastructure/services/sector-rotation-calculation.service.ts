@@ -1,4 +1,4 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Symbol } from '../../../market-data/domain/value-objects/symbol';
 import { DateRange } from '../../../market-data/domain/value-objects/date-range';
 import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
@@ -37,6 +37,10 @@ const Z_SCORE_CENTER = 100;
 export class SectorRotationCalculationServiceImpl
   implements SectorRotationCalculationService
 {
+  private readonly logger = new Logger(
+    SectorRotationCalculationServiceImpl.name,
+  );
+
   constructor(
     @Inject(SECTOR_ROTATION_MARKET_DATA_SERVICE)
     private readonly marketDataService: MarketDataService,
@@ -63,11 +67,14 @@ export class SectorRotationCalculationServiceImpl
       requiredLookbackWeeks,
     );
 
-    const memberData = await this.fetchMemberData(
+    const fetchedMemberData = await this.fetchMemberData(
       universe.members,
       extendedDateRange,
     );
-    this.validateMemberData(memberData, requiredLookbackWeeks);
+    const memberData = this.filterMembersWithSufficientData(
+      fetchedMemberData,
+      requiredLookbackWeeks,
+    );
 
     const benchmark = await this.benchmarkCalculator.calculate(
       universe.benchmarkSymbol,
@@ -112,7 +119,7 @@ export class SectorRotationCalculationServiceImpl
       dateRange.startDate,
       dateRange.endDate,
       outputDataPoints,
-      universe.members.map((m) => m.symbol),
+      memberData.map((md) => md.member.symbol),
     );
   }
 
@@ -135,22 +142,37 @@ export class SectorRotationCalculationServiceImpl
     }
   }
 
-  private validateMemberData(
+  // Members can legitimately have too-short series — e.g. a GICS subindex that
+  // Yahoo Finance only recently started publishing. Drop those members with a
+  // warning and proceed with the rest, so a single sparse symbol doesn't fail
+  // the whole universe. Only throw when nothing is left to compute on.
+  private filterMembersWithSufficientData(
     memberData: MemberWeeklyData[],
     requiredLookbackWeeks: number,
-  ): void {
+  ): MemberWeeklyData[] {
     if (memberData.length === 0) {
       throw new Error('No sector data available after fetching');
     }
 
     const minRequiredPoints = requiredLookbackWeeks + MIN_DATA_POINTS_REQUIRED;
-    for (const { member, prices } of memberData) {
-      if (prices.length < minRequiredPoints) {
-        throw new Error(
-          `Sector ${member.symbol} has insufficient data: ${prices.length} points, need at least ${minRequiredPoints}`,
+    const usable: MemberWeeklyData[] = [];
+    for (const md of memberData) {
+      if (md.prices.length < minRequiredPoints) {
+        this.logger.warn(
+          `Skipping ${md.member.symbol} (${md.member.name}): only ${md.prices.length} weekly bars, need ${minRequiredPoints}`,
         );
+        continue;
       }
+      usable.push(md);
     }
+
+    if (usable.length === 0) {
+      throw new Error(
+        `No sectors have enough historical data (need at least ${minRequiredPoints} weekly bars per sector)`,
+      );
+    }
+
+    return usable;
   }
 
   private validateBenchmark(benchmark: Map<number, number>): void {

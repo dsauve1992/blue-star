@@ -135,6 +135,28 @@ export class SectorRotationController {
     }
   }
 
+  @Get('universes')
+  @Public()
+  listUniverses(): {
+    defaultId: string;
+    universes: Array<{
+      id: string;
+      label: string;
+      benchmarkSymbol: string;
+      members: Array<{ symbol: string; name: string }>;
+    }>;
+  } {
+    return {
+      defaultId: RotationUniverseRegistry.defaultUniverseId(),
+      universes: this.universeRegistry.listUniverses().map((u) => ({
+        id: u.id,
+        label: u.label,
+        benchmarkSymbol: u.benchmarkSymbol,
+        members: u.members.map((m) => ({ symbol: m.symbol, name: m.name })),
+      })),
+    };
+  }
+
   @Get('latest-status')
   @Public()
   async getLatestSectorStatus(
