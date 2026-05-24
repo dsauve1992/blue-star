@@ -14,7 +14,7 @@ import type {
 import type { SectorStatus } from "src/sector-rotation/api/sector-rotation.client";
 import type {
   AnalysisType,
-  SectorFilterMode,
+  IndustryGroupFilterMode,
 } from "../hooks/use-consolidation-selection";
 import { ConsolidationTickerItem } from "./ConsolidationTickerItem";
 import { useRsRatings } from "../hooks/use-rs-ratings";
@@ -31,8 +31,8 @@ interface ConsolidationSidebarProps {
   consolidations: ConsolidationResult[];
   selectedTicker: string | null;
   analysisType: AnalysisType;
-  sectorFilterMode: SectorFilterMode;
-  sectorStatuses: SectorStatus[];
+  industryGroupFilterMode: IndustryGroupFilterMode;
+  industryGroupStatuses: SectorStatus[];
   currentIndex: number;
   isLoading: boolean;
   error: Error | null;
@@ -41,7 +41,7 @@ interface ConsolidationSidebarProps {
   onTickerSelect: (tickerFullName: string) => void;
   onNavigate: (direction: "up" | "down") => void;
   onTypeChange: (type: AnalysisType) => void;
-  onSectorFilterChange: (mode: SectorFilterMode) => void;
+  onIndustryGroupFilterChange: (mode: IndustryGroupFilterMode) => void;
   onRunAnalysis: () => void;
   tickerRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
   listContainerRef: React.RefObject<HTMLDivElement | null>;
@@ -51,8 +51,8 @@ export function ConsolidationSidebar({
   consolidations,
   selectedTicker,
   analysisType,
-  sectorFilterMode,
-  sectorStatuses,
+  industryGroupFilterMode,
+  industryGroupStatuses,
   currentIndex,
   isLoading,
   error,
@@ -61,7 +61,7 @@ export function ConsolidationSidebar({
   onTickerSelect,
   onNavigate,
   onTypeChange,
-  onSectorFilterChange,
+  onIndustryGroupFilterChange,
   onRunAnalysis,
   tickerRefs,
   listContainerRef,
@@ -81,6 +81,22 @@ export function ConsolidationSidebar({
     if (rsData?.ratings) {
       for (const r of rsData.ratings) {
         map.set(r.symbol, r.rsRating);
+      }
+    }
+    return map;
+  }, [rsData]);
+
+  const industryGroupRsMap = useMemo(() => {
+    const map = new Map<
+      string,
+      { rsRating: number | null; industryGroup: string | null }
+    >();
+    if (rsData?.ratings) {
+      for (const r of rsData.ratings) {
+        map.set(r.symbol, {
+          rsRating: r.industryGroupRsRating,
+          industryGroup: r.industryGroup,
+        });
       }
     }
     return map;
@@ -129,12 +145,14 @@ export function ConsolidationSidebar({
           </label>
           <label className="block">
             <span className="block text-[10px] text-slate-500 mb-0.5">
-              Sector
+              Industry Group
             </span>
             <select
-              value={sectorFilterMode}
+              value={industryGroupFilterMode}
               onChange={(e) =>
-                onSectorFilterChange(e.target.value as SectorFilterMode)
+                onIndustryGroupFilterChange(
+                  e.target.value as IndustryGroupFilterMode,
+                )
               }
               className="w-full appearance-none rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1.5 pr-8 text-sm text-slate-200 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer"
               style={SELECT_CHEVRON_STYLE}
@@ -244,13 +262,27 @@ export function ConsolidationSidebar({
               <ConsolidationTickerItem
                 consolidation={consolidation}
                 isSelected={selectedTicker === consolidation.tickerFullName}
-                sectorFilterMode={sectorFilterMode}
-                sectorStatuses={sectorStatuses}
+                industryGroupFilterMode={industryGroupFilterMode}
+                industryGroupStatuses={industryGroupStatuses}
                 rsRating={rsRatingMap.get(
                   consolidation.symbol.includes(":")
                     ? consolidation.symbol.split(":")[1]
                     : consolidation.symbol,
                 )}
+                industryGroupRsRating={
+                  industryGroupRsMap.get(
+                    consolidation.symbol.includes(":")
+                      ? consolidation.symbol.split(":")[1]
+                      : consolidation.symbol,
+                  )?.rsRating ?? null
+                }
+                industryGroup={
+                  industryGroupRsMap.get(
+                    consolidation.symbol.includes(":")
+                      ? consolidation.symbol.split(":")[1]
+                      : consolidation.symbol,
+                  )?.industryGroup ?? null
+                }
                 onSelect={onTickerSelect}
               />
             </div>

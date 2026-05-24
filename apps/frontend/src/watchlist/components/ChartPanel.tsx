@@ -13,10 +13,11 @@ import type { MovingAverageConfig } from "src/market-data/utils/chart-utils";
 import type { Watchlist } from "../api/watchlist.client";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
+import { getQuadrantColor } from "src/stock-analysis/utils/sector-utils";
 import {
-  getSectorQuadrant,
-  getQuadrantColor,
-} from "src/stock-analysis/utils/sector-utils";
+  getIndustryGroupQuadrant,
+  INDUSTRY_GROUP_UNIVERSE_ID,
+} from "src/stock-analysis/utils/industry-group-utils";
 import { LoadingSpinner } from "src/global/design-system";
 
 const BENCHMARK_SYMBOL = "SPY";
@@ -64,7 +65,9 @@ export function ChartPanel({
   const [showFinancialFooter, setShowFinancialFooter] = useState(true);
 
   const { data: profileData } = useCompanyProfile(symbol);
-  const { data: sectorStatusData } = useLatestSectorStatus();
+  const { data: industryGroupStatusData } = useLatestSectorStatus(
+    INDUSTRY_GROUP_UNIVERSE_ID,
+  );
   const {
     candles,
     isLoading: chartLoading,
@@ -85,8 +88,9 @@ export function ChartPanel({
   }, [loadMore, onLoadMoreSpy]);
 
   const sectorName = profileData?.profile?.sector ?? null;
-  const quadrant = sectorStatusData?.sectors
-    ? getSectorQuadrant(sectorName, sectorStatusData.sectors)
+  const industryGroup = profileData?.profile?.industryGroup ?? null;
+  const quadrant = industryGroupStatusData?.sectors
+    ? getIndustryGroupQuadrant(industryGroup, industryGroupStatusData.sectors)
     : null;
 
   return (

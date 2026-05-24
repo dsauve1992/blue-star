@@ -8,6 +8,7 @@ export interface ConsolidationResult {
   themes: string[];
   sector: string | null;
   industry: string | null;
+  industryGroup: string | null;
 }
 
 export interface AnalyzeConsolidationsRequest {

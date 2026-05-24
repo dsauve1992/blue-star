@@ -4,6 +4,7 @@ export interface CompanyProfile {
   symbol: string;
   sector: string;
   industry: string;
+  industryGroup: string | null;
 }
 
 export interface CompanyProfileService {

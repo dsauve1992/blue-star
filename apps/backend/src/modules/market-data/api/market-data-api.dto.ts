@@ -22,6 +22,7 @@ export interface CompanyProfileApiDto {
   symbol: string;
   sector: string;
   industry: string;
+  industryGroup: string | null;
 }
 
 export interface GetCompanyProfileApiResponseDto {

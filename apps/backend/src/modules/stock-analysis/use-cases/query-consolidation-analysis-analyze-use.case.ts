@@ -5,6 +5,7 @@ import { ConsolidationRunStatus } from '../domain/value-objects/consolidation-ru
 import { CONSOLIDATION_RESULT_REPOSITORY } from '../constants/tokens';
 import { ThemeRepository } from '../../themes/domain/repositories/theme.repository.interface';
 import { THEME_REPOSITORY } from '../../themes/constants/tokens';
+import { GetOrFetchStockClassificationUseCase } from '../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
 
 export interface QueryConsolidationAnalysisRequestDto {
   type: 'daily' | 'weekly';
@@ -27,6 +28,7 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
     private readonly repository: ConsolidationResultRepository,
     @Inject(THEME_REPOSITORY)
     private readonly themeRepository: ThemeRepository,
+    private readonly getOrFetchClassification: GetOrFetchStockClassificationUseCase,
   ) {}
 
   async execute(
@@ -34,10 +36,15 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
   ): Promise<QueryConsolidationAnalysisResponseDto> {
     const results = await this.repository.getLatestResults(request.type);
 
+    const symbols = results.map((r) => r.symbol);
+    const classifications =
+      await this.getOrFetchClassification.executeMany(symbols);
+
     const consolidationResults: ConsolidationResult[] = await Promise.all(
       results.map(async (r) => {
         const themes = await this.themeRepository.findThemesByTicker(r.symbol);
         const themeNames = themes.map((theme) => theme.name);
+        const classification = classifications.get(r.symbol.toUpperCase());
 
         return ConsolidationResult.of({
           symbol: r.symbol,
@@ -47,6 +54,7 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
           themes: themeNames,
           sector: r.sector ?? undefined,
           industry: r.industry ?? undefined,
+          industryGroup: classification?.industryGroup ?? null,
         });
       }),
     );

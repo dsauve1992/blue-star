@@ -2,8 +2,9 @@ import { useState } from "react";
 import { Sparkles } from "lucide-react";
 import type { ConsolidationResult } from "../api/consolidation.client";
 import type { SectorStatus } from "src/sector-rotation/api/sector-rotation.client";
-import type { SectorFilterMode } from "../hooks/use-consolidation-selection";
-import { getSectorQuadrant, getQuadrantColor } from "../utils/sector-utils";
+import type { IndustryGroupFilterMode } from "../hooks/use-consolidation-selection";
+import { getQuadrantColor } from "../utils/sector-utils";
+import { getIndustryGroupQuadrant } from "../utils/industry-group-utils";
 
 function extractSymbol(ticker: string): string {
   const parts = ticker.split(":");
@@ -25,31 +26,35 @@ function getRsRatingColor(rsRating: number): string {
 interface ConsolidationTickerItemProps {
   consolidation: ConsolidationResult;
   isSelected: boolean;
-  sectorFilterMode: SectorFilterMode;
-  sectorStatuses: SectorStatus[];
+  industryGroupFilterMode: IndustryGroupFilterMode;
+  industryGroupStatuses: SectorStatus[];
   rsRating?: number;
+  industryGroupRsRating?: number | null;
+  industryGroup?: string | null;
   onSelect: (tickerFullName: string) => void;
 }
 
 export function ConsolidationTickerItem({
   consolidation,
   isSelected,
-  sectorFilterMode,
-  sectorStatuses,
+  industryGroupFilterMode,
+  industryGroupStatuses,
   rsRating,
+  industryGroupRsRating,
+  industryGroup,
   onSelect,
 }: ConsolidationTickerItemProps) {
   const [logoFailed, setLogoFailed] = useState(false);
   const symbol = extractSymbol(consolidation.symbol);
   const logoUrl = getTickerLogoUrl(symbol);
-  const sectorQuadrant = getSectorQuadrant(
-    consolidation.sector,
-    sectorStatuses,
+  const groupQuadrant = getIndustryGroupQuadrant(
+    consolidation.industryGroup,
+    industryGroupStatuses,
   );
-  const isInFavorableSector =
-    sectorQuadrant === "Leading" || sectorQuadrant === "Improving";
+  const isInFavorableGroup =
+    groupQuadrant === "Leading" || groupQuadrant === "Improving";
   const shouldHighlight =
-    sectorFilterMode === "highlight" && isInFavorableSector;
+    industryGroupFilterMode === "highlight" && isInFavorableGroup;
 
   return (
     <div
@@ -66,7 +71,6 @@ export function ConsolidationTickerItem({
         }
       `}
     >
-      {/* Company logo as card background */}
       {!logoFailed ? (
         <>
           <img
@@ -93,7 +97,6 @@ export function ConsolidationTickerItem({
         </div>
       )}
 
-      {/* Ticker Info */}
       <div className="relative z-10 flex-1 min-w-0 p-2">
         <div className="flex items-center gap-1 flex-wrap">
           <span
@@ -115,15 +118,29 @@ export function ConsolidationTickerItem({
           {rsRating !== undefined && (
             <span
               className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getRsRatingColor(rsRating)}`}
+              title="Market-wide RS rating (1-99)"
             >
               RS {rsRating}
             </span>
           )}
-          {consolidation.sector && sectorQuadrant && (
+          {industryGroupRsRating != null && (
             <span
-              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getQuadrantColor(sectorQuadrant)}`}
+              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getRsRatingColor(industryGroupRsRating)}`}
+              title={
+                industryGroup
+                  ? `RS ${industryGroupRsRating} within ${industryGroup}`
+                  : `Industry-group RS rating (1-99)`
+              }
             >
-              {sectorQuadrant}
+              IG {industryGroupRsRating}
+            </span>
+          )}
+          {consolidation.industryGroup && groupQuadrant && (
+            <span
+              className={`inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium border ${getQuadrantColor(groupQuadrant)}`}
+              title={consolidation.industryGroup}
+            >
+              {groupQuadrant}
             </span>
           )}
           {consolidation.themes && consolidation.themes.length > 0 && (
@@ -146,7 +163,6 @@ export function ConsolidationTickerItem({
         </div>
       </div>
 
-      {/* Selection Indicator */}
       {isSelected && (
         <div className="absolute right-0 top-1/2 -translate-y-1/2 z-20 w-1 h-5 bg-gradient-to-b from-blue-400 to-purple-500 rounded-l-full" />
       )}

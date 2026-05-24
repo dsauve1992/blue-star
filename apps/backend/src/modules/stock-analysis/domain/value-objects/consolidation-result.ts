@@ -7,6 +7,7 @@ export class ConsolidationResult {
     public readonly themes: string[],
     public readonly sector: string | null,
     public readonly industry: string | null,
+    public readonly industryGroup: string | null,
   ) {}
 
   static of(data: {
@@ -17,6 +18,7 @@ export class ConsolidationResult {
     themes?: string[];
     sector?: string;
     industry?: string;
+    industryGroup?: string | null;
   }): ConsolidationResult {
     return new ConsolidationResult(
       data.symbol,
@@ -26,6 +28,7 @@ export class ConsolidationResult {
       data.themes || [],
       data.sector || null,
       data.industry || null,
+      data.industryGroup ?? null,
     );
   }
 }

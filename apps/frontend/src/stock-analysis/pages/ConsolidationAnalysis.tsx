@@ -11,6 +11,7 @@ import {
 import { useConsolidationKeyboardNavigation } from "../hooks/use-consolidation-keyboard-navigation";
 import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
+import { INDUSTRY_GROUP_UNIVERSE_ID } from "../utils/industry-group-utils";
 import {
   useWatchlists,
   useAddTickerToWatchlist,
@@ -51,18 +52,24 @@ export default function ConsolidationAnalysis() {
   const addTickerToWatchlist = useAddTickerToWatchlist();
   const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
   const createWatchlist = useCreateWatchlist();
-  const { data: sectorStatusData } = useLatestSectorStatus();
-  const sectorStatuses = sectorStatusData?.sectors ?? [];
+  const { data: industryGroupStatusData } = useLatestSectorStatus(
+    INDUSTRY_GROUP_UNIVERSE_ID,
+  );
+  const industryGroupStatuses = industryGroupStatusData?.sectors ?? [];
 
   // Selection & filtering
   const {
     selectedTicker,
     setSelectedTicker,
-    sectorFilterMode,
-    setSectorFilterMode,
+    industryGroupFilterMode,
+    setIndustryGroupFilterMode,
     consolidations,
     currentIndex,
-  } = useConsolidationSelection({ data, analysisType, sectorStatuses });
+  } = useConsolidationSelection({
+    data,
+    analysisType,
+    industryGroupStatuses,
+  });
 
   // Refs for keyboard navigation
   const listContainerRef = useRef<HTMLDivElement>(null);
@@ -256,8 +263,8 @@ export default function ConsolidationAnalysis() {
             consolidations={consolidations}
             selectedTicker={selectedTicker}
             analysisType={analysisType}
-            sectorFilterMode={sectorFilterMode}
-            sectorStatuses={sectorStatuses}
+            industryGroupFilterMode={industryGroupFilterMode}
+            industryGroupStatuses={industryGroupStatuses}
             currentIndex={currentIndex}
             isLoading={isLoading}
             error={error}
@@ -266,7 +273,7 @@ export default function ConsolidationAnalysis() {
             onTickerSelect={handleTickerSelect}
             onNavigate={handleNavigate}
             onTypeChange={handleTypeChange}
-            onSectorFilterChange={setSectorFilterMode}
+            onIndustryGroupFilterChange={setIndustryGroupFilterMode}
             onRunAnalysis={handleRunAnalysis}
             tickerRefs={tickerRefs}
             listContainerRef={listContainerRef}

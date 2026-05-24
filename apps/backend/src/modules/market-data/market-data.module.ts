@@ -9,6 +9,7 @@ import { FinancialModelingPrepCompanyProfileService } from './infrastructure/ser
 import { YahooChartDataService } from './infrastructure/services/yahoo-chart-data.service';
 import { MarketDataCacheRepositoryImpl } from './infrastructure/repositories/market-data-cache.repository';
 import { DatabaseModule } from '../../config/database.module';
+import { StockClassificationModule } from '../stock-classification/stock-classification.module';
 import {
   MARKET_DATA_SERVICE,
   FUNDAMENTAL_SERVICE,
@@ -25,7 +26,7 @@ export {
 };
 
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, StockClassificationModule],
   controllers: [MarketDataController],
   providers: [
     {

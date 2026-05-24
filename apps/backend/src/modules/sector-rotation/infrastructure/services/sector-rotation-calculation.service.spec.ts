@@ -462,9 +462,9 @@ describe('SectorRotationCalculationServiceImpl', () => {
       );
 
       expect(result.sectorSymbols).toEqual(['XLK']);
-      expect(
-        result.dataPoints.every((p) => p.sectorSymbol === 'XLK'),
-      ).toBe(true);
+      expect(result.dataPoints.every((p) => p.sectorSymbol === 'XLK')).toBe(
+        true,
+      );
     });
   });
 

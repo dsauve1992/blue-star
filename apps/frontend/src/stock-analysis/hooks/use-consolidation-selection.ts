@@ -1,25 +1,25 @@
 import { useState, useEffect, useMemo } from "react";
 import type { AnalyzeConsolidationsResponse } from "../api/consolidation.client";
 import type { SectorStatus } from "src/sector-rotation/api/sector-rotation.client";
-import { isFavorableSector } from "../utils/sector-utils";
+import { isFavorableIndustryGroup } from "../utils/industry-group-utils";
 
 export type AnalysisType = "daily" | "weekly";
-export type SectorFilterMode = "off" | "filter" | "highlight";
+export type IndustryGroupFilterMode = "off" | "filter" | "highlight";
 
 interface UseConsolidationSelectionParams {
   data: AnalyzeConsolidationsResponse | undefined;
   analysisType: AnalysisType;
-  sectorStatuses: SectorStatus[];
+  industryGroupStatuses: SectorStatus[];
 }
 
 export function useConsolidationSelection({
   data,
   analysisType,
-  sectorStatuses,
+  industryGroupStatuses,
 }: UseConsolidationSelectionParams) {
   const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
-  const [sectorFilterMode, setSectorFilterMode] =
-    useState<SectorFilterMode>("off");
+  const [industryGroupFilterMode, setIndustryGroupFilterMode] =
+    useState<IndustryGroupFilterMode>("off");
 
   const consolidations = useMemo(() => {
     const raw = data?.hasData
@@ -28,22 +28,25 @@ export function useConsolidationSelection({
         : data.weekly
       : [];
 
-    if (sectorFilterMode === "filter" && sectorStatuses.length > 0) {
-      return raw.filter((c) => isFavorableSector(c.sector, sectorStatuses));
+    if (
+      industryGroupFilterMode === "filter" &&
+      industryGroupStatuses.length > 0
+    ) {
+      return raw.filter((c) =>
+        isFavorableIndustryGroup(c.industryGroup, industryGroupStatuses),
+      );
     }
     return raw;
-  }, [data, analysisType, sectorFilterMode, sectorStatuses]);
+  }, [data, analysisType, industryGroupFilterMode, industryGroupStatuses]);
 
   const currentIndex = consolidations.findIndex(
     (c) => c.tickerFullName === selectedTicker,
   );
 
-  // Reset selection when analysis type changes
   useEffect(() => {
     setSelectedTicker(null);
   }, [analysisType]);
 
-  // Auto-select first ticker when data loads or filter changes
   useEffect(() => {
     if (consolidations.length > 0) {
       if (
@@ -58,8 +61,8 @@ export function useConsolidationSelection({
   return {
     selectedTicker,
     setSelectedTicker,
-    sectorFilterMode,
-    setSectorFilterMode,
+    industryGroupFilterMode,
+    setIndustryGroupFilterMode,
     consolidations,
     currentIndex,
   };
