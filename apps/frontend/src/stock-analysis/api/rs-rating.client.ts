@@ -5,6 +5,8 @@ export interface RsRatingDto {
   rsRating: number;
   weightedScore: number;
   computedAt: string;
+  industryGroupRsRating: number | null;
+  industryGroup: string | null;
 }
 
 export interface RsRatingsResponse {

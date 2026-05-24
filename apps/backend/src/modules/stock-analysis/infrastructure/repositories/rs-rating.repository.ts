@@ -61,4 +61,22 @@ export class RsRatingRepositoryImpl implements RsRatingRepository {
     const results = await this.getLatestRatings([symbol]);
     return results.length > 0 ? results[0] : null;
   }
+
+  async getAllForLatestDate(): Promise<RsRating[]> {
+    const result = (await this.databaseService.query(
+      `SELECT id, symbol, rs_rating, weighted_score, computed_at, created_at
+       FROM rs_ratings
+       WHERE computed_at = (SELECT MAX(computed_at) FROM rs_ratings)
+       ORDER BY rs_rating DESC`,
+    )) as { rows: RsRatingRow[] };
+
+    return result.rows.map((row) =>
+      RsRating.of({
+        symbol: row.symbol,
+        rsRating: row.rs_rating,
+        weightedScore: parseFloat(row.weighted_score),
+        computedAt: new Date(row.computed_at),
+      }),
+    );
+  }
 }

@@ -4,4 +4,5 @@ export interface RsRatingRepository {
   saveRatings(ratings: RsRating[]): Promise<void>;
   getLatestRatings(symbols: string[]): Promise<RsRating[]>;
   getLatestRating(symbol: string): Promise<RsRating | null>;
+  getAllForLatestDate(): Promise<RsRating[]>;
 }

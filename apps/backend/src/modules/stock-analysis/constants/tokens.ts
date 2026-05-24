@@ -5,3 +5,12 @@ export const CONSOLIDATION_ANALYSIS_SERVICE = 'CONSOLIDATION_ANALYSIS_SERVICE';
 export const RS_RATING_REPOSITORY = 'RS_RATING_REPOSITORY';
 export const RS_RATING_COMPUTATION_SERVICE = 'RS_RATING_COMPUTATION_SERVICE';
 export const RS_RATING_SCREENER_SERVICE = 'RS_RATING_SCREENER_SERVICE';
+export const INDUSTRY_GROUP_RS_RATING_REPOSITORY =
+  'INDUSTRY_GROUP_RS_RATING_REPOSITORY';
+export const INDUSTRY_GROUP_RS_RATING_COMPUTATION_SERVICE =
+  'INDUSTRY_GROUP_RS_RATING_COMPUTATION_SERVICE';
+
+// Minimum number of classified members an industry group must contain
+// before we compute intra-group RS ratings for it. Below this, percentile
+// ranks are statistically noisy, so we skip the group entirely.
+export const MIN_INDUSTRY_GROUP_SIZE = 10;

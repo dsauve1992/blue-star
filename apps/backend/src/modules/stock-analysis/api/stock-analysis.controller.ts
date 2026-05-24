@@ -21,6 +21,7 @@ import {
   QueryRsRatingsResponseDto,
 } from '../use-cases/query-rs-ratings.use-case';
 import { RunRsRatingsUseCase } from '../use-cases/run-rs-ratings.use-case';
+import { RunIndustryGroupRsRatingsUseCase } from '../use-cases/run-industry-group-rs-ratings.use-case';
 
 @Controller('stock-analysis')
 export class StockAnalysisController {
@@ -29,6 +30,7 @@ export class StockAnalysisController {
     private readonly runConsolidationAnalysisUseCase: RunConsolidationAnalysisUseCase,
     private readonly queryRsRatingsUseCase: QueryRsRatingsUseCase,
     private readonly runRsRatingsUseCase: RunRsRatingsUseCase,
+    private readonly runIndustryGroupRsRatingsUseCase: RunIndustryGroupRsRatingsUseCase,
   ) {}
 
   @Get('consolidations')
@@ -114,7 +116,18 @@ export class StockAnalysisController {
   async runRsRatings(): Promise<{ message: string }> {
     try {
       await this.runRsRatingsUseCase.execute();
-      return { message: 'RS rating computation started successfully' };
+      // Intra-group is best-effort: market-wide ratings are already persisted,
+      // so a failure here only logs and is reported as "with warnings".
+      try {
+        await this.runIndustryGroupRsRatingsUseCase.execute();
+        return { message: 'RS rating computation started successfully' };
+      } catch (innerError) {
+        console.error(innerError);
+        return {
+          message:
+            'Market-wide RS ratings computed; industry-group RS ratings failed.',
+        };
+      }
     } catch (error) {
       if (error instanceof BadRequestException) {
         throw error;

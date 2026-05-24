@@ -64,6 +64,22 @@ export function TickerSidebar({
     return map;
   }, [rsData]);
 
+  const industryGroupRsMap = useMemo(() => {
+    const map = new Map<
+      string,
+      { rsRating: number | null; industryGroup: string | null }
+    >();
+    if (rsData?.ratings) {
+      for (const r of rsData.ratings) {
+        map.set(r.symbol, {
+          rsRating: r.industryGroupRsRating,
+          industryGroup: r.industryGroup,
+        });
+      }
+    }
+    return map;
+  }, [rsData]);
+
   const currentIndex = tickers.findIndex((t) => t === selectedTicker);
 
   const handleTickerSelect = useCallback(
@@ -163,6 +179,16 @@ export function TickerSidebar({
                 rsRating={rsRatingMap.get(
                   ticker.includes(":") ? ticker.split(":")[1] : ticker,
                 )}
+                industryGroupRsRating={
+                  industryGroupRsMap.get(
+                    ticker.includes(":") ? ticker.split(":")[1] : ticker,
+                  )?.rsRating ?? null
+                }
+                industryGroup={
+                  industryGroupRsMap.get(
+                    ticker.includes(":") ? ticker.split(":")[1] : ticker,
+                  )?.industryGroup ?? null
+                }
                 sourceWatchlistId={sourceWatchlistId}
                 otherWatchlists={otherWatchlists}
                 onSelect={handleTickerSelect}

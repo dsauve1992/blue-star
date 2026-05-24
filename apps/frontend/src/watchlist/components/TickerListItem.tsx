@@ -30,6 +30,8 @@ interface TickerListItemProps {
   ticker: string;
   isSelected: boolean;
   rsRating?: number;
+  industryGroupRsRating?: number | null;
+  industryGroup?: string | null;
   sourceWatchlistId: string;
   otherWatchlists: WatchlistOption[];
   onSelect: (ticker: string) => void;
@@ -42,6 +44,8 @@ export function TickerListItem({
   ticker,
   isSelected,
   rsRating,
+  industryGroupRsRating,
+  industryGroup,
   sourceWatchlistId,
   otherWatchlists,
   onSelect,
@@ -118,8 +122,21 @@ export function TickerListItem({
       {rsRating !== undefined && (
         <span
           className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 ${getRsRatingColor(rsRating)}`}
+          title="Market-wide RS rating (1-99)"
         >
           {rsRating}
+        </span>
+      )}
+      {industryGroupRsRating != null && (
+        <span
+          className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 ${getRsRatingColor(industryGroupRsRating)}`}
+          title={
+            industryGroup
+              ? `RS ${industryGroupRsRating} within ${industryGroup}`
+              : "Industry-group RS rating (1-99)"
+          }
+        >
+          IG {industryGroupRsRating}
         </span>
       )}
 
