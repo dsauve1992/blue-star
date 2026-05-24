@@ -21,20 +21,19 @@ describe('Symbol', () => {
     expect(Symbol.of(input).value).toBe(expected);
   });
 
-  it.each(['', '   ', null as unknown as string, undefined as unknown as string])(
-    'rejects empty/null input %p',
+  it.each([
+    '',
+    '   ',
+    null as unknown as string,
+    undefined as unknown as string,
+  ])('rejects empty/null input %p', (input) => {
+    expect(() => Symbol.of(input)).toThrow(/non-empty string/);
+  });
+
+  it.each(['AAPL$', 'with space', '^^SP500', 'A^SP500', 'foo/bar'])(
+    'rejects malformed symbol %s',
     (input) => {
-      expect(() => Symbol.of(input)).toThrow(/non-empty string/);
+      expect(() => Symbol.of(input)).toThrow(/Invalid symbol format/);
     },
   );
-
-  it.each([
-    'AAPL$',
-    'with space',
-    '^^SP500',
-    'A^SP500',
-    'foo/bar',
-  ])('rejects malformed symbol %s', (input) => {
-    expect(() => Symbol.of(input)).toThrow(/Invalid symbol format/);
-  });
 });

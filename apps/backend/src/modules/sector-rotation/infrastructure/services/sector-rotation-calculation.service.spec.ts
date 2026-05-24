@@ -354,8 +354,9 @@ describe('SectorRotationCalculationServiceImpl', () => {
         },
       );
 
-      // XLF dropped, XLK survived.
-      expect(result.sectorSymbols).toEqual(['XLK', 'XLF']); // tagged with requested symbols
+      // XLF dropped, XLK survived. sectorSymbols reflects only what could
+      // actually be computed, so downstream consumers don't see ghosts.
+      expect(result.sectorSymbols).toEqual(['XLK']);
       const seenSymbols = new Set(result.dataPoints.map((p) => p.sectorSymbol));
       expect(seenSymbols.has('XLK')).toBe(true);
       expect(seenSymbols.has('XLF')).toBe(false);
@@ -401,7 +402,7 @@ describe('SectorRotationCalculationServiceImpl', () => {
   });
 
   describe('calculate — insufficient data', () => {
-    it('throws when a sector returns too few weekly bars for the lookback', async () => {
+    it('throws only when every sector lacks enough weekly bars', async () => {
       const tinySectorPoints = buildWeeklyPoints(
         START,
         Array.from({ length: 3 }, (_, i) => 100 + i),
@@ -426,7 +427,44 @@ describe('SectorRotationCalculationServiceImpl', () => {
           momentumWeeks: RRG_PARAMETERS.MOMENTUM_WEEKS,
           normalizationWindowWeeks: RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS,
         }),
-      ).rejects.toThrow(/has insufficient data/);
+      ).rejects.toThrow(/No sectors have enough historical data/);
+    });
+
+    it('skips a single short sector and computes the rest', async () => {
+      // XLK has plenty of data; XLF only has 3 weekly bars (way under the
+      // lookback floor). Result should still come back, restricted to XLK,
+      // rather than failing the whole call. Mirrors the real ^SP500-6020
+      // case where one industry-group subindex is too new on Yahoo.
+      const { sectorPoints, spyPoints } = setupTrendingScenario();
+      const tinyPoints = buildWeeklyPoints(
+        START,
+        Array.from({ length: 3 }, (_, i) => 100 + i),
+      );
+
+      service = buildService({
+        XLK: sectorPoints,
+        XLF: tinyPoints,
+        SPY: spyPoints,
+      });
+
+      const dr = DateRange.of(
+        new Date('2024-06-01T00:00:00.000Z'),
+        new Date('2024-12-09T00:00:00.000Z'),
+      );
+
+      const result = await service.calculate(
+        makeUniverse([TECHNOLOGY, FINANCIAL]),
+        dr,
+        {
+          momentumWeeks: RRG_PARAMETERS.MOMENTUM_WEEKS,
+          normalizationWindowWeeks: RRG_PARAMETERS.NORMALIZATION_WINDOW_WEEKS,
+        },
+      );
+
+      expect(result.sectorSymbols).toEqual(['XLK']);
+      expect(
+        result.dataPoints.every((p) => p.sectorSymbol === 'XLK'),
+      ).toBe(true);
     });
   });
 

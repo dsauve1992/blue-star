@@ -4,32 +4,38 @@ import { PageContainer } from "src/global/design-system";
 import { Card, Button, LoadingSpinner, Alert } from "src/global/design-system";
 import { useSectorRotation } from "../hooks/use-sector-rotation";
 import { useCompareSectorRotation } from "../hooks/use-compare-sector-rotation";
+import { useRotationUniverses } from "../hooks/use-rotation-universes";
 import { SectorRotationRRGChart } from "../components/SectorRotationRRGChart";
 import { SectorRotationTimeline } from "../components/SectorRotationTimeline";
 import { RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
-
-const DEFAULT_SECTORS = [
-  { symbol: "XLK", name: "Technology" },
-  { symbol: "XLE", name: "Energy" },
-  { symbol: "XLI", name: "Industrial" },
-  { symbol: "XLY", name: "Consumer Discretionary" },
-  { symbol: "XLP", name: "Consumer Staples" },
-  { symbol: "XLV", name: "Healthcare" },
-  { symbol: "XLF", name: "Financial" },
-  { symbol: "XLB", name: "Materials" },
-  { symbol: "XLU", name: "Utilities" },
-  { symbol: "XLRE", name: "Real Estate" },
-  { symbol: "XLC", name: "Communication Services" },
-];
-
-const SECTOR_NAMES: Record<string, string> = Object.fromEntries(
-  DEFAULT_SECTORS.map(({ symbol, name }) => [symbol, name]),
-);
 
 export default function SectorRotation() {
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
   const [enabledSectors, setEnabledSectors] = useState<Set<string>>(new Set());
+  const [selectedUniverseId, setSelectedUniverseId] = useState<string | null>(
+    null,
+  );
+
+  const { data: universesData, isLoading: isLoadingUniverses } =
+    useRotationUniverses();
+
+  const activeUniverseId =
+    selectedUniverseId ?? universesData?.defaultId ?? null;
+
+  const activeUniverse = useMemo(
+    () =>
+      universesData?.universes.find((u) => u.id === activeUniverseId) ?? null,
+    [universesData, activeUniverseId],
+  );
+
+  const sectorNames = useMemo<Record<string, string>>(
+    () =>
+      activeUniverse
+        ? Object.fromEntries(activeUniverse.members.map((m) => [m.symbol, m.name]))
+        : {},
+    [activeUniverse],
+  );
 
   const endDate = new Date();
   const startDate = new Date(endDate);
@@ -37,11 +43,15 @@ export default function SectorRotation() {
 
   const [showComparison, setShowComparison] = useState(false);
 
-  const { data, isLoading, error, refetch } = useSectorRotation({
-    sectors: DEFAULT_SECTORS,
-    startDate: startDate.toISOString().split("T")[0],
-    endDate: endDate.toISOString().split("T")[0],
-  });
+  const { data, isLoading, error, refetch } = useSectorRotation(
+    {
+      sectors: activeUniverse?.members,
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+      universeId: activeUniverse?.id,
+    },
+    Boolean(activeUniverse),
+  );
 
   const {
     data: comparisonData,
@@ -50,11 +60,12 @@ export default function SectorRotation() {
     refetch: refetchComparison,
   } = useCompareSectorRotation(
     {
-      sectors: DEFAULT_SECTORS,
+      sectors: activeUniverse?.members,
       startDate: startDate.toISOString().split("T")[0],
       endDate: endDate.toISOString().split("T")[0],
+      universeId: activeUniverse?.id,
     },
-    showComparison,
+    showComparison && Boolean(activeUniverse),
   );
 
   const uniqueDates = useMemo(() => {
@@ -77,6 +88,14 @@ export default function SectorRotation() {
       setEnabledSectors(new Set(availableSectors));
     }
   }, [availableSectors, enabledSectors.size]);
+
+  useEffect(() => {
+    // Reset per-universe local state when the user switches universes so
+    // stale sector toggles and time windows don't bleed across.
+    setEnabledSectors(new Set());
+    setSelectedStartDate(null);
+    setSelectedEndDate(null);
+  }, [activeUniverseId]);
 
   const handleToggleSector = (sectorSymbol: string) => {
     setEnabledSectors((prev) => {
@@ -149,7 +168,7 @@ export default function SectorRotation() {
     setSelectedEndDate(fullRange.weeks[endIndex]);
   };
 
-  if (isLoading) {
+  if (isLoadingUniverses || isLoading) {
     return (
       <PageContainer>
         <div className="flex items-center justify-center min-h-[400px]">
@@ -187,11 +206,25 @@ export default function SectorRotation() {
           <div>
             <h1 className="text-3xl font-bold">Sector Rotation Analysis</h1>
             <p className="text-muted-foreground mt-2">
-              Relative Rotation Graph (RRG) and quadrant timeline for sector
-              ETFs
+              Relative Rotation Graph (RRG) and quadrant timeline for{" "}
+              {activeUniverse?.label ?? "rotation universe"}
             </p>
           </div>
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
+            {universesData && universesData.universes.length > 1 && (
+              <select
+                value={activeUniverseId ?? ""}
+                onChange={(e) => setSelectedUniverseId(e.target.value)}
+                className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                aria-label="Select rotation universe"
+              >
+                {universesData.universes.map((u) => (
+                  <option key={u.id} value={u.id}>
+                    {u.label}
+                  </option>
+                ))}
+              </select>
+            )}
             <Button
               variant="outline"
               size="sm"
@@ -285,7 +318,7 @@ export default function SectorRotation() {
             startDate={displayStartDate}
             endDate={displayEndDate}
             enabledSectors={enabledSectors}
-            sectorNames={SECTOR_NAMES}
+            sectorNames={sectorNames}
           />
         </Card>
 
@@ -293,7 +326,7 @@ export default function SectorRotation() {
           dataPoints={data.result.dataPoints}
           enabledSectors={enabledSectors}
           onToggleSector={handleToggleSector}
-          sectorNames={SECTOR_NAMES}
+          sectorNames={sectorNames}
         />
 
         {showComparison && (

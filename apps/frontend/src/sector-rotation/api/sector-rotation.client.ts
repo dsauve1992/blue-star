@@ -23,6 +23,7 @@ export interface CalculateSectorRotationRequest {
   sectors?: Array<{ symbol: string; name: string }>;
   startDate?: string;
   endDate?: string;
+  universeId?: string;
 }
 
 export interface CalculateSectorRotationResponse {
@@ -64,6 +65,24 @@ export interface CompareSectorRotationRequest {
   sectors?: Array<{ symbol: string; name: string }>;
   startDate?: string;
   endDate?: string;
+  universeId?: string;
+}
+
+export interface RotationUniverseMember {
+  symbol: string;
+  name: string;
+}
+
+export interface RotationUniverseSummary {
+  id: string;
+  label: string;
+  benchmarkSymbol: string;
+  members: RotationUniverseMember[];
+}
+
+export interface ListRotationUniversesResponse {
+  defaultId: string;
+  universes: RotationUniverseSummary[];
 }
 
 export interface CompareSectorRotationResponse {
@@ -100,6 +119,9 @@ export class SectorRotationClient {
     if (request.endDate) {
       params.append("endDate", request.endDate);
     }
+    if (request.universeId) {
+      params.append("universe", request.universeId);
+    }
 
     const response = await apiClient.get<CalculateSectorRotationResponse>(
       `/sector-rotation/calculate?${params.toString()}`,
@@ -121,6 +143,9 @@ export class SectorRotationClient {
     if (request.endDate) {
       params.append("endDate", request.endDate);
     }
+    if (request.universeId) {
+      params.append("universe", request.universeId);
+    }
 
     const response = await apiClient.get<CompareSectorRotationResponse>(
       `/sector-rotation/compare?${params.toString()}`,
@@ -128,9 +153,21 @@ export class SectorRotationClient {
     return response.data;
   }
 
-  async getLatestSectorStatus(): Promise<LatestSectorStatusResponse> {
+  async getLatestSectorStatus(
+    universeId?: string,
+  ): Promise<LatestSectorStatusResponse> {
+    const query = universeId
+      ? `?universe=${encodeURIComponent(universeId)}`
+      : "";
     const response = await apiClient.get<LatestSectorStatusResponse>(
-      `/sector-rotation/latest-status`,
+      `/sector-rotation/latest-status${query}`,
+    );
+    return response.data;
+  }
+
+  async listUniverses(): Promise<ListRotationUniversesResponse> {
+    const response = await apiClient.get<ListRotationUniversesResponse>(
+      `/sector-rotation/universes`,
     );
     return response.data;
   }

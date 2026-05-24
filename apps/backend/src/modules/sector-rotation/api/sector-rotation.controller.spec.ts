@@ -245,4 +245,26 @@ describe('SectorRotationController', () => {
       expect(req.sectors).toEqual([{ symbol: 'XLK', name: 'Technology' }]);
     });
   });
+
+  describe('GET /universes', () => {
+    it('lists registered universes with their members and the default id', () => {
+      const response = controller.listUniverses();
+
+      expect(response.defaultId).toBe('gics-sector');
+      expect(response.universes.map((u) => u.id)).toEqual(
+        expect.arrayContaining(['gics-sector', 'gics-industry-group']),
+      );
+
+      const sector = response.universes.find((u) => u.id === 'gics-sector');
+      expect(sector?.benchmarkSymbol).toBe('SPY');
+      expect(sector?.members).toHaveLength(11);
+      expect(sector?.members.every((m) => m.symbol && m.name)).toBe(true);
+
+      const ig = response.universes.find((u) => u.id === 'gics-industry-group');
+      expect(ig?.members).toHaveLength(25);
+      expect(ig?.members.every((m) => /^\^SP500-\d{4}$/.test(m.symbol))).toBe(
+        true,
+      );
+    });
+  });
 });
