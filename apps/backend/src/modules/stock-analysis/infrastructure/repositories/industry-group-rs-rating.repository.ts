@@ -1,6 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../config/database.service';
-import { IndustryGroupRsRatingRepository } from '../../domain/repositories/industry-group-rs-rating.repository.interface';
+import {
+  IndustryGroupRsRatingRepository,
+  IndustryGroupSummary,
+} from '../../domain/repositories/industry-group-rs-rating.repository.interface';
 import { IndustryGroupRsRating } from '../../domain/value-objects/industry-group-rs-rating';
 
 interface IndustryGroupRsRatingRow {
@@ -69,6 +72,43 @@ export class IndustryGroupRsRatingRepositoryImpl
   async getLatestRating(symbol: string): Promise<IndustryGroupRsRating | null> {
     const results = await this.getLatestRatings([symbol]);
     return results.length > 0 ? results[0] : null;
+  }
+
+  async listLatestGroups(): Promise<IndustryGroupSummary[]> {
+    const result = (await this.databaseService.query(
+      `SELECT industry_group, COUNT(*)::int AS member_count, MAX(computed_at) AS computed_at
+       FROM industry_group_rs_ratings
+       WHERE computed_at = (SELECT MAX(computed_at) FROM industry_group_rs_ratings)
+       GROUP BY industry_group
+       ORDER BY industry_group ASC`,
+    )) as {
+      rows: {
+        industry_group: string;
+        member_count: number;
+        computed_at: string;
+      }[];
+    };
+
+    return result.rows.map((row) => ({
+      industryGroup: row.industry_group,
+      memberCount: row.member_count,
+      computedAt: new Date(row.computed_at),
+    }));
+  }
+
+  async getLatestRatingsByGroup(
+    industryGroup: string,
+  ): Promise<IndustryGroupRsRating[]> {
+    const result = (await this.databaseService.query(
+      `SELECT id, symbol, industry_group, rs_rating, weighted_score, group_size, computed_at, created_at
+       FROM industry_group_rs_ratings
+       WHERE industry_group = $1
+         AND computed_at = (SELECT MAX(computed_at) FROM industry_group_rs_ratings)
+       ORDER BY rs_rating DESC, symbol ASC`,
+      [industryGroup],
+    )) as { rows: IndustryGroupRsRatingRow[] };
+
+    return result.rows.map((row) => this.toDomain(row));
   }
 
   private toDomain(row: IndustryGroupRsRatingRow): IndustryGroupRsRating {

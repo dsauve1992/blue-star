@@ -12,6 +12,13 @@ export const RS_RATING_QUERY_KEYS = {
     [...RS_RATING_QUERY_KEYS.lists(), filters] as const,
 } as const;
 
+export const INDUSTRY_GROUP_QUERY_KEYS = {
+  all: ["industry-groups"] as const,
+  lists: () => [...INDUSTRY_GROUP_QUERY_KEYS.all, "list"] as const,
+  ratings: (industryGroup: string) =>
+    [...INDUSTRY_GROUP_QUERY_KEYS.all, "ratings", industryGroup] as const,
+} as const;
+
 
 
 

@@ -9,6 +9,8 @@ import { RunConsolidationAnalysisUseCase } from './use-cases/run-consolidation-a
 import { QueryRsRatingsUseCase } from './use-cases/query-rs-ratings.use-case';
 import { RunRsRatingsUseCase } from './use-cases/run-rs-ratings.use-case';
 import { RunIndustryGroupRsRatingsUseCase } from './use-cases/run-industry-group-rs-ratings.use-case';
+import { QueryIndustryGroupsUseCase } from './use-cases/query-industry-groups.use-case';
+import { QueryIndustryGroupRatingsUseCase } from './use-cases/query-industry-group-ratings.use-case';
 import { PythonConsolidationScreenerService } from './infrastructure/services/python-consolidation-screener.service';
 import { ConsolidationAnalysisServiceImpl } from './infrastructure/services/consolidation-analysis.service';
 import { ConsolidationCronService } from './infrastructure/services/consolidation-cron.service';
@@ -89,6 +91,8 @@ export {
     QueryRsRatingsUseCase,
     RunRsRatingsUseCase,
     RunIndustryGroupRsRatingsUseCase,
+    QueryIndustryGroupsUseCase,
+    QueryIndustryGroupRatingsUseCase,
   ],
   exports: [CONSOLIDATION_SCREENER_SERVICE, RS_RATING_REPOSITORY],
 })

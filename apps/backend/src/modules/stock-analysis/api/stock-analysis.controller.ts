@@ -3,6 +3,7 @@ import {
   Body,
   Controller,
   Get,
+  Param,
   Post,
   Query,
 } from '@nestjs/common';
@@ -22,6 +23,14 @@ import {
 } from '../use-cases/query-rs-ratings.use-case';
 import { RunRsRatingsUseCase } from '../use-cases/run-rs-ratings.use-case';
 import { RunIndustryGroupRsRatingsUseCase } from '../use-cases/run-industry-group-rs-ratings.use-case';
+import {
+  QueryIndustryGroupsUseCase,
+  QueryIndustryGroupsResponseDto,
+} from '../use-cases/query-industry-groups.use-case';
+import {
+  QueryIndustryGroupRatingsUseCase,
+  QueryIndustryGroupRatingsResponseDto,
+} from '../use-cases/query-industry-group-ratings.use-case';
 
 @Controller('stock-analysis')
 export class StockAnalysisController {
@@ -31,6 +40,8 @@ export class StockAnalysisController {
     private readonly queryRsRatingsUseCase: QueryRsRatingsUseCase,
     private readonly runRsRatingsUseCase: RunRsRatingsUseCase,
     private readonly runIndustryGroupRsRatingsUseCase: RunIndustryGroupRsRatingsUseCase,
+    private readonly queryIndustryGroupsUseCase: QueryIndustryGroupsUseCase,
+    private readonly queryIndustryGroupRatingsUseCase: QueryIndustryGroupRatingsUseCase,
   ) {}
 
   @Get('consolidations')
@@ -104,6 +115,47 @@ export class StockAnalysisController {
       });
     } catch (error) {
       if (error instanceof BadRequestException) {
+        throw error;
+      }
+      console.error(error);
+      throw new BadRequestException(error);
+    }
+  }
+
+  @Get('industry-groups')
+  @Public()
+  async listIndustryGroups(): Promise<QueryIndustryGroupsResponseDto> {
+    try {
+      return await this.queryIndustryGroupsUseCase.execute();
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException(error);
+    }
+  }
+
+  @Get('industry-groups/:group/rs-ratings')
+  @Public()
+  async getIndustryGroupRatings(
+    @Param('group') group: string,
+  ): Promise<QueryIndustryGroupRatingsResponseDto> {
+    try {
+      if (!group || !group.trim()) {
+        throw new BadRequestException('group path parameter is required');
+      }
+      return await this.queryIndustryGroupRatingsUseCase.execute({
+        industryGroup: group,
+      });
+    } catch (error) {
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      // Let NotFoundException propagate untouched
+      if (
+        typeof error === 'object' &&
+        error !== null &&
+        'status' in error &&
+        (error as { status: number }).status === 404
+      ) {
         throw error;
       }
       console.error(error);

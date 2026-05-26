@@ -75,6 +75,12 @@ export const routes: RouteConfig[] = [
     showInNavigation: true,
   },
   {
+    path: "/industry-groups",
+    label: "Industry Groups",
+    isProtected: true,
+    showInNavigation: true,
+  },
+  {
     path: "/chart-sandbox",
     label: "Chart Sandbox",
     isProtected: true,

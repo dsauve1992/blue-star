@@ -125,4 +125,101 @@ describe('IndustryGroupRsRatingRepository Integration', () => {
     const result = await repository.getLatestRating('NOTFOUND');
     expect(result).toBeNull();
   });
+
+  describe('listLatestGroups', () => {
+    it('returns one row per group from the latest computed_at with member counts', async () => {
+      await repository.saveRatings([
+        IndustryGroupRsRating.of({
+          symbol: 'NVDA',
+          industryGroup: 'Semiconductors & Semiconductor Equipment',
+          rsRating: 95,
+          weightedScore: 12,
+          groupSize: 30,
+          computedAt: new Date('2026-05-24'),
+        }),
+        IndustryGroupRsRating.of({
+          symbol: 'AMD',
+          industryGroup: 'Semiconductors & Semiconductor Equipment',
+          rsRating: 88,
+          weightedScore: 9,
+          groupSize: 30,
+          computedAt: new Date('2026-05-24'),
+        }),
+        IndustryGroupRsRating.of({
+          symbol: 'JPM',
+          industryGroup: 'Banks',
+          rsRating: 60,
+          weightedScore: 3,
+          groupSize: 20,
+          computedAt: new Date('2026-05-24'),
+        }),
+        // older snapshot — should be ignored
+        IndustryGroupRsRating.of({
+          symbol: 'NVDA',
+          industryGroup: 'Semiconductors & Semiconductor Equipment',
+          rsRating: 70,
+          weightedScore: 4,
+          groupSize: 25,
+          computedAt: new Date('2026-05-17'),
+        }),
+      ]);
+
+      const groups = await repository.listLatestGroups();
+      expect(groups).toHaveLength(2);
+
+      const banks = groups.find((g) => g.industryGroup === 'Banks')!;
+      expect(banks.memberCount).toBe(1);
+
+      const semis = groups.find(
+        (g) => g.industryGroup === 'Semiconductors & Semiconductor Equipment',
+      )!;
+      expect(semis.memberCount).toBe(2);
+    });
+
+    it('returns empty list when no ratings exist', async () => {
+      const groups = await repository.listLatestGroups();
+      expect(groups).toEqual([]);
+    });
+  });
+
+  describe('getLatestRatingsByGroup', () => {
+    it('returns all members of the group sorted by rs_rating DESC', async () => {
+      await repository.saveRatings([
+        IndustryGroupRsRating.of({
+          symbol: 'NVDA',
+          industryGroup: 'Semiconductors & Semiconductor Equipment',
+          rsRating: 95,
+          weightedScore: 12,
+          groupSize: 30,
+          computedAt: new Date('2026-05-24'),
+        }),
+        IndustryGroupRsRating.of({
+          symbol: 'AMD',
+          industryGroup: 'Semiconductors & Semiconductor Equipment',
+          rsRating: 88,
+          weightedScore: 9,
+          groupSize: 30,
+          computedAt: new Date('2026-05-24'),
+        }),
+        IndustryGroupRsRating.of({
+          symbol: 'JPM',
+          industryGroup: 'Banks',
+          rsRating: 60,
+          weightedScore: 3,
+          groupSize: 20,
+          computedAt: new Date('2026-05-24'),
+        }),
+      ]);
+
+      const ratings = await repository.getLatestRatingsByGroup(
+        'Semiconductors & Semiconductor Equipment',
+      );
+      expect(ratings.map((r) => r.symbol)).toEqual(['NVDA', 'AMD']);
+    });
+
+    it('returns empty list for an unknown group', async () => {
+      const ratings = await repository.getLatestRatingsByGroup('Nonexistent');
+      expect(ratings).toEqual([]);
+    });
+  });
 });

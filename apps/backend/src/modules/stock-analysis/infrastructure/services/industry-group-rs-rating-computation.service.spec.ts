@@ -63,6 +63,8 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       saveRatings: jest.fn(),
       getLatestRatings: jest.fn(),
       getLatestRating: jest.fn(),
+      listLatestGroups: jest.fn(),
+      getLatestRatingsByGroup: jest.fn(),
     } as jest.Mocked<IndustryGroupRsRatingRepository>;
 
     const module = await Test.createTestingModule({

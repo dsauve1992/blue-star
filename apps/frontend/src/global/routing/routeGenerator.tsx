@@ -12,6 +12,7 @@ import Position from "../../position/pages/Position";
 import RiskManagementDashboard from "../../position/pages/RiskManagementDashboard";
 import { PositionDetail } from "../../position/pages/PositionDetail";
 import ConsolidationAnalysis from "../../stock-analysis/pages/ConsolidationAnalysis";
+import IndustryGroupExplorer from "../../stock-analysis/pages/IndustryGroupExplorer";
 import Watchlist from "../../watchlist/pages/Watchlist";
 import SectorRotation from "../../sector-rotation/pages/SectorRotation";
 import ChartSandbox from "../../market-data/pages/ChartSandbox";
@@ -29,6 +30,7 @@ const componentMap = {
   "/stock-analysis/:type": ConsolidationAnalysis,
   "/watchlists": Watchlist,
   "/sector-rotation": SectorRotation,
+  "/industry-groups": IndustryGroupExplorer,
   "/chart-sandbox": ChartSandbox,
 } as const;
 
