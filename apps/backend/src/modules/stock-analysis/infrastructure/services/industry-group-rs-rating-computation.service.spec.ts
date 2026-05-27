@@ -13,6 +13,7 @@ import {
   RS_RATING_REPOSITORY,
 } from '../../constants/tokens';
 import { STOCK_CLASSIFICATION_REPOSITORY } from '../../../stock-classification/constants/tokens';
+import { GetOrFetchStockClassificationUseCase } from '../../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
 
 describe('percentileRank', () => {
   it('returns 50 for the median of a uniform distribution (0.5 ties handling)', () => {
@@ -42,6 +43,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
   let rsRatingRepo: jest.Mocked<RsRatingRepository>;
   let classificationRepo: jest.Mocked<StockClassificationRepository>;
   let industryGroupRepo: jest.Mocked<IndustryGroupRsRatingRepository>;
+  let getOrFetchClassification: jest.Mocked<GetOrFetchStockClassificationUseCase>;
 
   const computedAt = new Date('2026-05-24T00:00:00.000Z');
 
@@ -67,6 +69,11 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       getLatestRatingsByGroup: jest.fn(),
     } as jest.Mocked<IndustryGroupRsRatingRepository>;
 
+    getOrFetchClassification = {
+      execute: jest.fn(),
+      executeMany: jest.fn().mockResolvedValue(new Map()),
+    } as unknown as jest.Mocked<GetOrFetchStockClassificationUseCase>;
+
     const module = await Test.createTestingModule({
       providers: [
         IndustryGroupRsRatingComputationServiceImpl,
@@ -78,6 +85,10 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
         {
           provide: INDUSTRY_GROUP_RS_RATING_REPOSITORY,
           useValue: industryGroupRepo,
+        },
+        {
+          provide: GetOrFetchStockClassificationUseCase,
+          useValue: getOrFetchClassification,
         },
       ],
     }).compile();
@@ -180,6 +191,49 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
 
     expect(classificationRepo.findGroupsForTickers).not.toHaveBeenCalled();
     expect(industryGroupRepo.saveRatings).not.toHaveBeenCalled();
+  });
+
+  it('backfills classifications for RS-rated symbols missing from the group map', async () => {
+    const members = Array.from({ length: 10 }, (_, i) =>
+      makeRating(`SEM${i + 1}`, i + 1),
+    );
+    const unclassified = makeRating('NEW', 5);
+    rsRatingRepo.getAllForLatestDate.mockResolvedValue([
+      ...members,
+      unclassified,
+    ]);
+
+    const initialGroups = new Map(
+      members.map((r) => [r.symbol, 'Semiconductors'] as [string, string]),
+    );
+    const afterBackfill = new Map(initialGroups);
+    afterBackfill.set('NEW', 'Semiconductors');
+
+    classificationRepo.findGroupsForTickers
+      .mockResolvedValueOnce(initialGroups)
+      .mockResolvedValueOnce(afterBackfill);
+
+    await service.computeIndustryGroupRsRatings();
+
+    expect(getOrFetchClassification.executeMany).toHaveBeenCalledWith(['NEW']);
+    const saved = industryGroupRepo.saveRatings.mock.calls[0][0];
+    expect(saved.map((r) => r.symbol).sort()).toEqual(
+      [...members.map((m) => m.symbol), 'NEW'].sort(),
+    );
+  });
+
+  it('skips backfill when every RS-rated symbol is already classified', async () => {
+    const members = Array.from({ length: 10 }, (_, i) =>
+      makeRating(`SEM${i + 1}`, i + 1),
+    );
+    rsRatingRepo.getAllForLatestDate.mockResolvedValue(members);
+    classificationRepo.findGroupsForTickers.mockResolvedValue(
+      new Map(members.map((r) => [r.symbol, 'Semiconductors'])),
+    );
+
+    await service.computeIndustryGroupRsRatings();
+
+    expect(getOrFetchClassification.executeMany).not.toHaveBeenCalled();
   });
 
   it('uses the computedAt date from the latest market-wide ratings', async () => {

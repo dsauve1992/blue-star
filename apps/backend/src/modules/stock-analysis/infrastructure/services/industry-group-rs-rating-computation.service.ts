@@ -10,6 +10,7 @@ import {
 } from '../../constants/tokens';
 import { STOCK_CLASSIFICATION_REPOSITORY } from '../../../stock-classification/constants/tokens';
 import type { StockClassificationRepository } from '../../../stock-classification/domain/repositories/stock-classification.repository.interface';
+import { GetOrFetchStockClassificationUseCase } from '../../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
 
 interface ScoredSymbol {
   symbol: string;
@@ -31,6 +32,7 @@ export class IndustryGroupRsRatingComputationServiceImpl
     private readonly classificationRepository: StockClassificationRepository,
     @Inject(INDUSTRY_GROUP_RS_RATING_REPOSITORY)
     private readonly industryGroupRepository: IndustryGroupRsRatingRepository,
+    private readonly getOrFetchClassification: GetOrFetchStockClassificationUseCase,
   ) {}
 
   async computeIndustryGroupRsRatings(): Promise<void> {
@@ -44,6 +46,21 @@ export class IndustryGroupRsRatingComputationServiceImpl
 
     const computedAt = latest[0].computedAt;
     const symbols = latest.map((r) => r.symbol);
+
+    // Backfill classifications for any RS-rated symbol that isn't classified
+    // yet. Without this, the screener's lazy-classification path leaves most of
+    // the RS universe unclassified at cron time, so the IG ratings only cover
+    // the small subset that has been viewed since the previous run.
+    const existingGroups =
+      await this.classificationRepository.findGroupsForTickers(symbols);
+    const unclassified = symbols.filter((s) => !existingGroups.has(s));
+    if (unclassified.length > 0) {
+      this.logger.log(
+        `Backfilling classifications for ${unclassified.length} of ${symbols.length} RS-rated symbols.`,
+      );
+      await this.getOrFetchClassification.executeMany(unclassified);
+    }
+
     const groupBySymbol =
       await this.classificationRepository.findGroupsForTickers(symbols);
 
