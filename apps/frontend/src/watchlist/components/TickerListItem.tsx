@@ -113,32 +113,37 @@ export function TickerListItem({
         )}
       </div>
 
-      <span
-        className={`text-xs font-medium truncate flex-1 ${isSelected ? "text-white" : "text-slate-300"}`}
-      >
-        {ticker}
-      </span>
-
-      {rsRating !== undefined && (
+      <div className="flex flex-col min-w-0 flex-1 gap-0.5">
         <span
-          className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 ${getRsRatingColor(rsRating)}`}
-          title="Market-wide RS rating (1-99)"
+          className={`text-xs font-medium truncate ${isSelected ? "text-white" : "text-slate-300"}`}
         >
-          {rsRating}
+          {ticker}
         </span>
-      )}
-      {industryGroupRsRating != null && (
-        <span
-          className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 ${getRsRatingColor(industryGroupRsRating)}`}
-          title={
-            industryGroup
-              ? `RS ${industryGroupRsRating} within ${industryGroup}`
-              : "Industry-group RS rating (1-99)"
-          }
-        >
-          IG {industryGroupRsRating}
-        </span>
-      )}
+        {(rsRating !== undefined || industryGroupRsRating != null) && (
+          <div className="flex items-center gap-1">
+            {rsRating !== undefined && (
+              <span
+                className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 ${getRsRatingColor(rsRating)}`}
+                title="Market-wide RS rating (1-99)"
+              >
+                {rsRating}
+              </span>
+            )}
+            {industryGroupRsRating != null && (
+              <span
+                className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 ${getRsRatingColor(industryGroupRsRating)}`}
+                title={
+                  industryGroup
+                    ? `RS ${industryGroupRsRating} within ${industryGroup}`
+                    : "Industry-group RS rating (1-99)"
+                }
+              >
+                IG {industryGroupRsRating}
+              </span>
+            )}
+          </div>
+        )}
+      </div>
 
       <div className="relative flex-shrink-0">
         <button
