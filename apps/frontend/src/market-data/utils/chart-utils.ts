@@ -35,6 +35,12 @@ export interface RSResult {
   newHighIndices: Set<number>;
   /** Indices where RS makes a new low within the lookback window */
   newLowIndices: Set<number>;
+  /**
+   * Indices where the RS line makes a new lookback-window high while the
+   * stock's own price does NOT — the early "strength leads price" divergence
+   * (subset of newHighIndices).
+   */
+  divergenceIndices: Set<number>;
 }
 
 // ── Moving average computation ────────────────────────────────────────
@@ -131,7 +137,38 @@ export function computeRS(
     if (isNewLow) newLowIndices.add(i);
   }
 
-  return { rsLine, rsSma, newHighIndices, newLowIndices };
+  // Divergence: RS makes a new lookback-window high while price does not.
+  // This is the early "relative strength leads price" signal.
+  const priceCloses = stockCandles.map((c) => c.close);
+  const priceNewHigh = computeNewHighFlags(priceCloses, lookback);
+  const divergenceIndices = new Set<number>();
+  for (const i of newHighIndices) {
+    if (!priceNewHigh[i]) divergenceIndices.add(i);
+  }
+
+  return { rsLine, rsSma, newHighIndices, newLowIndices, divergenceIndices };
+}
+
+/**
+ * For each index, whether `data[i]` is strictly greater than every value in the
+ * preceding `lookback`-bar window. Indices before a full window are `false`.
+ */
+export function computeNewHighFlags(
+  data: number[],
+  lookback: number,
+): boolean[] {
+  const flags = new Array<boolean>(data.length).fill(false);
+  for (let i = lookback; i < data.length; i++) {
+    let isNewHigh = true;
+    for (let j = i - lookback; j < i; j++) {
+      if (data[j] >= data[i]) {
+        isNewHigh = false;
+        break;
+      }
+    }
+    flags[i] = isNewHigh;
+  }
+  return flags;
 }
 
 // ── Data conversion ───────────────────────────────────────────────────
@@ -147,6 +184,22 @@ export function toLineData(
     }
   }
   return result;
+}
+
+/** Point-marker data for a sparse set of indices on a line. */
+export function toMarkerData(
+  candles: ChartCandleDto[],
+  values: (number | null)[],
+  indices: number[],
+): LineData<Time>[] {
+  const result: LineData<Time>[] = [];
+  for (const idx of indices) {
+    const v = values[idx];
+    if (v != null && isFinite(v)) {
+      result.push({ time: candles[idx].time as Time, value: v });
+    }
+  }
+  return result.sort((a, b) => (a.time < b.time ? -1 : a.time > b.time ? 1 : 0));
 }
 
 // ── Volume heatmap coloring ───────────────────────────────────────────

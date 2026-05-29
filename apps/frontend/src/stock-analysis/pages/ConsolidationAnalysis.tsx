@@ -27,6 +27,11 @@ import { ConsolidationSidebar } from "../components/ConsolidationSidebar";
 import { ConsolidationChartHeader } from "../components/ConsolidationChartHeader";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
+import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
+import {
+  buildRsBenchmarks,
+  GROUP_BENCHMARK_EXCHANGE,
+} from "src/market-data/utils/rs-benchmarks";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { FinancialReportChartFooter } from "../components/FinancialReportChartFooter";
 import { LoadingSpinner } from "src/global/design-system";
@@ -149,10 +154,22 @@ export default function ConsolidationAnalysis() {
     includeExtendedHours,
   );
 
+  const groupSymbol = useIndustryGroupSymbol(
+    selectedConsolidation?.industryGroup,
+  );
+  const { candles: groupCandles, loadMore: loadMoreGroup } = useChartData(
+    groupSymbol,
+    groupSymbol ? GROUP_BENCHMARK_EXCHANGE : null,
+    interval,
+    bars,
+    includeExtendedHours,
+  );
+
   const handleLoadMore = useCallback(() => {
     loadMore();
     loadMoreSpy();
-  }, [loadMore, loadMoreSpy]);
+    loadMoreGroup();
+  }, [loadMore, loadMoreSpy, loadMoreGroup]);
 
   // Handlers
   const handleTickerSelect = useCallback(
@@ -315,12 +332,21 @@ export default function ConsolidationAnalysis() {
                         visibleBars={interval === "W" ? 52 : 130}
                         volume={{ show: true }}
                         showTradingView
-                        rs={spyCandles ? {
-                          benchmarkCandles: spyCandles,
-                          smaPeriod: 50,
-                          lookback: interval === "W" ? 52 : 260,
-                          benchmarkLabel: BENCHMARK_SYMBOL,
-                        } : undefined}
+                        rs={(() => {
+                          const benchmarks = buildRsBenchmarks({
+                            spyCandles,
+                            spyLabel: BENCHMARK_SYMBOL,
+                            groupCandles,
+                            groupLabel: selectedConsolidation?.industryGroup,
+                          });
+                          return benchmarks
+                            ? {
+                                benchmarks,
+                                smaPeriod: 50,
+                                lookback: interval === "W" ? 52 : 260,
+                              }
+                            : undefined;
+                        })()}
                         timeframe={{
                           value: interval,
                           onChange: setInterval,

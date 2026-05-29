@@ -24,6 +24,10 @@ export interface ChartColorPalette {
   rsSma: string;
   rsNewHigh: string;
   rsNewLow: string;
+  // Second RS line (e.g. vs industry group) + divergence marker
+  rsLine2: string;
+  rsSma2: string;
+  rsDivergence: string;
 }
 
 export const MA_DEFAULT_COLORS = ["#ef4444", "#3b82f6", "#22c55e", "#f59e0b", "#a855f7"];
@@ -49,6 +53,9 @@ const DARK: ChartColorPalette = {
   rsSma: "#f59e0b",
   rsNewHigh: "#3b82f6",
   rsNewLow: "#ef4444",
+  rsLine2: "#06b6d4",
+  rsSma2: "#a855f7",
+  rsDivergence: "#facc15",
 };
 
 export function getChartColors(theme: "dark" = "dark"): ChartColorPalette {

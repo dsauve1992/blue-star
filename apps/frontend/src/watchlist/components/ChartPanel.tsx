@@ -13,6 +13,11 @@ import type { MovingAverageConfig } from "src/market-data/utils/chart-utils";
 import type { Watchlist } from "../api/watchlist.client";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
+import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
+import {
+  buildRsBenchmarks,
+  GROUP_BENCHMARK_EXCHANGE,
+} from "src/market-data/utils/rs-benchmarks";
 import { getQuadrantColor } from "src/stock-analysis/utils/sector-utils";
 import {
   getIndustryGroupQuadrant,
@@ -68,6 +73,10 @@ export function ChartPanel({
   const { data: industryGroupStatusData } = useLatestSectorStatus(
     INDUSTRY_GROUP_UNIVERSE_ID,
   );
+
+  const sectorName = profileData?.profile?.sector ?? null;
+  const industryGroup = profileData?.profile?.industryGroup ?? null;
+
   const {
     candles,
     isLoading: chartLoading,
@@ -82,13 +91,20 @@ export function ChartPanel({
     includeExtendedHours,
   );
 
+  const groupSymbol = useIndustryGroupSymbol(industryGroup);
+  const { candles: groupCandles, loadMore: loadMoreGroup } = useChartData(
+    groupSymbol,
+    groupSymbol ? GROUP_BENCHMARK_EXCHANGE : null,
+    chartProps?.interval,
+    chartProps?.bars,
+    includeExtendedHours,
+  );
+
   const handleLoadMore = useCallback(() => {
     loadMore();
     onLoadMoreSpy();
-  }, [loadMore, onLoadMoreSpy]);
-
-  const sectorName = profileData?.profile?.sector ?? null;
-  const industryGroup = profileData?.profile?.industryGroup ?? null;
+    loadMoreGroup();
+  }, [loadMore, onLoadMoreSpy, loadMoreGroup]);
   const quadrant = industryGroupStatusData?.sectors
     ? getIndustryGroupQuadrant(industryGroup, industryGroupStatusData.sectors)
     : null;
@@ -137,12 +153,21 @@ export function ChartPanel({
                   visibleBars={interval === "W" ? 52 : 130}
                   volume={{ show: true }}
                   showTradingView
-                  rs={spyCandles ? {
-                    benchmarkCandles: spyCandles,
-                    smaPeriod: 50,
-                    lookback: interval === "W" ? 52 : 260,
-                    benchmarkLabel: BENCHMARK_SYMBOL,
-                  } : undefined}
+                  rs={(() => {
+                    const benchmarks = buildRsBenchmarks({
+                      spyCandles,
+                      spyLabel: BENCHMARK_SYMBOL,
+                      groupCandles,
+                      groupLabel: industryGroup,
+                    });
+                    return benchmarks
+                      ? {
+                          benchmarks,
+                          smaPeriod: 50,
+                          lookback: interval === "W" ? 52 : 260,
+                        }
+                      : undefined;
+                  })()}
                   timeframe={{
                     value: interval,
                     onChange: onIntervalChange,

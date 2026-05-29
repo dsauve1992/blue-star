@@ -28,6 +28,7 @@ import {
   computeRS,
   computeVolumeHeatmapColor,
   toLineData,
+  toMarkerData,
   fmt,
   fmtVol,
 } from "../utils/chart-utils";
@@ -44,11 +45,22 @@ export interface VolumeConfig {
   heatmap?: boolean;
 }
 
+export interface RSBenchmark {
+  candles: ChartCandleDto[];
+  /** Short label shown in legend/tooltip, e.g. "SPY" or the industry-group name */
+  label: string;
+  /**
+   * Show the larger price-divergence markers (RS new high while price isn't)
+   * for this benchmark. Defaults to true for the first benchmark only.
+   */
+  showDivergence?: boolean;
+}
+
 export interface RSConfig {
-  benchmarkCandles: ChartCandleDto[];
+  /** One RS line per benchmark, all rendered in a single RS sub-pane. */
+  benchmarks: RSBenchmark[];
   smaPeriod?: number;
   lookback?: number;
-  benchmarkLabel?: string;
 }
 
 export interface TimeframeConfig {
@@ -122,12 +134,19 @@ const TIMEFRAME_LABELS: Record<string, string> = {
 
 // ── Legend state ──────────────────────────────────────────────────────
 
+interface RSLegendEntry {
+  label: string;
+  rs: number | null;
+  rsSma: number | null;
+  color: string;
+  smaColor: string;
+}
+
 interface LegendData {
   o: number; h: number; l: number; c: number; vol: number;
   chg: number; chgPct: number;
   mas: { label: string; value: number; color: string }[];
-  rs?: number | null;
-  rsSma?: number | null;
+  rsLines: RSLegendEntry[];
 }
 
 interface TooltipState {
@@ -183,21 +202,32 @@ function TechnicalChartInner({
   drawingToolRef.current = drawingTool;
 
   // Stable key to detect when data actually changes
+  const rsBenchmarkKey = rs?.benchmarks
+    .map((b) => `${b.label}:${b.candles.length}`)
+    .join("|") ?? "";
   const dataKey = useMemo(
     () => {
       const first = candles[0];
       const last = candles[candles.length - 1];
-      return `${candles.length}-${first?.time}-${last?.close}-${rs?.benchmarkCandles?.length ?? 0}`;
+      return `${candles.length}-${first?.time}-${last?.close}-${rsBenchmarkKey}`;
     },
-    [candles, rs?.benchmarkCandles],
+    [candles, rsBenchmarkKey],
   );
 
   // Series refs for crosshair reads
   const csRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const vsRef = useRef<ISeriesApi<"Histogram"> | null>(null);
   const maSeriesRefs = useRef<{ series: ISeriesApi<"Line">; label: string; color: string }[]>([]);
-  const rsLineSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const rsSmaSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  // One entry per RS benchmark line (for crosshair legend reads)
+  const rsLineSeriesRefs = useRef<
+    {
+      lineSeries: ISeriesApi<"Line">;
+      smaSeries: ISeriesApi<"Line">;
+      label: string;
+      color: string;
+      smaColor: string;
+    }[]
+  >([]);
   const rsPaneSeriesRefs = useRef<ISeriesApi<"Line">[]>([]); // all series on RS pane (for cleanup)
 
   const [legend, setLegend] = useState<LegendData | null>(null);
@@ -225,18 +255,19 @@ function TechnicalChartInner({
       if (pt?.value != null) mas.push({ label: m.label, value: pt.value, color: m.color });
     }
 
-    const rsVal = rsLineSeriesRef.current
-      ? (param.seriesData.get(rsLineSeriesRef.current) as LineData<Time> | undefined)?.value ?? null
-      : null;
-    const rsSmaVal = rsSmaSeriesRef.current
-      ? (param.seriesData.get(rsSmaSeriesRef.current) as LineData<Time> | undefined)?.value ?? null
-      : null;
+    const rsLines: RSLegendEntry[] = rsLineSeriesRefs.current.map((r) => ({
+      label: r.label,
+      color: r.color,
+      smaColor: r.smaColor,
+      rs: (param.seriesData.get(r.lineSeries) as LineData<Time> | undefined)?.value ?? null,
+      rsSma: (param.seriesData.get(r.smaSeries) as LineData<Time> | undefined)?.value ?? null,
+    }));
 
     const chg = ohlc.close - ohlc.open;
     const data: LegendData = {
       o: ohlc.open, h: ohlc.high, l: ohlc.low, c: ohlc.close, vol,
       chg, chgPct: ohlc.open ? (chg / ohlc.open) * 100 : 0,
-      mas, rs: rsVal, rsSma: rsSmaVal,
+      mas, rsLines,
     };
     setLegend(data);
 
@@ -429,8 +460,7 @@ function TechnicalChartInner({
       csRef.current = null;
       vsRef.current = null;
       maSeriesRefs.current = [];
-      rsLineSeriesRef.current = null;
-      rsSmaSeriesRef.current = null;
+      rsLineSeriesRefs.current = [];
     };
   }, [C, handleVisibleLogicalRangeChange, handleCrosshairMove, handleCrosshairMoveForTools, handleChartClick]);
 
@@ -507,8 +537,7 @@ function TechnicalChartInner({
       if (p > 0) chart.removePane(p);
     }
     rsPaneSeriesRefs.current = [];
-    rsLineSeriesRef.current = null;
-    rsSmaSeriesRef.current = null;
+    rsLineSeriesRefs.current = [];
     maSeriesRefs.current = [];
 
     // ── Pane 0: Candlesticks ─────────────────────────────────────
@@ -568,81 +597,97 @@ function TechnicalChartInner({
       vsRef.current = null;
     }
 
-    // ── Pane 1: RS sub-chart (optional) ──────────────────────────
-    if (currentRS && currentRS.benchmarkCandles.length > 0) {
-      const smaPeriod = currentRS.smaPeriod ?? 50;
-      const lookback = currentRS.lookback ?? 52;
-      const benchmarkLabel = currentRS.benchmarkLabel ?? "SPY";
+    // ── Pane 1: RS sub-chart (optional, one line per benchmark) ──
+    const rsBenchmarks = currentRS?.benchmarks.filter((b) => b.candles.length > 0) ?? [];
+    if (rsBenchmarks.length > 0) {
+      const smaPeriod = currentRS!.smaPeriod ?? 50;
+      const lookback = currentRS!.lookback ?? 52;
 
-      const rsResult = computeRS(candles, currentRS.benchmarkCandles, smaPeriod, lookback);
+      rsBenchmarks.forEach((benchmark, bIdx) => {
+        const isPrimary = bIdx === 0;
+        const lineColor = isPrimary ? C.rsLine : C.rsLine2;
+        const smaColor = isPrimary ? C.rsSma : C.rsSma2;
+        const showDivergence = benchmark.showDivergence ?? isPrimary;
 
-      // RS line (pane 1)
-      const rsLineSeries = chart.addSeries(LineSeries, {
-        color: C.rsLine, lineWidth: 2,
-        priceLineVisible: false, lastValueVisible: true,
-        crosshairMarkerVisible: true,
-        crosshairMarkerRadius: 3,
-        crosshairMarkerBorderColor: C.rsLine,
-        crosshairMarkerBackgroundColor: C.surface,
-      }, 1);
-      rsLineSeries.setData(toLineData(candles, rsResult.rsLine));
-      rsLineSeriesRef.current = rsLineSeries;
-      rsPaneSeriesRefs.current.push(rsLineSeries);
+        const rsResult = computeRS(candles, benchmark.candles, smaPeriod, lookback);
 
-      // RS SMA (pane 1)
-      const rsSmaSeries = chart.addSeries(LineSeries, {
-        color: C.rsSma, lineWidth: 1,
-        priceLineVisible: false, lastValueVisible: true,
-        crosshairMarkerVisible: false,
-      }, 1);
-      rsSmaSeries.setData(toLineData(candles, rsResult.rsSma));
-      rsSmaSeriesRef.current = rsSmaSeries;
-      rsPaneSeriesRefs.current.push(rsSmaSeries);
-
-      // New high dots (pane 1)
-      if (rsResult.newHighIndices.size > 0) {
-        const highSeries = chart.addSeries(LineSeries, {
-          color: C.rsNewHigh, lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 4,
-          priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+        // RS line
+        const rsLineSeries = chart.addSeries(LineSeries, {
+          color: lineColor, lineWidth: 2,
+          priceLineVisible: false, lastValueVisible: true,
+          crosshairMarkerVisible: true,
+          crosshairMarkerRadius: 3,
+          crosshairMarkerBorderColor: lineColor,
+          crosshairMarkerBackgroundColor: C.surface,
         }, 1);
-        const highData: LineData<Time>[] = [];
-        for (const idx of rsResult.newHighIndices) {
-          if (rsResult.rsLine[idx] !== null) {
-            highData.push({ time: candles[idx].time as Time, value: rsResult.rsLine[idx]! });
-          }
-        }
-        highSeries.setData(highData);
-        rsPaneSeriesRefs.current.push(highSeries);
-      }
+        rsLineSeries.setData(toLineData(candles, rsResult.rsLine));
+        rsPaneSeriesRefs.current.push(rsLineSeries);
 
-      // New low dots (pane 1)
-      if (rsResult.newLowIndices.size > 0) {
-        const lowSeries = chart.addSeries(LineSeries, {
-          color: C.rsNewLow, lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 4,
-          priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+        // RS SMA
+        const rsSmaSeries = chart.addSeries(LineSeries, {
+          color: smaColor, lineWidth: 1,
+          priceLineVisible: false, lastValueVisible: true,
+          crosshairMarkerVisible: false,
         }, 1);
-        const lowData: LineData<Time>[] = [];
-        for (const idx of rsResult.newLowIndices) {
-          if (rsResult.rsLine[idx] !== null) {
-            lowData.push({ time: candles[idx].time as Time, value: rsResult.rsLine[idx]! });
-          }
+        rsSmaSeries.setData(toLineData(candles, rsResult.rsSma));
+        rsPaneSeriesRefs.current.push(rsSmaSeries);
+
+        rsLineSeriesRefs.current.push({
+          lineSeries: rsLineSeries,
+          smaSeries: rsSmaSeries,
+          label: benchmark.label,
+          color: lineColor,
+          smaColor,
+        });
+
+        // New high dots (exclude divergence indices when divergence is shown,
+        // so the two markers don't stack on the same point)
+        const highMarkerIdx = [...rsResult.newHighIndices].filter(
+          (idx) => !(showDivergence && rsResult.divergenceIndices.has(idx)),
+        );
+        if (highMarkerIdx.length > 0) {
+          const highSeries = chart.addSeries(LineSeries, {
+            color: C.rsNewHigh, lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 4,
+            priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+          }, 1);
+          highSeries.setData(toMarkerData(candles, rsResult.rsLine, highMarkerIdx));
+          rsPaneSeriesRefs.current.push(highSeries);
         }
-        lowSeries.setData(lowData);
-        rsPaneSeriesRefs.current.push(lowSeries);
-      }
+
+        // New low dots
+        if (rsResult.newLowIndices.size > 0) {
+          const lowSeries = chart.addSeries(LineSeries, {
+            color: C.rsNewLow, lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 4,
+            priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+          }, 1);
+          lowSeries.setData(toMarkerData(candles, rsResult.rsLine, [...rsResult.newLowIndices]));
+          rsPaneSeriesRefs.current.push(lowSeries);
+        }
+
+        // Divergence markers: RS new high while price is not (the early signal).
+        // Larger, distinct color so it stands out from plain RS new highs.
+        if (showDivergence && rsResult.divergenceIndices.size > 0) {
+          const divSeries = chart.addSeries(LineSeries, {
+            color: C.rsDivergence, lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 6,
+            priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+          }, 1);
+          divSeries.setData(toMarkerData(candles, rsResult.rsLine, [...rsResult.divergenceIndices]));
+          rsPaneSeriesRefs.current.push(divSeries);
+        }
+      });
 
       // Pane sizing: 3:1 ratio
       chart.panes()[0].setStretchFactor(3);
       chart.panes()[1].setStretchFactor(1);
 
-      // RS pane watermark
+      // RS pane watermark (per-line labels live in the legend)
       const rsPane = chart.panes()[1];
       if (rsPane) {
         createTextWatermark(rsPane, {
           horzAlign: "center",
           vertAlign: "center",
           lines: [{
-            text: `RS vs ${benchmarkLabel}`,
+            text: "RS",
             color: "rgba(148, 163, 184, 0.08)",
             fontSize: 20,
             fontFamily: "'JetBrains Mono', monospace",
@@ -666,12 +711,19 @@ function TechnicalChartInner({
       mas: maConfigs.map(({ label, color, values }) => ({
         label, color, value: values.filter((v): v is number => v !== null).pop() ?? 0,
       })),
+      rsLines: rsBenchmarks.map((benchmark, bIdx) => {
+        const rsResult = computeRS(
+          candles, benchmark.candles, currentRS!.smaPeriod ?? 50, currentRS!.lookback ?? 52,
+        );
+        return {
+          label: benchmark.label,
+          color: bIdx === 0 ? C.rsLine : C.rsLine2,
+          smaColor: bIdx === 0 ? C.rsSma : C.rsSma2,
+          rs: rsResult.rsLine.filter((v): v is number => v !== null).pop() ?? null,
+          rsSma: rsResult.rsSma.filter((v): v is number => v !== null).pop() ?? null,
+        };
+      }),
     };
-    if (currentRS && currentRS.benchmarkCandles.length > 0) {
-      const rsResult = computeRS(candles, currentRS.benchmarkCandles, currentRS.smaPeriod ?? 50, currentRS.lookback ?? 52);
-      lastLegend.rs = rsResult.rsLine.filter((v): v is number => v !== null).pop() ?? null;
-      lastLegend.rsSma = rsResult.rsSma.filter((v): v is number => v !== null).pop() ?? null;
-    }
     setLegend(lastLegend);
 
     // ── Scroll position ──────────────────────────────────────────
@@ -807,21 +859,21 @@ function ChartLegend({ legend, clr, colors: C }: { legend: LegendData; clr: stri
           ))}
         </div>
       )}
-      {(legend.rs != null || legend.rsSma != null) && (
-        <div style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
-          {legend.rs != null && (
+      {legend.rsLines.map((r) =>
+        r.rs != null ? (
+          <div key={r.label} style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
             <span>
-              <span style={{ color: C.rsLine, opacity: 0.7 }}>RS</span>{" "}
-              <span style={{ color: C.rsLine }}>{fmt(legend.rs)}</span>
+              <span style={{ color: r.color, opacity: 0.7 }}>RS vs {r.label}</span>{" "}
+              <span style={{ color: r.color }}>{fmt(r.rs)}</span>
             </span>
-          )}
-          {legend.rsSma != null && (
-            <span>
-              <span style={{ color: C.rsSma, opacity: 0.7 }}>RS SMA</span>{" "}
-              <span style={{ color: C.rsSma }}>{fmt(legend.rsSma)}</span>
-            </span>
-          )}
-        </div>
+            {r.rsSma != null && (
+              <span>
+                <span style={{ color: r.smaColor, opacity: 0.7 }}>SMA</span>{" "}
+                <span style={{ color: r.smaColor }}>{fmt(r.rsSma)}</span>
+              </span>
+            )}
+          </div>
+        ) : null,
       )}
     </div>
   );
@@ -859,19 +911,15 @@ function ChartTooltip({ tooltip, colors: C }: { tooltip: TooltipState; colors: C
           ))}
         </div>
       )}
-      {(d.rs != null || d.rsSma != null) && (
+      {d.rsLines.some((r) => r.rs != null) && (
         <div style={{ marginTop: 4, borderTop: "1px solid rgba(51,65,85,0.4)", paddingTop: 4, display: "flex", flexDirection: "column", gap: 1 }}>
-          {d.rs != null && (
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span style={{ color: C.rsLine, opacity: 0.7 }}>RS</span>
-              <span style={{ color: C.rsLine }}>{fmt(d.rs)}</span>
-            </div>
-          )}
-          {d.rsSma != null && (
-            <div style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-              <span style={{ color: C.rsSma, opacity: 0.7 }}>RS SMA</span>
-              <span style={{ color: C.rsSma }}>{fmt(d.rsSma)}</span>
-            </div>
+          {d.rsLines.map((r) =>
+            r.rs != null ? (
+              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+                <span style={{ color: r.color, opacity: 0.7 }}>RS vs {r.label}</span>
+                <span style={{ color: r.color }}>{fmt(r.rs)}</span>
+              </div>
+            ) : null,
           )}
         </div>
       )}

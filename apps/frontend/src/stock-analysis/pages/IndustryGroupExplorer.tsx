@@ -13,6 +13,11 @@ import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
+import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
+import {
+  buildRsBenchmarks,
+  GROUP_BENCHMARK_EXCHANGE,
+} from "src/market-data/utils/rs-benchmarks";
 import {
   getIndustryGroupQuadrant,
   INDUSTRY_GROUP_UNIVERSE_ID,
@@ -114,10 +119,22 @@ export default function IndustryGroupExplorer() {
     includeExtendedHours,
   );
 
+  const groupSymbol = useIndustryGroupSymbol(selectedGroup);
+  const { candles: groupCandles, loadMore: loadMoreGroup } = useChartData(
+    groupSymbol,
+    // Yahoo ignores exchange for the candle fetch; the GICS subindex
+    // (^SP500-XXXX) needs none. A truthy placeholder enables the query.
+    groupSymbol ? GROUP_BENCHMARK_EXCHANGE : null,
+    interval,
+    bars,
+    includeExtendedHours,
+  );
+
   const handleLoadMore = useCallback(() => {
     loadMore();
     loadMoreSpy();
-  }, [loadMore, loadMoreSpy]);
+    loadMoreGroup();
+  }, [loadMore, loadMoreSpy, loadMoreGroup]);
 
   const {
     data: financialData,
@@ -292,16 +309,21 @@ export default function IndustryGroupExplorer() {
                           visibleBars={interval === "W" ? 52 : 130}
                           volume={{ show: true }}
                           showTradingView
-                          rs={
-                            spyCandles
+                          rs={(() => {
+                            const benchmarks = buildRsBenchmarks({
+                              spyCandles,
+                              spyLabel: BENCHMARK_SYMBOL,
+                              groupCandles,
+                              groupLabel: selectedGroup,
+                            });
+                            return benchmarks
                               ? {
-                                  benchmarkCandles: spyCandles,
+                                  benchmarks,
                                   smaPeriod: 50,
                                   lookback: interval === "W" ? 52 : 260,
-                                  benchmarkLabel: BENCHMARK_SYMBOL,
                                 }
-                              : undefined
-                          }
+                              : undefined;
+                          })()}
                           timeframe={{
                             value: interval,
                             onChange: setInterval,

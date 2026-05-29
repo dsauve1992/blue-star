@@ -100,10 +100,11 @@ export default function ChartSandbox() {
             volume={{ show: true, heatmap: false }}
             showTradingView
             rs={{
-              benchmarkCandles: spyCandles,
+              benchmarks: [
+                { candles: spyCandles, label: BENCHMARK_SYMBOL, showDivergence: true },
+              ],
               smaPeriod: 50,
               lookback: interval === "W" ? 52 : 260,
-              benchmarkLabel: BENCHMARK_SYMBOL,
             }}
             timeframe={{
               value: interval,
