@@ -15,6 +15,7 @@ import {
   LogIn,
   TrendingUp,
   ShieldAlert,
+  Boxes,
 } from "lucide-react";
 
 const MAIN_NAV_BASE = [
@@ -24,6 +25,7 @@ const MAIN_NAV_BASE = [
   "/stock-analysis",
   "/watchlists",
   "/sector-rotation",
+  "/industry-groups",
 ] as const;
 
 const PATH_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
@@ -34,6 +36,7 @@ const PATH_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   "/stock-analysis": BarChart3,
   "/watchlists": Bookmark,
   "/sector-rotation": PieChart,
+  "/industry-groups": Boxes,
   "/settings": Settings,
   "/profile": User,
 };
