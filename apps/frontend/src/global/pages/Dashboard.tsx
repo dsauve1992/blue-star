@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../design-system";
 import { PageContainer } from "../design-system/page-container";
+import { RegimePanel } from "../../market-regime/components/RegimePanel";
 
 export default function Dashboard() {
   return (
@@ -13,6 +14,8 @@ export default function Dashboard() {
             Welcome back! Here's your portfolio overview
           </p>
         </div>
+
+        <RegimePanel />
 
         <Card>
           <CardHeader>

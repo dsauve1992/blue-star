@@ -20,15 +20,15 @@ export class RsRatingCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('0 18 * * 5', { timeZone: 'America/Toronto' })
-  async runWeeklyRsRatings() {
-    const jobName = 'Weekly RS Rating Computation';
+  @Cron('0 18 * * 1-5', { timeZone: 'America/Toronto' })
+  async runDailyRsRatings() {
+    const jobName = 'Daily RS Rating Computation';
     this.logger.log(`Starting ${jobName}...`);
 
     await this.cronJobNotificationService.notifyJobStart({
       jobName,
       jobType: 'rs-rating',
-      frequency: 'weekly',
+      frequency: 'daily',
     });
 
     try {
@@ -48,9 +48,9 @@ export class RsRatingCronService {
         );
         await this.cronJobNotificationService.notifyJobError(
           {
-            jobName: 'Weekly Industry-Group RS Rating Computation',
+            jobName: 'Daily Industry-Group RS Rating Computation',
             jobType: 'rs-rating',
-            frequency: 'weekly',
+            frequency: 'daily',
           },
           innerError,
         );
@@ -59,7 +59,7 @@ export class RsRatingCronService {
       await this.cronJobNotificationService.notifyJobSuccess({
         jobName,
         jobType: 'rs-rating',
-        frequency: 'weekly',
+        frequency: 'daily',
       });
     } catch (error) {
       const errorMessage =
@@ -70,7 +70,7 @@ export class RsRatingCronService {
         {
           jobName,
           jobType: 'rs-rating',
-          frequency: 'weekly',
+          frequency: 'daily',
         },
         error,
       );

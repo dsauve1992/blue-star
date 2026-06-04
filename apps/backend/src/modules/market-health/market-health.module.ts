@@ -21,5 +21,6 @@ import { MARKET_HEALTH_REPOSITORY } from './constants/tokens';
     GetMarketHealthUseCase,
     MarketHealthCronService,
   ],
+  exports: [MARKET_HEALTH_REPOSITORY],
 })
 export class MarketHealthModule {}
