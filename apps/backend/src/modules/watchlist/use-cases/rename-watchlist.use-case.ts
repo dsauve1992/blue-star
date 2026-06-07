@@ -5,6 +5,7 @@ import { WatchlistName } from '../domain/value-objects/watchlist-name';
 import type { WatchlistWriteRepository } from '../domain/repositories/watchlist-write.repository.interface';
 import type { AuthContext } from '../../auth/auth-context.interface';
 import { WATCHLIST_WRITE_REPOSITORY } from '../constants/tokens';
+import { AuthorizationError } from '../domain/domain-errors';
 
 export interface RenameWatchlistRequestDto {
   watchlistId: WatchlistId;
@@ -31,7 +32,7 @@ export class RenameWatchlistUseCase {
     );
 
     if (watchlist.userId.value !== authContext.userId.value) {
-      throw new Error('User does not own this watchlist');
+      throw new AuthorizationError('User does not own this watchlist');
     }
 
     watchlist.rename(request.name);

@@ -4,6 +4,7 @@ import { WatchlistId } from '../domain/value-objects/watchlist-id';
 import type { WatchlistReadRepository } from '../domain/repositories/watchlist-read.repository.interface';
 import type { AuthContext } from '../../auth/auth-context.interface';
 import { WATCHLIST_READ_REPOSITORY } from '../constants/tokens';
+import { AuthorizationError, NotFoundError } from '../domain/domain-errors';
 
 export interface GetWatchlistByIdRequestDto {
   watchlistId: WatchlistId;
@@ -29,13 +30,13 @@ export class GetWatchlistByIdUseCase {
     );
 
     if (!watchlist) {
-      throw new Error(
+      throw new NotFoundError(
         `Watchlist with ID ${request.watchlistId.value} not found`,
       );
     }
 
     if (watchlist.userId.value !== authContext.userId.value) {
-      throw new Error('User does not own this watchlist');
+      throw new AuthorizationError('User does not own this watchlist');
     }
 
     return {

@@ -22,6 +22,7 @@ import {
   SECTOR_ROTATION_PERSISTENCE_SERVICE,
 } from './constants/tokens';
 import { MarketDataModule } from '../market-data/market-data.module';
+import { NotificationModule } from '../notification/notification.module';
 
 export {
   SECTOR_ROTATION_CALCULATION_SERVICE,
@@ -32,7 +33,7 @@ export {
 };
 
 @Module({
-  imports: [DatabaseModule, MarketDataModule],
+  imports: [DatabaseModule, MarketDataModule, NotificationModule],
   controllers: [SectorRotationController],
   providers: [
     {

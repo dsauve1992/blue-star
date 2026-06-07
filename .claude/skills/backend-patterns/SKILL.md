@@ -39,15 +39,43 @@ Aggregate roots with business logic — never anemic. Private constructor, stati
 
 ## Domain Errors
 
-Use specific domain errors, never generic `Error`:
+Use specific domain errors, **never** generic `throw new Error(...)` in the domain or
+use-case layers. A bare `Error` becomes an HTTP 500; a `DomainError` is mapped to the
+right status by the global filter (see below).
 
-| Error | When |
-|-------|------|
-| `InvariantError` | Invalid data, business rule violated |
-| `StateError` | Operation invalid for current entity state |
-| `ChronologyError` | Event timestamp out of order |
+| Error | When | HTTP |
+|-------|------|------|
+| `InvariantError` | Invalid data, business rule violated | 400 |
+| `StateError` | Operation invalid for current entity state | 400 |
+| `ChronologyError` | Event timestamp out of order | 400 |
+| `AuthorizationError` | Caller authenticated but does not own / may not act on the resource | 403 |
+| `NotFoundError` | Requested resource does not exist | 404 |
 
-All extend `DomainError extends Error`.
+The shared base `DomainError`, plus the cross-cutting `AuthorizationError` and
+`NotFoundError`, live in **`src/common/errors`** (one identity app-wide). Module-specific
+errors (`InvariantError`, `StateError`, `ChronologyError`) live in each module's
+`domain/domain-errors.ts`, which **re-exports** the shared base and extends it:
+
+```typescript
+// src/modules/position/domain/domain-errors.ts
+export { DomainError, AuthorizationError, NotFoundError } from '../../../common/errors';
+import { DomainError } from '../../../common/errors';
+
+export class ChronologyError extends DomainError {}
+export class StateError extends DomainError {}
+export class InvariantError extends DomainError {}
+```
+
+So consumers always import from their own module path (`from '../domain/domain-errors'`),
+never reach across modules, yet every error shares one `DomainError` identity.
+
+### Error → HTTP mapping (the boundary)
+
+`DomainErrorFilter` (`src/common/filters/domain-error.filter.ts`, wired globally via
+`APP_FILTER` in `app.module.ts`) catches everything and maps by `instanceof`:
+`AuthorizationError` → 403, `NotFoundError` → 404, any other `DomainError` → 400,
+NestJS `HttpException`s pass through, anything else is rethrown → 500. Use cases just
+throw the right `DomainError` subtype; never touch HTTP status codes in a use case.
 
 ## Repository Interfaces (domain layer)
 
@@ -94,11 +122,36 @@ export class OpenPositionUseCase {
 - DTOs use value objects, not primitives
 - Write use cases return minimal data (just IDs)
 - Read use cases return full entities
-- Always check ownership on existing resources:
+- **Any use case that reads or mutates an *existing* resource takes `authContext` and
+  verifies ownership** — this is mandatory, not optional. The global `AuthGuard` only
+  proves the caller is logged in (authentication), never that they own the object
+  (authorization). Skipping the check is an IDOR. See the `backend-security` skill.
+
+Load the resource, then guard before doing anything with it:
 
 ```typescript
+const resource = await this.readRepo.findById(request.id);
+if (!resource) {
+  throw new NotFoundError(`Resource ${request.id.value} not found`);
+}
 if (resource.userId.value !== authContext.userId.value) {
-  throw new Error('User does not own this resource');
+  throw new AuthorizationError('User does not own this resource');
+}
+```
+
+**Child resources derive ownership from their parent.** If the entity has no `userId`
+of its own (e.g. `WatchlistMonitoring` belongs to a `Watchlist`), load the parent
+aggregate via its read repository and check the parent's `userId` — do **not** add a
+redundant `userId` to the child:
+
+```typescript
+// watchlist-monitoring use case: ownership comes from the parent watchlist
+const watchlist = await this.watchlistReadRepository.findById(request.watchlistId);
+if (!watchlist) {
+  throw new NotFoundError(`Watchlist ${request.watchlistId.value} not found`);
+}
+if (watchlist.userId.value !== authContext.userId.value) {
+  throw new AuthorizationError('User does not own this watchlist');
 }
 ```
 

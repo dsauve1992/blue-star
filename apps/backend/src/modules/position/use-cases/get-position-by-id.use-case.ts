@@ -3,6 +3,7 @@ import { PositionId } from '../domain/value-objects/position-id';
 import { Position } from '../domain/entities/position';
 import { PositionReadRepository } from '../domain/repositories/position-read.repository.interface';
 import { POSITION_READ_REPOSITORY } from '../constants/tokens';
+import { AuthorizationError, NotFoundError } from '../domain/domain-errors';
 import type { AuthContext } from '../../auth/auth-context.interface';
 
 export interface GetPositionByIdRequestDto {
@@ -29,12 +30,14 @@ export class GetPositionByIdUseCase {
     );
 
     if (!position) {
-      throw new Error(`Position with ID ${request.positionId.value} not found`);
+      throw new NotFoundError(
+        `Position with ID ${request.positionId.value} not found`,
+      );
     }
 
     // Validate user owns the position
     if (position.userId.value !== authContext.userId.value) {
-      throw new Error('User does not own this position');
+      throw new AuthorizationError('User does not own this position');
     }
 
     return { position };

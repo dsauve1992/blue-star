@@ -5,6 +5,7 @@ import { WatchlistTicker } from '../domain/value-objects/watchlist-ticker';
 import type { WatchlistWriteRepository } from '../domain/repositories/watchlist-write.repository.interface';
 import type { AuthContext } from '../../auth/auth-context.interface';
 import { WATCHLIST_WRITE_REPOSITORY } from '../constants/tokens';
+import { AuthorizationError } from '../domain/domain-errors';
 
 export interface RemoveTickerFromWatchlistRequestDto {
   watchlistId: WatchlistId;
@@ -31,7 +32,7 @@ export class RemoveTickerFromWatchlistUseCase {
     );
 
     if (watchlist.userId.value !== authContext.userId.value) {
-      throw new Error('User does not own this watchlist');
+      throw new AuthorizationError('User does not own this watchlist');
     }
 
     watchlist.removeTicker(request.ticker);

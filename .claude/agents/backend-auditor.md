@@ -39,11 +39,14 @@ with intent rather than your own preferences:
 
 1. `apps/backend/CLAUDE.md` and the root `CLAUDE.md`
 2. `.claude/skills/backend-patterns/SKILL.md` — the canonical DDD/CQRS/value-object/
-   repository/use-case/module patterns
-3. `.claude/skills/backend-testing/SKILL.md` — the canonical unit / integration /
+   repository/use-case/module patterns (incl. the domain-error taxonomy and the
+   `src/common/errors` + `DomainErrorFilter` HTTP mapping)
+3. `.claude/skills/backend-security/SKILL.md` — the canonical auth/ownership rules
+   (authN ≠ authZ, IDOR, child-resource ownership, `@Public()` justification)
+4. `.claude/skills/backend-testing/SKILL.md` — the canonical unit / integration /
    controller test conventions
 
-These three files are the source of truth. The checklist below restates their rules,
+These files are the source of truth. The checklist below restates their rules,
 but if the skills and this prompt ever disagree, the skills win — and flag the drift.
 
 ## Two-tier finding model (this is the core design — respect it)
@@ -61,13 +64,17 @@ real inconsistencies. So split every finding into one of two tiers:
   codebase ignores consistently. Report these **once**, in a separate section, with a
   representative example and a **site count** — never as N per-site findings.
 
-  Canonical Tier-2 example (already known to exist): ownership checks written as
-  `throw new Error('User does not own this ...')` in use-cases across `position`,
-  `watchlist`, and `watchlist-monitoring`. This produces an HTTP 500 instead of 403
-  and bypasses the domain-error taxonomy — but it is the *de-facto* pattern, so it is
-  NOT a per-site inconsistency. Emit ONE advisory: "bare-Error ownership check used in
-  N sites — consider a domain `AuthorizationError` mapped to a Nest `ForbiddenException`",
-  with the count and 2–3 representative paths. Do not flag each site.
+  Canonical Tier-2 example: a best practice the *whole* codebase ignores uniformly
+  (e.g. several analytics modules generating ids via `crypto.randomUUID()` inline
+  instead of `UuidGeneratorService`). Emit ONE advisory with the count and 2–3
+  representative paths; do not flag each site.
+
+  NOTE — convention has since changed: bare-`Error` ownership/not-found throws are
+  **no longer the norm**. The codebase now has `AuthorizationError`/`NotFoundError`
+  in `src/common/errors`, mapped to 403/404 by `DomainErrorFilter`. So a
+  `throw new Error('User does not own ...')` or `throw new Error('... not found')` in a
+  use-case is now a **Tier-1 violation** (it deviates from the established taxonomy and
+  silently returns 500), not a Tier-2 advisory. Flag each such site.
 
 **Consistency-first rule:** when you are unsure whether something is wrong, grep for
 how comparable modules do the same thing. If the majority do it the same way, it is at
@@ -104,9 +111,28 @@ most a Tier-2 advisory, not a Tier-1 violation.
 **Domain errors**
 
 - Bare `throw new Error(...)` for a *domain invariant / state / chronology* condition —
-  Tier 1 (should be `InvariantError` / `StateError` / `ChronologyError`, all extending
-  `DomainError`).
-- The *ownership/authorization* bare-Error variant — Tier 2 (see canonical example).
+  Tier 1 (should be `InvariantError` / `StateError` / `ChronologyError`).
+- Bare `throw new Error(...)` for an *ownership* condition — Tier 1 (should be
+  `AuthorizationError`, → 403).
+- Bare `throw new Error(...)` for a *not-found* condition after a null `findById` —
+  Tier 1 (should be `NotFoundError`, → 404).
+- A module's `domain/domain-errors.ts` redeclaring `DomainError extends Error` locally
+  instead of re-exporting the shared base from `src/common/errors` — Tier 1 (breaks the
+  single-identity guarantee `DomainErrorFilter` relies on for `instanceof`).
+
+**Authorization / ownership (cross-reference `backend-security` skill)**
+
+- A use-case that reads or mutates an *existing* resource but does **not** accept
+  `authContext` and verify ownership — **Blocking** (IDOR). Check both `execute(...)`'s
+  signature and the body for the `resource.userId.value !== authContext.userId.value`
+  guard. For child resources (entity has no `userId`), the check loads the *parent*
+  aggregate via its read repository — its absence is still Blocking.
+- A controller handler that accepts a resource id from the client but never reads
+  `req.user` / never passes `authContext` to the use-case — **Blocking** (the use-case
+  cannot check ownership without it).
+- A new `@Public()` endpoint that touches user-owned data — **Blocking**. A `@Public()`
+  endpoint that merely kicks off an expensive job (no user data) — Warning / note (the
+  two `stock-analysis` run endpoints are the known, accepted baseline).
 
 **DI / module wiring**
 
