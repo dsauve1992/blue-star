@@ -3,6 +3,7 @@ import { WatchlistId } from '../domain/value-objects/watchlist-id';
 import type { WatchlistWriteRepository } from '../domain/repositories/watchlist-write.repository.interface';
 import type { AuthContext } from '../../auth/auth-context.interface';
 import { WATCHLIST_WRITE_REPOSITORY } from '../constants/tokens';
+import { AuthorizationError } from '../domain/domain-errors';
 
 export interface DeleteWatchlistRequestDto {
   watchlistId: WatchlistId;
@@ -28,7 +29,7 @@ export class DeleteWatchlistUseCase {
     );
 
     if (watchlist.userId.value !== authContext.userId.value) {
-      throw new Error('User does not own this watchlist');
+      throw new AuthorizationError('User does not own this watchlist');
     }
 
     await this.watchlistWriteRepository.delete(request.watchlistId);

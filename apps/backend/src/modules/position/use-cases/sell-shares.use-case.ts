@@ -6,6 +6,7 @@ import { IsoTimestamp } from '../domain/value-objects/iso-timestamp';
 import type { PositionWriteRepository } from '../domain/repositories/position-write.repository.interface';
 import type { AuthContext } from '../../auth/auth-context.interface';
 import { POSITION_WRITE_REPOSITORY } from '../constants/tokens';
+import { AuthorizationError } from '../domain/domain-errors';
 
 export interface SellSharesRequestDto {
   positionId: PositionId;
@@ -37,7 +38,7 @@ export class SellSharesUseCase {
     );
 
     if (position.userId.value !== authContext.userId.value) {
-      throw new Error('User does not own this position');
+      throw new AuthorizationError('User does not own this position');
     }
 
     position.sell({

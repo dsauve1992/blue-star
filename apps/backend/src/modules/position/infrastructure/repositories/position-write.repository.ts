@@ -86,27 +86,17 @@ export class PositionWriteRepository implements IPositionWriteRepository {
         const stopPrice =
           event.action === Action.STOP_LOSS ? event.stop.value : null;
 
-        try {
-          await client.query(eventQuery, [
-            eventId,
-            position.id.value,
-            event.action,
-            event.ts.value,
-            event.instrument.value,
-            quantity,
-            price,
-            stopPrice,
-            event.note,
-          ]);
-        } catch (error) {
-          console.error('Error inserting event:', error);
-          console.error('Event data:', {
-            eventId,
-            positionId: position.id.value,
-            action: event.action,
-          });
-          throw error;
-        }
+        await client.query(eventQuery, [
+          eventId,
+          position.id.value,
+          event.action,
+          event.ts.value,
+          event.instrument.value,
+          quantity,
+          price,
+          stopPrice,
+          event.note,
+        ]);
       }
     });
   }
