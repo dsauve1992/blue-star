@@ -172,7 +172,7 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
             historical_data['price_vs_ema20_perc'] = abs(historical_data['close'] - historical_data['ema_20']) / historical_data['ema_20'] * 100
 
             historical_data['basic_signal'] = (
-                    (historical_data['adr_perc_20'] * 1.5 > historical_data['price_vs_ema10_perc']) &
+                    (historical_data['adr_perc_20'] > historical_data['price_vs_ema10_perc']) &
                     (historical_data['ema_10'] > historical_data['ema_20'])
             )
 
@@ -314,7 +314,6 @@ def analyse_weekly_setup(screener_service: ScreenerService, yahoo_finance_servic
 
             historical_data['basic_signal'] = (
                     (historical_data['adr_perc_20'] > historical_data['price_vs_ema10_perc']) &
-                    (historical_data['adr_perc_20'] * 1.5 > historical_data['price_vs_ema10_perc']) &
                     (historical_data['ema_10'] > historical_data['ema_20'])
             )
 

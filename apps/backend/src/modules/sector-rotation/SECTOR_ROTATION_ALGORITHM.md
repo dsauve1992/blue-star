@@ -1,435 +1,280 @@
 # Sector Rotation Calculation Algorithm
 
+> **This document describes what the code actually computes.** It was reconciled
+> against the implementation on 2026-06-06. The canonical source of truth is
+> `infrastructure/services/sector-rotation-calculation.service.ts`
+> (`SectorRotationCalculationServiceImpl`). Where the algorithm has quirks or
+> divergences from "textbook" RRG, they are called out explicitly rather than
+> hidden — see **Known divergences from standard RRG** at the end.
+
 ## Overview
 
-The Sector Rotation Calculation algorithm implements a Relative Strength Graph (RSG) or Relative Rotation Graph (RRG) methodology to analyze and visualize sector performance relative to a benchmark. This technique helps identify which sectors are leading, weakening, lagging, or improving in their relative performance over time.
+The Sector Rotation algorithm implements a Relative Rotation Graph (RRG)-style
+methodology to visualize how each member of a universe (sector ETFs, or a GICS
+industry-group universe) is performing relative to a single benchmark symbol
+(e.g. SPY). Each member is plotted as a point in a four-quadrant chart whose
+axes are **RS-Ratio** (X) and **RS-Momentum** (Y), both centered at 100.
 
-The algorithm transforms sector price data into normalized coordinates (X, Y) that can be plotted on a four-quadrant chart, where each quadrant represents a different phase of sector performance relative to the market.
+The four quadrants are **Leading**, **Weakening**, **Lagging**, and
+**Improving** (see Quadrant Assignment).
 
-## Core Concepts
+## Parameters
 
-### Relative Strength
-Relative Strength (RS) measures how a sector is performing compared to a benchmark (typically the average of all sectors). It's calculated using logarithmic returns to ensure proper scaling across different price levels.
+All live callers pass the constants in `constants/rrg-parameters.ts`. There is
+no separate "lookbackWeeks" parameter in the code.
 
-### X-Axis (Relative Strength Momentum)
-The X-axis represents the rate of change in relative strength over a lookback period. Positive X values indicate improving relative strength, while negative values indicate deteriorating relative strength.
+| Constant | Value | Meaning |
+|---|---|---|
+| `NORMALIZATION_WINDOW_WEEKS` | **14** | Rolling-window size (in weekly bars) for the Z-score normalization of both X and Y. |
+| `MOMENTUM_WEEKS` | **5** | See the warning below — this does **not** set the momentum horizon. It only widens the historical fetch window. |
+| `RS_SMOOTHING_PERIOD` | **6** | EMA period applied to RS before normalizing into X, and to the 1-week RS-Ratio difference before normalizing into Y. |
 
-### Y-Axis (Momentum of X)
-The Y-axis represents the momentum (rate of change) of the X-axis value. This creates a second derivative effect, showing whether the rate of change in relative strength is accelerating or decelerating.
+The `SectorRotationCalculationParams` interface carries `momentumWeeks` and
+`normalizationWindowWeeks`. `validateParams` requires each to be `>= 1`.
 
-### Quadrants
-The four quadrants categorize sectors based on their X and Y coordinates:
+> ⚠️ **`momentumWeeks` is not used as a momentum horizon.** It is consumed in
+> exactly one place: `requiredLookbackWeeks = max(normalizationWindowWeeks,
+> momentumWeeks, RS_SMOOTHING_PERIOD)`, which widens how far back data is
+> fetched. The Y-axis (RS-Momentum) is always derived from the **1-week** first
+> difference of the RS-Ratio, regardless of `momentumWeeks`. With the current
+> constants (`max(14, 5, 6) = 14`), `momentumWeeks` has no effect on output at
+> all. See Known divergences.
 
-- **Leading** (X > 0, Y > 0): Strong relative strength that's accelerating
-- **Weakening** (X > 0, Y < 0): Strong relative strength but losing momentum
-- **Lagging** (X < 0, Y < 0): Weak relative strength that's deteriorating
-- **Improving** (X < 0, Y > 0): Weak relative strength but gaining momentum
+## Step-by-step
 
-## Algorithm Parameters
+### Step 1 — Data preparation
 
-### Default Values
-- **lookbackWeeks**: 12 weeks (default)
-- **momentumWeeks**: 5 weeks (default)
-- **normalizationWindowWeeks**: 52 weeks (default in API, 5 weeks in use case)
-
-**Note**: The API controller uses 52 weeks as the default for `normalizationWindowWeeks`, while the use case has a default of 5 weeks. When calling the API endpoint, 52 weeks is used unless explicitly specified.
-
-### Parameter Descriptions
-
-#### `lookbackWeeks`
-The number of weeks to look back when calculating the X-axis value. This determines how far back we compare the current relative strength to calculate the rate of change.
-
-**Default**: 12 weeks
-
-#### `momentumWeeks`
-The number of weeks to look back when calculating the Y-axis value. This determines the period over which we measure the momentum (rate of change) of the X-axis.
-
-**Default**: 5 weeks
-
-#### `normalizationWindowWeeks`
-The rolling window size (in weeks) used for Z-score normalization of both X and Y values. This ensures that values are normalized relative to their recent historical distribution.
-
-**Default**: 52 weeks
-
-## Step-by-Step Algorithm
-
-### Step 1: Data Preparation
-
-#### 1.1 Extend Date Range
-The algorithm extends the requested date range backward to accommodate the required lookback period:
-
-```typescript
-requiredLookbackWeeks = max(
-  normalizationWindowWeeks,
-  lookbackWeeks,
-  momentumWeeks
-)
-
-extendedStartDate = requestedStartDate - (requiredLookbackWeeks × 7 days)
-```
-
-This ensures sufficient historical data for all calculations.
-
-#### 1.2 Fetch Sector Data
-For each sector, fetch weekly historical price data (closing prices) for the extended date range:
-
-- Data interval: Weekly (`1wk`)
-- Price points are aggregated by week (ISO week number)
-- If multiple price points exist for the same week, the latest one is used
-
-#### 1.3 Convert to Weekly Prices
-Price data is converted to weekly granularity:
-- Group price points by ISO week (year-week format: `YYYY-Www`)
-- For each week, use the latest available price point
-- Sort chronologically
-
-### Step 2: Benchmark Calculation
-
-The benchmark is calculated as the **equal-weighted average** of all sector prices at each date:
+**1.1 Extend the date range** to give the rolling/smoothing windows enough
+warm-up:
 
 ```
-Benchmark(t) = (1/N) × Σ(Sector_i(t))
+requiredLookbackWeeks = max(normalizationWindowWeeks, momentumWeeks, RS_SMOOTHING_PERIOD)
+extendedStartDate     = requestedStartDate − (requiredLookbackWeeks × 7 days)
 ```
 
-Where:
-- `N` = number of sectors
-- `Sector_i(t)` = price of sector i at time t
+**1.2 Fetch weekly data** (`1wk` interval) for each member and for the
+benchmark symbol over the extended range.
 
-**Implementation Notes**:
-- Only dates where at least one sector has data are included
-- The benchmark is the arithmetic mean of available sector prices at each date
-- Missing sector data for a specific date is excluded from the average
+**1.3 Aggregate to one price per ISO week.** Price points are grouped by ISO
+week key (`YYYY-Www`); the bar dated to the Monday of the week is preferred
+(`WeekUtils`). Each weekly series is sorted chronologically. Both member series
+and the benchmark series use the same weekly-aggregation logic.
 
-### Step 3: Relative Strength Calculation
+**1.4 Drop members with insufficient history.** A member is skipped (with a
+warning, not a failure) if it has fewer than
+`requiredLookbackWeeks + 2` weekly bars. The whole universe only fails if no
+member survives. This tolerates GICS sub-indices that Yahoo only recently began
+publishing.
 
-For each sector and each date, calculate the relative strength as a ratio:
+### Step 2 — Benchmark
 
-```
-RS(sector, t) = 100 × (Price(sector, t) / Benchmark(t))
-```
+The benchmark is the **weekly close of a single configured benchmark symbol**
+(e.g. SPY), aggregated to weekly the same way member prices are. It is **not**
+an equal-weighted average of the universe members.
 
-Where:
-- `Price(sector, t)` = sector price at time t
-- `Benchmark(t)` = benchmark price at time t
-
-**Why Ratio-Based RS?**
-- Matches the standard RRG methodology used by StockCharts and RRGPy
-- Values above 100 indicate outperformance, below 100 indicate underperformance
-- Provides intuitive interpretation of relative performance
-
-### Step 4: X-Axis Calculation (RS-Ratio)
-
-The X-axis represents the normalized relative strength (RS-Ratio), which measures how the current RS compares to its historical average.
-
-#### 4.1 RS-Ratio Calculation
-
-RS-Ratio is calculated by normalizing the RS values using a rolling Z-score:
+`validateBenchmark` rejects the result if it is empty or contains any
+non-finite or non-positive price.
 
 ```
-RSR(sector, t) = 100 + (RS(sector, t) - μ_RS) / σ_RS × scale_factor
+Benchmark(t) = weeklyClose(benchmarkSymbol, t)
 ```
 
-Where:
-- `RS(sector, t)` = relative strength at time t
-- `μ_RS` = mean of RS values over the normalization window
-- `σ_RS` = standard deviation of RS values over the normalization window
-- `scale_factor` = 10 (default scaling factor)
+### Step 3 — Relative Strength (RS)
 
-**Implementation Details**:
-- Uses a rolling window of `normalizationWindowWeeks` ending at the current date
-- Window includes all RS values from `max(0, i - windowWeeks + 1)` to `i` (inclusive)
-- Only includes dates where RS values exist
-
-**Z-Score Formula**:
-```
-μ = (1/n) × Σ(values)  where n = windowValues.length
-σ² = (1/n) × Σ((value - μ)²)
-σ = √σ²
-z = (rawValue - μ) / σ
-normalized = 100 + z × 10
-```
-
-**Why 100-Centered?**
-- Values above 100 indicate outperformance relative to the benchmark
-- Values below 100 indicate underperformance
-- The axes intersect at (100, 100), matching StockCharts RRG methodology
-
-**Implementation Details**:
-- Window includes indices from `max(0, i - windowWeeks + 1)` to `i` (inclusive)
-- Window size is exactly `windowWeeks` values when sufficient data exists
-- Only includes dates where raw values exist (filters undefined values)
-- Uses population variance (divides by n, not n-1)
-
-**Normalization Window**:
-- Uses a rolling window ending at the current date
-- Window size: `normalizationWindowWeeks`
-- Only includes dates where X_raw values exist
-
-### Step 5: Y-Axis Calculation (RS-Momentum)
-
-The Y-axis represents the normalized rate of change of RS-Ratio (RS-Momentum), which measures the momentum of relative strength.
-
-#### 5.1 RS-Ratio Rate of Change Calculation
-
-First, calculate the rate of change of RS-Ratio:
+For each member and each week where a benchmark price exists:
 
 ```
-RSR_ROC(sector, t) = 100 × ((RSR(sector, t) / RSR(sector, t-1)) - 1)
+RS(member, t) = 100 × ( Price(member, t) / Benchmark(t) )
 ```
 
-Where:
-- `RSR(sector, t)` = current RS-Ratio
-- `RSR(sector, t-1)` = previous RS-Ratio (1 week ago)
+RS is a simple price ratio (×100), **not** a log return. Values are only kept
+when finite and `> 0`. Above 100 ⇒ the member is priced higher relative to the
+benchmark than the 1:1 line; the absolute level is arbitrary (it depends on the
+two price scales) — only the *normalized* X/Y below carry quadrant meaning.
 
-**Note**: RSR_ROC is only calculated when both current and previous RS-Ratio values exist.
+### Step 4 — X-axis (RS-Ratio)
 
-#### 5.2 RS-Momentum Normalization
+**4.1 Smooth RS** with a `RS_SMOOTHING_PERIOD`-period EMA (`EMACalculator`,
+seeded on the first available value, then `ema += (value − ema) × 2/(period+1)`).
 
-RS-Momentum is calculated by normalizing RSR_ROC using a rolling Z-score, then centering at 101:
-
-```
-z = (RSR_ROC(sector, t) - μ_ROC) / σ_ROC
-RSM(sector, t) = 101 + z × scale_factor
-```
-
-Where:
-- `μ_ROC` = mean of RSR_ROC values over the normalization window
-- `σ_ROC` = standard deviation of RSR_ROC values over the normalization window
-- `scale_factor` = 10 (default scaling factor)
-
-**Note**: RS-Momentum is centered at 101 (instead of 100) to match the RRGPy implementation and provide slight visual separation from RS-Ratio.
-
-### Step 6: Data Point Creation
-
-For each sector and each date, create a data point if all required values are available:
-
-**Required Values**:
-- Relative Strength (RS)
-- Normalized X-value
-- Normalized Y-value
-- Valid price data
-
-**Quadrant Assignment**:
-```
-if (X > 100 && Y > 100) → Leading
-if (X > 100 && Y < 100) → Weakening
-if (X < 100 && Y < 100) → Lagging
-if (X < 100 && Y > 100) → Improving
-```
-
-**Data Point Structure**:
-- `date`: Date of the data point
-- `sectorSymbol`: Sector identifier
-- `price`: Sector price at this date
-- `relativeStrength`: RS value
-- `x`: Normalized X-coordinate
-- `y`: Normalized Y-coordinate
-- `quadrant`: Quadrant classification
-
-### Step 7: Filtering and Output
-
-Filter data points to include only those within the requested date range:
+**4.2 Rolling Z-score → center 100.** Over a trailing window of
+`normalizationWindowWeeks` weekly bars (indices `max(0, i − windowWeeks + 1)`
+through `i`, inclusive), compute the mean and **population** variance of the
+smoothed RS, then:
 
 ```
-outputDataPoints = allDataPoints.filter(
-  point.date >= requestedStartDate && point.date <= requestedEndDate
-)
+z          = (smoothedRS(t) − μ_window) / σ_window
+RS-Ratio(t) = Z_SCORE_CENTER + z × Z_SCORE_MULTIPLIER
+            = 100 + z × 3
 ```
 
-## Mathematical Formulas Summary
+A value is emitted only when the window has `count > 0` **and**
+`variance > 0`. A perfectly flat (zero-variance) window produces no X value, so
+that week is dropped for that member rather than defaulting to center.
 
-### Benchmark
-```
-Benchmark(t) = (1/N) × Σ(Sector_i(t))
-```
+> The scale multiplier in the live path is **3** (`Z_SCORE_MULTIPLIER`, a local
+> constant in the calc service), not 10. See Known divergences.
 
-### Relative Strength
-```
-RS(sector, t) = 100 × (Price(sector, t) / Benchmark(t))
-```
+### Step 5 — Y-axis (RS-Momentum)
 
-### X-Axis (RS-Ratio)
-```
-z = (RS(sector, t) - μ_RS) / σ_RS
-RSR(sector, t) = 100 + z × 10
-```
-Where `μ_RS` and `σ_RS` are calculated over a rolling window of `normalizationWindowWeeks`
-
-### Y-Axis (RS-Momentum)
-```
-RSR_ROC(sector, t) = 100 × ((RSR(sector, t) / RSR(sector, t-1)) - 1)
-z = (RSR_ROC(sector, t) - μ_ROC) / σ_ROC
-RSM(sector, t) = 101 + z × 10
-```
-Where `μ_ROC` and `σ_ROC` are calculated over a rolling window of `normalizationWindowWeeks`
-
-### 100-Centered Normalization (General)
-```
-z = (value - mean) / stdDev
-normalized = 100 + z × scale_factor
-
-mean = (1/n) × Σ(values)
-variance = (1/n) × Σ((value - mean)²)
-stdDev = √variance
-scale_factor = 10 (default)
-```
-
-## Quadrant Interpretation
-
-### Leading (X > 0, Y > 0)
-- **Characteristics**: Strong relative strength that's accelerating
-- **Investment Implication**: Sectors showing strong momentum and improving performance
-- **Typical Action**: Consider for growth-oriented portfolios
-
-### Weakening (X > 0, Y < 0)
-- **Characteristics**: Strong relative strength but losing momentum
-- **Investment Implication**: Sectors that have performed well but may be peaking
-- **Typical Action**: Monitor for potential rotation, consider taking profits
-
-### Lagging (X < 0, Y < 0)
-- **Characteristics**: Weak relative strength that's deteriorating
-- **Investment Implication**: Sectors underperforming and losing momentum
-- **Typical Action**: Avoid or reduce exposure, consider defensive positioning
-
-### Improving (X < 0, Y > 0)
-- **Characteristics**: Weak relative strength but gaining momentum
-- **Investment Implication**: Sectors that have been weak but are showing signs of recovery
-- **Typical Action**: Monitor for potential turnaround, consider early entry
-
-## Data Flow Diagram
+**5.1 First difference of RS-Ratio (1 week).** For consecutive RS-Ratio points:
 
 ```
-Input: Sectors, Date Range, Parameters
+RSRatioDiff(t) = RS-Ratio(t) − RS-Ratio(t−1)
+```
+
+This is a simple difference between adjacent weekly RS-Ratio values, kept only
+when both exist and the difference is finite. It is **not** a percentage
+rate-of-change, and its horizon is fixed at 1 week.
+
+**5.2 Smooth the difference** with the same `RS_SMOOTHING_PERIOD`-period EMA.
+
+**5.3 Rolling Z-score → center 100** (identical machinery to Step 4.2, applied
+to the smoothed difference series):
+
+```
+z              = (smoothedDiff(t) − μ_window) / σ_window
+RS-Momentum(t) = 100 + z × 3
+```
+
+> RS-Momentum is centered at **100**, the same as the X-axis — not 101.
+
+### Step 6 — Data-point creation & quadrant assignment
+
+A data point is created for a (member, week) only when RS, X, and Y are all
+present, finite, and non-NaN. The quadrant is assigned from `Quadrant.fromCoordinates(x, y)`:
+
+```
+if (x > 100 && y > 100)  → Leading
+else if (x > 100 && y < 100) → Weakening
+else if (x < 100 && y < 100) → Lagging
+else                          → Improving
+```
+
+> The final `else` is a catch-all: it covers the true "Improving" case
+> (`x < 100 && y > 100`) **and** any point sitting exactly on a boundary
+> (`x === 100` or `y === 100`). Such boundary points are labeled Improving. See
+> Known divergences.
+
+| Quadrant | Condition | Reading |
+|---|---|---|
+| **Leading** | X > 100, Y > 100 | Strong relative strength, still accelerating |
+| **Weakening** | X > 100, Y < 100 | Strong relative strength, losing momentum |
+| **Lagging** | X < 100, Y < 100 | Weak relative strength, deteriorating |
+| **Improving** | X < 100, Y > 100 (or on a boundary) | Weak relative strength, gaining momentum |
+
+### Step 7 — Filter to the requested range
+
+After computing on the extended (warm-up) range, only data points whose date
+falls within the originally requested `[startDate, endDate]` are returned. If
+none survive, the calculation throws ("Insufficient historical data").
+
+## Formula summary
+
+```
+Benchmark(t)     = weeklyClose(benchmarkSymbol, t)
+RS(member, t)    = 100 × Price(member, t) / Benchmark(t)
+
+smoothedRS       = EMA(RS, period = 6)
+z_x              = (smoothedRS(t) − μ_win) / σ_win       # window = 14 weeks, population variance
+RS-Ratio(t)      = 100 + z_x × 3
+
+RSRatioDiff(t)   = RS-Ratio(t) − RS-Ratio(t−1)           # 1-week first difference
+smoothedDiff     = EMA(RSRatioDiff, period = 6)
+z_y              = (smoothedDiff(t) − μ_win) / σ_win     # window = 14 weeks, population variance
+RS-Momentum(t)   = 100 + z_y × 3
+
+μ_win            = (1/n) Σ values
+σ²_win           = (1/n) Σ (value − μ)²                  # population (÷ n)
+σ_win            = √σ²_win
+```
+
+## Data flow
+
+```
+Input: Universe (members + benchmarkSymbol), Date Range, Params
     ↓
-[1] Extend Date Range for Lookback
+[1] Extend date range by requiredLookbackWeeks
     ↓
-[2] Fetch Weekly Price Data for All Sectors
+[2] Fetch weekly prices for members and benchmark; aggregate to ISO weeks
     ↓
-[3] Calculate Benchmark (Equal-Weighted Average)
+[3] Benchmark = weekly close of the single benchmark symbol
     ↓
-[4] Calculate Relative Strength (Log Returns)
+[4] RS(member,t) = 100 × price / benchmark
     ↓
-[5] Calculate X-Values (RS Momentum)
-    ├─→ Raw X: (RS(t) / RS(t-L)) - 1
-    └─→ Normalized X: Z-Score over window
+[5] X (RS-Ratio): EMA(RS, 6) → rolling 14-week Z-score → 100 + z×3
     ↓
-[6] Calculate Y-Values (X Momentum)
-    ├─→ Raw Y: X_norm(t) - X_norm(t-M)
-    └─→ Normalized Y: Z-Score over window
+[6] Y (RS-Momentum): 1-week diff of RS-Ratio → EMA(·, 6) → rolling 14-week Z-score → 100 + z×3
     ↓
-[7] Create Data Points with Quadrant Classification
+[7] Create data points (RS, X, Y all finite) + assign quadrant
     ↓
-[8] Filter to Requested Date Range
+[8] Filter to requested date range
     ↓
-Output: SectorRotationResult with Data Points
+Output: SectorRotationResult
 ```
 
-## Example Calculation
+## Default universe
 
-### Input
-- **Sectors**: XLK (Technology), XLE (Energy)
-- **Date Range**: 2024-01-01 to 2024-12-31
-- **Parameters**:
-  - `lookbackWeeks`: 12
-  - `momentumWeeks`: 5
-  - `normalizationWindowWeeks`: 52
+Sector-ETF universe (11 SPDR sectors), benchmark typically SPY:
 
-### Step-by-Step Example (Single Date)
+XLK (Technology), XLE (Energy), XLI (Industrial), XLY (Consumer Discretionary),
+XLP (Consumer Staples), XLV (Healthcare), XLF (Financial), XLB (Materials),
+XLU (Utilities), XLRE (Real Estate), XLC (Communication Services).
 
-Assume we're calculating for date `2024-06-15`:
+The universe is configurable; a GICS-25 industry-group universe is also
+supported (`RotationUniverse`).
 
-1. **Prices**:
-   - XLK: $200.00
-   - XLE: $80.00
+## Edge cases handled
 
-2. **Benchmark**:
-   ```
-   Benchmark = (200.00 + 80.00) / 2 = $140.00
-   ```
+- **Zero/negative benchmark price** — rejected by `validateBenchmark`.
+- **Zero-variance window** — produces no normalized value; the week is dropped
+  for that member (not centered).
+- **NaN / non-finite X or Y** — excluded from output in `createDataPoints`.
+- **Sparse members** — dropped with a warning if under
+  `requiredLookbackWeeks + 2` weekly bars; the universe only fails when none
+  remain.
+- **No points in requested range** — throws.
 
-3. **Relative Strength**:
-   ```
-   RS_XLK = ln(200) - ln(140) = 5.2983 - 4.9416 = 0.3567
-   RS_XLE = ln(80) - ln(140) = 4.3820 - 4.9416 = -0.5596
-   ```
+## Known divergences from standard RRG (and from this doc's earlier versions)
 
-4. **X-Value (Raw)**:
-   - Assume RS_XLK 12 weeks ago was 0.3000
-   ```
-   X_raw_XLK = 0.3567 / 0.3000 - 1 = 1.1890 - 1 = 0.1890
-   ```
+These are intentional-or-incidental properties of the current implementation.
+They are documented here so the doc matches the code; changing any of them is a
+behavior change to the RRG output, not a doc fix.
 
-5. **X-Value (Normalized)**:
-   - Calculate mean and stdDev of X_raw over last 52 weeks
-   - Assume μ = 0.05, σ = 0.15
-   ```
-   X_norm_XLK = (0.1890 - 0.05) / 0.15 = 0.9267
-   ```
+1. **Scale multiplier is 3, not 10.** The live normalization (`calculateRSRatio`
+   / `calculateRSMomentum`) uses `Z_SCORE_MULTIPLIER = 3`. Standard
+   StockCharts/RRGPy-style scaling is ~10. The lower multiplier compresses
+   points toward 100 (a 1σ move is ±3, not ±10), so the cloud is tighter and
+   quadrant crossings are less dramatic than a textbook RRG.
 
-6. **Y-Value (Raw)**:
-   - Assume X_norm_XLK 5 weeks ago was 0.8000
-   ```
-   Y_raw_XLK = 0.9267 - 0.8000 = 0.1267
-   ```
+2. **`ZScoreNormalizer` is dead code.** The service
+   `infrastructure/services/z-score-normalizer.service.ts` (which *does* use
+   `CENTER = 100, SCALE = 10`) is injected into the calc service and registered
+   in the module, but its `normalizeWithRollingWindow` method is never called —
+   the calc service has its own inline normalization. Do not assume the `10` in
+   that file is what runs.
 
-7. **Y-Value (Normalized)**:
-   - Calculate mean and stdDev of Y_raw over last 52 weeks
-   - Assume μ = 0.00, σ = 0.20
-   ```
-   Y_norm_XLK = (0.1267 - 0.00) / 0.20 = 0.6335
-   ```
+3. **Y-axis is centered at 100, not 101.** Both axes share `Z_SCORE_CENTER =
+   100`. RRGPy nudges momentum to 101 for visual separation; this code does not.
+   A point with exactly-average momentum sits on the X/Y boundary.
 
-8. **Quadrant**:
-   ```
-   X = 0.9267 > 0, Y = 0.6335 > 0 → Leading
-   ```
+4. **`momentumWeeks` is inert.** It only feeds `requiredLookbackWeeks`; the
+   RS-Momentum horizon is hard-wired to a 1-week first difference plus a 6-EMA.
+   With current constants it changes nothing.
 
-## Implementation Notes
+5. **RS-Momentum is a difference, not a ROC.** Y is built from the *first
+   difference* of RS-Ratio (`RS-Ratio(t) − RS-Ratio(t−1)`), not a percentage
+   rate-of-change.
 
-### Data Requirements
-- Weekly price data is required (daily data is aggregated to weekly)
-- Sufficient historical data must be available for the lookback periods
-- Missing data for a sector on a specific date excludes that sector from the benchmark calculation for that date
+6. **Benchmark is a single symbol, not an equal-weighted basket.** RS is
+   measured against the configured benchmark symbol's price (e.g. SPY), which is
+   arguably the more meaningful benchmark, but differs from an
+   average-of-members benchmark.
 
-### Edge Cases
-- **Insufficient Historical Data**: If a sector doesn't have enough historical data, X and Y values cannot be calculated for early dates
-- **Zero or Negative Prices**: The algorithm assumes all prices are positive (validated in domain layer)
-- **Division by Zero**: The algorithm checks for zero standard deviation before normalization
-- **NaN Values**: Data points with NaN X or Y values are excluded from the output
+7. **Quadrant boundary bias.** `Quadrant.fromCoordinates` routes any point with
+   `x === 100` or `y === 100` to **Improving** via the `else` branch.
 
-### Performance Considerations
-- The algorithm processes data sequentially by date
-- Normalization calculations use rolling windows, which can be computationally intensive for large datasets
-- Weekly aggregation reduces the number of data points compared to daily data
-
-## Default Sectors
-
-The algorithm supports 11 default sector ETFs:
-
-1. **XLK** - Technology
-2. **XLE** - Energy
-3. **XLI** - Industrial
-4. **XLY** - Consumer Discretionary
-5. **XLP** - Consumer Staples
-6. **XLV** - Healthcare
-7. **XLF** - Financial
-8. **XLB** - Materials
-9. **XLU** - Utilities
-10. **XLRE** - Real Estate
-11. **XLC** - Communication Services
-
-## References
-
-This algorithm implements a Relative Strength Graph (RSG) / Relative Rotation Graph (RRG) methodology, which is commonly used in technical analysis to identify sector rotation patterns in financial markets. The approach combines:
-
-- **Relative Strength Analysis**: Comparing sector performance to a benchmark
-- **Momentum Analysis**: Measuring rates of change in relative strength
-- **Normalization**: Using Z-scores to standardize values across different sectors and time periods
-- **Quadrant Classification**: Categorizing sectors into four performance phases
-
-The methodology helps investors identify:
-- Which sectors are outperforming or underperforming
-- Whether sector performance is accelerating or decelerating
-- Potential sector rotation opportunities
-- Market leadership changes over time
-
+8. **Prices are not split/dividend adjusted in this path.** The market-data
+   service feeds raw weekly closes; long windows can show split discontinuities.
+   This is shared with the market-health module and noted in the algorithm
+   audit.

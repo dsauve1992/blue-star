@@ -66,7 +66,6 @@ def calculate_signal_conditions(df: pd.DataFrame) -> pd.DataFrame:
     # Basic signal conditions
     df_with_signals['basic_signal'] = (
         (df_with_signals['adr_perc_20'] > df_with_signals['price_vs_ema10_perc']) &
-        (df_with_signals['adr_perc_20'] * 1.5 > df_with_signals['price_vs_ema10_perc']) &
         (df_with_signals['ema_10'] > df_with_signals['ema_20'])
     )
     
