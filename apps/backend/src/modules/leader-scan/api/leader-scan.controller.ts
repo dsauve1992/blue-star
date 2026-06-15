@@ -18,6 +18,10 @@ import {
   RunLeaderScanResponseDto,
   RunLeaderScanUseCase,
 } from '../use-cases/run-leader-scan.use-case';
+import {
+  QueryLeaderBreadthResponseDto,
+  QueryLeaderBreadthUseCase,
+} from '../use-cases/query-leader-breadth.use-case';
 
 @Controller('leader-scan')
 export class LeaderScanController {
@@ -25,12 +29,19 @@ export class LeaderScanController {
     private readonly queryLatestLeadersUseCase: QueryLatestLeadersUseCase,
     private readonly queryLeaderBySymbolUseCase: QueryLeaderBySymbolUseCase,
     private readonly runLeaderScanUseCase: RunLeaderScanUseCase,
+    private readonly queryLeaderBreadthUseCase: QueryLeaderBreadthUseCase,
   ) {}
 
   @Get('latest')
   @Public()
   async latest(): Promise<QueryLatestLeadersResponseDto> {
     return this.queryLatestLeadersUseCase.execute();
+  }
+
+  @Get('breadth')
+  @Public()
+  async breadth(): Promise<QueryLeaderBreadthResponseDto> {
+    return this.queryLeaderBreadthUseCase.execute();
   }
 
   @Get('symbol/:symbol')

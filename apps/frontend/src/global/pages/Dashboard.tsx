@@ -1,5 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../design-system";
 import { PageContainer } from "../design-system/page-container";
+import { LeaderBreadthCard } from "../../leader-breadth/components/LeaderBreadthCard";
 
 export default function Dashboard() {
   return (
@@ -14,16 +15,21 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Portfolio Overview</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <p className="text-slate-600 dark:text-slate-300">
-              Your portfolio data will appear here once connected to the backend.
-            </p>
-          </CardContent>
-        </Card>
+        <div className="grid gap-6 md:grid-cols-2">
+          <Card>
+            <CardHeader>
+              <CardTitle>Portfolio Overview</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-slate-600 dark:text-slate-300">
+                Your portfolio data will appear here once connected to the
+                backend.
+              </p>
+            </CardContent>
+          </Card>
+
+          <LeaderBreadthCard />
+        </div>
       </div>
     </PageContainer>
   );

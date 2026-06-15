@@ -25,6 +25,7 @@ describe('LeaderScanAnalysisServiceImpl', () => {
       getLatestResults: jest.fn(),
       getResultsForDate: jest.fn(),
       getLatestResultForSymbol: jest.fn(),
+      getRecentCompletedRuns: jest.fn(),
     } as jest.Mocked<LeaderScanRepository>;
 
     const module = await Test.createTestingModule({

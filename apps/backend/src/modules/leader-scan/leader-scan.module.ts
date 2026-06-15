@@ -9,6 +9,7 @@ import { LeaderScanCronService } from './infrastructure/services/leader-scan-cro
 import { RunLeaderScanUseCase } from './use-cases/run-leader-scan.use-case';
 import { QueryLatestLeadersUseCase } from './use-cases/query-latest-leaders.use-case';
 import { QueryLeaderBySymbolUseCase } from './use-cases/query-leader-by-symbol.use-case';
+import { QueryLeaderBreadthUseCase } from './use-cases/query-leader-breadth.use-case';
 import {
   LEADER_SCAN_ANALYSIS_SERVICE,
   LEADER_SCAN_REPOSITORY,
@@ -38,6 +39,7 @@ export {
     RunLeaderScanUseCase,
     QueryLatestLeadersUseCase,
     QueryLeaderBySymbolUseCase,
+    QueryLeaderBreadthUseCase,
   ],
   exports: [LEADER_SCAN_REPOSITORY],
 })

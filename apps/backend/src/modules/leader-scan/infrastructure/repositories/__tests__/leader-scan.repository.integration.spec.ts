@@ -131,4 +131,51 @@ describe('LeaderScanRepository Integration', () => {
     expect(result!.scanDate.toISOString()).toBe(newer.toISOString());
     expect(result!.rsScore.value).toBeCloseTo(0.99, 5);
   });
+
+  describe('getRecentCompletedRuns', () => {
+    it('returns completed runs newest-first, capped at the limit', async () => {
+      const dates = ['2026-04-03', '2026-04-10', '2026-04-17', '2026-04-24'];
+      for (const [i, d] of dates.entries()) {
+        const run = LeaderScanRun.create(ScanDate.of(new Date(d)));
+        run.markCompleted(700 + i, 100 + i * 10);
+        await repository.saveRun(run);
+      }
+
+      const recent = await repository.getRecentCompletedRuns(3);
+
+      expect(recent.map((r) => r.scanDate)).toEqual([
+        '2026-04-24',
+        '2026-04-17',
+        '2026-04-10',
+      ]);
+      expect(recent[0]).toEqual({
+        scanDate: '2026-04-24',
+        leaderCount: 130,
+        universeSize: 703,
+      });
+    });
+
+    it('excludes runs that are not completed', async () => {
+      const completed = LeaderScanRun.create(
+        ScanDate.of(new Date('2026-04-17')),
+      );
+      completed.markCompleted(700, 120);
+      await repository.saveRun(completed);
+
+      // A failed run leaves leader_count/universe_size NULL and status failed.
+      const failed = LeaderScanRun.create(ScanDate.of(new Date('2026-04-24')));
+      failed.markFailed('boom');
+      await repository.saveRun(failed);
+
+      const recent = await repository.getRecentCompletedRuns(20);
+
+      expect(recent).toHaveLength(1);
+      expect(recent[0].scanDate).toBe('2026-04-17');
+    });
+
+    it('returns an empty array when there are no completed runs', async () => {
+      const recent = await repository.getRecentCompletedRuns(20);
+      expect(recent).toEqual([]);
+    });
+  });
 });

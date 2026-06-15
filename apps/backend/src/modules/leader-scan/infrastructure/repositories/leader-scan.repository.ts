@@ -5,6 +5,7 @@ import { LeaderScanRun } from '../../domain/entities/leader-scan-run';
 import { LeaderScanResult } from '../../domain/entities/leader-scan-result';
 import { ScanDate } from '../../domain/value-objects/scan-date';
 import { RsScore } from '../../domain/value-objects/rs-score';
+import { BreadthRunSample } from '../../domain/services/leader-breadth.service';
 
 interface LeaderScanResultRow {
   id: string;
@@ -26,6 +27,12 @@ interface LeaderScanResultRow {
   top_6m_flag: boolean;
   small_size_flag: boolean;
   created_at: string;
+}
+
+interface BreadthRunRow {
+  scan_date: string;
+  leader_count: string;
+  universe_size: string;
 }
 
 @Injectable()
@@ -138,6 +145,25 @@ export class LeaderScanRepositoryImpl implements LeaderScanRepository {
 
     if (result.rows.length === 0) return null;
     return this.toEntity(result.rows[0]);
+  }
+
+  async getRecentCompletedRuns(limit: number): Promise<BreadthRunSample[]> {
+    const result = (await this.db.query(
+      `SELECT scan_date, leader_count, universe_size
+       FROM leader_scan_runs
+       WHERE status = 'completed'
+         AND leader_count IS NOT NULL
+         AND universe_size IS NOT NULL
+       ORDER BY scan_date DESC
+       LIMIT $1`,
+      [limit],
+    )) as { rows: BreadthRunRow[] };
+
+    return result.rows.map((row) => ({
+      scanDate: ScanDate.of(new Date(row.scan_date)).toISOString(),
+      leaderCount: parseInt(row.leader_count, 10),
+      universeSize: parseInt(row.universe_size, 10),
+    }));
   }
 
   private toEntity(row: LeaderScanResultRow): LeaderScanResult {
