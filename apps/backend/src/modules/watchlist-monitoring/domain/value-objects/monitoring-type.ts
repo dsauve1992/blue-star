@@ -1,5 +1,6 @@
 export enum MonitoringType {
   BREAKOUT = 'BREAKOUT',
+  GAP = 'GAP',
 }
 
 const VALID_TYPES = new Set(Object.values(MonitoringType));

@@ -1,0 +1,165 @@
+//@version=6
+// =============================================================================
+// Breakout Detection — Pine Script v6 port of
+//   apps/backend/src/modules/watchlist-monitoring/infrastructure/services/
+//     breakout-detection.service.ts
+//
+// Detects an intraday breakout via three conjunctive conditions, evaluated on
+// the latest 5-minute bar of the current session:
+//
+//   1. EMA(9) rising            — ema9 > ema9[1]
+//   2. Volume surge             — Pocket Pivot: today's cumulative session volume
+//                                 (summed over the bars elapsed so far) >= a
+//                                 recency-weighted mean of prior sessions'
+//                                 cumulative volume over the SAME number of bars.
+//                                 Baseline prefers down-day sessions (close<open,
+//                                 >=3 of them), falling back to all sessions;
+//                                 last 10 qualifying sessions, oldest weight 1.
+//   3. Above prior session high — close > prior session's high
+//
+// Plus a warm-up gate: >=9 bars into the current session (EMA(9) seed reliability).
+//
+// Apply on a 5m intraday chart (matches the backend's '5m' fetch). The session
+// model keys off the daily timeframe change, mirroring getMarketDateKey() day
+// boundaries. This is an exact behavioural port of hasRequiredVolumeSurge:
+//   - prior sessions must have >= barsElapsed bars                (TS line 153)
+//   - each prior contributes the sum of its FIRST barsElapsed bars (TS line 185)
+//   - down-day = first bar open vs last bar close                  (TS line 199)
+//   - >=3 down days -> use down days, else all qualifying priors   (TS line 162)
+//   - take the most recent 10 of the candidate list               (TS line 167)
+//   - need >=3 in the lookback or bail                             (TS line 171)
+//   - weighted mean, oldest weight 1 .. newest weight k            (TS line 204)
+// =============================================================================
+indicator("Breakout Detection (Blue Star)", overlay = true, max_bars_back = 5000)
+
+// --- Tunables (mirror the TS service constants) -----------------------------
+EMA_PERIOD               = input.int(9,  "EMA period",                  minval = 1)
+EMA_MINIMUM_BARS         = input.int(9,  "Min session bars (warm-up)",  minval = 1)
+VOLUME_LOOKBACK_SESSIONS = input.int(10, "Volume lookback sessions",    minval = 1)
+MIN_DOWN_DAYS            = input.int(3,  "Min down-days for baseline",   minval = 1)
+
+// -----------------------------------------------------------------------------
+// Session record: one completed trading session's data needed by the volume rule.
+//   cumVol  — per-bar cumulative volume series for the session (index 0 = bar 1)
+//   isDown  — true if last close < first open (a down day)
+// We keep the full per-bar cumVol series so we can sample "first N bars" exactly,
+// matching TS's `.slice(0, barsElapsed).reduce(sum)`.
+// -----------------------------------------------------------------------------
+type Session
+    array<float> cumVol
+    bool         isDown
+
+// History of COMPLETED sessions, oldest first. We only need the last
+// VOLUME_LOOKBACK_SESSIONS, so the array is trimmed to keep it bounded.
+var array<Session> history = array.new<Session>()
+
+// --- Current-session accumulators -------------------------------------------
+newSession = timeframe.change("1D")
+
+var int          barsElapsed = 0
+var float        sessionHigh = na
+var float        sessionOpen = na
+var float        lastClose   = na
+var array<float> curCumVol   = array.new_float()
+
+// Snapshot of the just-completed session's high, for the breakout test.
+var float priorSessionHigh = na
+
+if newSession
+    // Finalize the session that just ended (if any) into history.
+    if barsElapsed > 0
+        finished = Session.new(array.copy(curCumVol), lastClose < sessionOpen)
+        array.push(history, finished)
+        // Keep history bounded; we never look back further than the lookback window.
+        if array.size(history) > VOLUME_LOOKBACK_SESSIONS + 1
+            array.shift(history)
+        priorSessionHigh := sessionHigh
+    // Reset accumulators for the new session.
+    barsElapsed := 0
+    sessionHigh := high
+    sessionOpen := open
+    array.clear(curCumVol)
+
+// Accumulate the current bar into the live session.
+barsElapsed += 1
+sessionHigh := math.max(nz(sessionHigh, high), high)
+lastClose   := close
+prevCum     = array.size(curCumVol) > 0 ? array.last(curCumVol) : 0.0
+array.push(curCumVol, prevCum + volume)
+sessionCumVol = array.last(curCumVol)
+
+// =============================================================================
+// EMA(9) rising — ta.ema seeds on the first bar exactly like EMACalculator.
+// =============================================================================
+ema9       = ta.ema(close, EMA_PERIOD)
+ema9Rising = ema9 > ema9[1]
+
+// =============================================================================
+// Above prior session high — na (no prior data) allowed through, per TS.
+// =============================================================================
+abovePriorSessionHigh = na(priorSessionHigh) or close > priorSessionHigh
+
+// =============================================================================
+// Volume surge (Pocket Pivot).
+// =============================================================================
+// Recency-weighted mean: oldest weight 1 .. newest weight k (TS weightedMeanOf).
+f_weightedMean(array<float> values) =>
+    int   n           = array.size(values)
+    float weightedSum = 0.0
+    float totalWeight = 0.0
+    for i = 0 to (n > 0 ? n - 1 : na)
+        w = i + 1
+        weightedSum += w * array.get(values, i)
+        totalWeight += w
+    totalWeight > 0 ? weightedSum / totalWeight : 0.0
+
+// Sum of a session's first `n` bars of cumulative volume == its cumVol at bar n
+// (cumulative series already holds the running sum), matching slice(0,n).reduce.
+f_cumVolAtBar(Session s, int n) =>
+    array.size(s.cumVol) >= n and n >= 1 ? array.get(s.cumVol, n - 1) : na
+
+f_volumeSurge() =>
+    bool surge = false
+    int  hsz   = array.size(history)
+    if hsz > 0
+        // Qualifying priors: sessions with >= barsElapsed bars (TS line 153),
+        // walked oldest-first so chronological order is preserved.
+        array<float> allCum  = array.new_float()
+        array<float> downCum = array.new_float()
+        for i = 0 to hsz - 1
+            Session s = array.get(history, i)
+            float   v = f_cumVolAtBar(s, barsElapsed)
+            if not na(v)
+                array.push(allCum, v)
+                if s.isDown
+                    array.push(downCum, v)
+        useDownDays = array.size(downCum) >= MIN_DOWN_DAYS
+        array<float> candidate = useDownDays ? downCum : allCum
+        // Most recent VOLUME_LOOKBACK_SESSIONS of the candidate list (TS slice(-N)).
+        int csz      = array.size(candidate)
+        int startIdx = math.max(0, csz - VOLUME_LOOKBACK_SESSIONS)
+        array<float> lookback = array.new_float()
+        if csz > 0
+            for i = startIdx to csz - 1
+                array.push(lookback, array.get(candidate, i))
+        // Need >= MIN_DOWN_DAYS in the lookback, else bail (TS line 171).
+        if array.size(lookback) >= MIN_DOWN_DAYS
+            baseline = f_weightedMean(lookback)
+            if baseline > 0
+                surge := sessionCumVol >= baseline
+    surge
+
+volumeSurge = f_volumeSurge()
+
+// =============================================================================
+// Final signal — all three conditions plus the warm-up gate.
+// =============================================================================
+warmedUp = barsElapsed >= EMA_MINIMUM_BARS
+detected = warmedUp and ema9Rising and volumeSurge and abovePriorSessionHigh
+
+// --- Plotting / alerts -------------------------------------------------------
+plot(ema9, "EMA 9", color = color.orange, linewidth = 2)
+plotshape(detected, "Breakout", shape.triangleup, location.belowbar,
+     color = color.lime, size = size.small)
+bgcolor(detected ? color.new(color.green, 85) : na)
+alertcondition(detected, "Breakout detected", "Breakout: {{ticker}}")

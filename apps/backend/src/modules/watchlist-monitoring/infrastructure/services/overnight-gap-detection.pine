@@ -1,0 +1,79 @@
+//@version=6
+// =============================================================================
+// Overnight Gap on High Volume — Pine Script v6
+//
+// Spots an opening gap between two specific 5-minute candles:
+//
+//   * the LAST bar of one trading session  (the "previous" candle), and
+//   * the FIRST bar of the next session    (the "open" candle).
+//
+// Two conjunctive conditions, evaluated on the first 5m bar of a new session:
+//
+//   1. Opening gap   — the open candle gaps away from the prior session's last
+//                      close by at least a configurable percentage. Gap up
+//                      (open > prevClose) is detected by default; gap down can
+//                      be enabled via input, and gap up can be disabled.
+//   2. Huge volume   — the prior session's LAST 5m bar carried volume that is
+//                      large relative to recent activity: its volume >= a
+//                      multiple of the average 5m bar volume over a lookback.
+//
+// When both hold, a PINK triangle is drawn BELOW the open candle (where the
+// gap appears).
+//
+// Apply on a 5m intraday chart. The session model keys off the daily timeframe
+// change (timeframe.change("1D")), matching the day boundaries used elsewhere
+// in this module (see breakout-detection.pine).
+// =============================================================================
+indicator("Overnight Gap on High Volume (Blue Star)", overlay = true, max_bars_back = 5000)
+
+// --- Tunables ----------------------------------------------------------------
+MIN_GAP_PCT       = input.float(0.5, "Min opening gap %",            minval = 0.0, step = 0.1)
+ALLOW_GAP_UP      = input.bool(true,  "Detect gap up")
+ALLOW_GAP_DOWN    = input.bool(false, "Detect gap down")
+VOL_LOOKBACK_BARS = input.int(50,    "Volume lookback (5m bars)",    minval = 1)
+VOL_MULTIPLIER    = input.float(3.0, "Huge-volume multiple of avg",  minval = 1.0, step = 0.5)
+
+// -----------------------------------------------------------------------------
+// Detect the first bar of a new session. timeframe.change("1D") is true on the
+// bar whose day differs from the previous bar's day — i.e. the session's open.
+// -----------------------------------------------------------------------------
+newSession = timeframe.change("1D")
+
+// -----------------------------------------------------------------------------
+// Carry forward the prior session's LAST bar (the "previous" candle). On every
+// bar we remember the values of the bar that just closed; when a new session
+// starts, the [1] reference points at the final bar of the prior session.
+//   prevClose  — close of the prior session's last 5m bar
+//   prevVolume — volume of that same bar
+// -----------------------------------------------------------------------------
+prevClose  = close[1]
+prevVolume = volume[1]
+
+// =============================================================================
+// 1. Opening gap — the new session's open vs the prior session's last close.
+// =============================================================================
+gapPct      = na(prevClose) or prevClose == 0 ? na : (open - prevClose) / prevClose * 100.0
+gappedUp    = ALLOW_GAP_UP   and not na(gapPct) and gapPct >=  MIN_GAP_PCT
+gappedDown  = ALLOW_GAP_DOWN and not na(gapPct) and gapPct <= -MIN_GAP_PCT
+openingGap  = gappedUp or gappedDown
+
+// =============================================================================
+// 2. Huge volume on the prior session's last bar.
+//   Baseline = average 5m bar volume over the preceding VOL_LOOKBACK_BARS bars,
+//   measured up to (and excluding) the prior session's last bar — i.e. ta.sma
+//   of volume one bar back. The last bar is "huge" if it is at least
+//   VOL_MULTIPLIER times that baseline.
+// =============================================================================
+avgVol     = ta.sma(volume, VOL_LOOKBACK_BARS)[1]
+hugeVolume = not na(prevVolume) and not na(avgVol) and avgVol > 0 and
+     prevVolume >= avgVol * VOL_MULTIPLIER
+
+// =============================================================================
+// Final signal — only on the first bar of a new session, both conditions true.
+// =============================================================================
+detected = newSession and openingGap and hugeVolume
+
+// --- Plotting / alerts -------------------------------------------------------
+plotshape(detected, "Overnight gap", shape.triangledown, location.belowbar,
+     color = color.new(color.fuchsia, 0), size = size.small)
+alertcondition(detected, "Overnight gap on high volume", "Overnight gap: {{ticker}}")
