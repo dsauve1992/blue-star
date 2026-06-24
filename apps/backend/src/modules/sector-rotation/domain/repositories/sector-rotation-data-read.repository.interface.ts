@@ -17,6 +17,10 @@ export interface SectorRotationDataReadRepository {
     universeId: string,
     sectorSymbol: string,
   ): Promise<Date | null>;
+  findLatestBySector(
+    universeId: string,
+    sectorSymbol: string,
+  ): Promise<SectorRotationDataPoint | null>;
   findExistingDates(
     universeId: string,
     startDate: Date,

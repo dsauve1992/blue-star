@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
 import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
+import { GapContext } from '../../domain/value-objects/gap-context';
 import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
 import { NotificationTopic } from '../../../notification/domain/value-objects/notification-topic';
 import { NotificationMessage } from '../../../notification/domain/value-objects/notification-message';
@@ -12,7 +13,7 @@ import type { WatchlistMonitoringReadRepository } from '../../domain/repositorie
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { WatchlistReadRepository } from '../../../watchlist/domain/repositories/watchlist-read.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
-import type { GapDetectionService } from '../../domain/services/gap-detection.service';
+import type { IGapDetectionService } from '../../domain/services/i-gap-detection.service';
 import type { NotificationService } from '../../../notification/domain/services/notification.service';
 import { WATCHLIST_MONITORING_READ_REPOSITORY } from '../../constants/tokens';
 import { BREAKOUT_DETECTION_SERVICE } from '../../constants/tokens';
@@ -42,7 +43,7 @@ export class WatchlistMonitoringCronService {
     @Inject(BREAKOUT_DETECTION_SERVICE)
     private readonly breakoutDetectionService: BreakoutDetectionService,
     @Inject(GAP_DETECTION_SERVICE)
-    private readonly gapDetectionService: GapDetectionService,
+    private readonly gapDetectionService: IGapDetectionService,
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationService: NotificationService,
     private readonly eventEmitter: EventEmitter2,
@@ -142,8 +143,7 @@ export class WatchlistMonitoringCronService {
     }
   }
 
-  // Runs once at 9:34 AM ET — after the first 5-min bar (9:30–9:35) is fully closed.
-  @Cron('34 9 * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('36 9 * * 1-5', { timeZone: 'America/Toronto' })
   async monitorGaps(): Promise<void> {
     const jobName = 'Watchlist Gap Monitoring';
     this.logger.log(`Starting ${jobName}...`);
@@ -186,6 +186,8 @@ export class WatchlistMonitoringCronService {
         const marketDate = marketToday(detectedAt);
         if (
           result.detected &&
+          result.entryPrice !== undefined &&
+          result.stopPrice !== undefined &&
           !(await this.monitoringAlertLogRepository.hasAlerted(
             ticker.value,
             marketDate.key,
@@ -199,6 +201,7 @@ export class WatchlistMonitoringCronService {
             MonitoringType.GAP,
           );
 
+          const context = result.context ?? GapContext.none();
           this.eventEmitter.emit(
             GapDetectedEvent.NAME,
             new GapDetectedEvent(
@@ -207,6 +210,12 @@ export class WatchlistMonitoringCronService {
               watchlist.name.value,
               marketDate,
               detectedAt,
+              result.entryPrice,
+              result.stopPrice,
+              context.industryGroup,
+              context.globalRsRating,
+              context.industryGroupRsRating,
+              context.industryGroupQuadrant,
             ),
           );
         }

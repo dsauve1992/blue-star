@@ -65,5 +65,6 @@ export {
     SectorRotationCronService,
     RotationUniverseRegistry,
   ],
+  exports: [SECTOR_ROTATION_DATA_READ_REPOSITORY, RotationUniverseRegistry],
 })
 export class SectorRotationModule {}

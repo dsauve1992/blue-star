@@ -6,6 +6,7 @@ const MARKET_OPEN_HOUR = 9;
 const MARKET_OPEN_MINUTE = 30;
 const MARKET_CLOSE_HOUR = 16;
 const MARKET_CLOSE_MINUTE = 0;
+const INTRADAY_BAR_MINUTES = 5;
 
 export function marketToday(now: Date = new Date()): LocalDate {
   const key = DateTime.fromJSDate(now, { zone: MARKET_TIMEZONE }).toFormat(
@@ -40,4 +41,20 @@ export function isDuringMarketHours(date: Date): boolean {
   const marketOpen = MARKET_OPEN_HOUR * 60 + MARKET_OPEN_MINUTE;
   const marketClose = MARKET_CLOSE_HOUR * 60 + MARKET_CLOSE_MINUTE;
   return totalMinutes >= marketOpen && totalMinutes <= marketClose;
+}
+
+export function isSessionOpenBar(date: Date): boolean {
+  const torontoTime = DateTime.fromJSDate(date, { zone: MARKET_TIMEZONE });
+  return (
+    torontoTime.hour === MARKET_OPEN_HOUR &&
+    torontoTime.minute === MARKET_OPEN_MINUTE
+  );
+}
+
+export function isSessionCloseBar(date: Date): boolean {
+  const torontoTime = DateTime.fromJSDate(date, { zone: MARKET_TIMEZONE });
+  const totalMinutes = torontoTime.hour * 60 + torontoTime.minute;
+  const lastBarOpen =
+    MARKET_CLOSE_HOUR * 60 + MARKET_CLOSE_MINUTE - INTRADAY_BAR_MINUTES;
+  return totalMinutes === lastBarOpen;
 }

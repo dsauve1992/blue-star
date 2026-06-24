@@ -9,18 +9,23 @@ import { WatchlistMonitoringReadRepository } from './infrastructure/repositories
 import { MonitoringAlertLogRepositoryImpl } from './infrastructure/repositories/monitoring-alert-log.repository';
 import { BreakoutDetectionServiceImpl } from './infrastructure/services/breakout-detection.service';
 import { GapDetectionServiceImpl } from './infrastructure/services/gap-detection.service';
+import { GapContextServiceImpl } from './infrastructure/services/gap-context.service';
 import { WatchlistMonitoringCronService } from './infrastructure/services/watchlist-monitoring-cron.service';
 import {
   WATCHLIST_MONITORING_WRITE_REPOSITORY,
   WATCHLIST_MONITORING_READ_REPOSITORY,
   BREAKOUT_DETECTION_SERVICE,
   GAP_DETECTION_SERVICE,
+  GAP_CONTEXT_SERVICE,
   MONITORING_ALERT_LOG_REPOSITORY,
 } from './constants/tokens';
 import { DatabaseModule } from '../../config/database.module';
 import { WatchlistModule } from '../watchlist/watchlist.module';
 import { MarketDataModule } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
+import { StockClassificationModule } from '../stock-classification/stock-classification.module';
+import { StockAnalysisModule } from '../stock-analysis/stock-analysis.module';
+import { SectorRotationModule } from '../sector-rotation/sector-rotation.module';
 
 @Module({
   imports: [
@@ -28,6 +33,9 @@ import { NotificationModule } from '../notification/notification.module';
     WatchlistModule,
     MarketDataModule,
     NotificationModule,
+    StockClassificationModule,
+    StockAnalysisModule,
+    SectorRotationModule,
   ],
   controllers: [WatchlistMonitoringController],
   providers: [
@@ -46,6 +54,10 @@ import { NotificationModule } from '../notification/notification.module';
     {
       provide: GAP_DETECTION_SERVICE,
       useClass: GapDetectionServiceImpl,
+    },
+    {
+      provide: GAP_CONTEXT_SERVICE,
+      useClass: GapContextServiceImpl,
     },
     {
       provide: MONITORING_ALERT_LOG_REPOSITORY,

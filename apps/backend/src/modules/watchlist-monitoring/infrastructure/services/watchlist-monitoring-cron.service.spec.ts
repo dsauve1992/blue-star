@@ -14,7 +14,7 @@ import type { WatchlistMonitoringReadRepository } from '../../domain/repositorie
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { WatchlistReadRepository } from '../../../watchlist/domain/repositories/watchlist-read.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
-import type { GapDetectionService } from '../../domain/services/gap-detection.service';
+import type { IGapDetectionService } from '../../domain/services/i-gap-detection.service';
 import type { NotificationService } from '../../../notification/domain/services/notification.service';
 import {
   WATCHLIST_MONITORING_READ_REPOSITORY,
@@ -30,7 +30,7 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
   let monitoringReadRepository: jest.Mocked<WatchlistMonitoringReadRepository>;
   let alertLogRepository: jest.Mocked<MonitoringAlertLogRepository>;
   let watchlistReadRepository: jest.Mocked<WatchlistReadRepository>;
-  let gapDetectionService: jest.Mocked<GapDetectionService>;
+  let gapDetectionService: jest.Mocked<IGapDetectionService>;
   let notificationService: jest.Mocked<NotificationService>;
   let eventEmitter: EventEmitter2;
   let emitSpy: jest.SpyInstance;
@@ -67,7 +67,12 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
       findById: jest.fn().mockResolvedValue(buildWatchlist()),
     } as unknown as jest.Mocked<WatchlistReadRepository>;
     gapDetectionService = {
-      detect: jest.fn().mockResolvedValue({ ticker, detected: true }),
+      detect: jest.fn().mockResolvedValue({
+        ticker,
+        detected: true,
+        entryPrice: 108,
+        stopPrice: 100,
+      }),
     };
     notificationService = { send: jest.fn().mockResolvedValue(undefined) };
 
@@ -122,6 +127,8 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
     expect(gapEvent.marketDate).toBeInstanceOf(LocalDate);
     expect(gapEvent.marketDate.key).toBe(getMarketDateKey());
     expect(gapEvent.detectedAt).toBeInstanceOf(Date);
+    expect(gapEvent.entryPrice).toBe(108);
+    expect(gapEvent.stopPrice).toBe(100);
   });
 
   it('does not emit when no gap is detected', async () => {

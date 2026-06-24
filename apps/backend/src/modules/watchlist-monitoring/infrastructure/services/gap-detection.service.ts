@@ -7,12 +7,16 @@ import type { MarketDataService } from '../../../market-data/domain/services/mar
 import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
 import {
   GapDetectionResult,
-  GapDetectionService as IGapDetectionService,
-} from '../../domain/services/gap-detection.service';
+  IGapDetectionService,
+} from '../../domain/services/i-gap-detection.service';
+import type { GapContextService } from '../../domain/services/gap-context.service';
+import { GAP_CONTEXT_SERVICE } from '../../constants/tokens';
 import {
   getMarketDateKey,
   getMarketOpenDateUtc,
   isDuringMarketHours,
+  isSessionCloseBar,
+  isSessionOpenBar,
 } from './market-time.util';
 
 @Injectable()
@@ -25,6 +29,8 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
   constructor(
     @Inject(MARKET_DATA_SERVICE)
     private readonly marketDataService: MarketDataService,
+    @Inject(GAP_CONTEXT_SERVICE)
+    private readonly gapContextService: GapContextService,
   ) {}
 
   async detect(
@@ -48,6 +54,10 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
     const currentKey = orderedKeys[orderedKeys.length - 1];
     const priorKey = orderedKeys[orderedKeys.length - 2];
 
+    if (currentKey !== getMarketDateKey(now)) {
+      return { ticker, detected: false };
+    }
+
     const currentBars = sessions.get(currentKey) ?? [];
     const priorBars = sessions.get(priorKey) ?? [];
 
@@ -57,6 +67,13 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
 
     const priorLastBar = priorBars[priorBars.length - 1];
     const currentFirstBar = currentBars[0];
+
+    if (
+      !isSessionOpenBar(currentFirstBar.date) ||
+      !isSessionCloseBar(priorLastBar.date)
+    ) {
+      return { ticker, detected: false };
+    }
 
     const gapOk = currentFirstBar.open > priorLastBar.high;
 
@@ -68,7 +85,18 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
       sessions,
     );
 
-    return { ticker, detected: volOkPrev && gapOk };
+    const detected = volOkPrev && gapOk;
+    if (!detected) {
+      return { ticker, detected: false };
+    }
+
+    return {
+      ticker,
+      detected: true,
+      entryPrice: currentFirstBar.open,
+      stopPrice: Math.min(...priorBars.map((bar) => bar.low)),
+      context: await this.gapContextService.enrich(ticker),
+    };
   }
 
   // vol_ok on day D: last_vol >= VOL_MULT * avg_last_vol

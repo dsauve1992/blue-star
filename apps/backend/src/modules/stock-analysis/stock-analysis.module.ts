@@ -94,6 +94,10 @@ export {
     QueryIndustryGroupsUseCase,
     QueryIndustryGroupRatingsUseCase,
   ],
-  exports: [CONSOLIDATION_SCREENER_SERVICE, RS_RATING_REPOSITORY],
+  exports: [
+    CONSOLIDATION_SCREENER_SERVICE,
+    RS_RATING_REPOSITORY,
+    INDUSTRY_GROUP_RS_RATING_REPOSITORY,
+  ],
 })
 export class StockAnalysisModule {}
