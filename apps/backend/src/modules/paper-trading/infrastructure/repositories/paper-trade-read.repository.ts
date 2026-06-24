@@ -13,8 +13,6 @@ import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchli
 interface PaperTradeRow {
   id: string;
   ticker: string;
-  watchlist_id: string | null;
-  watchlist_name: string | null;
   status: string;
   shares: number;
   entry_price: string;
@@ -91,8 +89,6 @@ export class PaperTradeReadRepository implements IPaperTradeReadRepository {
     return PaperTrade.fromSnapshot({
       id: PaperTradeId.of(row.id),
       ticker: WatchlistTicker.of(row.ticker),
-      watchlistId: row.watchlist_id ?? undefined,
-      watchlistName: row.watchlist_name ?? undefined,
       status: row.status as PaperTradeStatus,
       shares: Shares.of(row.shares),
       entryPrice: Number(row.entry_price),

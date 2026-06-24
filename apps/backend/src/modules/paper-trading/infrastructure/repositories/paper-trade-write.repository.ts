@@ -10,15 +10,15 @@ export class PaperTradeWriteRepository implements IPaperTradeWriteRepository {
   async save(trade: PaperTrade): Promise<void> {
     const query = `
       INSERT INTO paper_trades (
-        id, ticker, watchlist_id, watchlist_name, status, shares,
+        id, ticker, status, shares,
         entry_price, stop_price, target_price, risk_per_share,
         exit_price, exit_reason, realized_r, pnl,
         market_date, opened_at, closed_at, created_at
       ) VALUES (
-        $1, $2, $3, $4, $5, $6,
-        $7, $8, $9, $10,
-        $11, $12, $13, $14,
-        $15, $16, $17, NOW()
+        $1, $2, $3, $4,
+        $5, $6, $7, $8,
+        $9, $10, $11, $12,
+        $13, $14, $15, NOW()
       )
       ON CONFLICT (id) DO UPDATE SET
         status = EXCLUDED.status,
@@ -32,8 +32,6 @@ export class PaperTradeWriteRepository implements IPaperTradeWriteRepository {
     await this.databaseService.query(query, [
       trade.id.value,
       trade.ticker.value,
-      trade.watchlistId ?? null,
-      trade.watchlistName ?? null,
       trade.status,
       trade.shares.value,
       trade.entryPrice,

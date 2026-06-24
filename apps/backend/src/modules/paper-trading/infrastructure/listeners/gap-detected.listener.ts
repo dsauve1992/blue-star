@@ -14,8 +14,6 @@ export class GapDetectedListener {
     try {
       await this.openPaperTrade.execute({
         ticker: event.ticker,
-        watchlistId: event.watchlistId.value,
-        watchlistName: event.watchlistName,
         entryPrice: event.entryPrice,
         stopPrice: event.stopPrice,
         marketDate: event.marketDate.key,

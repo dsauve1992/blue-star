@@ -29,8 +29,6 @@ describe('OpenPaperTradeUseCase', () => {
     const { entryPrice = 108, stopPrice = 100 } = overrides;
     return {
       ticker,
-      watchlistId: 'wl-1',
-      watchlistName: 'Momentum',
       entryPrice,
       stopPrice,
       marketDate: '2026-06-24',

@@ -14,8 +14,6 @@ export enum PaperTradeExitReason {
 
 export interface OpenPaperTradeArgs {
   ticker: WatchlistTicker;
-  watchlistId?: string;
-  watchlistName?: string;
   entryPrice: number;
   stopPrice: number;
   targetPrice: number;
@@ -27,8 +25,6 @@ export interface OpenPaperTradeArgs {
 export interface PaperTradeSnapshot {
   id: PaperTradeId;
   ticker: WatchlistTicker;
-  watchlistId?: string;
-  watchlistName?: string;
   status: PaperTradeStatus;
   shares: Shares;
   entryPrice: number;
@@ -48,8 +44,6 @@ export class PaperTrade {
   private constructor(
     public readonly id: PaperTradeId,
     public readonly ticker: WatchlistTicker,
-    public readonly watchlistId: string | undefined,
-    public readonly watchlistName: string | undefined,
     public readonly entryPrice: number,
     public readonly stopPrice: number,
     public readonly targetPrice: number,
@@ -77,8 +71,6 @@ export class PaperTrade {
     return new PaperTrade(
       PaperTradeId.new(),
       args.ticker,
-      args.watchlistId,
-      args.watchlistName,
       args.entryPrice,
       args.stopPrice,
       args.targetPrice,
@@ -93,8 +85,6 @@ export class PaperTrade {
     return new PaperTrade(
       snapshot.id,
       snapshot.ticker,
-      snapshot.watchlistId,
-      snapshot.watchlistName,
       snapshot.entryPrice,
       snapshot.stopPrice,
       snapshot.targetPrice,

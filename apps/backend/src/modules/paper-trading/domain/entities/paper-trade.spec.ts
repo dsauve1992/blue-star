@@ -89,8 +89,6 @@ describe('PaperTrade', () => {
     const restored = PaperTrade.fromSnapshot({
       id: trade.id,
       ticker: trade.ticker,
-      watchlistId: trade.watchlistId,
-      watchlistName: trade.watchlistName,
       status: trade.status,
       shares: trade.shares,
       entryPrice: trade.entryPrice,

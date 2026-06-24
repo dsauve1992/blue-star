@@ -1,8 +1,6 @@
 CREATE TABLE IF NOT EXISTS paper_trades (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     ticker VARCHAR(20) NOT NULL,
-    watchlist_id UUID,
-    watchlist_name VARCHAR(255),
     status VARCHAR(10) NOT NULL CHECK (status IN ('OPEN', 'CLOSED')),
     shares INTEGER NOT NULL CHECK (shares > 0),
     entry_price DECIMAL(15,4) NOT NULL CHECK (entry_price > 0),

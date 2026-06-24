@@ -12,7 +12,6 @@ export class PaperTradingApiMapper {
     return {
       id: trade.id.value,
       ticker: trade.ticker.value,
-      watchlistName: trade.watchlistName ?? null,
       status: trade.status,
       shares: trade.shares.value,
       entryPrice: trade.entryPrice,

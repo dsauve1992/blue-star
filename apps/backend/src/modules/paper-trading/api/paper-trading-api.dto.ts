@@ -1,7 +1,6 @@
 export interface PaperTradeApiDto {
   id: string;
   ticker: string;
-  watchlistName: string | null;
   status: string;
   shares: number;
   entryPrice: number;

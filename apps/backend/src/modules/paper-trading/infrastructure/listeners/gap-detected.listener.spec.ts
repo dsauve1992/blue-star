@@ -34,8 +34,6 @@ describe('GapDetectedListener', () => {
     expect(openPaperTrade.execute).toHaveBeenCalledTimes(1);
     const request = openPaperTrade.execute.mock.calls[0][0];
     expect(request.ticker.value).toBe('AAPL');
-    expect(request.watchlistId).toBe('wl-123');
-    expect(request.watchlistName).toBe('Momentum');
     expect(request.entryPrice).toBe(108);
     expect(request.stopPrice).toBe(100);
     expect(request.marketDate).toBe('2026-06-24');

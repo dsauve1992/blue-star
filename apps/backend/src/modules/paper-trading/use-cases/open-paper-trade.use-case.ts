@@ -16,8 +16,6 @@ import {
 
 export interface OpenPaperTradeRequest {
   ticker: WatchlistTicker;
-  watchlistId?: string;
-  watchlistName?: string;
   entryPrice: number;
   stopPrice: number;
   marketDate: string;
@@ -79,8 +77,6 @@ export class OpenPaperTradeUseCase {
 
     const trade = PaperTrade.open({
       ticker: request.ticker,
-      watchlistId: request.watchlistId,
-      watchlistName: request.watchlistName,
       entryPrice: request.entryPrice,
       stopPrice: request.stopPrice,
       targetPrice,

@@ -5,7 +5,6 @@ export type PaperTradeExitReason = "STOP" | "TARGET";
 export interface PaperTrade {
   id: string;
   ticker: string;
-  watchlistName: string | null;
   status: PaperTradeStatus;
   shares: number;
   entryPrice: number;
