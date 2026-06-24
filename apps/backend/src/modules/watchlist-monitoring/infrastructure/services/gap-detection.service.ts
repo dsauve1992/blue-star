@@ -13,6 +13,8 @@ import {
   getMarketDateKey,
   getMarketOpenDateUtc,
   isDuringMarketHours,
+  isSessionCloseBar,
+  isSessionOpenBar,
 } from './market-time.util';
 
 @Injectable()
@@ -48,6 +50,10 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
     const currentKey = orderedKeys[orderedKeys.length - 1];
     const priorKey = orderedKeys[orderedKeys.length - 2];
 
+    if (currentKey !== getMarketDateKey(now)) {
+      return { ticker, detected: false };
+    }
+
     const currentBars = sessions.get(currentKey) ?? [];
     const priorBars = sessions.get(priorKey) ?? [];
 
@@ -57,6 +63,13 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
 
     const priorLastBar = priorBars[priorBars.length - 1];
     const currentFirstBar = currentBars[0];
+
+    if (
+      !isSessionOpenBar(currentFirstBar.date) ||
+      !isSessionCloseBar(priorLastBar.date)
+    ) {
+      return { ticker, detected: false };
+    }
 
     const gapOk = currentFirstBar.open > priorLastBar.high;
 

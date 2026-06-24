@@ -43,8 +43,9 @@ describe('GapDetectionServiceImpl', () => {
   }
 
   /**
-   * Builds a session of 5-min bars starting at 14:30 UTC (9:30 AM ET).
-   * day is the day-of-month within February 2025.
+   * Builds a session whose first bar opens at 14:30 UTC (9:30 AM ET) and whose
+   * closing bar opens at 20:55 UTC (3:55 PM ET) — the real session boundaries
+   * gap detection asserts on. `day` is the day-of-month within February 2025.
    */
   function buildSessionBars(
     day: number,
@@ -52,28 +53,27 @@ describe('GapDetectionServiceImpl', () => {
       closingVol?: number;
       closingHigh?: number;
       firstOpen?: number;
-      barCount?: number;
     } = {},
   ): PricePoint[] {
-    const {
-      closingVol = 100,
-      closingHigh = 100,
-      firstOpen = 100,
-      barCount = 5,
-    } = options;
+    const { closingVol = 100, closingHigh = 100, firstOpen = 100 } = options;
 
-    const sessionStart = new Date(Date.UTC(2025, 1, day, 14, 30));
-    return Array.from({ length: barCount }, (_, i) => {
-      const barDate = new Date(sessionStart.getTime() + i * 5 * 60 * 1000);
-      const isFirst = i === 0;
-      const isLast = i === barCount - 1;
-      const open = isFirst ? firstOpen : 100;
-      const close = 100;
-      const high = Math.max(open, close, isLast ? closingHigh : 0);
-      const low = Math.min(open, close);
-      const volume = isLast ? closingVol : 50;
-      return PricePoint.of(barDate, open, high, low, close, volume);
-    });
+    const openBar = PricePoint.of(
+      new Date(Date.UTC(2025, 1, day, 14, 30)),
+      firstOpen,
+      Math.max(firstOpen, 100),
+      Math.min(firstOpen, 100),
+      100,
+      50,
+    );
+    const closeBar = PricePoint.of(
+      new Date(Date.UTC(2025, 1, day, 20, 55)),
+      100,
+      Math.max(100, closingHigh),
+      100,
+      100,
+      closingVol,
+    );
+    return [openBar, closeBar];
   }
 
   /**
@@ -208,7 +208,11 @@ describe('GapDetectionServiceImpl', () => {
     });
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
 
-    const result = await service.detect(ticker);
+    // Day D+1 (current session) is day 12 of Feb 2025; now must fall in it.
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-12T15:00:00.000Z'),
+    );
 
     expect(result.ticker).toEqual(ticker);
     expect(result.detected).toBe(true);
@@ -233,7 +237,10 @@ describe('GapDetectionServiceImpl', () => {
     bars.push(...buildSessionBars(12, { firstOpen: 108 }));
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
 
-    const result = await service.detect(ticker);
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-12T15:00:00.000Z'),
+    );
 
     expect(result.detected).toBe(true);
     expect(result.stopPrice).toBe(92);
@@ -250,6 +257,72 @@ describe('GapDetectionServiceImpl', () => {
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
 
     const result = await service.detect(ticker);
+
+    expect(result.detected).toBe(false);
+  });
+
+  it('should return detected false when the current session is not today', async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    const bars = buildGapScenario({
+      dayDClosingVol: 200,
+      dayDHigh: 105,
+      dayD1FirstOpen: 108,
+    });
+    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+
+    // Current session is Feb 12, but now is Feb 13 — last session is stale.
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-13T15:00:00.000Z'),
+    );
+
+    expect(result.detected).toBe(false);
+  });
+
+  it("should return detected false when the current session's first bar is not the 9:30 open", async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    const bars = buildGapScenario({
+      dayDClosingVol: 200,
+      dayDHigh: 105,
+      dayD1FirstOpen: 108,
+    });
+    // Drop the current session's 9:30 open bar; the 3:55 close bar then leads.
+    const currentOpen = new Date('2025-02-12T14:30:00.000Z').getTime();
+    const withoutOpen = bars.filter(
+      (bar) => bar.date.getTime() !== currentOpen,
+    );
+    marketDataService.getHistoricalData.mockResolvedValue(
+      historicalData(withoutOpen),
+    );
+
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-12T15:00:00.000Z'),
+    );
+
+    expect(result.detected).toBe(false);
+  });
+
+  it("should return detected false when the prior session's last bar is not the 3:55 close", async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    const bars = buildGapScenario({
+      dayDClosingVol: 200,
+      dayDHigh: 105,
+      dayD1FirstOpen: 108,
+    });
+    // Drop the prior session's 3:55 close bar; its 9:30 open bar then trails.
+    const priorClose = new Date('2025-02-11T20:55:00.000Z').getTime();
+    const withoutPriorClose = bars.filter(
+      (bar) => bar.date.getTime() !== priorClose,
+    );
+    marketDataService.getHistoricalData.mockResolvedValue(
+      historicalData(withoutPriorClose),
+    );
+
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-12T15:00:00.000Z'),
+    );
 
     expect(result.detected).toBe(false);
   });
@@ -288,7 +361,10 @@ describe('GapDetectionServiceImpl', () => {
     bars.push(...buildSessionBars(27, { firstOpen: 108 }));
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
 
-    const result = await service.detect(ticker);
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-27T15:00:00.000Z'),
+    );
 
     expect(result.detected).toBe(true);
   });
