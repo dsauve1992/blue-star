@@ -9,14 +9,21 @@ import type {
   MarketDataService,
 } from '../../../market-data/domain/services/market-data.service';
 import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
+import { GAP_CONTEXT_SERVICE } from '../../constants/tokens';
+import type { GapContextService } from '../../domain/services/gap-context.service';
+import { GapContext } from '../../domain/value-objects/gap-context';
 
 describe('GapDetectionServiceImpl', () => {
   let service: GapDetectionServiceImpl;
   let marketDataService: jest.Mocked<MarketDataService>;
+  let gapContextService: jest.Mocked<GapContextService>;
 
   beforeEach(async () => {
     marketDataService = {
       getHistoricalData: jest.fn(),
+    };
+    gapContextService = {
+      enrich: jest.fn().mockResolvedValue(GapContext.none()),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -25,6 +32,10 @@ describe('GapDetectionServiceImpl', () => {
         {
           provide: MARKET_DATA_SERVICE,
           useValue: marketDataService,
+        },
+        {
+          provide: GAP_CONTEXT_SERVICE,
+          useValue: gapContextService,
         },
       ],
     }).compile();
@@ -218,6 +229,51 @@ describe('GapDetectionServiceImpl', () => {
     expect(result.detected).toBe(true);
     expect(result.entryPrice).toBe(108);
     expect(result.stopPrice).toBe(100);
+  });
+
+  it('enriches the result with gap context on a positive detection', async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    const bars = buildGapScenario({
+      priorClosingVol: 100,
+      dayDClosingVol: 200,
+      dayDHigh: 105,
+      dayD1FirstOpen: 108,
+    });
+    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    gapContextService.enrich.mockResolvedValue(
+      GapContext.of({
+        industryGroup: 'Software & Services',
+        globalRsRating: 95,
+        industryGroupRsRating: 80,
+        industryGroupQuadrant: 'Leading',
+      }),
+    );
+
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-12T15:00:00.000Z'),
+    );
+
+    expect(gapContextService.enrich).toHaveBeenCalledWith(ticker);
+    expect(result.context?.industryGroup).toBe('Software & Services');
+    expect(result.context?.globalRsRating).toBe(95);
+    expect(result.context?.industryGroupRsRating).toBe(80);
+    expect(result.context?.industryGroupQuadrant).toBe('Leading');
+  });
+
+  it('does not enrich context when no gap is detected', async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    const bars = buildGapScenario({ dayDHigh: 105, dayD1FirstOpen: 105 });
+    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-12T15:00:00.000Z'),
+    );
+
+    expect(result.detected).toBe(false);
+    expect(result.context).toBeUndefined();
+    expect(gapContextService.enrich).not.toHaveBeenCalled();
   });
 
   it('surfaces the prior-session low as the stop price', async () => {

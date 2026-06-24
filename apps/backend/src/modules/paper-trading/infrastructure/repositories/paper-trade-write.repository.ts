@@ -13,12 +13,16 @@ export class PaperTradeWriteRepository implements IPaperTradeWriteRepository {
         id, ticker, status, shares,
         entry_price, stop_price, target_price, risk_per_share,
         exit_price, exit_reason, realized_r, pnl,
-        market_date, opened_at, closed_at, created_at
+        market_date, opened_at, closed_at,
+        industry_group, global_rs_rating, industry_group_rs_rating, industry_group_quadrant,
+        created_at
       ) VALUES (
         $1, $2, $3, $4,
         $5, $6, $7, $8,
         $9, $10, $11, $12,
-        $13, $14, $15, NOW()
+        $13, $14, $15,
+        $16, $17, $18, $19,
+        NOW()
       )
       ON CONFLICT (id) DO UPDATE SET
         status = EXCLUDED.status,
@@ -45,6 +49,10 @@ export class PaperTradeWriteRepository implements IPaperTradeWriteRepository {
       trade.marketDate,
       trade.openedAt,
       trade.closedAt ?? null,
+      trade.context.industryGroup,
+      trade.context.globalRsRating,
+      trade.context.industryGroupRsRating,
+      trade.context.industryGroupQuadrant,
     ]);
   }
 }

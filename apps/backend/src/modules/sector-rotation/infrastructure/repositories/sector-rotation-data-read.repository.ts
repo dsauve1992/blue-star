@@ -112,6 +112,27 @@ export class SectorRotationDataReadRepositoryImpl
     return new Date(row.latest_date);
   }
 
+  async findLatestBySector(
+    universeId: string,
+    sectorSymbol: string,
+  ): Promise<SectorRotationDataPoint | null> {
+    const query = `
+      SELECT date, sector_symbol, price, relative_strength, x, y, quadrant
+      FROM sector_rotation_data_points
+      WHERE universe_id = $1 AND sector_symbol = $2
+      ORDER BY date DESC
+      LIMIT 1
+    `;
+
+    const result = await this.databaseService.query(query, [
+      universeId,
+      sectorSymbol,
+    ]);
+
+    const dataPoints = this.mapRowsToDataPoints(result.rows as DatabaseRow[]);
+    return dataPoints[0] ?? null;
+  }
+
   async findExistingDates(
     universeId: string,
     startDate: Date,

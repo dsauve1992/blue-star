@@ -1,6 +1,7 @@
 import { OpenPaperTradeUseCase } from './open-paper-trade.use-case';
 import type { PaperTradeReadRepository } from '../domain/repositories/paper-trade-read.repository.interface';
 import type { PaperTradeWriteRepository } from '../domain/repositories/paper-trade-write.repository.interface';
+import type { PaperTradeContext } from '../domain/entities/paper-trade';
 import { WatchlistTicker } from '../../watchlist/domain/value-objects/watchlist-ticker';
 
 describe('OpenPaperTradeUseCase', () => {
@@ -9,6 +10,13 @@ describe('OpenPaperTradeUseCase', () => {
   let writeRepository: jest.Mocked<PaperTradeWriteRepository>;
 
   const ticker = WatchlistTicker.of('AAPL');
+
+  const context: PaperTradeContext = {
+    industryGroup: 'Software & Services',
+    globalRsRating: 95,
+    industryGroupRsRating: 80,
+    industryGroupQuadrant: 'Leading',
+  };
 
   beforeEach(() => {
     readRepository = {
@@ -33,6 +41,7 @@ describe('OpenPaperTradeUseCase', () => {
       stopPrice,
       marketDate: '2026-06-24',
       openedAt: new Date('2026-06-24T13:35:00.000Z'),
+      context,
     };
   }
 
@@ -47,6 +56,7 @@ describe('OpenPaperTradeUseCase', () => {
     expect(saved.shares.value).toBe(6);
     expect(saved.targetPrice).toBe(156); // 108 + 6 * 8
     expect(saved.riskPerShare).toBe(8);
+    expect(saved.context).toEqual(context);
   });
 
   it('compounds equity from realized pnl when sizing', async () => {

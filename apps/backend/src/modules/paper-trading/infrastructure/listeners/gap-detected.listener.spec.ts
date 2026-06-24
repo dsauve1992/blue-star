@@ -25,6 +25,10 @@ describe('GapDetectedListener', () => {
       new Date('2026-06-24T13:35:00.000Z'),
       108,
       100,
+      'Software & Services',
+      95,
+      80,
+      'Leading',
     );
   }
 
@@ -38,6 +42,12 @@ describe('GapDetectedListener', () => {
     expect(request.stopPrice).toBe(100);
     expect(request.marketDate).toBe('2026-06-24');
     expect(request.openedAt).toEqual(new Date('2026-06-24T13:35:00.000Z'));
+    expect(request.context).toEqual({
+      industryGroup: 'Software & Services',
+      globalRsRating: 95,
+      industryGroupRsRating: 80,
+      industryGroupQuadrant: 'Leading',
+    });
   });
 
   it('swallows use-case errors so the event pipeline is not broken', async () => {

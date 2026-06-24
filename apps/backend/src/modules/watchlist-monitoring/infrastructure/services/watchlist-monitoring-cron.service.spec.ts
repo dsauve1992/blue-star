@@ -14,7 +14,7 @@ import type { WatchlistMonitoringReadRepository } from '../../domain/repositorie
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { WatchlistReadRepository } from '../../../watchlist/domain/repositories/watchlist-read.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
-import type { GapDetectionService } from '../../domain/services/gap-detection.service';
+import type { IGapDetectionService } from '../../domain/services/i-gap-detection.service';
 import type { NotificationService } from '../../../notification/domain/services/notification.service';
 import {
   WATCHLIST_MONITORING_READ_REPOSITORY,
@@ -30,7 +30,7 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
   let monitoringReadRepository: jest.Mocked<WatchlistMonitoringReadRepository>;
   let alertLogRepository: jest.Mocked<MonitoringAlertLogRepository>;
   let watchlistReadRepository: jest.Mocked<WatchlistReadRepository>;
-  let gapDetectionService: jest.Mocked<GapDetectionService>;
+  let gapDetectionService: jest.Mocked<IGapDetectionService>;
   let notificationService: jest.Mocked<NotificationService>;
   let eventEmitter: EventEmitter2;
   let emitSpy: jest.SpyInstance;

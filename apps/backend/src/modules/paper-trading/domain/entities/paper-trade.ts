@@ -12,6 +12,19 @@ export enum PaperTradeExitReason {
   TARGET = 'TARGET',
 }
 
+export type PaperTradeQuadrant =
+  | 'Leading'
+  | 'Weakening'
+  | 'Lagging'
+  | 'Improving';
+
+export interface PaperTradeContext {
+  industryGroup: string | null;
+  globalRsRating: number | null;
+  industryGroupRsRating: number | null;
+  industryGroupQuadrant: PaperTradeQuadrant | null;
+}
+
 export interface OpenPaperTradeArgs {
   ticker: WatchlistTicker;
   entryPrice: number;
@@ -20,6 +33,7 @@ export interface OpenPaperTradeArgs {
   shares: Shares;
   marketDate: string;
   openedAt: Date;
+  context: PaperTradeContext;
 }
 
 export interface PaperTradeSnapshot {
@@ -38,6 +52,7 @@ export interface PaperTradeSnapshot {
   marketDate: string;
   openedAt: Date;
   closedAt?: Date;
+  context: PaperTradeContext;
 }
 
 export class PaperTrade {
@@ -50,6 +65,7 @@ export class PaperTrade {
     public readonly shares: Shares,
     public readonly marketDate: string,
     public readonly openedAt: Date,
+    public readonly context: PaperTradeContext,
     private _status: PaperTradeStatus,
     private _exitPrice?: number,
     private _exitReason?: PaperTradeExitReason,
@@ -77,6 +93,7 @@ export class PaperTrade {
       args.shares,
       args.marketDate,
       args.openedAt,
+      args.context,
       PaperTradeStatus.OPEN,
     );
   }
@@ -91,6 +108,7 @@ export class PaperTrade {
       snapshot.shares,
       snapshot.marketDate,
       snapshot.openedAt,
+      snapshot.context,
       snapshot.status,
       snapshot.exitPrice,
       snapshot.exitReason,

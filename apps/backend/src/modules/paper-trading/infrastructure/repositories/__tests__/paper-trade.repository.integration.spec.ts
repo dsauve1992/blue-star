@@ -74,6 +74,12 @@ describe('PaperTrade repositories Integration', () => {
       shares: Shares.of(shares),
       marketDate: '2026-06-24',
       openedAt: new Date('2026-06-24T13:35:00.000Z'),
+      context: {
+        industryGroup: 'Software & Services',
+        globalRsRating: 95,
+        industryGroupRsRating: 80,
+        industryGroupQuadrant: 'Leading',
+      },
     });
   }
 
@@ -91,6 +97,40 @@ describe('PaperTrade repositories Integration', () => {
     expect(found!.targetPrice).toBe(156);
     expect(found!.shares.value).toBe(6);
     expect(found!.riskPerShare).toBe(8);
+    expect(found!.context).toEqual({
+      industryGroup: 'Software & Services',
+      globalRsRating: 95,
+      industryGroupRsRating: 80,
+      industryGroupQuadrant: 'Leading',
+    });
+  });
+
+  it('persists a null gap context (best-effort enrichment that missed)', async () => {
+    const trade = PaperTrade.open({
+      ticker: WatchlistTicker.of('AAPL'),
+      entryPrice: 108,
+      stopPrice: 100,
+      targetPrice: 156,
+      shares: Shares.of(6),
+      marketDate: '2026-06-24',
+      openedAt: new Date('2026-06-24T13:35:00.000Z'),
+      context: {
+        industryGroup: null,
+        globalRsRating: null,
+        industryGroupRsRating: null,
+        industryGroupQuadrant: null,
+      },
+    });
+
+    await writeRepository.save(trade);
+    const found = await readRepository.findById(trade.id.value);
+
+    expect(found!.context).toEqual({
+      industryGroup: null,
+      globalRsRating: null,
+      industryGroupRsRating: null,
+      industryGroupQuadrant: null,
+    });
   });
 
   it('persists a close (exit price, reason, pnl, realizedR)', async () => {

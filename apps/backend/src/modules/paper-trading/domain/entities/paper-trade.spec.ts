@@ -1,5 +1,6 @@
 import {
   PaperTrade,
+  PaperTradeContext,
   PaperTradeExitReason,
   PaperTradeStatus,
 } from './paper-trade';
@@ -8,6 +9,13 @@ import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchli
 
 describe('PaperTrade', () => {
   const ticker = WatchlistTicker.of('AAPL');
+
+  const context: PaperTradeContext = {
+    industryGroup: 'Software & Services',
+    globalRsRating: 95,
+    industryGroupRsRating: 80,
+    industryGroupQuadrant: 'Leading',
+  };
 
   function openTrade(
     overrides: Partial<{
@@ -31,6 +39,7 @@ describe('PaperTrade', () => {
       shares: Shares.of(shares),
       marketDate: '2026-06-24',
       openedAt: new Date('2026-06-24T13:35:00.000Z'),
+      context,
     });
   }
 
@@ -42,6 +51,12 @@ describe('PaperTrade', () => {
     expect(trade.riskPerShare).toBe(8);
     expect(trade.pnl).toBeUndefined();
     expect(trade.realizedR).toBeUndefined();
+  });
+
+  it('carries the gap context captured at open', () => {
+    const trade = openTrade();
+
+    expect(trade.context).toEqual(context);
   });
 
   it('rejects opening when stop is at or above entry', () => {
@@ -102,10 +117,12 @@ describe('PaperTrade', () => {
       marketDate: trade.marketDate,
       openedAt: trade.openedAt,
       closedAt: trade.closedAt,
+      context: trade.context,
     });
 
     expect(restored.realizedR).toBe(6);
     expect(restored.pnl).toBe(288);
     expect(restored.exitReason).toBe(PaperTradeExitReason.TARGET);
+    expect(restored.context).toEqual(context);
   });
 });

@@ -30,6 +30,12 @@ describe('PaperTradeMonitorCronService', () => {
       shares: Shares.of(6),
       marketDate: '2026-06-24',
       openedAt: new Date('2026-06-24T13:35:00.000Z'),
+      context: {
+        industryGroup: null,
+        globalRsRating: null,
+        industryGroupRsRating: null,
+        industryGroupQuadrant: null,
+      },
     });
   }
 

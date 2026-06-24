@@ -1,5 +1,5 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { PaperTrade } from '../domain/entities/paper-trade';
+import { PaperTrade, PaperTradeContext } from '../domain/entities/paper-trade';
 import { Shares } from '../domain/value-objects/shares';
 import { WatchlistTicker } from '../../watchlist/domain/value-objects/watchlist-ticker';
 import type { PaperTradeReadRepository } from '../domain/repositories/paper-trade-read.repository.interface';
@@ -20,6 +20,7 @@ export interface OpenPaperTradeRequest {
   stopPrice: number;
   marketDate: string;
   openedAt: Date;
+  context: PaperTradeContext;
 }
 
 export type OpenPaperTradeResult =
@@ -83,6 +84,7 @@ export class OpenPaperTradeUseCase {
       shares: Shares.of(shareCount),
       marketDate: request.marketDate,
       openedAt: request.openedAt,
+      context: request.context,
     });
 
     await this.writeRepository.save(trade);

@@ -3,6 +3,7 @@ import { DatabaseService } from '../../../../config/database.service';
 import {
   PaperTrade,
   PaperTradeExitReason,
+  PaperTradeQuadrant,
   PaperTradeStatus,
 } from '../../domain/entities/paper-trade';
 import { PaperTradeReadRepository as IPaperTradeReadRepository } from '../../domain/repositories/paper-trade-read.repository.interface';
@@ -26,6 +27,10 @@ interface PaperTradeRow {
   market_date: string;
   opened_at: string;
   closed_at: string | null;
+  industry_group: string | null;
+  global_rs_rating: number | null;
+  industry_group_rs_rating: number | null;
+  industry_group_quadrant: string | null;
 }
 
 @Injectable()
@@ -105,6 +110,19 @@ export class PaperTradeReadRepository implements IPaperTradeReadRepository {
       marketDate: row.market_date,
       openedAt: new Date(row.opened_at),
       closedAt: row.closed_at !== null ? new Date(row.closed_at) : undefined,
+      context: {
+        industryGroup: row.industry_group,
+        globalRsRating:
+          row.global_rs_rating !== null ? Number(row.global_rs_rating) : null,
+        industryGroupRsRating:
+          row.industry_group_rs_rating !== null
+            ? Number(row.industry_group_rs_rating)
+            : null,
+        industryGroupQuadrant:
+          row.industry_group_quadrant !== null
+            ? (row.industry_group_quadrant as PaperTradeQuadrant)
+            : null,
+      },
     });
   }
 }

@@ -18,6 +18,12 @@ export class GapDetectedListener {
         stopPrice: event.stopPrice,
         marketDate: event.marketDate.key,
         openedAt: event.detectedAt,
+        context: {
+          industryGroup: event.industryGroup,
+          globalRsRating: event.globalRsRating,
+          industryGroupRsRating: event.industryGroupRsRating,
+          industryGroupQuadrant: event.industryGroupQuadrant,
+        },
       });
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Unknown error';
