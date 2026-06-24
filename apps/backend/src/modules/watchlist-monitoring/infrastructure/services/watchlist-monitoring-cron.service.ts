@@ -1,6 +1,8 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
+import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
 import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
 import { NotificationTopic } from '../../../notification/domain/value-objects/notification-topic';
 import { NotificationMessage } from '../../../notification/domain/value-objects/notification-message';
@@ -18,7 +20,11 @@ import { GAP_DETECTION_SERVICE } from '../../constants/tokens';
 import { MONITORING_ALERT_LOG_REPOSITORY } from '../../constants/tokens';
 import { WATCHLIST_READ_REPOSITORY } from '../../../watchlist/constants/tokens';
 import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
-import { getMarketDateKey, isWithinMarketHours } from './market-time.util';
+import {
+  getMarketDateKey,
+  isWithinMarketHours,
+  marketToday,
+} from './market-time.util';
 
 @Injectable()
 export class WatchlistMonitoringCronService {
@@ -39,6 +45,7 @@ export class WatchlistMonitoringCronService {
     private readonly gapDetectionService: GapDetectionService,
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationService: NotificationService,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   @Cron('*/5 * * * 1-5', { timeZone: 'America/Toronto' })
@@ -175,20 +182,32 @@ export class WatchlistMonitoringCronService {
       try {
         const result = await this.gapDetectionService.detect(ticker);
 
-        const marketDate = getMarketDateKey();
+        const detectedAt = new Date();
+        const marketDate = marketToday(detectedAt);
         if (
           result.detected &&
           !(await this.monitoringAlertLogRepository.hasAlerted(
             ticker.value,
-            marketDate,
+            marketDate.key,
             MonitoringType.GAP,
           ))
         ) {
           await this.sendGapAlert(ticker.value, watchlist.name.value);
           await this.monitoringAlertLogRepository.recordAlert(
             ticker.value,
-            marketDate,
+            marketDate.key,
             MonitoringType.GAP,
+          );
+
+          this.eventEmitter.emit(
+            GapDetectedEvent.NAME,
+            new GapDetectedEvent(
+              ticker,
+              watchlist.id,
+              watchlist.name.value,
+              marketDate,
+              detectedAt,
+            ),
           );
         }
       } catch (error) {

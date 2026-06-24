@@ -1,4 +1,5 @@
 import { DateTime } from 'luxon';
+import { LocalDate } from '../../domain/value-objects/local-date';
 
 const MARKET_TIMEZONE = 'America/Toronto';
 const MARKET_OPEN_HOUR = 9;
@@ -6,10 +7,15 @@ const MARKET_OPEN_MINUTE = 30;
 const MARKET_CLOSE_HOUR = 16;
 const MARKET_CLOSE_MINUTE = 0;
 
-export function getMarketDateKey(now: Date = new Date()): string {
-  return DateTime.fromJSDate(now, { zone: MARKET_TIMEZONE }).toFormat(
+export function marketToday(now: Date = new Date()): LocalDate {
+  const key = DateTime.fromJSDate(now, { zone: MARKET_TIMEZONE }).toFormat(
     'yyyy-LL-dd',
   );
+  return LocalDate.fromKey(key);
+}
+
+export function getMarketDateKey(now: Date = new Date()): string {
+  return marketToday(now).key;
 }
 
 export function getMarketOpenDateUtc(now: Date = new Date()): Date {

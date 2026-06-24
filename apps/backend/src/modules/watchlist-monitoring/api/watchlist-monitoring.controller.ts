@@ -1,9 +1,6 @@
 import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import { WatchlistId } from '../../watchlist/domain/value-objects/watchlist-id';
-import {
-  MonitoringType,
-  isValidMonitoringType,
-} from '../domain/value-objects/monitoring-type';
+import { isValidMonitoringType } from '../domain/value-objects/monitoring-type';
 import type { AuthContext } from '../../auth/auth-context.interface';
 import type { AuthenticatedRequest } from '../../auth/types/request.interface';
 import { WatchlistMonitoringApiMapper } from './watchlist-monitoring-api.mapper';
@@ -74,7 +71,7 @@ export class WatchlistMonitoringController {
 
     const request: ActivateMonitoringRequestDto = {
       watchlistId: WatchlistId.of(watchlistId),
-      type: body.type as MonitoringType,
+      type: body.type,
     };
 
     const useCaseResponse = await this.activateMonitoringUseCase.execute(
@@ -103,7 +100,7 @@ export class WatchlistMonitoringController {
 
     const request: DeactivateMonitoringRequestDto = {
       watchlistId: WatchlistId.of(watchlistId),
-      type: body.type as MonitoringType,
+      type: body.type,
     };
 
     const useCaseResponse = await this.deactivateMonitoringUseCase.execute(

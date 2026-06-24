@@ -3,6 +3,7 @@ import {
   getMarketOpenDateUtc,
   isDuringMarketHours,
   isWithinMarketHours,
+  marketToday,
 } from './market-time.util';
 
 describe('market-time.util', () => {
@@ -21,6 +22,18 @@ describe('market-time.util', () => {
   it('should compute market date key in Toronto timezone', () => {
     const date = new Date('2025-02-15T03:00:00.000Z');
     expect(getMarketDateKey(date)).toBe('2025-02-14');
+  });
+
+  it('should map a late-evening ET instant to the Toronto calendar day', () => {
+    expect(marketToday(new Date('2026-06-25T03:00:00.000Z')).key).toBe(
+      '2026-06-24',
+    );
+  });
+
+  it('should treat two instants on the same Toronto day as the same market day', () => {
+    const morning = marketToday(new Date('2026-06-24T13:30:00.000Z'));
+    const afterClose = marketToday(new Date('2026-06-24T20:30:00.000Z'));
+    expect(morning.equals(afterClose)).toBe(true);
   });
 
   it('should identify market hours boundaries using Toronto local time', () => {
