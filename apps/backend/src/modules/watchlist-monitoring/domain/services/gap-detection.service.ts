@@ -3,6 +3,8 @@ import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchli
 export interface GapDetectionResult {
   ticker: WatchlistTicker;
   detected: boolean;
+  entryPrice?: number;
+  stopPrice?: number;
 }
 
 export interface GapDetectionService {

@@ -186,6 +186,8 @@ export class WatchlistMonitoringCronService {
         const marketDate = marketToday(detectedAt);
         if (
           result.detected &&
+          result.entryPrice !== undefined &&
+          result.stopPrice !== undefined &&
           !(await this.monitoringAlertLogRepository.hasAlerted(
             ticker.value,
             marketDate.key,
@@ -207,6 +209,8 @@ export class WatchlistMonitoringCronService {
               watchlist.name.value,
               marketDate,
               detectedAt,
+              result.entryPrice,
+              result.stopPrice,
             ),
           );
         }

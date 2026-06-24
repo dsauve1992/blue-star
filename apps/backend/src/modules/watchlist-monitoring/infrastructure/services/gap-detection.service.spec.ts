@@ -212,6 +212,31 @@ describe('GapDetectionServiceImpl', () => {
 
     expect(result.ticker).toEqual(ticker);
     expect(result.detected).toBe(true);
+    expect(result.entryPrice).toBe(108);
+    expect(result.stopPrice).toBe(100);
+  });
+
+  it('surfaces the prior-session low as the stop price', async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    // Day D's first bar dips to a low of 92 (open 92, closes back at 100);
+    // the stop should track that session low, not the gap reference high.
+    const bars: PricePoint[] = [];
+    for (let day = 1; day <= 10; day++) {
+      bars.push(...buildSessionBars(day, { closingVol: 100 }));
+    }
+    const dayDBars = buildSessionBars(11, {
+      closingVol: 200,
+      closingHigh: 105,
+    });
+    dayDBars[0] = PricePoint.of(dayDBars[0].date, 92, 100, 92, 100, 50);
+    bars.push(...dayDBars);
+    bars.push(...buildSessionBars(12, { firstOpen: 108 }));
+    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+
+    const result = await service.detect(ticker);
+
+    expect(result.detected).toBe(true);
+    expect(result.stopPrice).toBe(92);
   });
 
   it('should return detected false when vol_ok on day D but no gap on day D+1', async () => {

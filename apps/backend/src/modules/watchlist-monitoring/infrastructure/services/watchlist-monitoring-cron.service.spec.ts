@@ -67,7 +67,12 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
       findById: jest.fn().mockResolvedValue(buildWatchlist()),
     } as unknown as jest.Mocked<WatchlistReadRepository>;
     gapDetectionService = {
-      detect: jest.fn().mockResolvedValue({ ticker, detected: true }),
+      detect: jest.fn().mockResolvedValue({
+        ticker,
+        detected: true,
+        entryPrice: 108,
+        stopPrice: 100,
+      }),
     };
     notificationService = { send: jest.fn().mockResolvedValue(undefined) };
 
@@ -122,6 +127,8 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
     expect(gapEvent.marketDate).toBeInstanceOf(LocalDate);
     expect(gapEvent.marketDate.key).toBe(getMarketDateKey());
     expect(gapEvent.detectedAt).toBeInstanceOf(Date);
+    expect(gapEvent.entryPrice).toBe(108);
+    expect(gapEvent.stopPrice).toBe(100);
   });
 
   it('does not emit when no gap is detected', async () => {

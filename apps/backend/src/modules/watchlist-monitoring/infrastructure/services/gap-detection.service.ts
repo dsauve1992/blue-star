@@ -68,7 +68,17 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
       sessions,
     );
 
-    return { ticker, detected: volOkPrev && gapOk };
+    const detected = volOkPrev && gapOk;
+    if (!detected) {
+      return { ticker, detected: false };
+    }
+
+    return {
+      ticker,
+      detected: true,
+      entryPrice: currentFirstBar.open,
+      stopPrice: Math.min(...priorBars.map((bar) => bar.low)),
+    };
   }
 
   // vol_ok on day D: last_vol >= VOL_MULT * avg_last_vol

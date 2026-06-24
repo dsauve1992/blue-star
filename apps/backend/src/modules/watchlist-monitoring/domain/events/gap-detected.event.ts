@@ -11,5 +11,7 @@ export class GapDetectedEvent {
     public readonly watchlistName: string,
     public readonly marketDate: LocalDate,
     public readonly detectedAt: Date,
+    public readonly entryPrice: number,
+    public readonly stopPrice: number,
   ) {}
 }
