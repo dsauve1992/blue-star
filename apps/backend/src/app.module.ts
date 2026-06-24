@@ -18,6 +18,7 @@ import { LeaderScanModule } from './modules/leader-scan/leader-scan.module';
 import { StockClassificationModule } from './modules/stock-classification/stock-classification.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { ScheduleModule } from '@nestjs/schedule';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DatabaseModule } from './config/database.module';
 import { DomainErrorFilter } from './common/filters/domain-error.filter';
 
@@ -28,6 +29,7 @@ import { DomainErrorFilter } from './common/filters/domain-error.filter';
       envFilePath: '.env',
     }),
     ScheduleModule.forRoot(),
+    EventEmitterModule.forRoot(),
     DatabaseModule,
     PositionModule,
     MarketDataModule,

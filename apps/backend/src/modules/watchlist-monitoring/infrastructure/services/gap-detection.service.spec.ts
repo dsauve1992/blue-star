@@ -110,7 +110,12 @@ describe('GapDetectionServiceImpl', () => {
 
     // Day D: closing vol must satisfy vol_ok, closing high sets the gap reference
     const dayD = priorSessionCount + 1;
-    bars.push(...buildSessionBars(dayD, { closingVol: dayDClosingVol, closingHigh: dayDHigh }));
+    bars.push(
+      ...buildSessionBars(dayD, {
+        closingVol: dayDClosingVol,
+        closingHigh: dayDHigh,
+      }),
+    );
 
     // Day D+1: first bar open must be > dayDHigh
     const dayD1 = dayD + 1;
@@ -169,7 +174,10 @@ describe('GapDetectionServiceImpl', () => {
   it('should return detected false when vol_ok fails (yesterday closing vol below 2x average)', async () => {
     const ticker = WatchlistTicker.of('AAPL');
     // avg_last_vol = 100, dayDClosingVol = 199 < 2.0 * 100 → vol_ok=false
-    const bars = buildGapScenario({ priorClosingVol: 100, dayDClosingVol: 199 });
+    const bars = buildGapScenario({
+      priorClosingVol: 100,
+      dayDClosingVol: 199,
+    });
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
 
     const result = await service.detect(ticker);
