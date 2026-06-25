@@ -25,6 +25,12 @@ export class PaperTradingApiMapper {
       marketDate: trade.marketDate,
       openedAt: trade.openedAt.toISOString(),
       closedAt: trade.closedAt ? trade.closedAt.toISOString() : null,
+      context: {
+        industryGroup: trade.context.industryGroup,
+        globalRsRating: trade.context.globalRsRating,
+        industryGroupRsRating: trade.context.industryGroupRsRating,
+        industryGroupQuadrant: trade.context.industryGroupQuadrant,
+      },
     };
   }
 
