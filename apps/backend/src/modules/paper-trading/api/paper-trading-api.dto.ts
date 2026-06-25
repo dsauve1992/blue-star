@@ -1,3 +1,10 @@
+export interface PaperTradeContextApiDto {
+  industryGroup: string | null;
+  globalRsRating: number | null;
+  industryGroupRsRating: number | null;
+  industryGroupQuadrant: string | null;
+}
+
 export interface PaperTradeApiDto {
   id: string;
   ticker: string;
@@ -14,6 +21,7 @@ export interface PaperTradeApiDto {
   marketDate: string;
   openedAt: string;
   closedAt: string | null;
+  context: PaperTradeContextApiDto;
 }
 
 export interface PaperTradingStatsApiDto {

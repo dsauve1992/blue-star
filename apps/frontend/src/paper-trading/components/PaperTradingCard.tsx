@@ -13,7 +13,20 @@ import {
   usePaperTradingStats,
   usePaperTrades,
 } from "../hooks/use-paper-trading";
-import type { PaperTrade } from "../api/paper-trading.types";
+import type {
+  PaperTrade,
+  PaperTradeQuadrant,
+} from "../api/paper-trading.types";
+
+const QUADRANT_VARIANT: Record<
+  PaperTradeQuadrant,
+  "success" | "danger" | "warning" | "secondary"
+> = {
+  Leading: "success",
+  Improving: "warning",
+  Weakening: "secondary",
+  Lagging: "danger",
+};
 
 function Stat({
   label,
@@ -44,27 +57,62 @@ function RecentTradeRow({ trade }: { trade: PaperTrade }) {
   const rText =
     trade.realizedR !== null ? `${trade.realizedR.toFixed(2)}R` : "open";
 
+  const { context } = trade;
+  const hasRsContext =
+    context.globalRsRating !== null || context.industryGroupRsRating !== null;
+  const hasContext =
+    context.industryGroup !== null ||
+    context.industryGroupQuadrant !== null ||
+    hasRsContext;
+
   return (
-    <div className="flex items-center justify-between py-1.5 text-sm">
-      <div className="flex items-center gap-2">
-        <span className="font-medium text-slate-900 dark:text-slate-50">
-          {trade.ticker}
+    <div className="space-y-1 py-1.5 text-sm">
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-slate-900 dark:text-slate-50">
+            {trade.ticker}
+          </span>
+          {!isClosed && (
+            <Badge variant="secondary" className="text-[10px]">
+              OPEN
+            </Badge>
+          )}
+          {context.industryGroupQuadrant !== null && (
+            <Badge
+              variant={QUADRANT_VARIANT[context.industryGroupQuadrant]}
+              className="text-[10px]"
+            >
+              {context.industryGroupQuadrant}
+            </Badge>
+          )}
+        </div>
+        <span
+          className={`font-mono ${
+            trade.realizedR === null
+              ? "text-slate-400 dark:text-slate-500"
+              : getChangeColor(trade.realizedR)
+          }`}
+        >
+          {rText}
         </span>
-        {!isClosed && (
-          <Badge variant="secondary" className="text-[10px]">
-            OPEN
-          </Badge>
-        )}
       </div>
-      <span
-        className={`font-mono ${
-          trade.realizedR === null
-            ? "text-slate-400 dark:text-slate-500"
-            : getChangeColor(trade.realizedR)
-        }`}
-      >
-        {rText}
-      </span>
+      {hasContext && (
+        <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
+          {context.industryGroup !== null && (
+            <span className="truncate">{context.industryGroup}</span>
+          )}
+          {hasRsContext && (
+            <span className="ml-auto shrink-0 font-mono">
+              RS{" "}
+              {context.globalRsRating !== null ? context.globalRsRating : "—"}
+              {" / "}
+              {context.industryGroupRsRating !== null
+                ? context.industryGroupRsRating
+                : "—"}
+            </span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
