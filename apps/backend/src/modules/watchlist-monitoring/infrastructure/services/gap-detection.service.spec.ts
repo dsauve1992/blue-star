@@ -71,9 +71,9 @@ describe('GapDetectionServiceImpl', () => {
     const openBar = PricePoint.of(
       new Date(Date.UTC(2025, 1, day, 14, 30)),
       firstOpen,
-      Math.max(firstOpen, 100),
-      Math.min(firstOpen, 100),
-      100,
+      firstOpen,
+      firstOpen,
+      firstOpen,
       50,
     );
     const closeBar = PricePoint.of(
@@ -95,7 +95,7 @@ describe('GapDetectionServiceImpl', () => {
    *
    * Signal = vol_ok on D AND gap_ok on D+1
    * vol_ok: dayDClosingVol >= 2.0 * avg(priorClosingVols)
-   * gap_ok: dayD1FirstOpen > dayDHigh
+   * gap_ok: dayD1FirstOpen > dayDHigh AND dayD1FirstBar.low > dayDHigh
    */
   function buildGapScenario(options: {
     priorSessionCount?: number;
@@ -313,6 +313,33 @@ describe('GapDetectionServiceImpl', () => {
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
 
     const result = await service.detect(ticker);
+
+    expect(result.detected).toBe(false);
+  });
+
+  it('should return detected false when the open gaps up but the first bar dips back into the prior range', async () => {
+    const ticker = WatchlistTicker.of('AAPL');
+    // vol_ok=true, open=108 > dayDHigh=105, but the first bar's low=104 <= 105 →
+    // the opening candle overlaps the prior session's range, so gap_ok=false.
+    const bars = buildGapScenario({
+      dayDClosingVol: 200,
+      dayDHigh: 105,
+      dayD1FirstOpen: 108,
+    });
+    const currentOpenTime = new Date('2025-02-12T14:30:00.000Z').getTime();
+    const overlappingBars = bars.map((bar) =>
+      bar.date.getTime() === currentOpenTime
+        ? PricePoint.of(bar.date, 108, 108, 104, 108, 50)
+        : bar,
+    );
+    marketDataService.getHistoricalData.mockResolvedValue(
+      historicalData(overlappingBars),
+    );
+
+    const result = await service.detect(
+      ticker,
+      new Date('2025-02-12T15:00:00.000Z'),
+    );
 
     expect(result.detected).toBe(false);
   });

@@ -143,7 +143,7 @@ export class WatchlistMonitoringCronService {
     }
   }
 
-  @Cron('36 9 * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('45 9 * * 1-5', { timeZone: 'America/Toronto' })
   async monitorGaps(): Promise<void> {
     const jobName = 'Watchlist Gap Monitoring';
     this.logger.log(`Starting ${jobName}...`);

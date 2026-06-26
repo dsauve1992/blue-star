@@ -75,7 +75,9 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
       return { ticker, detected: false };
     }
 
-    const gapOk = currentFirstBar.open > priorLastBar.high;
+    const gapOk =
+      currentFirstBar.open > priorLastBar.high &&
+      currentFirstBar.low > priorLastBar.high;
 
     const priorKeys = orderedKeys.slice(0, -1);
     const volOkPrev = this.isVolumeSpikeOnSession(
