@@ -1,6 +1,6 @@
-import { apiClient } from '../../global/api/api-instance';
+import { apiClient } from "../../global/api/api-instance";
 
-export type MonitoringType = 'BREAKOUT';
+export type MonitoringType = "BREAKOUT" | "GAP";
 
 export interface MonitoringStatus {
   watchlistId: string;
@@ -9,20 +9,30 @@ export interface MonitoringStatus {
 }
 
 export interface ActivateMonitoringRequest {
+  type?: MonitoringType;
+}
+
+export interface ActivatedMonitoring {
+  monitoringId: string;
   type: MonitoringType;
+  active: boolean;
 }
 
 export interface ActivateMonitoringResponse {
-  monitoringId: string;
-  active: boolean;
+  monitorings: ActivatedMonitoring[];
 }
 
 export interface DeactivateMonitoringRequest {
+  type?: MonitoringType;
+}
+
+export interface DeactivatedMonitoring {
   type: MonitoringType;
+  active: boolean;
 }
 
 export interface DeactivateMonitoringResponse {
-  active: boolean;
+  monitorings: DeactivatedMonitoring[];
 }
 
 export interface GetMonitoringStatusResponse {

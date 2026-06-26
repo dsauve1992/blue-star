@@ -24,7 +24,7 @@ export function useActivateMonitoring() {
       type,
     }: {
       watchlistId: string;
-      type: MonitoringType;
+      type?: MonitoringType;
     }) => monitoringClient.activateMonitoring(watchlistId, { type }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({
@@ -43,7 +43,7 @@ export function useDeactivateMonitoring() {
       type,
     }: {
       watchlistId: string;
-      type: MonitoringType;
+      type?: MonitoringType;
     }) => monitoringClient.deactivateMonitoring(watchlistId, { type }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({

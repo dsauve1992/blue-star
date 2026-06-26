@@ -194,23 +194,15 @@ function WatchlistCard({
   const activateMonitoring = useActivateMonitoring();
   const deactivateMonitoring = useDeactivateMonitoring();
 
-  const breakoutMonitoring = monitoringData?.monitorings.find(
-    (m) => m.type === "BREAKOUT",
-  );
-  const isMonitoringActive = breakoutMonitoring?.active ?? false;
+  const isMonitoringActive =
+    monitoringData?.monitorings.some((m) => m.active) ?? false;
 
   const handleToggleMonitoring = (e: React.MouseEvent) => {
     e.stopPropagation();
     if (isMonitoringActive) {
-      deactivateMonitoring.mutate({
-        watchlistId: watchlist.id,
-        type: "BREAKOUT",
-      });
+      deactivateMonitoring.mutate({ watchlistId: watchlist.id });
     } else {
-      activateMonitoring.mutate({
-        watchlistId: watchlist.id,
-        type: "BREAKOUT",
-      });
+      activateMonitoring.mutate({ watchlistId: watchlist.id });
     }
   };
 
@@ -372,9 +364,7 @@ function WatchlistCard({
               onClick={handleToggleMonitoring}
               disabled={isToggling}
               title={
-                isMonitoringActive
-                  ? "Disable breakout monitoring"
-                  : "Enable breakout monitoring"
+                isMonitoringActive ? "Disable monitoring" : "Enable monitoring"
               }
               className={`
                 p-0.5 rounded transition-all flex-shrink-0

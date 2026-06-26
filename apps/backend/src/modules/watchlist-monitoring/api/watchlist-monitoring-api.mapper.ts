@@ -14,8 +14,11 @@ export class WatchlistMonitoringApiMapper {
     useCaseResponse: ActivateMonitoringResponseDto,
   ): ActivateMonitoringApiResponseDto {
     return {
-      monitoringId: useCaseResponse.monitoringId.value,
-      active: useCaseResponse.active,
+      monitorings: useCaseResponse.monitorings.map((monitoring) => ({
+        monitoringId: monitoring.monitoringId.value,
+        type: monitoring.type,
+        active: monitoring.active,
+      })),
     };
   }
 
@@ -23,7 +26,10 @@ export class WatchlistMonitoringApiMapper {
     useCaseResponse: DeactivateMonitoringResponseDto,
   ): DeactivateMonitoringApiResponseDto {
     return {
-      active: useCaseResponse.active,
+      monitorings: useCaseResponse.monitorings.map((monitoring) => ({
+        type: monitoring.type,
+        active: monitoring.active,
+      })),
     };
   }
 

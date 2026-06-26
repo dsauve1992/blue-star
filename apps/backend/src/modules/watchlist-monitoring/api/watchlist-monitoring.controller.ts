@@ -1,6 +1,10 @@
 import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
 import { WatchlistId } from '../../watchlist/domain/value-objects/watchlist-id';
-import { isValidMonitoringType } from '../domain/value-objects/monitoring-type';
+import {
+  MonitoringType,
+  isValidMonitoringType,
+} from '../domain/value-objects/monitoring-type';
+import { InvariantError } from '../domain/domain-errors';
 import type { AuthContext } from '../../auth/auth-context.interface';
 import type { AuthenticatedRequest } from '../../auth/types/request.interface';
 import { WatchlistMonitoringApiMapper } from './watchlist-monitoring-api.mapper';
@@ -57,12 +61,10 @@ export class WatchlistMonitoringController {
   @Post(':watchlistId/activate')
   async activateMonitoring(
     @Param('watchlistId') watchlistId: string,
-    @Body() body: { type: string },
+    @Body() body: { type?: string },
     @Req() req: AuthenticatedRequest,
   ): Promise<ActivateMonitoringApiResponseDto> {
-    if (!isValidMonitoringType(body.type)) {
-      throw new Error(`Invalid monitoring type: ${body.type}`);
-    }
+    const type = this.parseMonitoringType(body.type);
 
     const user = req.user;
     const authContext: AuthContext = {
@@ -71,7 +73,7 @@ export class WatchlistMonitoringController {
 
     const request: ActivateMonitoringRequestDto = {
       watchlistId: WatchlistId.of(watchlistId),
-      type: body.type,
+      type,
     };
 
     const useCaseResponse = await this.activateMonitoringUseCase.execute(
@@ -86,12 +88,10 @@ export class WatchlistMonitoringController {
   @Post(':watchlistId/deactivate')
   async deactivateMonitoring(
     @Param('watchlistId') watchlistId: string,
-    @Body() body: { type: string },
+    @Body() body: { type?: string },
     @Req() req: AuthenticatedRequest,
   ): Promise<DeactivateMonitoringApiResponseDto> {
-    if (!isValidMonitoringType(body.type)) {
-      throw new Error(`Invalid monitoring type: ${body.type}`);
-    }
+    const type = this.parseMonitoringType(body.type);
 
     const user = req.user;
     const authContext: AuthContext = {
@@ -100,7 +100,7 @@ export class WatchlistMonitoringController {
 
     const request: DeactivateMonitoringRequestDto = {
       watchlistId: WatchlistId.of(watchlistId),
-      type: body.type,
+      type,
     };
 
     const useCaseResponse = await this.deactivateMonitoringUseCase.execute(
@@ -110,5 +110,15 @@ export class WatchlistMonitoringController {
     return this.watchlistMonitoringApiMapper.mapDeactivateMonitoringResponse(
       useCaseResponse,
     );
+  }
+
+  private parseMonitoringType(type?: string): MonitoringType | undefined {
+    if (type === undefined) {
+      return undefined;
+    }
+    if (!isValidMonitoringType(type)) {
+      throw new InvariantError(`Invalid monitoring type: ${type}`);
+    }
+    return type;
   }
 }

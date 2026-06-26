@@ -92,8 +92,13 @@ describe('ActivateMonitoringUseCase', () => {
       expect(mockMonitoringWriteRepository.save).toHaveBeenCalledWith(existing);
       expect(existing.active).toBe(true);
       expect(result).toEqual({
-        monitoringId: existing.id,
-        active: true,
+        monitorings: [
+          {
+            monitoringId: existing.id,
+            type: MonitoringType.BREAKOUT,
+            active: true,
+          },
+        ],
       });
     });
 
@@ -111,9 +116,34 @@ describe('ActivateMonitoringUseCase', () => {
       expect(saved.type).toBe(MonitoringType.BREAKOUT);
       expect(saved.active).toBe(true);
       expect(result).toEqual({
-        monitoringId: saved.id,
-        active: true,
+        monitorings: [
+          {
+            monitoringId: saved.id,
+            type: MonitoringType.BREAKOUT,
+            active: true,
+          },
+        ],
       });
+    });
+
+    it('should activate every monitoring type when no type is given', async () => {
+      mockWatchlistReadRepository.findById.mockResolvedValue(ownedWatchlist());
+      mockMonitoringWriteRepository.findByWatchlistIdAndType.mockResolvedValue(
+        null,
+      );
+
+      const result = await useCase.execute({ watchlistId }, authContext);
+
+      const allTypes = Object.values(MonitoringType);
+      expect(mockMonitoringWriteRepository.save).toHaveBeenCalledTimes(
+        allTypes.length,
+      );
+      const savedTypes = mockMonitoringWriteRepository.save.mock.calls.map(
+        (call) => call[0].type,
+      );
+      expect(savedTypes).toEqual(allTypes);
+      expect(result.monitorings.map((m) => m.type)).toEqual(allTypes);
+      expect(result.monitorings.every((m) => m.active)).toBe(true);
     });
 
     it('should throw NotFoundError when the watchlist does not exist', async () => {

@@ -93,7 +93,46 @@ describe('DeactivateMonitoringUseCase', () => {
       ).toHaveBeenCalledWith(watchlistId, MonitoringType.BREAKOUT);
       expect(mockMonitoringWriteRepository.save).toHaveBeenCalledWith(existing);
       expect(existing.active).toBe(false);
-      expect(result).toEqual({ active: false });
+      expect(result).toEqual({
+        monitorings: [{ type: MonitoringType.BREAKOUT, active: false }],
+      });
+    });
+
+    it('should deactivate every existing type and skip missing rows when no type is given', async () => {
+      mockWatchlistReadRepository.findById.mockResolvedValue(ownedWatchlist());
+      const breakout = WatchlistMonitoring.fromData({
+        id: WatchlistMonitoringId.of('22222222-2222-2222-2222-222222222222'),
+        watchlistId,
+        type: MonitoringType.BREAKOUT,
+        active: true,
+        createdAt: new Date('2026-01-01T00:00:00.000Z'),
+        updatedAt: new Date('2026-01-01T00:00:00.000Z'),
+      });
+      mockMonitoringWriteRepository.findByWatchlistIdAndType.mockImplementation(
+        (_watchlistId, type) =>
+          Promise.resolve(type === MonitoringType.BREAKOUT ? breakout : null),
+      );
+
+      const result = await useCase.execute({ watchlistId }, authContext);
+
+      expect(mockMonitoringWriteRepository.save).toHaveBeenCalledTimes(1);
+      expect(mockMonitoringWriteRepository.save).toHaveBeenCalledWith(breakout);
+      expect(breakout.active).toBe(false);
+      expect(result).toEqual({
+        monitorings: [{ type: MonitoringType.BREAKOUT, active: false }],
+      });
+    });
+
+    it('should not throw when no type is given and no rows exist', async () => {
+      mockWatchlistReadRepository.findById.mockResolvedValue(ownedWatchlist());
+      mockMonitoringWriteRepository.findByWatchlistIdAndType.mockResolvedValue(
+        null,
+      );
+
+      const result = await useCase.execute({ watchlistId }, authContext);
+
+      expect(mockMonitoringWriteRepository.save).not.toHaveBeenCalled();
+      expect(result).toEqual({ monitorings: [] });
     });
 
     it('should throw NotFoundError when no monitoring exists for the watchlist', async () => {

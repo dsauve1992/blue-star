@@ -6,13 +6,23 @@ export interface MonitoringStatusApiDto {
   active: boolean;
 }
 
-export interface ActivateMonitoringApiResponseDto {
+export interface ActivatedMonitoringApiDto {
   monitoringId: string;
+  type: MonitoringType;
+  active: boolean;
+}
+
+export interface ActivateMonitoringApiResponseDto {
+  monitorings: ActivatedMonitoringApiDto[];
+}
+
+export interface DeactivatedMonitoringApiDto {
+  type: MonitoringType;
   active: boolean;
 }
 
 export interface DeactivateMonitoringApiResponseDto {
-  active: boolean;
+  monitorings: DeactivatedMonitoringApiDto[];
 }
 
 export interface GetMonitoringStatusApiResponseDto {

@@ -12,12 +12,17 @@ import { AuthorizationError, NotFoundError } from '../domain/domain-errors';
 
 export interface ActivateMonitoringRequestDto {
   watchlistId: WatchlistId;
+  type?: MonitoringType;
+}
+
+export interface ActivatedMonitoringDto {
+  monitoringId: WatchlistMonitoringId;
   type: MonitoringType;
+  active: boolean;
 }
 
 export interface ActivateMonitoringResponseDto {
-  monitoringId: WatchlistMonitoringId;
-  active: boolean;
+  monitorings: ActivatedMonitoringDto[];
 }
 
 @Injectable()
@@ -47,10 +52,24 @@ export class ActivateMonitoringUseCase {
       throw new AuthorizationError('User does not own this watchlist');
     }
 
+    const types = request.type ? [request.type] : Object.values(MonitoringType);
+
+    const monitorings: ActivatedMonitoringDto[] = [];
+    for (const type of types) {
+      monitorings.push(await this.activateType(request.watchlistId, type));
+    }
+
+    return { monitorings };
+  }
+
+  private async activateType(
+    watchlistId: WatchlistId,
+    type: MonitoringType,
+  ): Promise<ActivatedMonitoringDto> {
     const existing =
       await this.monitoringWriteRepository.findByWatchlistIdAndType(
-        request.watchlistId,
-        request.type,
+        watchlistId,
+        type,
       );
 
     if (existing) {
@@ -58,19 +77,17 @@ export class ActivateMonitoringUseCase {
       await this.monitoringWriteRepository.save(existing);
       return {
         monitoringId: existing.id,
+        type: existing.type,
         active: existing.active,
       };
     }
 
-    const monitoring = WatchlistMonitoring.create({
-      watchlistId: request.watchlistId,
-      type: request.type,
-    });
-
+    const monitoring = WatchlistMonitoring.create({ watchlistId, type });
     await this.monitoringWriteRepository.save(monitoring);
 
     return {
       monitoringId: monitoring.id,
+      type: monitoring.type,
       active: monitoring.active,
     };
   }

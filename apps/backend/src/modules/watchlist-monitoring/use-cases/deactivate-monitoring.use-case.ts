@@ -10,11 +10,16 @@ import { AuthorizationError, NotFoundError } from '../domain/domain-errors';
 
 export interface DeactivateMonitoringRequestDto {
   watchlistId: WatchlistId;
+  type?: MonitoringType;
+}
+
+export interface DeactivatedMonitoringDto {
   type: MonitoringType;
+  active: boolean;
 }
 
 export interface DeactivateMonitoringResponseDto {
-  active: boolean;
+  monitorings: DeactivatedMonitoringDto[];
 }
 
 @Injectable()
@@ -44,22 +49,55 @@ export class DeactivateMonitoringUseCase {
       throw new AuthorizationError('User does not own this watchlist');
     }
 
-    const monitoring =
-      await this.monitoringWriteRepository.findByWatchlistIdAndType(
+    if (request.type) {
+      const deactivated = await this.deactivateType(
         request.watchlistId,
         request.type,
+        true,
+      );
+      return { monitorings: deactivated ? [deactivated] : [] };
+    }
+
+    const monitorings: DeactivatedMonitoringDto[] = [];
+    for (const type of Object.values(MonitoringType)) {
+      const deactivated = await this.deactivateType(
+        request.watchlistId,
+        type,
+        false,
+      );
+      if (deactivated) {
+        monitorings.push(deactivated);
+      }
+    }
+
+    return { monitorings };
+  }
+
+  private async deactivateType(
+    watchlistId: WatchlistId,
+    type: MonitoringType,
+    throwIfMissing: boolean,
+  ): Promise<DeactivatedMonitoringDto | null> {
+    const monitoring =
+      await this.monitoringWriteRepository.findByWatchlistIdAndType(
+        watchlistId,
+        type,
       );
 
     if (!monitoring) {
-      throw new NotFoundError(
-        `No ${request.type} monitoring found for watchlist ${request.watchlistId.value}`,
-      );
+      if (throwIfMissing) {
+        throw new NotFoundError(
+          `No ${type} monitoring found for watchlist ${watchlistId.value}`,
+        );
+      }
+      return null;
     }
 
     monitoring.deactivate();
     await this.monitoringWriteRepository.save(monitoring);
 
     return {
+      type: monitoring.type,
       active: monitoring.active,
     };
   }
