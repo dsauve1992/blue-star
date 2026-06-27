@@ -79,16 +79,15 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
       currentFirstBar.open > priorLastBar.high &&
       currentFirstBar.low > priorLastBar.high;
 
-    const priorKeys = orderedKeys.slice(0, -1);
-    const volOkPrev = this.isVolumeSpikeOnSession(
-      priorKey,
-      priorBars,
-      priorKeys,
-      sessions,
-    );
+    // const priorKeys = orderedKeys.slice(0, -1);
+    // const volOkPrev = this.isVolumeSpikeOnSession(
+    //   priorKey,
+    //   priorBars,
+    //   priorKeys,
+    //   sessions,
+    // );
 
-    const detected = volOkPrev && gapOk;
-    if (!detected) {
+    if (!gapOk) {
       return { ticker, detected: false };
     }
 
