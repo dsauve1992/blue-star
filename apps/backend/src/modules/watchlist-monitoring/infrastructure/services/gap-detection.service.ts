@@ -95,7 +95,7 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
       ticker,
       detected: true,
       entryPrice: currentFirstBar.open,
-      stopPrice: Math.min(...priorBars.map((bar) => bar.low)),
+      stopPrice: priorLastBar.low,
       context: await this.gapContextService.enrich(ticker),
     };
   }
