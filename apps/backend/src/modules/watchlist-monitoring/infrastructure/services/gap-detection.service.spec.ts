@@ -158,6 +158,7 @@ describe('GapDetectionServiceImpl', () => {
       // 30 days back from Feb 14 = Jan 15, market open at 14:30 UTC (winter)
       DateRange.of(new Date('2025-01-15T14:30:00.000Z'), now),
       '5m',
+      { includePrePost: false },
     );
   });
 

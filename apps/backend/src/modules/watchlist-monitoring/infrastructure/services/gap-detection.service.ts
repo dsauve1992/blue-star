@@ -171,6 +171,7 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
       Symbol.of(ticker.symbolOnly),
       dateRange,
       '5m',
+      { includePrePost: false },
     );
   }
 }
