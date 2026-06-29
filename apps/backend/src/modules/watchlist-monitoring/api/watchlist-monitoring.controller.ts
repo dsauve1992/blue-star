@@ -25,6 +25,7 @@ import {
   GetMonitoringStatusRequestDto,
   GetMonitoringStatusUseCase,
 } from '../use-cases/get-monitoring-status.use-case';
+import { WatchlistMonitoringCronService } from '../infrastructure/services/watchlist-monitoring-cron.service';
 
 @Controller('watchlist-monitoring')
 export class WatchlistMonitoringController {
@@ -33,7 +34,14 @@ export class WatchlistMonitoringController {
     private readonly deactivateMonitoringUseCase: DeactivateMonitoringUseCase,
     private readonly getMonitoringStatusUseCase: GetMonitoringStatusUseCase,
     private readonly watchlistMonitoringApiMapper: WatchlistMonitoringApiMapper,
+    private readonly cronService: WatchlistMonitoringCronService,
   ) {}
+
+  @Post('run-gap-scan')
+  async runGapScan(): Promise<{ status: string }> {
+    await this.cronService.monitorGaps();
+    return { status: 'completed' };
+  }
 
   @Get(':watchlistId')
   async getMonitoringStatus(
