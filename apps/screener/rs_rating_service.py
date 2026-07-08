@@ -79,6 +79,7 @@ def compute_rs_ratings(quiet: bool = False) -> dict:
     filters = [
         {"left": "close", "operation": "greater", "right": 1},
         {"left": "market_cap_basic", "operation": "greater", "right": 300000000},
+        {"left": "AvgValue.Traded_30d", "operation": "greater", "right": 5000000},
         {"left": "is_primary", "operation": "equal", "right": True},
         {"left": "type", "operation": "equal", "right": "stock"},
     ]
