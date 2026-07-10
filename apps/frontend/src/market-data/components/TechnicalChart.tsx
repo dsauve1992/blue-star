@@ -32,9 +32,18 @@ import {
   fmt,
   fmtVol,
 } from "../utils/chart-utils";
-import { getChartColors, MA_DEFAULT_COLORS, type ChartColorPalette } from "../utils/chart-colors";
+import {
+  getChartColors,
+  MA_DEFAULT_COLORS,
+  type ChartColorPalette,
+} from "../utils/chart-colors";
 import { MeasureTool } from "./chart-primitives/MeasureTool";
 import { LongPositionTool } from "./chart-primitives/LongPositionTool";
+import {
+  QuadrantBackground,
+  type QuadrantSegment,
+} from "./chart-primitives/QuadrantBackground";
+import type { QuadrantType } from "src/sector-rotation/api/sector-rotation.client";
 
 export type ChartDrawingTool = "none" | "measure" | "long-position";
 
@@ -61,6 +70,12 @@ export interface RSConfig {
   benchmarks: RSBenchmark[];
   smaPeriod?: number;
   lookback?: number;
+}
+
+export interface QuadrantBackgroundConfig {
+  segments: QuadrantSegment[];
+  show: boolean;
+  onShowChange: (show: boolean) => void;
 }
 
 export interface TimeframeConfig {
@@ -109,6 +124,7 @@ export interface TechnicalChartProps {
   movingAverages?: MovingAverageConfig[];
   volume?: VolumeConfig;
   rs?: RSConfig;
+  quadrantBackground?: QuadrantBackgroundConfig;
   timeframe?: TimeframeConfig;
   extendedHours?: ExtendedHoursSessionControl;
   drawingTool?: DrawingToolConfig;
@@ -128,8 +144,14 @@ export interface TechnicalChartProps {
 const LOAD_MORE_THRESHOLD = 10;
 
 const TIMEFRAME_LABELS: Record<string, string> = {
-  "1": "1m", "5": "5m", "15": "15m", "30": "30m", "60": "1h",
-  D: "D", W: "W", M: "M",
+  "1": "1m",
+  "5": "5m",
+  "15": "15m",
+  "30": "30m",
+  "60": "1h",
+  D: "D",
+  W: "W",
+  M: "M",
 };
 
 // ── Legend state ──────────────────────────────────────────────────────
@@ -143,14 +165,21 @@ interface RSLegendEntry {
 }
 
 interface LegendData {
-  o: number; h: number; l: number; c: number; vol: number;
-  chg: number; chgPct: number;
+  o: number;
+  h: number;
+  l: number;
+  c: number;
+  vol: number;
+  chg: number;
+  chgPct: number;
   mas: { label: string; value: number; color: string }[];
   rsLines: RSLegendEntry[];
 }
 
 interface TooltipState {
-  x: number; y: number; data: LegendData;
+  x: number;
+  y: number;
+  data: LegendData;
 }
 
 // ── Component ─────────────────────────────────────────────────────────
@@ -162,6 +191,7 @@ function TechnicalChartInner({
   movingAverages = [],
   volume = { show: true, heatmap: false },
   rs,
+  quadrantBackground,
   timeframe,
   extendedHours,
   drawingTool,
@@ -201,23 +231,28 @@ function TechnicalChartInner({
   const drawingToolRef = useRef(drawingTool);
   drawingToolRef.current = drawingTool;
 
-  // Stable key to detect when data actually changes
-  const rsBenchmarkKey = rs?.benchmarks
-    .map((b) => `${b.label}:${b.candles.length}`)
-    .join("|") ?? "";
-  const dataKey = useMemo(
-    () => {
-      const first = candles[0];
-      const last = candles[candles.length - 1];
-      return `${candles.length}-${first?.time}-${last?.close}-${rsBenchmarkKey}`;
-    },
-    [candles, rsBenchmarkKey],
+  // Quadrant background primitive
+  const quadrantBackgroundRef = useRef<QuadrantBackground>(
+    new QuadrantBackground(),
   );
+  const quadrantBackgroundConfigRef = useRef(quadrantBackground);
+  quadrantBackgroundConfigRef.current = quadrantBackground;
+
+  // Stable key to detect when data actually changes
+  const rsBenchmarkKey =
+    rs?.benchmarks.map((b) => `${b.label}:${b.candles.length}`).join("|") ?? "";
+  const dataKey = useMemo(() => {
+    const first = candles[0];
+    const last = candles[candles.length - 1];
+    return `${candles.length}-${first?.time}-${last?.close}-${rsBenchmarkKey}`;
+  }, [candles, rsBenchmarkKey]);
 
   // Series refs for crosshair reads
   const csRef = useRef<ISeriesApi<"Candlestick"> | null>(null);
   const vsRef = useRef<ISeriesApi<"Histogram"> | null>(null);
-  const maSeriesRefs = useRef<{ series: ISeriesApi<"Line">; label: string; color: string }[]>([]);
+  const maSeriesRefs = useRef<
+    { series: ISeriesApi<"Line">; label: string; color: string }[]
+  >([]);
   // One entry per RS benchmark line (for crosshair legend reads)
   const rsLineSeriesRefs = useRef<
     {
@@ -242,38 +277,60 @@ function TechnicalChartInner({
       return;
     }
 
-    const ohlc = param.seriesData.get(csRef.current) as CandlestickData<Time> | undefined;
-    if (!ohlc) { setLegend(null); setTooltip(null); return; }
+    const ohlc = param.seriesData.get(csRef.current) as
+      | CandlestickData<Time>
+      | undefined;
+    if (!ohlc) {
+      setLegend(null);
+      setTooltip(null);
+      return;
+    }
 
     const vol = vsRef.current
-      ? (param.seriesData.get(vsRef.current) as HistogramData<Time> | undefined)?.value ?? 0
+      ? ((
+          param.seriesData.get(vsRef.current) as HistogramData<Time> | undefined
+        )?.value ?? 0)
       : 0;
 
     const mas: LegendData["mas"] = [];
     for (const m of maSeriesRefs.current) {
       const pt = param.seriesData.get(m.series) as LineData<Time> | undefined;
-      if (pt?.value != null) mas.push({ label: m.label, value: pt.value, color: m.color });
+      if (pt?.value != null)
+        mas.push({ label: m.label, value: pt.value, color: m.color });
     }
 
     const rsLines: RSLegendEntry[] = rsLineSeriesRefs.current.map((r) => ({
       label: r.label,
       color: r.color,
       smaColor: r.smaColor,
-      rs: (param.seriesData.get(r.lineSeries) as LineData<Time> | undefined)?.value ?? null,
-      rsSma: (param.seriesData.get(r.smaSeries) as LineData<Time> | undefined)?.value ?? null,
+      rs:
+        (param.seriesData.get(r.lineSeries) as LineData<Time> | undefined)
+          ?.value ?? null,
+      rsSma:
+        (param.seriesData.get(r.smaSeries) as LineData<Time> | undefined)
+          ?.value ?? null,
     }));
 
     const chg = ohlc.close - ohlc.open;
     const data: LegendData = {
-      o: ohlc.open, h: ohlc.high, l: ohlc.low, c: ohlc.close, vol,
-      chg, chgPct: ohlc.open ? (chg / ohlc.open) * 100 : 0,
-      mas, rsLines,
+      o: ohlc.open,
+      h: ohlc.high,
+      l: ohlc.low,
+      c: ohlc.close,
+      vol,
+      chg,
+      chgPct: ohlc.open ? (chg / ohlc.open) * 100 : 0,
+      mas,
+      rsLines,
     };
     setLegend(data);
 
     if (param.point) {
       const containerW = containerRef.current?.clientWidth ?? 800;
-      const x = param.point.x > containerW - 200 ? param.point.x - 180 : param.point.x + 20;
+      const x =
+        param.point.x > containerW - 200
+          ? param.point.x - 180
+          : param.point.x + 20;
       setTooltip({ x, y: Math.max(8, param.point.y - 80), data });
     } else {
       setTooltip(null);
@@ -293,10 +350,18 @@ function TechnicalChartInner({
     // Measure tool: update rubber-band while dragging
     if (activeTool === "measure" && isMeasureDragging.current) {
       const price = cs.coordinateToPrice(param.point.y as unknown as number);
-      const logical = chart.timeScale().coordinateToLogical(param.point.x as unknown as number);
-      const time = chart.timeScale().coordinateToTime(param.point.x as unknown as number);
+      const logical = chart
+        .timeScale()
+        .coordinateToLogical(param.point.x as unknown as number);
+      const time = chart
+        .timeScale()
+        .coordinateToTime(param.point.x as unknown as number);
       if (price !== null && logical !== null) {
-        measureToolRef.current.updateDrawing(price as number, logical as number, time ?? ("" as Time));
+        measureToolRef.current.updateDrawing(
+          price as number,
+          logical as number,
+          time ?? ("" as Time),
+        );
       }
     }
 
@@ -317,13 +382,21 @@ function TechnicalChartInner({
     // Measure tool: click-to-start, click-to-finish
     if (activeTool === "measure") {
       const price = cs.coordinateToPrice(param.point.y as unknown as number);
-      const logical = chart.timeScale().coordinateToLogical(param.point.x as unknown as number);
-      const time = chart.timeScale().coordinateToTime(param.point.x as unknown as number);
+      const logical = chart
+        .timeScale()
+        .coordinateToLogical(param.point.x as unknown as number);
+      const time = chart
+        .timeScale()
+        .coordinateToTime(param.point.x as unknown as number);
       if (price === null || logical === null) return;
 
       if (!isMeasureDragging.current) {
         measureToolRef.current.clear();
-        measureToolRef.current.startDrawing(price as number, logical as number, time ?? ("" as Time));
+        measureToolRef.current.startDrawing(
+          price as number,
+          logical as number,
+          time ?? ("" as Time),
+        );
         isMeasureDragging.current = true;
       } else {
         measureToolRef.current.finishDrawing();
@@ -338,7 +411,9 @@ function TechnicalChartInner({
       if (lpt.hasPosition && lpt.hoveredHandle) return;
 
       const price = cs.coordinateToPrice(param.point.y as unknown as number);
-      const logical = chart.timeScale().coordinateToLogical(param.point.x as unknown as number);
+      const logical = chart
+        .timeScale()
+        .coordinateToLogical(param.point.x as unknown as number);
       if (price === null || logical === null) return;
 
       lpt.place(price as number, logical as number);
@@ -396,13 +471,17 @@ function TechnicalChartInner({
 
   const loadMoreEnabledRef = useRef(false);
 
-  const handleVisibleLogicalRangeChange = useCallback((logicalRange: LogicalRange | null) => {
-    if (!loadMoreEnabledRef.current) return;
-    if (!logicalRange || !onLoadMoreRef.current || isLoadingMoreRef.current) return;
-    if (logicalRange.from < LOAD_MORE_THRESHOLD) {
-      onLoadMoreRef.current();
-    }
-  }, []);
+  const handleVisibleLogicalRangeChange = useCallback(
+    (logicalRange: LogicalRange | null) => {
+      if (!loadMoreEnabledRef.current) return;
+      if (!logicalRange || !onLoadMoreRef.current || isLoadingMoreRef.current)
+        return;
+      if (logicalRange.from < LOAD_MORE_THRESHOLD) {
+        onLoadMoreRef.current();
+      }
+    },
+    [],
+  );
 
   // ── Screenshot ───────────────────────────────────────────────────
 
@@ -436,22 +515,32 @@ function TechnicalChartInner({
       },
       crosshair: {
         mode: CrosshairMode.Normal,
-        vertLine: { color: C.crosshair, labelBackgroundColor: C.crosshairLabel },
-        horzLine: { color: C.crosshair, labelBackgroundColor: C.crosshairLabel },
+        vertLine: {
+          color: C.crosshair,
+          labelBackgroundColor: C.crosshairLabel,
+        },
+        horzLine: {
+          color: C.crosshair,
+          labelBackgroundColor: C.crosshairLabel,
+        },
       },
       rightPriceScale: { borderColor: C.border, textColor: C.textMuted },
       timeScale: { borderColor: C.border, timeVisible: false },
       autoSize: true,
     });
 
-    chart.timeScale().subscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
+    chart
+      .timeScale()
+      .subscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
     chart.subscribeCrosshairMove(handleCrosshairMove);
     chart.subscribeCrosshairMove(handleCrosshairMoveForTools);
     chart.subscribeClick(handleChartClick);
     chartRef.current = chart;
 
     return () => {
-      chart.timeScale().unsubscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
+      chart
+        .timeScale()
+        .unsubscribeVisibleLogicalRangeChange(handleVisibleLogicalRangeChange);
       chart.unsubscribeCrosshairMove(handleCrosshairMove);
       chart.unsubscribeCrosshairMove(handleCrosshairMoveForTools);
       chart.unsubscribeClick(handleChartClick);
@@ -462,7 +551,13 @@ function TechnicalChartInner({
       maSeriesRefs.current = [];
       rsLineSeriesRefs.current = [];
     };
-  }, [C, handleVisibleLogicalRangeChange, handleCrosshairMove, handleCrosshairMoveForTools, handleChartClick]);
+  }, [
+    C,
+    handleVisibleLogicalRangeChange,
+    handleCrosshairMove,
+    handleCrosshairMoveForTools,
+    handleChartClick,
+  ]);
 
   // ── Watermark ────────────────────────────────────────────────────
 
@@ -476,16 +571,20 @@ function TechnicalChartInner({
     const watermark = createTextWatermark(pane, {
       horzAlign: "center",
       vertAlign: "center",
-      lines: [{
-        text: ticker,
-        color: "rgba(148, 163, 184, 0.06)",
-        fontSize: 48,
-        fontFamily: "'JetBrains Mono', monospace",
-        fontStyle: "bold",
-      }],
+      lines: [
+        {
+          text: ticker,
+          color: "rgba(148, 163, 184, 0.06)",
+          fontSize: 48,
+          fontFamily: "'JetBrains Mono', monospace",
+          fontStyle: "bold",
+        },
+      ],
     });
 
-    return () => { watermark.detach(); };
+    return () => {
+      watermark.detach();
+    };
   }, [ticker]);
 
   // ── Drawing tool sync ─────────────────────────────────────────────
@@ -502,6 +601,15 @@ function TechnicalChartInner({
   useEffect(() => {
     longPositionToolRef.current.setRiskAmount(riskAmount);
   }, [riskAmount]);
+
+  // ── Quadrant background sync (no full chart rebuild) ─────────────
+  const quadrantShow = quadrantBackground?.show ?? false;
+  const quadrantSegments = quadrantBackground?.segments;
+  useEffect(() => {
+    quadrantBackgroundRef.current.setSegments(
+      quadrantShow && quadrantSegments ? quadrantSegments : [],
+    );
+  }, [quadrantShow, quadrantSegments]);
 
   // ── Data update ──────────────────────────────────────────────────
   // Depends on `dataKey` (candle counts) and `C` (theme). Config objects
@@ -542,34 +650,67 @@ function TechnicalChartInner({
 
     // ── Pane 0: Candlesticks ─────────────────────────────────────
     const cs = chart.addSeries(CandlestickSeries, {
-      upColor: C.upBody, downColor: C.downBody,
-      borderUpColor: C.up, borderDownColor: C.down,
-      wickUpColor: C.upWick, wickDownColor: C.downWick,
+      upColor: C.upBody,
+      downColor: C.downBody,
+      borderUpColor: C.up,
+      borderDownColor: C.down,
+      wickUpColor: C.upWick,
+      wickDownColor: C.downWick,
     });
-    cs.setData(candles
-      .filter((c) => c.open != null && c.high != null && c.low != null && c.close != null)
-      .map((c) => ({
-        time: c.time as Time, open: c.open, high: c.high, low: c.low, close: c.close,
-      })));
+    cs.setData(
+      candles
+        .filter(
+          (c) =>
+            c.open != null &&
+            c.high != null &&
+            c.low != null &&
+            c.close != null,
+        )
+        .map((c) => ({
+          time: c.time as Time,
+          open: c.open,
+          high: c.high,
+          low: c.low,
+          close: c.close,
+        })),
+    );
     csRef.current = cs;
 
     // ── Attach drawing tool primitives ────────────────────────────
     cs.attachPrimitive(measureToolRef.current);
     cs.attachPrimitive(longPositionToolRef.current);
 
+    // ── Quadrant background bands (behind candles) ─────────────────
+    cs.attachPrimitive(quadrantBackgroundRef.current);
+    const qbConfig = quadrantBackgroundConfigRef.current;
+    quadrantBackgroundRef.current.setSegments(
+      qbConfig?.show ? qbConfig.segments : [],
+    );
+
     // ── Moving averages (pane 0) ─────────────────────────────────
     const closes = candles.map((c) => c.close);
-    const maConfigs: { values: (number | null)[]; color: string; label: string }[] = [];
+    const maConfigs: {
+      values: (number | null)[];
+      color: string;
+      label: string;
+    }[] = [];
 
     currentMAs.forEach((ma, idx) => {
-      const values = ma.type === "EMA" ? computeEMA(closes, ma.length) : computeSMA(closes, ma.length);
-      const color = ma.color || MA_DEFAULT_COLORS[idx % MA_DEFAULT_COLORS.length];
+      const values =
+        ma.type === "EMA"
+          ? computeEMA(closes, ma.length)
+          : computeSMA(closes, ma.length);
+      const color =
+        ma.color || MA_DEFAULT_COLORS[idx % MA_DEFAULT_COLORS.length];
       const label = `${ma.type} ${ma.length}`;
       maConfigs.push({ values, color, label });
 
       const ls = chart.addSeries(LineSeries, {
-        color, lineWidth: 1,
-        priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
+        color,
+        lineWidth: 1,
+        priceLineVisible: false,
+        lastValueVisible: false,
+        crosshairMarkerVisible: false,
       });
       ls.setData(toLineData(candles, values));
       maSeriesRefs.current.push({ series: ls, label, color });
@@ -582,23 +723,32 @@ function TechnicalChartInner({
         priceFormat: { type: "volume" },
         priceScaleId: "vol",
       });
-      chart.priceScale("vol").applyOptions({ scaleMargins: { top: 0.75, bottom: 0 } });
+      chart
+        .priceScale("vol")
+        .applyOptions({ scaleMargins: { top: 0.75, bottom: 0 } });
 
       const maxVol = Math.max(...candles.map((c) => c.volume ?? 0));
-      vs.setData(candles.filter((c) => c.volume != null).map((c) => {
-        const isUp = c.close >= c.open;
-        const color = currentVolume.heatmap
-          ? computeVolumeHeatmapColor(c.volume, maxVol, isUp)
-          : (isUp ? C.volumeUp : C.volumeDown);
-        return { time: c.time as Time, value: c.volume, color };
-      }));
+      vs.setData(
+        candles
+          .filter((c) => c.volume != null)
+          .map((c) => {
+            const isUp = c.close >= c.open;
+            const color = currentVolume.heatmap
+              ? computeVolumeHeatmapColor(c.volume, maxVol, isUp)
+              : isUp
+                ? C.volumeUp
+                : C.volumeDown;
+            return { time: c.time as Time, value: c.volume, color };
+          }),
+      );
       vsRef.current = vs;
     } else {
       vsRef.current = null;
     }
 
     // ── Pane 1: RS sub-chart (optional, one line per benchmark) ──
-    const rsBenchmarks = currentRS?.benchmarks.filter((b) => b.candles.length > 0) ?? [];
+    const rsBenchmarks =
+      currentRS?.benchmarks.filter((b) => b.candles.length > 0) ?? [];
     if (rsBenchmarks.length > 0) {
       const smaPeriod = currentRS!.smaPeriod ?? 50;
       const lookback = currentRS!.lookback ?? 52;
@@ -609,26 +759,43 @@ function TechnicalChartInner({
         const smaColor = isPrimary ? C.rsSma : C.rsSma2;
         const showDivergence = benchmark.showDivergence ?? isPrimary;
 
-        const rsResult = computeRS(candles, benchmark.candles, smaPeriod, lookback);
+        const rsResult = computeRS(
+          candles,
+          benchmark.candles,
+          smaPeriod,
+          lookback,
+        );
 
         // RS line
-        const rsLineSeries = chart.addSeries(LineSeries, {
-          color: lineColor, lineWidth: 2,
-          priceLineVisible: false, lastValueVisible: true,
-          crosshairMarkerVisible: true,
-          crosshairMarkerRadius: 3,
-          crosshairMarkerBorderColor: lineColor,
-          crosshairMarkerBackgroundColor: C.surface,
-        }, 1);
+        const rsLineSeries = chart.addSeries(
+          LineSeries,
+          {
+            color: lineColor,
+            lineWidth: 2,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            crosshairMarkerVisible: true,
+            crosshairMarkerRadius: 3,
+            crosshairMarkerBorderColor: lineColor,
+            crosshairMarkerBackgroundColor: C.surface,
+          },
+          1,
+        );
         rsLineSeries.setData(toLineData(candles, rsResult.rsLine));
         rsPaneSeriesRefs.current.push(rsLineSeries);
 
         // RS SMA
-        const rsSmaSeries = chart.addSeries(LineSeries, {
-          color: smaColor, lineWidth: 1,
-          priceLineVisible: false, lastValueVisible: true,
-          crosshairMarkerVisible: false,
-        }, 1);
+        const rsSmaSeries = chart.addSeries(
+          LineSeries,
+          {
+            color: smaColor,
+            lineWidth: 1,
+            priceLineVisible: false,
+            lastValueVisible: true,
+            crosshairMarkerVisible: false,
+          },
+          1,
+        );
         rsSmaSeries.setData(toLineData(candles, rsResult.rsSma));
         rsPaneSeriesRefs.current.push(rsSmaSeries);
 
@@ -646,32 +813,67 @@ function TechnicalChartInner({
           (idx) => !(showDivergence && rsResult.divergenceIndices.has(idx)),
         );
         if (highMarkerIdx.length > 0) {
-          const highSeries = chart.addSeries(LineSeries, {
-            color: C.rsNewHigh, lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 4,
-            priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
-          }, 1);
-          highSeries.setData(toMarkerData(candles, rsResult.rsLine, highMarkerIdx));
+          const highSeries = chart.addSeries(
+            LineSeries,
+            {
+              color: C.rsNewHigh,
+              lineVisible: false,
+              pointMarkersVisible: true,
+              pointMarkersRadius: 4,
+              priceLineVisible: false,
+              lastValueVisible: false,
+              crosshairMarkerVisible: false,
+            },
+            1,
+          );
+          highSeries.setData(
+            toMarkerData(candles, rsResult.rsLine, highMarkerIdx),
+          );
           rsPaneSeriesRefs.current.push(highSeries);
         }
 
         // New low dots
         if (rsResult.newLowIndices.size > 0) {
-          const lowSeries = chart.addSeries(LineSeries, {
-            color: C.rsNewLow, lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 4,
-            priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
-          }, 1);
-          lowSeries.setData(toMarkerData(candles, rsResult.rsLine, [...rsResult.newLowIndices]));
+          const lowSeries = chart.addSeries(
+            LineSeries,
+            {
+              color: C.rsNewLow,
+              lineVisible: false,
+              pointMarkersVisible: true,
+              pointMarkersRadius: 4,
+              priceLineVisible: false,
+              lastValueVisible: false,
+              crosshairMarkerVisible: false,
+            },
+            1,
+          );
+          lowSeries.setData(
+            toMarkerData(candles, rsResult.rsLine, [...rsResult.newLowIndices]),
+          );
           rsPaneSeriesRefs.current.push(lowSeries);
         }
 
         // Divergence markers: RS new high while price is not (the early signal).
         // Larger, distinct color so it stands out from plain RS new highs.
         if (showDivergence && rsResult.divergenceIndices.size > 0) {
-          const divSeries = chart.addSeries(LineSeries, {
-            color: C.rsDivergence, lineVisible: false, pointMarkersVisible: true, pointMarkersRadius: 6,
-            priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false,
-          }, 1);
-          divSeries.setData(toMarkerData(candles, rsResult.rsLine, [...rsResult.divergenceIndices]));
+          const divSeries = chart.addSeries(
+            LineSeries,
+            {
+              color: C.rsDivergence,
+              lineVisible: false,
+              pointMarkersVisible: true,
+              pointMarkersRadius: 6,
+              priceLineVisible: false,
+              lastValueVisible: false,
+              crosshairMarkerVisible: false,
+            },
+            1,
+          );
+          divSeries.setData(
+            toMarkerData(candles, rsResult.rsLine, [
+              ...rsResult.divergenceIndices,
+            ]),
+          );
           rsPaneSeriesRefs.current.push(divSeries);
         }
       });
@@ -686,13 +888,15 @@ function TechnicalChartInner({
         createTextWatermark(rsPane, {
           horzAlign: "center",
           vertAlign: "center",
-          lines: [{
-            text: "RS",
-            color: "rgba(148, 163, 184, 0.08)",
-            fontSize: 20,
-            fontFamily: "'JetBrains Mono', monospace",
-            fontStyle: "",
-          }],
+          lines: [
+            {
+              text: "RS",
+              color: "rgba(148, 163, 184, 0.08)",
+              fontSize: 20,
+              fontFamily: "'JetBrains Mono', monospace",
+              fontStyle: "",
+            },
+          ],
         });
       }
 
@@ -706,21 +910,34 @@ function TechnicalChartInner({
     const lc = candles[candles.length - 1];
     const lChg = lc.close - lc.open;
     const lastLegend: LegendData = {
-      o: lc.open, h: lc.high, l: lc.low, c: lc.close, vol: lc.volume,
-      chg: lChg, chgPct: lc.open ? (lChg / lc.open) * 100 : 0,
+      o: lc.open,
+      h: lc.high,
+      l: lc.low,
+      c: lc.close,
+      vol: lc.volume,
+      chg: lChg,
+      chgPct: lc.open ? (lChg / lc.open) * 100 : 0,
       mas: maConfigs.map(({ label, color, values }) => ({
-        label, color, value: values.filter((v): v is number => v !== null).pop() ?? 0,
+        label,
+        color,
+        value: values.filter((v): v is number => v !== null).pop() ?? 0,
       })),
       rsLines: rsBenchmarks.map((benchmark, bIdx) => {
         const rsResult = computeRS(
-          candles, benchmark.candles, currentRS!.smaPeriod ?? 50, currentRS!.lookback ?? 52,
+          candles,
+          benchmark.candles,
+          currentRS!.smaPeriod ?? 50,
+          currentRS!.lookback ?? 52,
         );
         return {
           label: benchmark.label,
           color: bIdx === 0 ? C.rsLine : C.rsLine2,
           smaColor: bIdx === 0 ? C.rsSma : C.rsSma2,
-          rs: rsResult.rsLine.filter((v): v is number => v !== null).pop() ?? null,
-          rsSma: rsResult.rsSma.filter((v): v is number => v !== null).pop() ?? null,
+          rs:
+            rsResult.rsLine.filter((v): v is number => v !== null).pop() ??
+            null,
+          rsSma:
+            rsResult.rsSma.filter((v): v is number => v !== null).pop() ?? null,
         };
       }),
     };
@@ -732,7 +949,10 @@ function TechnicalChartInner({
         from: savedLogicalRange.from + newBarsCount,
         to: savedLogicalRange.to + newBarsCount,
       });
-    } else if (visibleBarsRef.current && candles.length > visibleBarsRef.current) {
+    } else if (
+      visibleBarsRef.current &&
+      candles.length > visibleBarsRef.current
+    ) {
       chart.timeScale().setVisibleLogicalRange({
         from: candles.length - visibleBarsRef.current,
         to: candles.length,
@@ -743,7 +963,9 @@ function TechnicalChartInner({
 
     // Re-enable load-more after a delay so fitContent/setVisibleLogicalRange
     // doesn't immediately trigger it
-    const enableTimer = window.setTimeout(() => { loadMoreEnabledRef.current = true; }, 500);
+    const enableTimer = window.setTimeout(() => {
+      loadMoreEnabledRef.current = true;
+    }, 500);
     return () => {
       window.clearTimeout(enableTimer);
       loadMoreEnabledRef.current = false;
@@ -766,31 +988,50 @@ function TechnicalChartInner({
         minHeight: 0,
       }}
     >
-      {(timeframe || showExport || showTradingView || drawingTool || extendedHours) && (
+      {(timeframe ||
+        showExport ||
+        showTradingView ||
+        drawingTool ||
+        extendedHours ||
+        quadrantBackground) && (
         <ChartToolbar
           timeframe={timeframe}
           extendedHours={extendedHours}
+          quadrantBackground={quadrantBackground}
           showExport={showExport}
           showTradingView={showTradingView}
           ticker={ticker}
           exchange={exchange}
           onScreenshot={handleScreenshot}
           drawingTool={drawingTool}
-          onClearLongPosition={longPositionToolRef.current.hasPosition ? () => longPositionToolRef.current.clear() : undefined}
-          onSubmitLongPosition={longPositionToolRef.current.hasPosition && drawingTool?.onSubmitLongPosition ? () => {
-            const s = longPositionToolRef.current.state;
-            if (!s) return;
-            const riskPerShare = Math.abs(s.entry - s.stop);
-            const rewardPerShare = Math.abs(s.target - s.entry);
-            drawingTool!.onSubmitLongPosition!({
-              entry: s.entry,
-              stop: s.stop,
-              target: s.target,
-              riskReward: riskPerShare > 0 ? rewardPerShare / riskPerShare : 0,
-              riskAmount: s.riskAmount,
-              qty: riskPerShare > 0 ? Math.floor(s.riskAmount / riskPerShare) : 0,
-            });
-          } : undefined}
+          onClearLongPosition={
+            longPositionToolRef.current.hasPosition
+              ? () => longPositionToolRef.current.clear()
+              : undefined
+          }
+          onSubmitLongPosition={
+            longPositionToolRef.current.hasPosition &&
+            drawingTool?.onSubmitLongPosition
+              ? () => {
+                  const s = longPositionToolRef.current.state;
+                  if (!s) return;
+                  const riskPerShare = Math.abs(s.entry - s.stop);
+                  const rewardPerShare = Math.abs(s.target - s.entry);
+                  drawingTool!.onSubmitLongPosition!({
+                    entry: s.entry,
+                    stop: s.stop,
+                    target: s.target,
+                    riskReward:
+                      riskPerShare > 0 ? rewardPerShare / riskPerShare : 0,
+                    riskAmount: s.riskAmount,
+                    qty:
+                      riskPerShare > 0
+                        ? Math.floor(s.riskAmount / riskPerShare)
+                        : 0,
+                  });
+                }
+              : undefined
+          }
           colors={C}
         />
       )}
@@ -814,6 +1055,9 @@ function TechnicalChartInner({
         {showTooltip && tooltip && (
           <ChartTooltip tooltip={tooltip} colors={C} />
         )}
+        {quadrantBackground?.show && quadrantBackground.segments.length > 0 && (
+          <QuadrantLegend />
+        )}
       </div>
     </div>
   );
@@ -823,13 +1067,82 @@ export const TechnicalChart = memo(TechnicalChartInner);
 
 // ── Sub-components ────────────────────────────────────────────────────
 
-function ChartLegend({ legend, clr, colors: C }: { legend: LegendData; clr: string; colors: ChartColorPalette }) {
+const QUADRANT_LEGEND_ITEMS: { label: QuadrantType; color: string }[] = [
+  { label: "Leading", color: "#10b981" },
+  { label: "Improving", color: "#3b82f6" },
+  { label: "Weakening", color: "#f59e0b" },
+  { label: "Lagging", color: "#ef4444" },
+];
+
+function QuadrantLegend() {
   return (
-    <div style={{
-      position: "absolute", top: 8, left: 8, zIndex: 10, pointerEvents: "none",
-      fontFamily: "'JetBrains Mono', monospace", fontSize: 11, lineHeight: "18px",
-      display: "flex", flexDirection: "column", gap: 2,
-    }}>
+    <div
+      style={{
+        position: "absolute",
+        bottom: 8,
+        left: 8,
+        zIndex: 10,
+        pointerEvents: "none",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: "4px 10px",
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 9,
+        background: "rgba(15, 23, 42, 0.6)",
+        border: "1px solid rgba(51, 65, 85, 0.4)",
+        borderRadius: 6,
+        padding: "4px 8px",
+      }}
+    >
+      <span style={{ color: "rgba(148, 163, 184, 0.7)" }}>Group RRG</span>
+      {QUADRANT_LEGEND_ITEMS.map((item) => (
+        <span
+          key={item.label}
+          style={{ display: "flex", alignItems: "center", gap: 4 }}
+        >
+          <span
+            style={{
+              width: 8,
+              height: 8,
+              borderRadius: 2,
+              background: item.color,
+              opacity: 0.6,
+            }}
+          />
+          <span style={{ color: "rgba(148, 163, 184, 0.85)" }}>
+            {item.label}
+          </span>
+        </span>
+      ))}
+    </div>
+  );
+}
+
+function ChartLegend({
+  legend,
+  clr,
+  colors: C,
+}: {
+  legend: LegendData;
+  clr: string;
+  colors: ChartColorPalette;
+}) {
+  return (
+    <div
+      style={{
+        position: "absolute",
+        top: 8,
+        left: 8,
+        zIndex: 10,
+        pointerEvents: "none",
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 11,
+        lineHeight: "18px",
+        display: "flex",
+        flexDirection: "column",
+        gap: 2,
+      }}
+    >
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
         <span style={{ color: C.textMuted }}>O</span>
         <span style={{ color: clr }}>{fmt(legend.o)}</span>
@@ -840,7 +1153,9 @@ function ChartLegend({ legend, clr, colors: C }: { legend: LegendData; clr: stri
         <span style={{ color: C.textMuted }}>C</span>
         <span style={{ color: clr }}>{fmt(legend.c)}</span>
         <span style={{ color: clr }}>
-          {legend.chg >= 0 ? "+" : ""}{fmt(legend.chg)} ({legend.chgPct >= 0 ? "+" : ""}{legend.chgPct.toFixed(2)}%)
+          {legend.chg >= 0 ? "+" : ""}
+          {fmt(legend.chg)} ({legend.chgPct >= 0 ? "+" : ""}
+          {legend.chgPct.toFixed(2)}%)
         </span>
       </div>
       {legend.vol > 0 && (
@@ -861,9 +1176,14 @@ function ChartLegend({ legend, clr, colors: C }: { legend: LegendData; clr: stri
       )}
       {legend.rsLines.map((r) =>
         r.rs != null ? (
-          <div key={r.label} style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}>
+          <div
+            key={r.label}
+            style={{ display: "flex", flexWrap: "wrap", gap: "8px" }}
+          >
             <span>
-              <span style={{ color: r.color, opacity: 0.7 }}>RS vs {r.label}</span>{" "}
+              <span style={{ color: r.color, opacity: 0.7 }}>
+                RS vs {r.label}
+              </span>{" "}
               <span style={{ color: r.color }}>{fmt(r.rs)}</span>
             </span>
             {r.rsSma != null && (
@@ -879,32 +1199,84 @@ function ChartLegend({ legend, clr, colors: C }: { legend: LegendData; clr: stri
   );
 }
 
-function ChartTooltip({ tooltip, colors: C }: { tooltip: TooltipState; colors: ChartColorPalette }) {
+function ChartTooltip({
+  tooltip,
+  colors: C,
+}: {
+  tooltip: TooltipState;
+  colors: ChartColorPalette;
+}) {
   const d = tooltip.data;
   const isUp = d.c >= d.o;
   return (
-    <div style={{
-      position: "absolute", left: tooltip.x, top: tooltip.y, zIndex: 20, pointerEvents: "none",
-      background: "rgba(15, 23, 42, 0.92)", border: "1px solid rgba(51, 65, 85, 0.6)",
-      borderRadius: 8, padding: "8px 10px", fontFamily: "'JetBrains Mono', monospace",
-      fontSize: 10, lineHeight: "15px", backdropFilter: "blur(8px)", minWidth: 140,
-    }}>
-      <div style={{ color: isUp ? C.up : C.down, fontWeight: 600, marginBottom: 3 }}>
+    <div
+      style={{
+        position: "absolute",
+        left: tooltip.x,
+        top: tooltip.y,
+        zIndex: 20,
+        pointerEvents: "none",
+        background: "rgba(15, 23, 42, 0.92)",
+        border: "1px solid rgba(51, 65, 85, 0.6)",
+        borderRadius: 8,
+        padding: "8px 10px",
+        fontFamily: "'JetBrains Mono', monospace",
+        fontSize: 10,
+        lineHeight: "15px",
+        backdropFilter: "blur(8px)",
+        minWidth: 140,
+      }}
+    >
+      <div
+        style={{
+          color: isUp ? C.up : C.down,
+          fontWeight: 600,
+          marginBottom: 3,
+        }}
+      >
         {fmt(d.c)}{" "}
         <span style={{ fontWeight: 400 }}>
-          ({d.chgPct >= 0 ? "+" : ""}{d.chgPct.toFixed(2)}%)
+          ({d.chgPct >= 0 ? "+" : ""}
+          {d.chgPct.toFixed(2)}%)
         </span>
       </div>
-      <div style={{ display: "grid", gridTemplateColumns: "auto 1fr", gap: "1px 8px", color: C.text }}>
-        <span style={{ color: C.textMuted }}>O</span><span>{fmt(d.o)}</span>
-        <span style={{ color: C.textMuted }}>H</span><span>{fmt(d.h)}</span>
-        <span style={{ color: C.textMuted }}>L</span><span>{fmt(d.l)}</span>
-        <span style={{ color: C.textMuted }}>Vol</span><span>{fmtVol(d.vol)}</span>
+      <div
+        style={{
+          display: "grid",
+          gridTemplateColumns: "auto 1fr",
+          gap: "1px 8px",
+          color: C.text,
+        }}
+      >
+        <span style={{ color: C.textMuted }}>O</span>
+        <span>{fmt(d.o)}</span>
+        <span style={{ color: C.textMuted }}>H</span>
+        <span>{fmt(d.h)}</span>
+        <span style={{ color: C.textMuted }}>L</span>
+        <span>{fmt(d.l)}</span>
+        <span style={{ color: C.textMuted }}>Vol</span>
+        <span>{fmtVol(d.vol)}</span>
       </div>
       {d.mas.length > 0 && (
-        <div style={{ marginTop: 4, borderTop: "1px solid rgba(51,65,85,0.4)", paddingTop: 4, display: "flex", flexDirection: "column", gap: 1 }}>
+        <div
+          style={{
+            marginTop: 4,
+            borderTop: "1px solid rgba(51,65,85,0.4)",
+            paddingTop: 4,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
           {d.mas.map((m) => (
-            <div key={m.label} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
+            <div
+              key={m.label}
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                gap: 8,
+              }}
+            >
               <span style={{ color: m.color, opacity: 0.7 }}>{m.label}</span>
               <span style={{ color: m.color }}>{fmt(m.value)}</span>
             </div>
@@ -912,11 +1284,29 @@ function ChartTooltip({ tooltip, colors: C }: { tooltip: TooltipState; colors: C
         </div>
       )}
       {d.rsLines.some((r) => r.rs != null) && (
-        <div style={{ marginTop: 4, borderTop: "1px solid rgba(51,65,85,0.4)", paddingTop: 4, display: "flex", flexDirection: "column", gap: 1 }}>
+        <div
+          style={{
+            marginTop: 4,
+            borderTop: "1px solid rgba(51,65,85,0.4)",
+            paddingTop: 4,
+            display: "flex",
+            flexDirection: "column",
+            gap: 1,
+          }}
+        >
           {d.rsLines.map((r) =>
             r.rs != null ? (
-              <div key={r.label} style={{ display: "flex", justifyContent: "space-between", gap: 8 }}>
-                <span style={{ color: r.color, opacity: 0.7 }}>RS vs {r.label}</span>
+              <div
+                key={r.label}
+                style={{
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 8,
+                }}
+              >
+                <span style={{ color: r.color, opacity: 0.7 }}>
+                  RS vs {r.label}
+                </span>
                 <span style={{ color: r.color }}>{fmt(r.rs)}</span>
               </div>
             ) : null,
@@ -927,14 +1317,24 @@ function ChartTooltip({ tooltip, colors: C }: { tooltip: TooltipState; colors: C
   );
 }
 
-const DRAWING_TOOLS: { id: ChartDrawingTool; label: string; title: string }[] = [
-  { id: "measure", label: "Measure", title: "Measure: click start, click end" },
-  { id: "long-position", label: "Long", title: "Long Position: click to place, then drag handles" },
-];
+const DRAWING_TOOLS: { id: ChartDrawingTool; label: string; title: string }[] =
+  [
+    {
+      id: "measure",
+      label: "Measure",
+      title: "Measure: click start, click end",
+    },
+    {
+      id: "long-position",
+      label: "Long",
+      title: "Long Position: click to place, then drag handles",
+    },
+  ];
 
 function ChartToolbar({
   timeframe,
   extendedHours,
+  quadrantBackground,
   showExport,
   showTradingView,
   ticker,
@@ -947,6 +1347,7 @@ function ChartToolbar({
 }: {
   timeframe?: TimeframeConfig;
   extendedHours?: ExtendedHoursSessionControl;
+  quadrantBackground?: QuadrantBackgroundConfig;
   showExport?: boolean;
   showTradingView?: boolean;
   ticker?: string;
@@ -958,49 +1359,93 @@ function ChartToolbar({
   colors: ChartColorPalette;
 }) {
   return (
-    <div style={{
-      flexShrink: 0,
-      width: "100%",
-      display: "flex",
-      flexWrap: "wrap",
-      gap: 6,
-      alignItems: "center",
-      justifyContent: "flex-end",
-      padding: "6px 8px",
-      borderBottom: `1px solid ${C.border}`,
-      background: "rgba(15, 23, 42, 0.85)",
-      boxSizing: "border-box",
-    }}>
+    <div
+      style={{
+        flexShrink: 0,
+        width: "100%",
+        display: "flex",
+        flexWrap: "wrap",
+        gap: 6,
+        alignItems: "center",
+        justifyContent: "flex-end",
+        padding: "6px 8px",
+        borderBottom: `1px solid ${C.border}`,
+        background: "rgba(15, 23, 42, 0.85)",
+        boxSizing: "border-box",
+      }}
+    >
+      {quadrantBackground && (
+        <button
+          type="button"
+          onClick={() =>
+            quadrantBackground.onShowChange(!quadrantBackground.show)
+          }
+          title={
+            quadrantBackground.show
+              ? "Industry-group RRG quadrant background on. Click to hide."
+              : "Show the industry-group RRG quadrant as a chart background."
+          }
+          style={{
+            padding: "3px 8px",
+            fontSize: 10,
+            fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4,
+            border: `1px solid ${quadrantBackground.show ? "rgba(59,130,246,0.5)" : "rgba(51,65,85,0.5)"}`,
+            cursor: "pointer",
+            background: quadrantBackground.show
+              ? "rgba(59,130,246,0.15)"
+              : "rgba(15,23,42,0.7)",
+            color: quadrantBackground.show ? "#93c5fd" : C.textMuted,
+            transition: "all 150ms",
+          }}
+        >
+          Group
+        </button>
+      )}
       {/* Drawing tools */}
-      {drawingTool && DRAWING_TOOLS.map((tool) => {
-        const isActive = drawingTool.activeTool === tool.id;
-        return (
-          <button
-            key={tool.id}
-            onClick={() => drawingTool.onToolChange(isActive ? "none" : tool.id)}
-            title={tool.title}
-            style={{
-              padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
-              borderRadius: 4, border: `1px solid ${isActive ? "rgba(59,130,246,0.6)" : "rgba(51,65,85,0.5)"}`,
-              cursor: "pointer",
-              background: isActive ? "rgba(59,130,246,0.2)" : "rgba(15,23,42,0.7)",
-              color: isActive ? "#60a5fa" : C.textMuted,
-              transition: "all 150ms",
-            }}
-          >
-            {tool.label}
-          </button>
-        );
-      })}
+      {drawingTool &&
+        DRAWING_TOOLS.map((tool) => {
+          const isActive = drawingTool.activeTool === tool.id;
+          return (
+            <button
+              key={tool.id}
+              onClick={() =>
+                drawingTool.onToolChange(isActive ? "none" : tool.id)
+              }
+              title={tool.title}
+              style={{
+                padding: "3px 8px",
+                fontSize: 10,
+                fontFamily: "'JetBrains Mono', monospace",
+                borderRadius: 4,
+                border: `1px solid ${isActive ? "rgba(59,130,246,0.6)" : "rgba(51,65,85,0.5)"}`,
+                cursor: "pointer",
+                background: isActive
+                  ? "rgba(59,130,246,0.2)"
+                  : "rgba(15,23,42,0.7)",
+                color: isActive ? "#60a5fa" : C.textMuted,
+                transition: "all 150ms",
+              }}
+            >
+              {tool.label}
+            </button>
+          );
+        })}
       {onSubmitLongPosition && (
         <button
           onClick={onSubmitLongPosition}
           title="Submit long position order"
           style={{
-            padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
-            borderRadius: 4, border: "1px solid rgba(34,197,94,0.6)",
-            cursor: "pointer", background: "rgba(34,197,94,0.15)",
-            color: "#22c55e", fontWeight: 600, transition: "all 150ms",
+            padding: "3px 8px",
+            fontSize: 10,
+            fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4,
+            border: "1px solid rgba(34,197,94,0.6)",
+            cursor: "pointer",
+            background: "rgba(34,197,94,0.15)",
+            color: "#22c55e",
+            fontWeight: 600,
+            transition: "all 150ms",
           }}
         >
           Submit
@@ -1011,69 +1456,106 @@ function ChartToolbar({
           onClick={onClearLongPosition}
           title="Clear long position"
           style={{
-            padding: "3px 6px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
-            borderRadius: 4, border: "1px solid rgba(239,68,68,0.4)",
-            cursor: "pointer", background: "rgba(239,68,68,0.1)",
-            color: "#ef4444", transition: "all 150ms",
+            padding: "3px 6px",
+            fontSize: 10,
+            fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4,
+            border: "1px solid rgba(239,68,68,0.4)",
+            cursor: "pointer",
+            background: "rgba(239,68,68,0.1)",
+            color: "#ef4444",
+            transition: "all 150ms",
           }}
         >
           Clear
         </button>
       )}
       {drawingTool && timeframe && (
-        <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
-      )}
-      {timeframe && (timeframe.options ?? ["D", "W", "M"]).map((tf) => (
-        <button
-          key={tf}
-          onClick={() => timeframe.onChange(tf)}
+        <div
           style={{
-            padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
-            borderRadius: 4, border: "1px solid rgba(51,65,85,0.5)", cursor: "pointer",
-            background: timeframe.value === tf ? "rgba(59,130,246,0.2)" : "rgba(15,23,42,0.7)",
-            color: timeframe.value === tf ? C.up : C.textMuted,
-            transition: "all 150ms",
+            width: 1,
+            height: 16,
+            background: "rgba(51,65,85,0.5)",
+            margin: "0 4px",
           }}
-        >
-          {TIMEFRAME_LABELS[tf] ?? tf}
-        </button>
-      ))}
-      {extendedHours &&
-        timeframe &&
-        isIntradayChartInterval(timeframe.value) && (
-        <>
-          <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
+        />
+      )}
+      {timeframe &&
+        (timeframe.options ?? ["D", "W", "M"]).map((tf) => (
           <button
-            type="button"
-            onClick={() =>
-              extendedHours.onIncludeExtendedHoursChange(
-                !extendedHours.includeExtendedHours,
-              )}
-            title={
-              extendedHours.includeExtendedHours
-                ? "Including pre-market and post-market bars (Yahoo). Click for regular session only."
-                : "Regular session only. Click to include pre-market and post-market bars."
-            }
+            key={tf}
+            onClick={() => timeframe.onChange(tf)}
             style={{
               padding: "3px 8px",
               fontSize: 10,
               fontFamily: "'JetBrains Mono', monospace",
               borderRadius: 4,
-              border: `1px solid ${extendedHours.includeExtendedHours ? "rgba(59,130,246,0.5)" : "rgba(51,65,85,0.5)"}`,
+              border: "1px solid rgba(51,65,85,0.5)",
               cursor: "pointer",
-              background: extendedHours.includeExtendedHours
-                ? "rgba(59,130,246,0.15)"
-                : "rgba(15,23,42,0.7)",
-              color: extendedHours.includeExtendedHours ? "#93c5fd" : C.textMuted,
+              background:
+                timeframe.value === tf
+                  ? "rgba(59,130,246,0.2)"
+                  : "rgba(15,23,42,0.7)",
+              color: timeframe.value === tf ? C.up : C.textMuted,
               transition: "all 150ms",
             }}
           >
-            {extendedHours.includeExtendedHours ? "Pre/Post" : "RTH"}
+            {TIMEFRAME_LABELS[tf] ?? tf}
           </button>
-        </>
-      )}
+        ))}
+      {extendedHours &&
+        timeframe &&
+        isIntradayChartInterval(timeframe.value) && (
+          <>
+            <div
+              style={{
+                width: 1,
+                height: 16,
+                background: "rgba(51,65,85,0.5)",
+                margin: "0 4px",
+              }}
+            />
+            <button
+              type="button"
+              onClick={() =>
+                extendedHours.onIncludeExtendedHoursChange(
+                  !extendedHours.includeExtendedHours,
+                )
+              }
+              title={
+                extendedHours.includeExtendedHours
+                  ? "Including pre-market and post-market bars (Yahoo). Click for regular session only."
+                  : "Regular session only. Click to include pre-market and post-market bars."
+              }
+              style={{
+                padding: "3px 8px",
+                fontSize: 10,
+                fontFamily: "'JetBrains Mono', monospace",
+                borderRadius: 4,
+                border: `1px solid ${extendedHours.includeExtendedHours ? "rgba(59,130,246,0.5)" : "rgba(51,65,85,0.5)"}`,
+                cursor: "pointer",
+                background: extendedHours.includeExtendedHours
+                  ? "rgba(59,130,246,0.15)"
+                  : "rgba(15,23,42,0.7)",
+                color: extendedHours.includeExtendedHours
+                  ? "#93c5fd"
+                  : C.textMuted,
+                transition: "all 150ms",
+              }}
+            >
+              {extendedHours.includeExtendedHours ? "Pre/Post" : "RTH"}
+            </button>
+          </>
+        )}
       {timeframe && (showExport || (showTradingView && ticker)) && (
-        <div style={{ width: 1, height: 16, background: "rgba(51,65,85,0.5)", margin: "0 4px" }} />
+        <div
+          style={{
+            width: 1,
+            height: 16,
+            background: "rgba(51,65,85,0.5)",
+            margin: "0 4px",
+          }}
+        />
       )}
       {showTradingView && ticker && (
         <button
@@ -1087,12 +1569,23 @@ function ChartToolbar({
             );
           }}
           style={{
-            padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
-            borderRadius: 4, border: "1px solid rgba(51,65,85,0.5)", background: "rgba(15,23,42,0.7)",
-            color: C.textMuted, cursor: "pointer", opacity: 0.6, transition: "opacity 150ms",
+            padding: "3px 8px",
+            fontSize: 10,
+            fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4,
+            border: "1px solid rgba(51,65,85,0.5)",
+            background: "rgba(15,23,42,0.7)",
+            color: C.textMuted,
+            cursor: "pointer",
+            opacity: 0.6,
+            transition: "opacity 150ms",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "0.6";
+          }}
           title={`Open ${tradingViewChartSymbol(ticker, exchange)} on TradingView`}
         >
           TV
@@ -1102,12 +1595,23 @@ function ChartToolbar({
         <button
           onClick={onScreenshot}
           style={{
-            padding: "3px 8px", fontSize: 10, fontFamily: "'JetBrains Mono', monospace",
-            borderRadius: 4, border: "1px solid rgba(51,65,85,0.5)", background: "rgba(15,23,42,0.7)",
-            color: C.textMuted, cursor: "pointer", opacity: 0.6, transition: "opacity 150ms",
+            padding: "3px 8px",
+            fontSize: 10,
+            fontFamily: "'JetBrains Mono', monospace",
+            borderRadius: 4,
+            border: "1px solid rgba(51,65,85,0.5)",
+            background: "rgba(15,23,42,0.7)",
+            color: C.textMuted,
+            cursor: "pointer",
+            opacity: 0.6,
+            transition: "opacity 150ms",
           }}
-          onMouseEnter={(e) => { e.currentTarget.style.opacity = "1"; }}
-          onMouseLeave={(e) => { e.currentTarget.style.opacity = "0.6"; }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "0.6";
+          }}
           title="Download chart as PNG"
         >
           PNG

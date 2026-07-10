@@ -14,6 +14,8 @@ import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
 import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
+import { useIndustryGroupQuadrantHistory } from "src/sector-rotation/hooks/use-industry-group-quadrant-history";
+import { buildQuadrantSegments } from "src/stock-analysis/utils/quadrant-segments";
 import {
   buildRsBenchmarks,
   GROUP_BENCHMARK_EXCHANGE,
@@ -46,6 +48,7 @@ export default function IndustryGroupExplorer() {
   const [interval, setInterval] = useState<ChartInterval>("D");
   const [includeExtendedHours, setIncludeExtendedHours] = useState(true);
   const [showFinancialFooter, setShowFinancialFooter] = useState(true);
+  const [showQuadrantBackground, setShowQuadrantBackground] = useState(true);
 
   const {
     data: groupsData,
@@ -87,10 +90,7 @@ export default function IndustryGroupExplorer() {
     INDUSTRY_GROUP_UNIVERSE_ID,
   );
   const quadrant = industryGroupStatusData?.sectors
-    ? getIndustryGroupQuadrant(
-        selectedGroup,
-        industryGroupStatusData.sectors,
-      )
+    ? getIndustryGroupQuadrant(selectedGroup, industryGroupStatusData.sectors)
     : null;
 
   const {
@@ -141,6 +141,27 @@ export default function IndustryGroupExplorer() {
     isLoading: financialLoading,
     error: financialError,
   } = useFinancialReport(selectedSymbol);
+
+  const chartStartDate =
+    typeof candles?.[0]?.time === "string" ? candles[0].time : undefined;
+  const chartEndDate =
+    typeof candles?.[candles.length - 1]?.time === "string"
+      ? (candles[candles.length - 1].time as string)
+      : undefined;
+  const { data: quadrantHistory } = useIndustryGroupQuadrantHistory(
+    selectedGroup,
+    chartStartDate,
+    chartEndDate,
+  );
+  const quadrantSegments = useMemo(
+    () =>
+      buildQuadrantSegments(
+        quadrantHistory ?? [],
+        candles?.[0]?.time,
+        candles?.[candles.length - 1]?.time,
+      ),
+    [quadrantHistory, candles],
+  );
 
   const ratings = ratingsData?.ratings ?? [];
   const currentIndex = ratings.findIndex((r) => r.symbol === selectedSymbol);
@@ -333,6 +354,11 @@ export default function IndustryGroupExplorer() {
                             includeExtendedHours,
                             onIncludeExtendedHoursChange:
                               setIncludeExtendedHours,
+                          }}
+                          quadrantBackground={{
+                            segments: quadrantSegments,
+                            show: showQuadrantBackground,
+                            onShowChange: setShowQuadrantBackground,
                           }}
                           onLoadMore={handleLoadMore}
                           isLoadingMore={isLoadingMore || isLoadingMoreSpy}

@@ -18,6 +18,19 @@ export const SECTOR_ROTATION_QUERY_KEYS = {
       "latest-status",
       universeId ?? null,
     ] as const,
-  universes: () =>
-    [...SECTOR_ROTATION_QUERY_KEYS.all, "universes"] as const,
+  quadrantHistory: (
+    industryGroup: string,
+    symbol: string,
+    startDate?: string,
+    endDate?: string,
+  ) =>
+    [
+      ...SECTOR_ROTATION_QUERY_KEYS.all,
+      "quadrant-history",
+      industryGroup,
+      symbol,
+      startDate ?? null,
+      endDate ?? null,
+    ] as const,
+  universes: () => [...SECTOR_ROTATION_QUERY_KEYS.all, "universes"] as const,
 };
