@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
+import type { Time } from "lightweight-charts";
 import { BarChart3, ChevronDown } from "lucide-react";
 import { ChevronUp, Layers } from "lucide-react";
 import { PageContainer } from "src/global/design-system/page-container";
@@ -157,8 +158,8 @@ export default function IndustryGroupExplorer() {
     () =>
       buildQuadrantSegments(
         quadrantHistory ?? [],
-        candles?.[0]?.time,
-        candles?.[candles.length - 1]?.time,
+        candles?.[0]?.time as Time | undefined,
+        candles?.[candles.length - 1]?.time as Time | undefined,
       ),
     [quadrantHistory, candles],
   );
