@@ -158,8 +158,7 @@ export default function IndustryGroupExplorer() {
     () =>
       buildQuadrantSegments(
         quadrantHistory ?? [],
-        candles?.[0]?.time as Time | undefined,
-        candles?.[candles.length - 1]?.time as Time | undefined,
+        (candles ?? []).map((c) => c.time as Time),
       ),
     [quadrantHistory, candles],
   );
