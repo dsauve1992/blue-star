@@ -33,6 +33,13 @@ import {
 } from "src/market-data/api/chart-data.client";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
+import { AddToWatchlistButton } from "src/watchlist/components/AddToWatchlistButton";
+import {
+  useWatchlists,
+  useAddTickerToWatchlist,
+  useRemoveTickerFromWatchlist,
+  useCreateWatchlist,
+} from "src/watchlist/hooks/use-watchlists";
 import { IndustryGroupSelector } from "../components/IndustryGroupSelector";
 import { IndustryGroupListItem } from "../components/IndustryGroupListItem";
 
@@ -142,6 +149,67 @@ export default function IndustryGroupExplorer() {
     isLoading: financialLoading,
     error: financialError,
   } = useFinancialReport(selectedSymbol);
+
+  const { data: watchlistsData } = useWatchlists();
+  const addTickerToWatchlist = useAddTickerToWatchlist();
+  const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
+  const createWatchlist = useCreateWatchlist();
+
+  const selectedTicker = selectedSymbol
+    ? `${DEFAULT_EXCHANGE}:${selectedSymbol}`
+    : null;
+
+  const handleToggleWatchlist = useCallback(
+    async (watchlistId: string, isTickerInWatchlist: boolean) => {
+      if (!selectedSymbol || !selectedTicker) return;
+      const tickerToUse =
+        watchlistsData?.watchlists
+          .find((w) => w.id === watchlistId)
+          ?.tickers.find((t) => t === selectedTicker || t === selectedSymbol) ||
+        selectedTicker;
+      try {
+        if (isTickerInWatchlist) {
+          await removeTickerFromWatchlist.mutateAsync({
+            watchlistId,
+            ticker: tickerToUse,
+          });
+        } else {
+          await addTickerToWatchlist.mutateAsync({
+            watchlistId,
+            request: { ticker: selectedTicker },
+          });
+        }
+      } catch (err) {
+        console.error(
+          `Failed to ${isTickerInWatchlist ? "remove" : "add"} ticker:`,
+          err,
+        );
+      }
+    },
+    [
+      selectedSymbol,
+      selectedTicker,
+      watchlistsData,
+      addTickerToWatchlist,
+      removeTickerFromWatchlist,
+    ],
+  );
+
+  const handleCreateWatchlist = useCallback(
+    async (name: string) => {
+      if (!selectedTicker) return;
+      try {
+        const response = await createWatchlist.mutateAsync({ name });
+        await addTickerToWatchlist.mutateAsync({
+          watchlistId: response.watchlistId,
+          request: { ticker: selectedTicker },
+        });
+      } catch (err) {
+        console.error("Failed to create watchlist:", err);
+      }
+    },
+    [selectedTicker, createWatchlist, addTickerToWatchlist],
+  );
 
   const chartStartDate =
     typeof candles?.[0]?.time === "string" ? candles[0].time : undefined;
@@ -289,24 +357,39 @@ export default function IndustryGroupExplorer() {
 
             <main className="flex-1 flex flex-col min-w-0">
               <div className="flex-1 flex flex-col min-h-0 p-4 gap-2 overflow-hidden">
-                {selectedSymbol && profileData?.profile?.sector && (
-                  <div className="flex-shrink-0 flex items-center gap-3 px-1 py-1">
-                    <span className="text-xs text-slate-400">
-                      {profileData.profile.sector}
-                      {profileData.profile.industry && (
-                        <span className="text-slate-500">
-                          {" "}
-                          · {profileData.profile.industry}
+                {selectedSymbol && selectedTicker && (
+                  <div className="flex-shrink-0 flex items-center justify-between gap-3 px-1 py-1">
+                    <div className="flex items-center gap-3 min-w-0">
+                      {profileData?.profile?.sector && (
+                        <span className="text-xs text-slate-400">
+                          {profileData.profile.sector}
+                          {profileData.profile.industry && (
+                            <span className="text-slate-500">
+                              {" "}
+                              · {profileData.profile.industry}
+                            </span>
+                          )}
                         </span>
                       )}
-                    </span>
-                    {quadrant && (
-                      <span
-                        className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getQuadrantColor(quadrant)}`}
-                      >
-                        {quadrant}
-                      </span>
-                    )}
+                      {quadrant && (
+                        <span
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getQuadrantColor(quadrant)}`}
+                        >
+                          {quadrant}
+                        </span>
+                      )}
+                    </div>
+                    <AddToWatchlistButton
+                      ticker={selectedTicker}
+                      watchlists={watchlistsData?.watchlists ?? []}
+                      onToggleWatchlist={handleToggleWatchlist}
+                      onCreateWatchlist={handleCreateWatchlist}
+                      isAddingToWatchlist={addTickerToWatchlist.isPending}
+                      isRemovingFromWatchlist={
+                        removeTickerFromWatchlist.isPending
+                      }
+                      isCreatingWatchlist={createWatchlist.isPending}
+                    />
                   </div>
                 )}
 
