@@ -3,6 +3,7 @@ import { MarketDataController } from './api/market-data.controller';
 import { MarketDataApiMapper } from './api/market-data-api.mapper';
 import { GetHistoricalDataUseCase } from './use-cases/get-historical-data.use-case';
 import { GetChartDataUseCase } from './use-cases/get-chart-data.use-case';
+import { GetIntradayDataUseCase } from './use-cases/get-intraday-data.use-case';
 import { YahooMarketDataService } from './infrastructure/services/yahoo-market-data.service';
 import { FinnhubFundamentalService } from './infrastructure/services/finnhub-fundamental.service';
 import { FinancialModelingPrepCompanyProfileService } from './infrastructure/services/financial-modeling-prep-company-profile.service';
@@ -53,6 +54,7 @@ export {
     GetHistoricalDataUseCase,
     GetCompanyProfileUseCase,
     GetChartDataUseCase,
+    GetIntradayDataUseCase,
   ],
   exports: [
     MARKET_DATA_SERVICE,

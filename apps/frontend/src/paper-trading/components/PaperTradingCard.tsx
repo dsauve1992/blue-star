@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import {
   Badge,
   Card,
@@ -128,12 +129,20 @@ export function PaperTradingCard() {
       <CardHeader>
         <div className="flex items-center justify-between">
           <CardTitle>Paper Trading</CardTitle>
-          {stats && (
-            <Badge variant={stats.totalPnl >= 0 ? "success" : "danger"}>
-              {stats.totalPnl >= 0 ? "+" : ""}
-              {formatCurrency(stats.totalPnl)}
-            </Badge>
-          )}
+          <div className="flex items-center gap-2">
+            {stats && (
+              <Badge variant={stats.totalPnl >= 0 ? "success" : "danger"}>
+                {stats.totalPnl >= 0 ? "+" : ""}
+                {formatCurrency(stats.totalPnl)}
+              </Badge>
+            )}
+            <Link
+              to="/paper-trading"
+              className="text-xs text-primary-600 hover:underline dark:text-primary-400"
+            >
+              View all →
+            </Link>
+          </div>
         </div>
       </CardHeader>
       <CardContent>

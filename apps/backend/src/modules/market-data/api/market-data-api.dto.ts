@@ -18,6 +18,10 @@ export interface GetHistoricalDataApiResponseDto {
   historicalData: HistoricalDataApiDto;
 }
 
+export interface GetIntradayDataApiResponseDto {
+  historicalData: HistoricalDataApiDto;
+}
+
 export interface CompanyProfileApiDto {
   symbol: string;
   sector: string;

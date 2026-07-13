@@ -3,9 +3,11 @@ import { HistoricalData } from '../domain/services/market-data.service';
 import {
   HistoricalDataApiDto,
   GetHistoricalDataApiResponseDto,
+  GetIntradayDataApiResponseDto,
   GetChartDataApiResponseDto,
 } from './market-data-api.dto';
 import { GetHistoricalDataResponseDto } from '../use-cases/get-historical-data.use-case';
+import { GetIntradayDataResponseDto } from '../use-cases/get-intraday-data.use-case';
 import { GetChartDataResponseDto } from '../use-cases/get-chart-data.use-case';
 
 @Injectable()
@@ -31,6 +33,16 @@ export class MarketDataApiMapper {
   mapGetHistoricalDataResponse(
     useCaseResponse: GetHistoricalDataResponseDto,
   ): GetHistoricalDataApiResponseDto {
+    return {
+      historicalData: this.mapHistoricalDataToApiDto(
+        useCaseResponse.historicalData,
+      ),
+    };
+  }
+
+  mapGetIntradayDataResponse(
+    useCaseResponse: GetIntradayDataResponseDto,
+  ): GetIntradayDataApiResponseDto {
     return {
       historicalData: this.mapHistoricalDataToApiDto(
         useCaseResponse.historicalData,

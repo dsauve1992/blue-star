@@ -2,9 +2,11 @@ import { useEffect, useRef, useCallback, useState, useMemo, memo } from "react";
 import {
   createChart,
   createTextWatermark,
+  createSeriesMarkers,
   CandlestickSeries,
   HistogramSeries,
   LineSeries,
+  LineStyle,
   type IChartApi,
   type ISeriesApi,
   type CandlestickData,
@@ -13,6 +15,8 @@ import {
   type Time,
   type LogicalRange,
   type MouseEventParams,
+  type SeriesMarker,
+  type LineWidth,
   ColorType,
   CrosshairMode,
 } from "lightweight-charts";
@@ -108,6 +112,14 @@ export interface DrawingToolConfig {
   onSubmitLongPosition?: (summary: LongPositionSummary) => void;
 }
 
+export interface TechnicalChartPriceLine {
+  price: number;
+  color: string;
+  title: string;
+  lineStyle?: LineStyle;
+  lineWidth?: LineWidth;
+}
+
 function tradingViewChartSymbol(ticker: string, exchange?: string): string {
   const t = ticker.trim();
   if (!t) return "";
@@ -137,6 +149,8 @@ export interface TechnicalChartProps {
   theme?: "dark";
   onLoadMore?: () => void;
   isLoadingMore?: boolean;
+  priceLines?: TechnicalChartPriceLine[];
+  markers?: SeriesMarker<Time>[];
 }
 
 // ── Constants ─────────────────────────────────────────────────────────
@@ -203,6 +217,8 @@ function TechnicalChartInner({
   theme = "dark",
   onLoadMore,
   isLoadingMore = false,
+  priceLines = [],
+  markers = [],
 }: TechnicalChartProps) {
   const C = getChartColors(theme);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -224,6 +240,10 @@ function TechnicalChartInner({
   movingAveragesRef.current = movingAverages;
   const visibleBarsRef = useRef(visibleBars);
   visibleBarsRef.current = visibleBars;
+  const priceLinesRef = useRef(priceLines);
+  priceLinesRef.current = priceLines;
+  const markersRef = useRef(markers);
+  markersRef.current = markers;
 
   // Drawing tool refs
   const measureToolRef = useRef<MeasureTool>(new MeasureTool());
@@ -675,6 +695,25 @@ function TechnicalChartInner({
         })),
     );
     csRef.current = cs;
+
+    // ── Static price lines ─────────────────────────────────────────
+    for (const priceLine of priceLinesRef.current) {
+      cs.createPriceLine({
+        price: priceLine.price,
+        color: priceLine.color,
+        title: priceLine.title,
+        lineStyle: priceLine.lineStyle ?? LineStyle.Dashed,
+        lineWidth: priceLine.lineWidth ?? 1,
+      });
+    }
+
+    // ── Static markers ──────────────────────────────────────────────
+    if (markersRef.current.length > 0) {
+      const sortedMarkers = [...markersRef.current].sort((a, b) =>
+        a.time < b.time ? -1 : a.time > b.time ? 1 : 0,
+      );
+      createSeriesMarkers(cs, sortedMarkers);
+    }
 
     // ── Attach drawing tool primitives ────────────────────────────
     cs.attachPrimitive(measureToolRef.current);
