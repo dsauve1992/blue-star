@@ -21,16 +21,21 @@ interface GetHistoricalDataApiResponse {
   historicalData: HistoricalDataApiDto;
 }
 
+function extractSymbol(ticker: string): string {
+  const parts = ticker.split(":");
+  return parts.length > 1 ? parts[1] : parts[0];
+}
+
 export class TradeChartClient {
   async getDaily(
-    symbol: string,
+    ticker: string,
     startDate: string,
     endDate: string,
   ): Promise<ChartCandleDto[]> {
     const response = await apiClient.get<GetHistoricalDataApiResponse>(
       "/market-data/historical",
       {
-        params: { symbol, startDate, endDate },
+        params: { symbol: extractSymbol(ticker), startDate, endDate },
       },
     );
     return response.data.historicalData.pricePoints.map((point) => ({
@@ -44,7 +49,7 @@ export class TradeChartClient {
   }
 
   async getIntraday(
-    symbol: string,
+    ticker: string,
     startDate: string,
     endDate: string,
     interval: string = "5m",
@@ -53,7 +58,7 @@ export class TradeChartClient {
       "/market-data/intraday",
       {
         params: {
-          symbol,
+          symbol: extractSymbol(ticker),
           startDate,
           endDate,
           interval,
