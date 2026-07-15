@@ -60,7 +60,7 @@ export class YahooMarketDataService implements MarketDataService {
       period2: dateRange.endDate,
       interval,
       return: 'array',
-      includePrePost: options?.includePrePost ?? true,
+      includePrePost: options?.includePrePost ?? false,
     });
 
     if (!result.quotes || result.quotes.length === 0) {

@@ -79,6 +79,8 @@ export function deduplicatePricePoints(
 }
 
 export interface HistoricalDataFetchOptions {
+  // Defaults to false: regular trading hours only. Callers that genuinely want
+  // pre/post-market bars (charts, the intraday endpoint) must opt in explicitly.
   includePrePost?: boolean;
 }
 

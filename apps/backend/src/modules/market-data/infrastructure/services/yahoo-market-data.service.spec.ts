@@ -47,7 +47,7 @@ describe('YahooMarketDataService', () => {
       period2: dateRange.endDate,
       interval: '1d',
       return: 'array',
-      includePrePost: true,
+      includePrePost: false,
     });
     expect(result.symbol).toEqual(symbol);
     expect(result.dateRange).toEqual(dateRange);
@@ -55,7 +55,7 @@ describe('YahooMarketDataService', () => {
     expect(result.pricePoints[0].close).toBe(104);
   });
 
-  it('should fetch intraday data directly from yahoo chart', async () => {
+  it('should exclude pre/post-market by default for intraday data', async () => {
     const { service, yahooFinance } = createService();
     const symbol = Symbol.of('AAPL');
     const dateRange = DateRange.of(
@@ -82,7 +82,7 @@ describe('YahooMarketDataService', () => {
       period2: dateRange.endDate,
       interval: '5m',
       return: 'array',
-      includePrePost: true,
+      includePrePost: false,
     });
     expect(result.symbol).toEqual(symbol);
     expect(result.dateRange).toEqual(dateRange);
@@ -111,6 +111,30 @@ describe('YahooMarketDataService', () => {
       interval: '5m',
       return: 'array',
       includePrePost: false,
+    });
+  });
+
+  it('should pass includePrePost true only when a caller opts in explicitly', async () => {
+    const { service, yahooFinance } = createService();
+    const symbol = Symbol.of('AAPL');
+    const dateRange = DateRange.of(
+      new Date('2025-01-02T14:30:00.000Z'),
+      new Date('2025-01-02T16:00:00.000Z'),
+    );
+    yahooFinance.chart.mockResolvedValue({ quotes: [] });
+
+    await expect(
+      service.getHistoricalData(symbol, dateRange, '5m', {
+        includePrePost: true,
+      }),
+    ).rejects.toThrow();
+
+    expect(yahooFinance.chart).toHaveBeenCalledWith(symbol.value, {
+      period1: dateRange.startDate,
+      period2: dateRange.endDate,
+      interval: '5m',
+      return: 'array',
+      includePrePost: true,
     });
   });
 });
