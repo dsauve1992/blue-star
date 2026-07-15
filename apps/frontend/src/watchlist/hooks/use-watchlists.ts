@@ -1,11 +1,12 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { WatchlistClient } from '../api/watchlist.client';
-import { WATCHLIST_QUERY_KEYS } from '../constants';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { WatchlistClient } from "../api/watchlist.client";
+import { WATCHLIST_QUERY_KEYS } from "../constants";
 import type {
   CreateWatchlistRequest,
   AddTickerToWatchlistRequest,
   RenameWatchlistRequest,
-} from '../api/watchlist.client';
+  ListWatchlistsResponse,
+} from "../api/watchlist.client";
 
 const watchlistClient = new WatchlistClient();
 
@@ -67,7 +68,39 @@ export function useRemoveTickerFromWatchlist() {
       watchlistId: string;
       ticker: string;
     }) => watchlistClient.removeTickerFromWatchlist(watchlistId, ticker),
-    onSuccess: (_, variables) => {
+    onMutate: async ({ watchlistId, ticker }) => {
+      await queryClient.cancelQueries({
+        queryKey: WATCHLIST_QUERY_KEYS.lists(),
+      });
+
+      const previousLists = queryClient.getQueriesData<ListWatchlistsResponse>({
+        queryKey: WATCHLIST_QUERY_KEYS.lists(),
+      });
+
+      queryClient.setQueriesData<ListWatchlistsResponse>(
+        { queryKey: WATCHLIST_QUERY_KEYS.lists() },
+        (previous) =>
+          previous && {
+            ...previous,
+            watchlists: previous.watchlists.map((watchlist) =>
+              watchlist.id === watchlistId
+                ? {
+                    ...watchlist,
+                    tickers: watchlist.tickers.filter((t) => t !== ticker),
+                  }
+                : watchlist,
+            ),
+          },
+      );
+
+      return { previousLists };
+    },
+    onError: (_error, _variables, context) => {
+      context?.previousLists.forEach(([queryKey, data]) => {
+        queryClient.setQueryData(queryKey, data);
+      });
+    },
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: WATCHLIST_QUERY_KEYS.all });
       queryClient.invalidateQueries({
         queryKey: WATCHLIST_QUERY_KEYS.detail(variables.watchlistId),
@@ -118,8 +151,7 @@ export function useCopyTicker() {
     }: {
       targetWatchlistId: string;
       ticker: string;
-    }) =>
-      watchlistClient.addTickerToWatchlist(targetWatchlistId, { ticker }),
+    }) => watchlistClient.addTickerToWatchlist(targetWatchlistId, { ticker }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: WATCHLIST_QUERY_KEYS.all });
       queryClient.invalidateQueries({
@@ -159,4 +191,3 @@ export function useMoveTicker() {
     },
   });
 }
-

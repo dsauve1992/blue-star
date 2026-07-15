@@ -29,7 +29,7 @@ export class WatchlistReadRepository implements IWatchlistReadRepository {
         w.created_at,
         w.updated_at,
         COALESCE(
-          json_agg(wt.ticker ORDER BY wt.created_at) FILTER (WHERE wt.ticker IS NOT NULL),
+          json_agg(wt.ticker ORDER BY wt.created_at, wt.ticker) FILTER (WHERE wt.ticker IS NOT NULL),
           '[]'::json
         ) as tickers
       FROM watchlists w
@@ -56,7 +56,7 @@ export class WatchlistReadRepository implements IWatchlistReadRepository {
         w.created_at,
         w.updated_at,
         COALESCE(
-          json_agg(wt.ticker ORDER BY wt.created_at) FILTER (WHERE wt.ticker IS NOT NULL),
+          json_agg(wt.ticker ORDER BY wt.created_at, wt.ticker) FILTER (WHERE wt.ticker IS NOT NULL),
           '[]'::json
         ) as tickers
       FROM watchlists w
@@ -79,7 +79,7 @@ export class WatchlistReadRepository implements IWatchlistReadRepository {
         w.created_at,
         w.updated_at,
         COALESCE(
-          json_agg(wt.ticker ORDER BY wt.created_at) FILTER (WHERE wt.ticker IS NOT NULL),
+          json_agg(wt.ticker ORDER BY wt.created_at, wt.ticker) FILTER (WHERE wt.ticker IS NOT NULL),
           '[]'::json
         ) as tickers
       FROM watchlists w
