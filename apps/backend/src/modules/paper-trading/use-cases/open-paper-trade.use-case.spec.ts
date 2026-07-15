@@ -25,7 +25,6 @@ describe('OpenPaperTradeUseCase', () => {
       hasOpenTrade: jest.fn().mockResolvedValue(false),
       list: jest.fn(),
       getRealizedPnl: jest.fn().mockResolvedValue(0),
-      getCommittedCash: jest.fn().mockResolvedValue(0),
     };
     writeRepository = { save: jest.fn().mockResolvedValue(undefined) };
     useCase = new OpenPaperTradeUseCase(readRepository, writeRepository);
@@ -47,7 +46,6 @@ describe('OpenPaperTradeUseCase', () => {
 
   it('sizes shares from 0.5% of starting equity and sets a 6R target', async () => {
     // equity 10_000, risk 0.5% = $50, riskPerShare = 8 -> floor(50/8) = 6 shares
-    // cash cap: floor(10_000 / 108) = 92 -> risk is the binding constraint
     const result = await useCase.execute(request());
 
     expect(result.opened).toBe(true);
@@ -70,18 +68,16 @@ describe('OpenPaperTradeUseCase', () => {
     expect(saved.shares.value).toBe(7);
   });
 
-  it('caps shares at available cash net of committed capital', async () => {
-    // entry 108, stop 107.9 -> riskPerShare = 0.1, riskBudget 50 -> 500 shares by risk
-    // but availableCash = 10_000 - 9_500 committed = 500 -> floor(500/108) = 4 shares
-    readRepository.getCommittedCash.mockResolvedValue(9500);
-
+  it('sizes purely from the risk budget regardless of open committed capital', async () => {
+    // riskPerShare = 0.755, riskBudget = 50 -> floor(50/0.755) = 66 shares,
+    // independent of how much cash is tied up in other open positions
     const result = await useCase.execute(
-      request({ entryPrice: 108, stopPrice: 107.9 }),
+      request({ entryPrice: 15.055, stopPrice: 14.3 }),
     );
 
     expect(result.opened).toBe(true);
     const saved = writeRepository.save.mock.calls[0][0];
-    expect(saved.shares.value).toBe(4);
+    expect(saved.shares.value).toBe(66);
   });
 
   it('skips when an open trade already exists for the ticker', async () => {
@@ -103,11 +99,11 @@ describe('OpenPaperTradeUseCase', () => {
     expect(writeRepository.save).not.toHaveBeenCalled();
   });
 
-  it('skips when available cash cannot afford a single share', async () => {
-    // all equity committed -> availableCash 0 -> shareCount < 1
-    readRepository.getCommittedCash.mockResolvedValue(10000);
-
-    const result = await useCase.execute(request());
+  it('skips when the risk budget cannot afford a single share', async () => {
+    // riskPerShare 60 > riskBudget 50 -> floor(50/60) = 0 shares
+    const result = await useCase.execute(
+      request({ entryPrice: 160, stopPrice: 100 }),
+    );
 
     expect(result.opened).toBe(false);
     expect(writeRepository.save).not.toHaveBeenCalled();

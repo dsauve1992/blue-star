@@ -54,23 +54,17 @@ export class OpenPaperTradeUseCase {
       );
     }
 
-    const [realizedPnl, committedCash] = await Promise.all([
-      this.readRepository.getRealizedPnl(),
-      this.readRepository.getCommittedCash(),
-    ]);
+    const realizedPnl = await this.readRepository.getRealizedPnl();
 
     const equity = STARTING_EQUITY + realizedPnl;
-    const availableCash = equity - committedCash;
     const riskBudget = equity * RISK_FRACTION;
 
-    const sharesByRisk = Math.floor(riskBudget / riskPerShare);
-    const sharesByCash = Math.floor(availableCash / request.entryPrice);
-    const shareCount = Math.min(sharesByRisk, sharesByCash);
+    const shareCount = Math.floor(riskBudget / riskPerShare);
 
     if (shareCount < 1) {
       return this.skip(
         request.ticker,
-        `insufficient sizing (riskBudget ${riskBudget.toFixed(2)}, availableCash ${availableCash.toFixed(2)})`,
+        `insufficient sizing (riskBudget ${riskBudget.toFixed(2)}, riskPerShare ${riskPerShare.toFixed(2)})`,
       );
     }
 

@@ -181,16 +181,6 @@ describe('PaperTrade repositories Integration', () => {
     expect(await readRepository.getRealizedPnl()).toBe(240);
   });
 
-  it('sums committed cash from open trades only', async () => {
-    await writeRepository.save(openTrade('AAPL', { shares: 6 })); // 108 * 6 = 648
-    const closed = openTrade('MSFT', { shares: 10 });
-    await writeRepository.save(closed);
-    closed.close(156, PaperTradeExitReason.TARGET, new Date());
-    await writeRepository.save(closed);
-
-    expect(await readRepository.getCommittedCash()).toBe(648);
-  });
-
   it('rejects a second open trade for the same ticker (partial unique index)', async () => {
     await writeRepository.save(openTrade('AAPL'));
 

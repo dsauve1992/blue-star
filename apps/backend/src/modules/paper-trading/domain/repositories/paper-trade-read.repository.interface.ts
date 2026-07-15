@@ -8,5 +8,4 @@ export interface PaperTradeReadRepository {
   hasOpenTrade(ticker: WatchlistTicker): Promise<boolean>;
   list(status?: PaperTradeStatus): Promise<PaperTrade[]>;
   getRealizedPnl(): Promise<number>;
-  getCommittedCash(): Promise<number>;
 }

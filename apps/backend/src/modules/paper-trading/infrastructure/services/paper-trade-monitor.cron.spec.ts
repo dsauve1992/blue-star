@@ -70,7 +70,6 @@ describe('PaperTradeMonitorCronService', () => {
       hasOpenTrade: jest.fn(),
       list: jest.fn(),
       getRealizedPnl: jest.fn(),
-      getCommittedCash: jest.fn(),
     };
     marketDataService = { getHistoricalData: jest.fn() };
     closePaperTrade = {

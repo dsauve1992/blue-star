@@ -82,14 +82,6 @@ export class PaperTradeReadRepository implements IPaperTradeReadRepository {
     return Number((result.rows[0] as { total: string }).total);
   }
 
-  async getCommittedCash(): Promise<number> {
-    const result = await this.databaseService.query(
-      `SELECT COALESCE(SUM(entry_price * shares), 0) AS total FROM paper_trades WHERE status = $1`,
-      [PaperTradeStatus.OPEN],
-    );
-    return Number((result.rows[0] as { total: string }).total);
-  }
-
   private mapRow(row: PaperTradeRow): PaperTrade {
     return PaperTrade.fromSnapshot({
       id: PaperTradeId.of(row.id),
