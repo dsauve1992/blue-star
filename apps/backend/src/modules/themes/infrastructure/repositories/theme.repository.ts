@@ -11,6 +11,10 @@ interface ThemeRow {
   updated_at: string;
 }
 
+interface ThemeRowWithTicker extends ThemeRow {
+  ticker: string;
+}
+
 interface ThemeTickerRow {
   id: string;
   theme_id: string;
@@ -92,16 +96,25 @@ export class ThemeRepositoryImpl implements ThemeRepository {
     );
   }
 
-  async findThemesByTicker(ticker: string): Promise<ThemeEntity[]> {
+  async findThemesByTickers(
+    tickers: string[],
+  ): Promise<Map<string, ThemeEntity[]>> {
     const result = (await this.databaseService.query(
-      `SELECT t.id, t.name, t.created_at, t.updated_at
+      `SELECT t.id, t.name, t.created_at, t.updated_at, UPPER(tt.ticker) AS ticker
        FROM themes t
        INNER JOIN theme_tickers tt ON t.id = tt.theme_id
-       WHERE UPPER(tt.ticker) = UPPER($1)
+       WHERE UPPER(tt.ticker) = ANY($1)
        ORDER BY t.name`,
-      [ticker],
-    )) as { rows: ThemeRow[] };
+      [tickers.map((ticker) => ticker.toUpperCase())],
+    )) as { rows: ThemeRowWithTicker[] };
 
-    return result.rows.map((row) => ThemeEntity.fromData(row));
+    const themesByTicker = new Map<string, ThemeEntity[]>();
+    for (const row of result.rows) {
+      const themes = themesByTicker.get(row.ticker) ?? [];
+      themes.push(ThemeEntity.fromData(row));
+      themesByTicker.set(row.ticker, themes);
+    }
+
+    return themesByTicker;
   }
 }

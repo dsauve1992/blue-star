@@ -39,25 +39,25 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
     const symbols = results.map((r) => r.symbol);
     const classifications =
       await this.getOrFetchClassification.executeMany(symbols);
+    const themesBySymbol =
+      await this.themeRepository.findThemesByTickers(symbols);
 
-    const consolidationResults: ConsolidationResult[] = await Promise.all(
-      results.map(async (r) => {
-        const themes = await this.themeRepository.findThemesByTicker(r.symbol);
-        const themeNames = themes.map((theme) => theme.name);
-        const classification = classifications.get(r.symbol.toUpperCase());
+    const consolidationResults: ConsolidationResult[] = results.map((r) => {
+      const themes = themesBySymbol.get(r.symbol.toUpperCase()) ?? [];
+      const themeNames = themes.map((theme) => theme.name);
+      const classification = classifications.get(r.symbol.toUpperCase());
 
-        return ConsolidationResult.of({
-          symbol: r.symbol,
-          isNew: r.isNew,
-          tickerFullName: r.tickerFullName,
-          timeframe: r.timeframe,
-          themes: themeNames,
-          sector: r.sector ?? undefined,
-          industry: r.industry ?? undefined,
-          industryGroup: classification?.industryGroup ?? null,
-        });
-      }),
-    );
+      return ConsolidationResult.of({
+        symbol: r.symbol,
+        isNew: r.isNew,
+        tickerFullName: r.tickerFullName,
+        timeframe: r.timeframe,
+        themes: themeNames,
+        sector: r.sector ?? undefined,
+        industry: r.industry ?? undefined,
+        industryGroup: classification?.industryGroup ?? null,
+      });
+    });
 
     const hasData = results.length > 0;
 
