@@ -1,11 +1,26 @@
 {
   "dev": {
     "driver": "pg",
-    "host": "localhost",
-    "port": 5432,
-    "user": "blue_star_user",
-    "password": "blue_star_password",
-    "database": "blue_star_db",
+    "host": {
+      "ENV": "DB_HOST",
+      "default": "localhost"
+    },
+    "port": {
+      "ENV": "DB_PORT",
+      "default": 5432
+    },
+    "user": {
+      "ENV": "DB_USERNAME",
+      "default": "blue_star_user"
+    },
+    "password": {
+      "ENV": "DB_PASSWORD",
+      "default": "blue_star_password"
+    },
+    "database": {
+      "ENV": "DB_DATABASE",
+      "default": "blue_star_db"
+    },
     "ssl": false
   },
   "test": {

@@ -22,7 +22,7 @@ export class DatabaseService implements OnModuleInit, OnModuleDestroy {
       ssl: this.config.ssl === true ? { rejectUnauthorized: false } : false,
       max: 20, // Maximum number of clients in the pool
       idleTimeoutMillis: 30000, // Close idle clients after 30 seconds
-      connectionTimeoutMillis: 5000, // Return an error after 2 seconds if connection could not be established
+      connectionTimeoutMillis: 15000, // mDNS resolution for .local hosts (e.g. the prod Pi) can take several seconds
     });
 
     // Test the connection
