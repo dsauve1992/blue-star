@@ -4,16 +4,23 @@ Smoothness scoring service.
 Pure computation: no network, no file I/O. Given a daily close series, scores
 every rolling 6-month window by
 
-    score = perf / (bad_days + 1)
+    score = perf * alignment_pct
 
-where `perf` is the close-to-close return over the window and `bad_days` counts
-the days on which the trend stack EMA10 > EMA20 > SMA50 was not intact. A high
-score means a large advance earned while the stack stayed aligned — a smooth
-ascension rather than a choppy one.
+where `perf` is the close-to-close return over the window and `alignment_pct` is
+the fraction of days on which the trend stack EMA10 > EMA20 > SMA50 was intact.
+A high score means a large advance earned while the stack stayed aligned — a
+smooth ascension rather than a choppy one.
 
-The +1 is Laplace smoothing: a flawless window has bad_days == 0, which would
-otherwise divide by zero. With the +1 such a window scores exactly `perf`, which
-still ranks it above any window with the same performance and more bad days.
+Both terms are ratios, so the score does not depend on WINDOW_DAYS and the
+penalty for a bad day is linear: one bad day out of 126 costs 0.8%.
+
+`ratio_score = perf / (bad_days + 1)` is retained as a diagnostic only. It was
+the original formulation and it ranks badly, because dividing a ratio by a count
+makes the penalty hyperbolic in the wrong place: 0 -> 1 bad days halves the
+score while 10 -> 11 costs 8%. That let a +101% flawless window (1.01) outrank a
++1000% window with 10 bad days (10.0 / 11 = 0.909) — 92% alignment scored below
+a move a tenth the size. In practice it behaved as a perfection filter rather
+than a smoothness ranking.
 
 EMAs use `adjust=False` — the standard recursive form, matching TradingView's
 EMA10/EMA20. This deliberately differs from apps/screener/technical_analysis.py,
@@ -39,6 +46,8 @@ MAX_DAILY_MOVE = 9.0
 MAX_WINDOW_PERF = 100.0
 MIN_PRICE = 0.10
 DEFAULT_MIN_DOLLAR_VOLUME = 5_000_000.0
+DEFAULT_MIN_ALIGNMENT = 0.90
+DEFAULT_RUN_GAP_DAYS = 45
 
 
 @dataclass
@@ -53,6 +62,7 @@ class WindowRecord:
     longest_bad_streak: int
     dollar_volume: float
     score: float
+    ratio_score: float
 
 
 def compute_alignment(close: pd.Series) -> pd.Series:
@@ -130,8 +140,9 @@ def score_windows(close: pd.Series, volume: pd.Series | None = None) -> pd.DataF
     Score every rolling WINDOW_DAYS window in the series.
 
     Returns one row per complete window with perf, bad_days, alignment
-    diagnostics and score. Windows overlapping the moving-average warm-up are
-    dropped, so the first row starts at bar WARMUP_BARS - 1.
+    diagnostics, `score` (perf * alignment_pct) and the superseded `ratio_score`.
+    Windows overlapping the moving-average warm-up are dropped, so the first row
+    starts at bar WARMUP_BARS - 1.
 
     When `volume` is supplied, each window also carries `dollar_volume`: the
     median of close * volume over that window's own days. Measuring liquidity
@@ -162,6 +173,7 @@ def score_windows(close: pd.Series, volume: pd.Series | None = None) -> pd.DataF
                 "longest_bad_streak",
                 "dollar_volume",
                 "score",
+                "ratio_score",
             ]
         )
 
@@ -192,7 +204,8 @@ def score_windows(close: pd.Series, volume: pd.Series | None = None) -> pd.DataF
     frame["longest_bad_streak"] = frame["longest_bad_streak"].astype(int)
     frame["aligned_days"] = WINDOW_DAYS - frame["bad_days"]
     frame["alignment_pct"] = frame["aligned_days"] / WINDOW_DAYS
-    frame["score"] = frame["perf"] / (frame["bad_days"] + 1)
+    frame["score"] = frame["perf"] * frame["alignment_pct"]
+    frame["ratio_score"] = frame["perf"] / (frame["bad_days"] + 1)
 
     frame = frame[frame["perf"] <= MAX_WINDOW_PERF]
 
@@ -204,19 +217,86 @@ def best_window(
     close: pd.Series,
     volume: pd.Series | None = None,
     min_dollar_volume: float = 0.0,
+    min_alignment: float = 0.0,
     screen_corruption: bool = True,
 ) -> WindowRecord | None:
     """
     Highest-scoring window for one ticker.
 
     None when the history is too short, (unless disabled) fails the data-quality
-    screen, or leaves no window clearing `min_dollar_volume`. Use
-    `find_corruption` directly when the reason matters.
+    screen, or leaves no window clearing `min_dollar_volume` and
+    `min_alignment`. Use `find_corruption` directly when the reason matters.
 
-    The liquidity floor is applied before the argmax, not after, so a ticker
-    yields its best *tradeable* window rather than being dropped because its
-    all-time best window happened while it was thin.
+    Both floors are applied before the argmax, not after, so a ticker yields its
+    best *qualifying* window rather than being dropped because its all-time best
+    window happened while it was thin or choppy.
+
+    `min_alignment` exists because the score's alignment term is too weak to
+    police smoothness on its own: perf spans two orders of magnitude across the
+    universe while alignment_pct is bounded in [0, 1], so a huge move with 50%
+    alignment outranks a clean one less than half its size. Observed live: OCGN
+    (+5,480%, 62 bad days, 50.8% aligned) ranked second, above NVAX (+2,656%,
+    2 bad days, 98.4% aligned). Gating first makes smoothness a qualification
+    and leaves the score to rank size of advance among the windows that pass.
     """
+    frame = _qualifying_windows(
+        close, volume, min_dollar_volume, min_alignment, screen_corruption
+    )
+    if frame is None or frame.empty:
+        return None
+    return _to_record(ticker, frame.loc[frame["score"].idxmax()])
+
+
+def best_windows_per_run(
+    ticker: str,
+    close: pd.Series,
+    volume: pd.Series | None = None,
+    min_dollar_volume: float = 0.0,
+    min_alignment: float = 0.0,
+    screen_corruption: bool = True,
+    run_gap_days: int = DEFAULT_RUN_GAP_DAYS,
+) -> list[WindowRecord]:
+    """
+    One record per *distinct* advance, instead of one per ticker.
+
+    Because windows slide a day at a time they overlap heavily: a single clean
+    8-month trend yields dozens of qualifying windows that all describe the same
+    advance shifted by a day or two. NVAX had 52, SNDK 117, DAC 141. Collapsing
+    those to one row is right — but `best_window` collapses too far, hiding a
+    stock's genuinely separate runs. DAC had clean advances in both 2021 and
+    2026, five years apart, and only the 2021 one survived the argmax.
+
+    Qualifying windows are clustered by gap in `window_end`: a break longer than
+    `run_gap_days` starts a new run. Each cluster contributes its own
+    highest-scoring window, so DAC yields two rows rather than 141 or 1.
+
+    Returns [] when nothing qualifies, ordered by score descending.
+    """
+    frame = _qualifying_windows(
+        close, volume, min_dollar_volume, min_alignment, screen_corruption
+    )
+    if frame is None or frame.empty:
+        return []
+
+    ordered = frame.sort_values("window_end")
+    ends = pd.to_datetime(ordered["window_end"])
+    run = (ends.diff().dt.days.fillna(0) > run_gap_days).cumsum()
+
+    records = [
+        _to_record(ticker, cluster.loc[cluster["score"].idxmax()])
+        for _, cluster in ordered.groupby(run)
+    ]
+    records.sort(key=lambda r: r.score, reverse=True)
+    return records
+
+
+def _qualifying_windows(
+    close: pd.Series,
+    volume: pd.Series | None,
+    min_dollar_volume: float,
+    min_alignment: float,
+    screen_corruption: bool,
+) -> pd.DataFrame | None:
     if close is None or len(close) < MIN_BARS:
         return None
     if screen_corruption and find_corruption(close) is not None:
@@ -225,10 +305,12 @@ def best_window(
     frame = score_windows(close, volume)
     if min_dollar_volume > 0:
         frame = frame[frame["dollar_volume"] >= min_dollar_volume]
-    if frame.empty:
-        return None
+    if min_alignment > 0:
+        frame = frame[frame["alignment_pct"] >= min_alignment]
+    return frame
 
-    row = frame.loc[frame["score"].idxmax()]
+
+def _to_record(ticker: str, row: pd.Series) -> WindowRecord:
     return WindowRecord(
         ticker=ticker,
         window_start=_format_date(row["window_start"]),
@@ -240,6 +322,7 @@ def best_window(
         longest_bad_streak=int(row["longest_bad_streak"]),
         dollar_volume=float(row["dollar_volume"]),
         score=float(row["score"]),
+        ratio_score=float(row["ratio_score"]),
     )
 
 

@@ -5,7 +5,7 @@ Smooth Performer Scan — CLI entry point.
 Finds the best 6-month advances of the last N years where the trend stack
 EMA10 > EMA20 > SMA50 stayed intact on most days, scoring each rolling window by
 
-    score = perf / (bad_days + 1)
+    score = perf * alignment_pct
 
 Writes one row per ticker (its single best window) to CSV, ranked by score.
 
@@ -23,10 +23,13 @@ from datetime import date, timedelta
 
 from price_history_client import fetch_close_history
 from smoothness_service import (
+    DEFAULT_MIN_ALIGNMENT,
     DEFAULT_MIN_DOLLAR_VOLUME,
+    DEFAULT_RUN_GAP_DAYS,
     MIN_BARS,
     WindowRecord,
     best_window,
+    best_windows_per_run,
     find_corruption,
     record_to_dict,
 )
@@ -66,6 +69,23 @@ def main() -> int:
         default=DEFAULT_MIN_DOLLAR_VOLUME,
         help="median close*volume required within the scored window; 0 disables",
     )
+    parser.add_argument(
+        "--min-alignment",
+        type=float,
+        default=DEFAULT_MIN_ALIGNMENT,
+        help="fraction of window days the trend stack must hold; 0 disables",
+    )
+    parser.add_argument(
+        "--per-run",
+        action="store_true",
+        help="one row per distinct advance instead of one per ticker",
+    )
+    parser.add_argument(
+        "--run-gap-days",
+        type=int,
+        default=DEFAULT_RUN_GAP_DAYS,
+        help="gap in window_end that starts a new run under --per-run",
+    )
     parser.add_argument("--refresh", action="store_true", help="ignore the Parquet cache")
     parser.add_argument("--quiet", action="store_true")
     args = parser.parse_args()
@@ -98,6 +118,7 @@ def main() -> int:
     records: list[WindowRecord] = []
     too_short = 0
     too_thin = 0
+    too_choppy = 0
     rejected: list[tuple[str, str]] = []
     for ticker in bars.columns.get_level_values(0).unique():
         close = bars[(ticker, "Close")].dropna()
@@ -110,17 +131,42 @@ def main() -> int:
             rejected.append((ticker, reason))
             continue
 
-        record = best_window(
-            ticker,
-            close,
-            volume=bars[(ticker, "Volume")],
-            min_dollar_volume=args.min_dollar_volume,
-            screen_corruption=False,
-        )
-        if record is None:
-            too_thin += 1
+        volume = bars[(ticker, "Volume")]
+        if args.per_run:
+            found = best_windows_per_run(
+                ticker,
+                close,
+                volume=volume,
+                min_dollar_volume=args.min_dollar_volume,
+                min_alignment=args.min_alignment,
+                screen_corruption=False,
+                run_gap_days=args.run_gap_days,
+            )
+        else:
+            record = best_window(
+                ticker,
+                close,
+                volume=volume,
+                min_dollar_volume=args.min_dollar_volume,
+                min_alignment=args.min_alignment,
+                screen_corruption=False,
+            )
+            found = [record] if record is not None else []
+
+        if not found:
+            liquid_only = best_window(
+                ticker,
+                close,
+                volume=volume,
+                min_dollar_volume=args.min_dollar_volume,
+                screen_corruption=False,
+            )
+            if liquid_only is None:
+                too_thin += 1
+            else:
+                too_choppy += 1
             continue
-        records.append(record)
+        records.extend(found)
 
     records.sort(key=lambda r: r.score, reverse=True)
     if args.top > 0:
@@ -129,11 +175,15 @@ def main() -> int:
     _write_csv(args.out, records)
 
     if not args.quiet:
+        unit = "runs" if args.per_run else "tickers"
+        distinct = len({r.ticker for r in records})
         print(
-            f"Scored {len(records)} tickers "
+            f"Scored {len(records)} {unit} across {distinct} tickers "
             f"({too_short} skipped for < {MIN_BARS} bars, "
             f"{len(rejected)} rejected as corrupt, "
-            f"{too_thin} with no window over ${args.min_dollar_volume:,.0f}) -> {args.out}",
+            f"{too_thin} with no window over ${args.min_dollar_volume:,.0f}, "
+            f"{too_choppy} with none over {args.min_alignment:.0%} alignment)"
+            f" -> {args.out}",
             file=sys.stderr,
         )
         for ticker, reason in rejected[:10]:
@@ -143,7 +193,8 @@ def main() -> int:
                 f"  {record.ticker:<8} {record.window_start} to {record.window_end} "
                 f"perf={record.perf:+.1%} bad={record.bad_days:>3} "
                 f"streak={record.longest_bad_streak:>3} "
-                f"$vol={record.dollar_volume / 1e6:>7.1f}M score={record.score:.4f}",
+                f"$vol={record.dollar_volume / 1e6:>7.1f}M "
+                f"score={record.score:.4f} ratio={record.ratio_score:.4f}",
                 file=sys.stderr,
             )
 

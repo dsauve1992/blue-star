@@ -15,6 +15,7 @@ from smoothness_service import (
     WARMUP_BARS,
     WINDOW_DAYS,
     best_window,
+    best_windows_per_run,
     compute_alignment,
     find_corruption,
     score_windows,
@@ -72,6 +73,7 @@ class TestScoreWindows:
         row = frame.iloc[0]
         assert row["bad_days"] == 0
         assert row["aligned_days"] == WINDOW_DAYS
+        assert row["alignment_pct"] == 1.0
         assert row["score"] == row["perf"]
 
     def test_perf_is_close_to_close(self):
@@ -122,6 +124,42 @@ class TestScoreWindows:
 
         assert choppy["bad_days"] > smooth["bad_days"]
         assert choppy["score"] < smooth["score"]
+
+    def test_score_is_perf_times_alignment_pct(self):
+        values = [100.0 + i for i in range(MIN_BARS)]
+        for offset in range(100, 115):
+            values[offset] = 60.0
+        row = score_windows(_series(values)).iloc[0]
+        assert row["bad_days"] > 0
+        assert row["score"] == pytest.approx(row["perf"] * row["alignment_pct"])
+
+    def test_one_bad_day_costs_a_single_window_fraction_not_half(self):
+        """
+        The defect in ratio_score: 0 -> 1 bad days halved it, so a near-flawless
+        big move lost to a small flawless one. The multiplier costs 1/126.
+        """
+        perf, alignment_one_bad = 10.0, (WINDOW_DAYS - 1) / WINDOW_DAYS
+        assert perf * alignment_one_bad == pytest.approx(perf * (1 - 1 / WINDOW_DAYS))
+        assert perf * alignment_one_bad > 0.99 * perf
+        assert perf / (1 + 1) == pytest.approx(0.5 * perf)
+
+    def test_big_move_with_some_bad_days_outranks_small_flawless_move(self):
+        """
+        The user's counterexample: +1000% with 10 bad days must beat +101% with 0.
+        ratio_score got this backwards (0.909 vs 1.01).
+        """
+        big_perf, big_bad = 10.0, 10
+        small_perf, small_bad = 1.01, 0
+
+        big_score = big_perf * (WINDOW_DAYS - big_bad) / WINDOW_DAYS
+        small_score = small_perf * (WINDOW_DAYS - small_bad) / WINDOW_DAYS
+        assert big_score > small_score
+
+        assert big_perf / (big_bad + 1) < small_perf / (small_bad + 1)
+
+    def test_ratio_score_is_retained_for_comparison(self):
+        row = score_windows(_rising(MIN_BARS)).iloc[0]
+        assert row["ratio_score"] == pytest.approx(row["perf"] / (row["bad_days"] + 1))
 
 
 class TestFindCorruption:
@@ -256,6 +294,138 @@ class TestLiquidity:
         assert unfiltered is not None and filtered is not None
         assert filtered.window_end != unfiltered.window_end
         assert filtered.dollar_volume >= 5_000_000
+
+
+class TestAlignmentFloor:
+    def _choppy_then_clean(self) -> pd.Series:
+        """
+        Two windows' worth of bars: an early stretch broken by repeated dips,
+        then a clean rise. The early stretch gains more, so without the floor it
+        wins the argmax.
+        """
+        values = [100.0 + i * 3.0 for i in range(MIN_BARS)]
+        for start in range(WARMUP_BARS, MIN_BARS - 8, 16):
+            for offset in range(start, start + 8):
+                values[offset] = values[offset] * 0.45
+        tail_start = values[-1]
+        values += [tail_start * (1.0 + 0.004 * i) for i in range(1, WINDOW_DAYS + 1)]
+        return _series(values)
+
+    def test_choppy_window_is_excluded_entirely(self):
+        close = self._choppy_then_clean()
+        record = best_window("CHOP", close, min_alignment=0.90)
+        if record is not None:
+            assert record.alignment_pct >= 0.90
+
+    def test_floor_picks_best_aligned_window_not_best_overall(self):
+        close = self._choppy_then_clean()
+        unfiltered = best_window("CHOP", close, min_alignment=0.0)
+        filtered = best_window("CHOP", close, min_alignment=0.90)
+        assert unfiltered is not None and filtered is not None
+        assert unfiltered.alignment_pct < 0.90
+        assert filtered.alignment_pct >= 0.90
+        assert filtered.window_end != unfiltered.window_end
+
+    def test_ticker_vanishes_when_no_window_qualifies(self):
+        """A downtrend has no aligned window at all, so it drops out entirely."""
+        close = _rising(MIN_BARS + WINDOW_DAYS, step=-0.5, start=400.0)
+        assert best_window("DOWN", close, min_alignment=0.90) is None
+        assert best_window("DOWN", close, min_alignment=0.0) is not None
+
+    def test_flawless_riser_clears_any_floor(self):
+        close = _rising(MIN_BARS)
+        record = best_window("RISE", close, min_alignment=0.90)
+        assert record is not None
+        assert record.alignment_pct == 1.0
+
+    def test_zero_floor_disables_the_gate(self):
+        close = self._choppy_then_clean()
+        assert best_window("CHOP", close, min_alignment=0.0) is not None
+
+    def test_floor_composes_with_the_liquidity_floor(self):
+        close = _rising(MIN_BARS)
+        volume = _series([1_000.0] * MIN_BARS)
+        assert (
+            best_window(
+                "THIN", close, volume, min_dollar_volume=5_000_000, min_alignment=0.90
+            )
+            is None
+        )
+
+    def test_default_floor_is_ninety_percent(self):
+        from smoothness_service import DEFAULT_MIN_ALIGNMENT
+
+        assert DEFAULT_MIN_ALIGNMENT == 0.90
+        assert DEFAULT_MIN_ALIGNMENT * WINDOW_DAYS == pytest.approx(113.4)
+
+
+class TestBestWindowsPerRun:
+    def _two_runs(self) -> pd.Series:
+        """
+        A clean advance, a long flat stretch that breaks alignment, then a second
+        clean advance — DAC's 2021-and-2026 shape in miniature.
+        """
+        values = [100.0 + i for i in range(MIN_BARS)]
+        flat = values[-1]
+        values += [flat - 0.4 * i for i in range(1, WINDOW_DAYS + 1)]
+        trough = values[-1]
+        values += [trough * (1.0 + 0.012 * i) for i in range(1, WINDOW_DAYS + 1)]
+        return _series(values)
+
+    def test_single_advance_collapses_to_one_run(self):
+        records = best_windows_per_run("RISE", _rising(MIN_BARS + 60))
+        assert len(records) == 1
+
+    def test_two_separated_advances_yield_two_runs(self):
+        records = best_windows_per_run("TWO", self._two_runs(), min_alignment=0.90)
+        assert len(records) == 2
+        assert len({r.window_end for r in records}) == 2
+
+    def test_best_window_reports_only_one_of_them(self):
+        """The motivating defect: the argmax hides the second advance."""
+        close = self._two_runs()
+        single = best_window("TWO", close, min_alignment=0.90)
+        runs = best_windows_per_run("TWO", close, min_alignment=0.90)
+        assert single is not None
+        assert len(runs) > 1
+        assert single.window_end in {r.window_end for r in runs}
+
+    def test_runs_are_ordered_by_score_descending(self):
+        records = best_windows_per_run("TWO", self._two_runs(), min_alignment=0.90)
+        scores = [r.score for r in records]
+        assert scores == sorted(scores, reverse=True)
+
+    def test_each_run_is_the_best_of_its_cluster(self):
+        close = self._two_runs()
+        records = best_windows_per_run("TWO", close, min_alignment=0.90)
+        frame = score_windows(close)
+        qualifying = frame[frame["alignment_pct"] >= 0.90]
+        assert records[0].score == pytest.approx(qualifying["score"].max())
+
+    def test_wide_gap_merges_runs_into_one(self):
+        close = self._two_runs()
+        merged = best_windows_per_run(
+            "TWO", close, min_alignment=0.90, run_gap_days=10_000
+        )
+        assert len(merged) == 1
+
+    def test_returns_empty_list_when_nothing_qualifies(self):
+        close = _rising(MIN_BARS, step=-0.5, start=400.0)
+        assert best_windows_per_run("DOWN", close, min_alignment=0.90) == []
+
+    def test_returns_empty_list_when_history_too_short(self):
+        assert best_windows_per_run("SHORT", _rising(MIN_BARS - 1)) == []
+
+    def test_respects_the_liquidity_floor(self):
+        close = _rising(MIN_BARS)
+        volume = _series([1_000.0] * MIN_BARS)
+        assert best_windows_per_run("THIN", close, volume, min_dollar_volume=5e6) == []
+
+    def test_runs_do_not_overlap_in_time(self):
+        records = best_windows_per_run("TWO", self._two_runs(), min_alignment=0.90)
+        spans = sorted((r.window_start, r.window_end) for r in records)
+        for earlier, later in zip(spans, spans[1:]):
+            assert earlier[1] < later[1]
 
 
 class TestBestWindow:
