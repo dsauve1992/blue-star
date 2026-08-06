@@ -1,0 +1,6 @@
+venv/
+data/
+themes.md
+__pycache__/
+.pytest_cache/
+themes-ranked.md
