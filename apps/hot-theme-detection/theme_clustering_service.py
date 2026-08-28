@@ -77,9 +77,17 @@ together right now because of a shared current market narrative — not because 
 GICS sector or business model.
 
 Rules:
-- A theme is a shared current catalyst: a reason these specific stocks are all moving right now.
+- A theme is a shared current catalyst: an external economic force or event acting on these \
+specific stocks right now, causing them to move together.
 - Do not cluster by industry or business description alone. SNDK's business is "flash storage \
 manufacturer"; its theme (if any) is why flash storage demand is spiking right now.
+- Do not cluster by shared corporate situation or category either — that is the same mistake as \
+clustering by industry, just one level more abstract. "Acquisition targets," "small-cap biotechs \
+about to turn profitable," or "companies with insider buying" are labels that describe several \
+companies independently, not a shared external force moving them together: each acquisition is \
+its own idiosyncratic deal, not a common catalyst. If the only thing tying the tickers together \
+is that a similar *kind of event* is happening to each of them separately, rather than the *same* \
+event or driver acting on all of them, it is not a theme — put them in lone_wolves.
 - A theme requires at least 3 tickers. Two companies sharing a narrative is a coincidence, not \
 a theme.
 - Do not force-fit a ticker into a theme it only loosely fits. When in doubt, call it a lone wolf.
