@@ -1,7 +1,6 @@
 import { Card, CardContent, CardHeader, CardTitle } from "../design-system";
 import { PageContainer } from "../design-system/page-container";
 import { LeaderBreadthCard } from "../../leader-breadth/components/LeaderBreadthCard";
-import { PaperTradingCard } from "../../paper-trading/components/PaperTradingCard";
 
 export default function Dashboard() {
   return (
@@ -30,8 +29,6 @@ export default function Dashboard() {
           </Card>
 
           <LeaderBreadthCard />
-
-          <PaperTradingCard />
         </div>
       </div>
     </PageContainer>
