@@ -3,7 +3,6 @@ import { APP_FILTER, APP_GUARD } from '@nestjs/core';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { PositionModule } from './modules/position/position.module';
 import { MarketDataModule } from './modules/market-data/market-data.module';
 import { StockAnalysisModule } from './modules/stock-analysis/stock-analysis.module';
 import { ThemesModule } from './modules/themes/themes.module';
@@ -31,7 +30,6 @@ import { DomainErrorFilter } from './common/filters/domain-error.filter';
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     DatabaseModule,
-    PositionModule,
     MarketDataModule,
     StockAnalysisModule,
     ThemesModule,

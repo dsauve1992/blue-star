@@ -2,7 +2,7 @@ import { WatchlistId } from '../value-objects/watchlist-id';
 import { WatchlistName } from '../value-objects/watchlist-name';
 import { WatchlistTicker } from '../value-objects/watchlist-ticker';
 import { StateError } from '../domain-errors';
-import { UserId } from '../../../position/domain/value-objects/user-id';
+import { UserId } from '../../../../shared/value-objects/user-id';
 
 export interface CreateWatchlistArgs {
   userId: UserId;

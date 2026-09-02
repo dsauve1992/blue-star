@@ -8,7 +8,7 @@ import { WATCHLIST_WRITE_REPOSITORY } from '../../constants/tokens';
 import { Watchlist } from '../../domain/entities/watchlist';
 import { WatchlistId } from '../../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../domain/value-objects/watchlist-name';
-import { UserId } from '../../../position/domain/value-objects/user-id';
+import { UserId } from '../../../../shared/value-objects/user-id';
 import type { AuthContext } from '../../../auth/auth-context.interface';
 
 describe('RenameWatchlistUseCase', () => {

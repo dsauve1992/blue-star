@@ -9,7 +9,7 @@ import { Watchlist } from '../../../watchlist/domain/entities/watchlist';
 import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../../watchlist/domain/value-objects/watchlist-name';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
-import { UserId } from '../../../position/domain/value-objects/user-id';
+import { UserId } from '../../../../shared/value-objects/user-id';
 import type { WatchlistMonitoringReadRepository } from '../../domain/repositories/watchlist-monitoring-read.repository.interface';
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { WatchlistReadRepository } from '../../../watchlist/domain/repositories/watchlist-read.repository.interface';

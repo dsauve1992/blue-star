@@ -1,5 +1,5 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
-import { UserId } from '../position/domain/value-objects/user-id';
+import { UserId } from '../../shared/value-objects/user-id';
 import type { AuthenticatedRequest } from './types/request.interface';
 
 export interface AuthenticatedUser {

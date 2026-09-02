@@ -5,7 +5,6 @@ import { ThemeToggle } from "../design-system/theme-toggle";
 import {
   Home,
   LayoutDashboard,
-  Briefcase,
   BarChart3,
   Bookmark,
   PieChart,
@@ -14,14 +13,11 @@ import {
   LogOut,
   LogIn,
   TrendingUp,
-  ShieldAlert,
   Boxes,
 } from "lucide-react";
 
 const MAIN_NAV_BASE = [
   "/dashboard",
-  "/positions",
-  "/risk",
   "/stock-analysis",
   "/watchlists",
   "/sector-rotation",
@@ -31,8 +27,6 @@ const MAIN_NAV_BASE = [
 const PATH_ICON: Record<string, React.ComponentType<{ className?: string }>> = {
   "/": Home,
   "/dashboard": LayoutDashboard,
-  "/positions": Briefcase,
-  "/risk": ShieldAlert,
   "/stock-analysis": BarChart3,
   "/watchlists": Bookmark,
   "/sector-rotation": PieChart,
@@ -74,11 +68,17 @@ export default function AppSidebar() {
   );
   mainNav.sort(
     (a, b) =>
-      MAIN_NAV_BASE.indexOf(getBasePath(a.path) as (typeof MAIN_NAV_BASE)[number]) -
-      MAIN_NAV_BASE.indexOf(getBasePath(b.path) as (typeof MAIN_NAV_BASE)[number]),
+      MAIN_NAV_BASE.indexOf(
+        getBasePath(a.path) as (typeof MAIN_NAV_BASE)[number],
+      ) -
+      MAIN_NAV_BASE.indexOf(
+        getBasePath(b.path) as (typeof MAIN_NAV_BASE)[number],
+      ),
   );
 
-  const settingsItem = navItems.find((r) => getBasePath(r.path) === "/settings");
+  const settingsItem = navItems.find(
+    (r) => getBasePath(r.path) === "/settings",
+  );
 
   return (
     <aside

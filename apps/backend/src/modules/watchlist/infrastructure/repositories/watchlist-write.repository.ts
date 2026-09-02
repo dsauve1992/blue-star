@@ -6,7 +6,7 @@ import { WatchlistName } from '../../domain/value-objects/watchlist-name';
 import { WatchlistTicker } from '../../domain/value-objects/watchlist-ticker';
 import { WatchlistWriteRepository as IWatchlistWriteRepository } from '../../domain/repositories/watchlist-write.repository.interface';
 import { InvariantError } from '../../domain/domain-errors';
-import { UserId } from '../../../position/domain/value-objects/user-id';
+import { UserId } from '../../../../shared/value-objects/user-id';
 
 interface DatabaseRow {
   id: string;

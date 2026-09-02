@@ -13,7 +13,7 @@ import { MonitoringType } from '../domain/value-objects/monitoring-type';
 import { Watchlist } from '../../watchlist/domain/entities/watchlist';
 import { WatchlistName } from '../../watchlist/domain/value-objects/watchlist-name';
 import { WatchlistId } from '../../watchlist/domain/value-objects/watchlist-id';
-import { UserId } from '../../../modules/position/domain/value-objects/user-id';
+import { UserId } from '../../../shared/value-objects/user-id';
 import { AuthorizationError, NotFoundError } from '../domain/domain-errors';
 import type { AuthContext } from '../../auth/auth-context.interface';
 

@@ -38,24 +38,6 @@ export const routes: RouteConfig[] = [
     showInNavigation: true,
   },
   {
-    path: "/positions",
-    label: "Positions",
-    isProtected: true,
-    showInNavigation: true,
-  },
-  {
-    path: "/risk",
-    label: "Risk",
-    isProtected: true,
-    showInNavigation: true,
-  },
-  {
-    path: "/positions/:positionId",
-    label: "Position Detail",
-    isProtected: true,
-    showInNavigation: false,
-  },
-  {
     path: "/stock-analysis/:type",
     label: "Stock Analysis",
     isProtected: true,

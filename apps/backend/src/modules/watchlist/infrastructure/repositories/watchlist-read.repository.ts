@@ -5,7 +5,7 @@ import { WatchlistId } from '../../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../domain/value-objects/watchlist-name';
 import { WatchlistTicker } from '../../domain/value-objects/watchlist-ticker';
 import { WatchlistReadRepository as IWatchlistReadRepository } from '../../domain/repositories/watchlist-read.repository.interface';
-import { UserId } from '../../../position/domain/value-objects/user-id';
+import { UserId } from '../../../../shared/value-objects/user-id';
 
 interface DatabaseRow {
   id: string;
