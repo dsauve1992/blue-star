@@ -39,8 +39,6 @@ services:
         - VITE_KINDE_CLIENT_ID=${VITE_KINDE_CLIENT_ID}
         - VITE_KINDE_DOMAIN=${VITE_KINDE_DOMAIN}
         - VITE_KINDE_AUDIENCE=${VITE_KINDE_AUDIENCE}
-        - VITE_KINDE_REDIRECT_URI=${VITE_KINDE_REDIRECT_URI}
-        - VITE_KINDE_LOGOUT_URI=${VITE_KINDE_LOGOUT_URI}
     container_name: blue-star-frontend
     restart: unless-stopped
     ports:
