@@ -69,14 +69,15 @@ describe('QueryLeaderBreadthUseCase', () => {
       scanDate: '2026-04-24',
       leaderCount: 200,
       leaderPct: 0.05,
+      leaderCountMa: 125,
     });
   });
 
-  it('requests the configured lookback window from the repository', async () => {
+  it('requests double the lookback window from the repository, for the MA line', async () => {
     mockRepo.getRecentCompletedRuns.mockResolvedValue([]);
 
     await useCase.execute();
 
-    expect(mockRepo.getRecentCompletedRuns).toHaveBeenCalledWith(20);
+    expect(mockRepo.getRecentCompletedRuns).toHaveBeenCalledWith(40);
   });
 });

@@ -142,4 +142,34 @@ describe('classifyBreadth', () => {
       expect(snap?.series[snap.series.length - 1].leaderCount).toBe(200);
     });
   });
+
+  describe('per-point moving average', () => {
+    it('gives the newest series point the same MA as the snapshot', () => {
+      const snap = classifyBreadth(runsFromCounts([100, 100, 100, 200]));
+      const last = snap?.series[snap.series.length - 1];
+      expect(last?.leaderCountMa).toBe(snap?.breadthMa);
+    });
+
+    it('uses a partial trailing window for early points with no prior history', () => {
+      // lookback 3 => series holds only the newest 3 of the 4 runs.
+      const snap = classifyBreadth(runsFromCounts([100, 100, 100, 200]), 3);
+      expect(snap?.series).toHaveLength(3);
+      // Oldest displayed point: only 2 runs exist up to and including it.
+      expect(snap?.series[0].leaderCountMa).toBe(100);
+      // Middle point: trailing window of [100, 100, 100].
+      expect(snap?.series[1].leaderCountMa).toBe(100);
+      // Newest point: trailing window of [100, 100, 200] (lookback 3).
+      expect(snap?.series[2].leaderCountMa).toBeCloseTo(400 / 3, 6);
+    });
+
+    it('extends the trailing window into runs older than the display window', () => {
+      // 5 runs, lookback 3: the display window is the newest 3 dates, but
+      // the 2 older runs should still feed the MA at the window's start.
+      const snap = classifyBreadth(runsFromCounts([10, 20, 100, 100, 100]), 3);
+      expect(snap?.series).toHaveLength(3);
+      // First displayed point (3rd run overall, value 100): trailing window
+      // of the 2 older runs plus itself => [10, 20, 100].
+      expect(snap?.series[0].leaderCountMa).toBeCloseTo(130 / 3, 6);
+    });
+  });
 });

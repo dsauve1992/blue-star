@@ -1,11 +1,13 @@
-export type BreadthRegime = 'GREEN' | 'YELLOW' | 'RED';
+export type BreadthRegime = "GREEN" | "YELLOW" | "RED";
 
-export type BreadthDirection = 'RISING' | 'FALLING' | 'FLAT';
+export type BreadthDirection = "RISING" | "FALLING" | "FLAT";
 
 export interface BreadthSeriesPoint {
   scanDate: string;
   leaderCount: number;
   leaderPct: number;
+  /** Trailing MA ending at this date (partial window near series start). */
+  leaderCountMa: number;
 }
 
 export interface LeaderBreadthResponse {

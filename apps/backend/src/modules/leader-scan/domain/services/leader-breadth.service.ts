@@ -17,6 +17,8 @@ export interface BreadthSeriesPoint {
   scanDate: string;
   leaderCount: number;
   leaderPct: number;
+  /** Trailing MA ending at this date (partial window near series start). */
+  leaderCountMa: number;
 }
 
 export interface BreadthSnapshot {
@@ -103,12 +105,23 @@ export function classifyBreadth(
     regime = BreadthRegime.yellow();
   }
 
-  // Oldest-to-newest for charting.
-  const series: BreadthSeriesPoint[] = [...window].reverse().map((r) => ({
-    scanDate: r.scanDate,
-    leaderCount: r.leaderCount,
-    leaderPct: r.universeSize > 0 ? r.leaderCount / r.universeSize : 0,
-  }));
+  // Oldest-to-newest for charting. `ordered` may hold more history than the
+  // window (callers can pass extra lookback so the MA line has a trailing
+  // average at every point, not just the latest); index into it directly so
+  // each point's MA uses up to `lookback` samples ending at that date.
+  const series: BreadthSeriesPoint[] = [...window].reverse().map((r, i) => {
+    const orderedIndex = window.length - 1 - i;
+    const maWindow = ordered.slice(orderedIndex, orderedIndex + lookback);
+    const leaderCountMa =
+      maWindow.reduce((sum, x) => sum + x.leaderCount, 0) / maWindow.length;
+
+    return {
+      scanDate: r.scanDate,
+      leaderCount: r.leaderCount,
+      leaderPct: r.universeSize > 0 ? r.leaderCount / r.universeSize : 0,
+      leaderCountMa,
+    };
+  });
 
   return {
     scanDate: latest.scanDate,

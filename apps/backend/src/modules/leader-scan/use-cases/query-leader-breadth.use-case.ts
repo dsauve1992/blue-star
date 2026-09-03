@@ -12,6 +12,7 @@ export interface BreadthSeriesPointDto {
   scanDate: string;
   leaderCount: number;
   leaderPct: number;
+  leaderCountMa: number;
 }
 
 export interface QueryLeaderBreadthResponseDto {
@@ -35,7 +36,11 @@ export class QueryLeaderBreadthUseCase {
   ) {}
 
   async execute(): Promise<QueryLeaderBreadthResponseDto> {
-    const runs = await this.repository.getRecentCompletedRuns(BREADTH_LOOKBACK);
+    // Fetch double the lookback so the MA line has a trailing average at
+    // every plotted point, not just the latest one.
+    const runs = await this.repository.getRecentCompletedRuns(
+      BREADTH_LOOKBACK * 2,
+    );
     const snapshot = classifyBreadth(runs);
 
     if (!snapshot) {
