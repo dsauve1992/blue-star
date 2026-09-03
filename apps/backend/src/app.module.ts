@@ -14,6 +14,7 @@ import { NotificationModule } from './modules/notification/notification.module';
 import { WatchlistMonitoringModule } from './modules/watchlist-monitoring/watchlist-monitoring.module';
 import { MarketHealthModule } from './modules/market-health/market-health.module';
 import { LeaderScanModule } from './modules/leader-scan/leader-scan.module';
+import { MarketBreadthModule } from './modules/market-breadth/market-breadth.module';
 import { StockClassificationModule } from './modules/stock-classification/stock-classification.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { ScheduleModule } from '@nestjs/schedule';
@@ -41,6 +42,7 @@ import { DomainErrorFilter } from './common/filters/domain-error.filter';
     WatchlistMonitoringModule,
     MarketHealthModule,
     LeaderScanModule,
+    MarketBreadthModule,
     StockClassificationModule,
   ],
   controllers: [AppController],

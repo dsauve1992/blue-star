@@ -23,6 +23,7 @@
     "migrate:down": "db-migrate down --env dev",
     "migrate:create": "db-migrate create --env dev",
     "migrate:check": "db-migrate check --env dev",
+    "market-breadth:backfill": "ts-node -r tsconfig-paths/register src/scripts/backfill-market-breadth.ts",
     "setup:python": "bash ../screener/setup.sh && bash ../theme_extractor/setup.sh",
     "prebuild": "npm run setup:python",
     "prestart": "npm run setup:python",

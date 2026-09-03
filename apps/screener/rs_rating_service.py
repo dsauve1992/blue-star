@@ -64,6 +64,18 @@ def percentile_rank(values: List[float], value: float) -> float:
     return (count_below + 0.5 * count_equal) / len(values) * 100
 
 
+# US primary-listed common stock, close > $1, market cap > $300M, 30-day
+# average traded value > $5M. Reused by apps/market-breadth-universe to keep
+# both CLIs scanning the same universe.
+UNIVERSE_FILTERS = [
+    {"left": "close", "operation": "greater", "right": 1},
+    {"left": "market_cap_basic", "operation": "greater", "right": 300000000},
+    {"left": "AvgValue.Traded_30d", "operation": "greater", "right": 5000000},
+    {"left": "is_primary", "operation": "equal", "right": True},
+    {"left": "type", "operation": "equal", "right": "stock"},
+]
+
+
 def compute_rs_ratings(quiet: bool = False) -> dict:
     screener = ScreenerService()
 
@@ -76,17 +88,9 @@ def compute_rs_ratings(quiet: bool = False) -> dict:
         "Perf.Y",
     ]
 
-    filters = [
-        {"left": "close", "operation": "greater", "right": 1},
-        {"left": "market_cap_basic", "operation": "greater", "right": 300000000},
-        {"left": "AvgValue.Traded_30d", "operation": "greater", "right": 5000000},
-        {"left": "is_primary", "operation": "equal", "right": True},
-        {"left": "type", "operation": "equal", "right": "stock"},
-    ]
-
     parameters = ScreenerService.create_basic_parameters(
         columns=columns,
-        filters=filters,
+        filters=UNIVERSE_FILTERS,
         markets=["america"],
         sort_by="market_cap_basic",
         sort_order="desc",
