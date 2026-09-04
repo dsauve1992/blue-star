@@ -12,7 +12,7 @@ import {
   BreadthCandle,
   evaluateSymbolOnDate,
   SymbolDayResult,
-} from '../../domain/services/nh-nl-computation.service';
+} from '../../domain/services/symbol-breadth-evaluation.service';
 import {
   MARKET_BREADTH_REPOSITORY,
   MARKET_BREADTH_MARKET_DATA_SERVICE,
@@ -62,6 +62,7 @@ function toBreadthCandles(pricePoints: PricePoint[]): BreadthCandle[] {
       date: BreadthDate.of(p.date).toISOString(),
       high: p.high,
       low: p.low,
+      close: p.close,
     }))
     .sort((a, b) => a.date.localeCompare(b.date));
 }
@@ -254,17 +255,19 @@ export class MarketBreadthAnalysisServiceImpl
       }
     }
 
-    const { universeSize, newHighs, newLows, partial } = aggregateDay({
-      totalUniverseSize,
-      missingSymbolCount: missingSymbols.length,
-      evaluableResults,
-    });
+    const { universeSize, newHighs, newLows, stackedCount, partial } =
+      aggregateDay({
+        totalUniverseSize,
+        missingSymbolCount: missingSymbols.length,
+        evaluableResults,
+      });
 
     return MarketBreadthAggregate.create({
       date: BreadthDate.fromISOString(sessionDate),
       universeSize,
       newHighs,
       newLows,
+      stackedCount,
       missingSymbols,
       partial,
       backfilled,

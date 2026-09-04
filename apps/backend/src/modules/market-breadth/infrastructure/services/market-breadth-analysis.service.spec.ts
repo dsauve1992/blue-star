@@ -4,7 +4,7 @@ import { MarketBreadthRepository } from '../../domain/repositories/market-breadt
 import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
 import { DateRange } from '../../../market-data/domain/value-objects/date-range';
 import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
-import { REQUIRED_TRAILING_SESSIONS } from '../../domain/services/nh-nl-computation.service';
+import { REQUIRED_TRAILING_SESSIONS } from '../../domain/services/symbol-breadth-evaluation.service';
 
 const FAKE_DATE_RANGE = DateRange.of(
   new Date(2020, 0, 1),
@@ -14,6 +14,7 @@ const FAKE_DATE_RANGE = DateRange.of(
 function buildDailyPricePoints(
   sessions: number,
   overrides: Record<number, { high?: number; low?: number }> = {},
+  closeAt: (index: number) => number = () => 95,
 ): PricePoint[] {
   const points: PricePoint[] = [];
   const start = new Date(2020, 0, 1);
@@ -21,13 +22,14 @@ function buildDailyPricePoints(
     const date = new Date(start);
     date.setDate(date.getDate() + i);
     const override = overrides[i] ?? {};
+    const close = closeAt(i);
     points.push(
       PricePoint.of(
         date,
-        100,
-        override.high ?? 100,
-        override.low ?? 90,
-        95,
+        close,
+        override.high ?? Math.max(100, close),
+        override.low ?? Math.min(90, close),
+        close,
         1_000_000,
       ),
     );
@@ -45,6 +47,7 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
   const candles = buildDailyPricePoints(sessionCount, {
     [sessionCount - 1]: { high: 500, low: 1 },
   });
+  const risingCandles = buildDailyPricePoints(sessionCount, {}, (i) => 100 + i);
 
   beforeEach(() => {
     universeService = {
@@ -109,6 +112,24 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
     expect(latest.newLows).toBe(2);
     expect(latest.universeSize).toBe(2);
     expect(latest.backfilled).toBe(false);
+  });
+
+  it('carries the stacked count from the per-session aggregation into the saved aggregate', async () => {
+    marketDataService.getHistoricalData.mockImplementation((symbol) =>
+      Promise.resolve({
+        symbol,
+        dateRange: FAKE_DATE_RANGE,
+        pricePoints: symbol.value === 'MSFT' ? risingCandles : candles,
+      }),
+    );
+
+    await service.runDaily();
+
+    const savedAggregates = repository.saveAggregate.mock.calls.map(
+      (call) => call[0],
+    );
+    expect(savedAggregates.every((a) => a.stackedCount === 1)).toBe(true);
+    expect(savedAggregates.every((a) => a.universeSize === 2)).toBe(true);
   });
 
   it('marks missing symbols and flags the run partial above the 5% threshold', async () => {
@@ -196,6 +217,23 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
         (call) => call[0],
       );
       expect(savedAggregates.every((a) => a.backfilled)).toBe(true);
+    });
+
+    it('writes the stacked count through the same per-session path as the daily run', async () => {
+      marketDataService.getHistoricalData.mockImplementation((symbol) =>
+        Promise.resolve({
+          symbol,
+          dateRange: FAKE_DATE_RANGE,
+          pricePoints: symbol.value === 'MSFT' ? risingCandles : candles,
+        }),
+      );
+
+      await service.runBackfill(5);
+
+      const savedAggregates = repository.saveAggregate.mock.calls.map(
+        (call) => call[0],
+      );
+      expect(savedAggregates.every((a) => a.stackedCount === 1)).toBe(true);
     });
   });
 });

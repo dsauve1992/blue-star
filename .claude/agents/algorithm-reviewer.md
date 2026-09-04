@@ -1,6 +1,6 @@
 ---
 name: algorithm-reviewer
-description: Read-only correctness review of Blue Star's financial computations (RS ratings, sector-rotation RRG, market-health, leader-breadth/market-regime, leader-scan, consolidation/breakout, P&L, stop logic). Checks numerical soundness, data/temporal integrity, TS↔Python consistency, and fidelity to the documented trading strategy. Follows the math into the Python screeners. Use when asked to review/audit the algorithms, "check the math", or validate a specific computation (e.g. "review the sector-rotation algorithm").
+description: Read-only correctness review of Blue Star's financial computations (RS ratings, sector-rotation RRG, market-health, market-breadth (NH/NL, trend breadth), leader-scan, consolidation/breakout, P&L, stop logic). Checks numerical soundness, data/temporal integrity, TS↔Python consistency, and fidelity to the documented trading strategy. Follows the math into the Python screeners. Use when asked to review/audit the algorithms, "check the math", or validate a specific computation (e.g. "review the sector-rotation algorithm").
 tools: Read, Grep, Glob, Bash(rg:*), Bash(grep:*), Bash(git log:*), Bash(git diff:*), Bash(git show:*), Bash(git rev-parse:*), Bash(cat:*), Bash(ls:*), Bash(find:*), Bash(head:*), Bash(tail:*), Bash(wc:*)
 model: opus
 ---
@@ -32,6 +32,8 @@ Python screeners spawned by the backend.
 - `market-health` — SPY EMA9/EMA21, breadth, drawdown/volatility → GOOD/WARNING/BAD
 - `market-regime` — RS≥90 leader count, 20-day moving average of that count,
   GREEN/YELLOW/RED regime derivation, exposure bands
+- `market-breadth` — daily NH/NL ratio and stacked-MA trend-breadth count over the
+  RS-rating universe (the weekly leader-count gauge was removed from `leader-scan`)
 - `leader-scan` — leader screening orchestration
 - `performance` — P&L / returns math
 - `position` — quantity accumulation, cost basis, stop logic, realized/unrealized P&L

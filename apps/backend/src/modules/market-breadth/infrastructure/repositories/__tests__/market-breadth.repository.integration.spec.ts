@@ -78,6 +78,7 @@ describe('MarketBreadthRepository Integration', () => {
       universeSize: 3400,
       newHighs: 120,
       newLows: 45,
+      stackedCount: 1500,
       missingSymbols: ['ZZZZ'],
       partial: false,
       backfilled: false,
@@ -90,10 +91,47 @@ describe('MarketBreadthRepository Integration', () => {
     expect(saved.universeSize).toBe(3400);
     expect(saved.newHighs).toBe(120);
     expect(saved.newLows).toBe(45);
+    expect(saved.stackedCount).toBe(1500);
     expect(saved.missingSymbols).toEqual(['ZZZZ']);
     expect(saved.partial).toBe(false);
     expect(saved.backfilled).toBe(false);
     expect(saved.ratio).toBeCloseTo(120 / 165, 5);
+  });
+
+  it('round-trips a null stacked_count for rows without trend data', async () => {
+    await repository.saveAggregate(
+      MarketBreadthAggregate.create({
+        date: BreadthDate.fromISOString('2026-08-31'),
+        universeSize: 3400,
+        newHighs: 120,
+        newLows: 45,
+        stackedCount: null,
+        missingSymbols: [],
+        partial: false,
+        backfilled: false,
+      }),
+    );
+
+    const [saved] = await repository.getRecentAggregates(1);
+    expect(saved.stackedCount).toBeNull();
+  });
+
+  it('round-trips a zero stacked_count distinctly from null', async () => {
+    await repository.saveAggregate(
+      MarketBreadthAggregate.create({
+        date: BreadthDate.fromISOString('2026-08-31'),
+        universeSize: 3400,
+        newHighs: 120,
+        newLows: 45,
+        stackedCount: 0,
+        missingSymbols: [],
+        partial: false,
+        backfilled: false,
+      }),
+    );
+
+    const [saved] = await repository.getRecentAggregates(1);
+    expect(saved.stackedCount).toBe(0);
   });
 
   it('upserts an aggregate for the same date (5-session recompute is idempotent)', async () => {
@@ -105,6 +143,7 @@ describe('MarketBreadthRepository Integration', () => {
         universeSize: 3400,
         newHighs: 100,
         newLows: 50,
+        stackedCount: null,
         missingSymbols: [],
         partial: false,
         backfilled: false,
@@ -117,6 +156,7 @@ describe('MarketBreadthRepository Integration', () => {
         universeSize: 3410,
         newHighs: 110,
         newLows: 40,
+        stackedCount: 1200,
         missingSymbols: ['AAPL'],
         partial: false,
         backfilled: false,
@@ -127,6 +167,7 @@ describe('MarketBreadthRepository Integration', () => {
     expect(aggregates).toHaveLength(1);
     expect(aggregates[0].newHighs).toBe(110);
     expect(aggregates[0].newLows).toBe(40);
+    expect(aggregates[0].stackedCount).toBe(1200);
     expect(aggregates[0].missingSymbols).toEqual(['AAPL']);
   });
 
@@ -138,6 +179,7 @@ describe('MarketBreadthRepository Integration', () => {
           universeSize: 100,
           newHighs: 1,
           newLows: 1,
+          stackedCount: 0,
           missingSymbols: [],
           partial: false,
           backfilled: false,
@@ -160,6 +202,7 @@ describe('MarketBreadthRepository Integration', () => {
         universeSize: 0,
         newHighs: 0,
         newLows: 0,
+        stackedCount: 0,
         missingSymbols: [],
         partial: false,
         backfilled: false,

@@ -1,6 +1,6 @@
 ---
 name: run
-description: Launch and drive the Blue Star app locally (NestJS backend + Vite frontend, against the production Postgres on the Pi). Use when asked to run, start, launch, or screenshot the app, or to verify a change works in the real running app rather than just tests.
+description: Launch and drive the Blue Star app locally (NestJS backend + Vite frontend, against the local Docker Postgres). Use when asked to run, start, launch, or screenshot the app, or to verify a change works in the real running app rather than just tests.
 ---
 
 # Running Blue Star locally
@@ -9,10 +9,24 @@ Two pieces: NestJS backend (port 3000, prefix `/api`), Vite frontend (port
 5173). Both apps already have working `.env` files checked out locally —
 nothing to create.
 
-**Dev points at the production Postgres on the Pi** (`artemis.local:5432`,
-db `blue_star_db`), not a local Docker container — `apps/backend/.env` and
-`database.json`'s `dev` block read `DB_HOST`/`DB_PORT`/etc from env. There is
-no local Postgres to start; skip anything about `db:up` / Docker Desktop.
+**Dev points at the local Docker Postgres, never the Pi.** `apps/backend/.env`
+must have `DB_HOST=localhost` / `DB_PORT=5432` / `DB_DATABASE=blue_star_db`;
+`database.json`'s `dev` block reads the same `DB_*` vars. The container is
+`blue-star-postgres` from `apps/backend/docker-compose.yml`. Before launching,
+always verify — refuse to start if either check fails:
+
+```bash
+grep -E '^DB_HOST=' apps/backend/.env          # must print DB_HOST=localhost
+docker ps --filter name=blue-star-postgres --format '{{.Names}} {{.Status}}'
+```
+
+If the container is down: `npm run db:up --workspace=backend` (needs Docker
+Desktop). If `DB_HOST` is anything else (e.g. `artemis.local`), stop and tell
+the user — `predev` and `StartupService` run `db-migrate up` unconfirmed against
+whatever host is configured.
+
+There is no `psql` on this machine; inspect the DB with
+`docker exec blue-star-postgres psql -U blue_star_user -d blue_star_db`.
 
 ## Standard launch (everything)
 
@@ -22,9 +36,8 @@ From the repo root:
 npm run dev
 ```
 
-`predev` runs `db-migrate up` against the production database (no
-confirmation prompt — this is intentional, see root CLAUDE.md/backend
-CLAUDE.md if that seems surprising), then turbo starts both dev servers.
+`predev` runs `db-migrate up` against the local database (no confirmation
+prompt), then turbo starts both dev servers.
 
 Expect on backend boot:
 
@@ -32,13 +45,14 @@ Expect on backend boot:
   (~15–30s of pip "Requirement already satisfied" noise — normal).
 - Nest compiles in watch mode, debugger on 9229.
 - The app's `StartupService` runs `db-migrate up` _again_ on its own boot
-  (`onModuleInit`), independent of `predev` — this also hits production,
-  every time, unconfirmed.
+  (`onModuleInit`), independent of `predev`. Gotcha: in watch mode the backend
+  restarts on every file change, so a freshly scaffolded migration whose
+  `up.sql` is still empty gets recorded as run. If a column you just added is
+  missing, `DELETE FROM migrations WHERE name LIKE '%<migration>%'` and rerun
+  `npm run migrate:up --workspace=backend`.
 - **The backend sends a real ntfy push notification to the user's phone on every
   startup** ("Sending startup notification") — the same channel real production
   restarts use. Don't restart it in a tight loop.
-- Connecting to `artemis.local` can take several seconds (mDNS resolution);
-  the DB pool's `connectionTimeoutMillis` is set to 15s to cover this.
 
 Ready when the log shows `Nest application successfully started` (~30–45s cold).
 
@@ -88,7 +102,7 @@ Backend — public routes, no auth needed:
 
 ```bash
 curl http://127.0.0.1:3000/api/health              # {"status":"ok",...}
-curl http://127.0.0.1:3000/api/leader-scan/breadth # real data from Postgres
+curl http://127.0.0.1:3000/api/leader-scan/latest  # real data from Postgres
 ```
 
 Most other routes require a Kinde JWT; public ones are marked `@Public()` in
@@ -102,5 +116,5 @@ pass condition.
 
 ## Shutdown
 
-Kill the dev processes (Ctrl-C / stop the background tasks). There's no local
-Postgres to stop — the database lives on the Pi and stays up independently.
+Kill the dev processes (Ctrl-C / stop the background tasks). Leave the
+Postgres container running unless asked (`npm run db:down --workspace=backend`).

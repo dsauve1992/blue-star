@@ -6,6 +6,7 @@ export interface MarketBreadthAggregateData {
   universeSize: number;
   newHighs: number;
   newLows: number;
+  stackedCount: number | null;
   missingSymbols: string[];
   partial: boolean;
   backfilled: boolean;
@@ -20,6 +21,7 @@ export class MarketBreadthAggregate {
     public readonly universeSize: number,
     public readonly newHighs: number,
     public readonly newLows: number,
+    public readonly stackedCount: number | null,
     public readonly missingSymbols: string[],
     public readonly partial: boolean,
     public readonly backfilled: boolean,
@@ -37,6 +39,7 @@ export class MarketBreadthAggregate {
       data.universeSize,
       data.newHighs,
       data.newLows,
+      data.stackedCount,
       data.missingSymbols,
       data.partial,
       data.backfilled,
@@ -52,6 +55,7 @@ export class MarketBreadthAggregate {
       data.universeSize,
       data.newHighs,
       data.newLows,
+      data.stackedCount,
       data.missingSymbols,
       data.partial,
       data.backfilled,

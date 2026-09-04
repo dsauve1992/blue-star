@@ -1,3 +1,5 @@
+export type TrendState = "GOOD" | "BAD";
+
 export interface MarketBreadthSession {
   date: string;
   universeSize: number;
@@ -5,6 +7,11 @@ export interface MarketBreadthSession {
   newLows: number;
   ratio: number | null;
   averageRatio: number | null;
+  stackedCount: number | null;
+  stackedRatio: number | null;
+  stackedRatioSma5: number | null;
+  stackedRatioSma20: number | null;
+  trendState: TrendState | null;
   missingSymbols: string[];
   partial: boolean;
   backfilled: boolean;
@@ -18,7 +25,15 @@ export interface ParticipationGauge {
   sampleSize: number;
 }
 
+export interface TrendGauge {
+  state: TrendState;
+  sma5: number;
+  sma20: number;
+  sampleSize: number;
+}
+
 export interface MarketBreadthResponse {
   sessions: MarketBreadthSession[];
   participation: ParticipationGauge | null;
+  trend: TrendGauge | null;
 }

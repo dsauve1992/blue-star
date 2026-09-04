@@ -14,6 +14,7 @@ interface AggregateRow {
   universe_size: number;
   new_highs: number;
   new_lows: number;
+  stacked_count?: number | null;
   missing_symbols: string[];
   partial: boolean;
   backfilled: boolean;
@@ -67,12 +68,13 @@ export class MarketBreadthRepositoryImpl implements MarketBreadthRepository {
   async saveAggregate(aggregate: MarketBreadthAggregate): Promise<void> {
     await this.db.query(
       `INSERT INTO market_breadth_daily_aggregates
-        (id, date, universe_size, new_highs, new_lows, missing_symbols, partial, backfilled, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $9)
+        (id, date, universe_size, new_highs, new_lows, stacked_count, missing_symbols, partial, backfilled, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
        ON CONFLICT (date) DO UPDATE SET
          universe_size = EXCLUDED.universe_size,
          new_highs = EXCLUDED.new_highs,
          new_lows = EXCLUDED.new_lows,
+         stacked_count = EXCLUDED.stacked_count,
          missing_symbols = EXCLUDED.missing_symbols,
          partial = EXCLUDED.partial,
          backfilled = EXCLUDED.backfilled,
@@ -83,6 +85,7 @@ export class MarketBreadthRepositoryImpl implements MarketBreadthRepository {
         aggregate.universeSize,
         aggregate.newHighs,
         aggregate.newLows,
+        aggregate.stackedCount,
         JSON.stringify(aggregate.missingSymbols),
         aggregate.partial,
         aggregate.backfilled,
@@ -109,6 +112,7 @@ export class MarketBreadthRepositoryImpl implements MarketBreadthRepository {
       universeSize: row.universe_size,
       newHighs: row.new_highs,
       newLows: row.new_lows,
+      stackedCount: row.stacked_count ?? null,
       missingSymbols: row.missing_symbols ?? [],
       partial: row.partial,
       backfilled: row.backfilled,

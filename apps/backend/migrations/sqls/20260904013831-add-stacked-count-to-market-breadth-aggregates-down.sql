@@ -1,0 +1,1 @@
+ALTER TABLE market_breadth_daily_aggregates DROP COLUMN stacked_count;
