@@ -59,3 +59,13 @@ export function isStacked(averages: StackedMovingAverages): boolean {
   }
   return close > ema21 && ema9 > ema21 && ema21 > sma50;
 }
+
+export function stackedRatio(
+  stackedCount: number | null,
+  universeSize: number,
+): number | null {
+  if (stackedCount === null || universeSize === 0) {
+    return null;
+  }
+  return stackedCount / universeSize;
+}

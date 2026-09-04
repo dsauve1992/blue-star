@@ -4,7 +4,6 @@ import {
   createChart,
   CrosshairMode,
   LineSeries,
-  LineStyle,
   type IChartApi,
   type ISeriesApi,
   type LineData,
@@ -12,12 +11,12 @@ import {
   type Time,
   type WhitespaceData,
 } from "lightweight-charts";
+import { EmaBandSeries, type EmaBandData } from "./ema-band-series";
 import type { MarketBreadthSession } from "../api/market-breadth.types";
 import { formatPercent } from "../utils/format-percent";
 
-const RATIO_COLOR = "#3b82f6";
-const SMA5_COLOR = "#22c55e";
-const SMA20_COLOR = "#f59e0b";
+const EMA10_COLOR = "#ef4444";
+const EMA20_COLOR = "#3b82f6";
 const PERCENT_PRICE_FORMAT = {
   type: "custom",
   minMove: 0.1,
@@ -37,10 +36,22 @@ interface HoverState {
 }
 
 type PercentPoint = LineData<Time> | WhitespaceData<Time>;
+type BandPoint = EmaBandData | WhitespaceData<Time>;
 
 function toPercentPoint(date: string, ratio: number | null): PercentPoint {
   const time = date as Time;
   return ratio === null ? { time } : { time, value: ratio * 100 };
+}
+
+function toBandPoint(
+  date: string,
+  fast: number | null,
+  slow: number | null,
+): BandPoint {
+  const time = date as Time;
+  return fast === null || slow === null
+    ? { time }
+    : { time, fast: fast * 100, slow: slow * 100 };
 }
 
 function formatDate(date: string): string {
@@ -55,9 +66,9 @@ function formatDate(date: string): string {
 export function TrendBreadthChart({ sessions }: TrendBreadthChartProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const ratioSeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const sma5SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
-  const sma20SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const bandSeriesRef = useRef<ISeriesApi<"Custom"> | null>(null);
+  const ema10SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
+  const ema20SeriesRef = useRef<ISeriesApi<"Line"> | null>(null);
   const sessionsByDateRef = useRef<Map<string, MarketBreadthSession>>(
     new Map(),
   );
@@ -94,28 +105,26 @@ export function TrendBreadthChart({ sessions }: TrendBreadthChartProps) {
     });
     chartRef.current = chart;
 
-    sma20SeriesRef.current = chart.addSeries(LineSeries, {
-      color: SMA20_COLOR,
-      lineWidth: 1,
-      lineStyle: LineStyle.Dashed,
+    bandSeriesRef.current = chart.addCustomSeries(new EmaBandSeries(), {
       priceFormat: PERCENT_PRICE_FORMAT,
       lastValueVisible: false,
       priceLineVisible: false,
-      crosshairMarkerVisible: false,
     });
-    sma5SeriesRef.current = chart.addSeries(LineSeries, {
-      color: SMA5_COLOR,
-      lineWidth: 1,
-      priceFormat: PERCENT_PRICE_FORMAT,
-      lastValueVisible: false,
-      priceLineVisible: false,
-      crosshairMarkerVisible: false,
-    });
-    ratioSeriesRef.current = chart.addSeries(LineSeries, {
-      color: RATIO_COLOR,
+    ema20SeriesRef.current = chart.addSeries(LineSeries, {
+      color: EMA20_COLOR,
       lineWidth: 2,
       priceFormat: PERCENT_PRICE_FORMAT,
+      lastValueVisible: false,
       priceLineVisible: false,
+      crosshairMarkerVisible: false,
+    });
+    ema10SeriesRef.current = chart.addSeries(LineSeries, {
+      color: EMA10_COLOR,
+      lineWidth: 2,
+      priceFormat: PERCENT_PRICE_FORMAT,
+      lastValueVisible: false,
+      priceLineVisible: false,
+      crosshairMarkerVisible: false,
     });
 
     const handleCrosshairMove = (param: MouseEventParams) => {
@@ -142,17 +151,17 @@ export function TrendBreadthChart({ sessions }: TrendBreadthChartProps) {
       chart.unsubscribeCrosshairMove(handleCrosshairMove);
       chart.remove();
       chartRef.current = null;
-      ratioSeriesRef.current = null;
-      sma5SeriesRef.current = null;
-      sma20SeriesRef.current = null;
+      bandSeriesRef.current = null;
+      ema10SeriesRef.current = null;
+      ema20SeriesRef.current = null;
     };
   }, []);
 
   useEffect(() => {
     if (
-      !ratioSeriesRef.current ||
-      !sma5SeriesRef.current ||
-      !sma20SeriesRef.current
+      !bandSeriesRef.current ||
+      !ema10SeriesRef.current ||
+      !ema20SeriesRef.current
     )
       return;
 
@@ -160,19 +169,23 @@ export function TrendBreadthChart({ sessions }: TrendBreadthChartProps) {
       sessions.map((session) => [session.date, session]),
     );
 
-    ratioSeriesRef.current.setData(
+    bandSeriesRef.current.setData(
       sessions.map((session) =>
-        toPercentPoint(session.date, session.stackedRatio),
+        toBandPoint(
+          session.date,
+          session.stackedRatioEma10,
+          session.stackedRatioEma20,
+        ),
       ),
     );
-    sma5SeriesRef.current.setData(
+    ema20SeriesRef.current.setData(
       sessions.map((session) =>
-        toPercentPoint(session.date, session.stackedRatioSma5),
+        toPercentPoint(session.date, session.stackedRatioEma20),
       ),
     );
-    sma20SeriesRef.current.setData(
+    ema10SeriesRef.current.setData(
       sessions.map((session) =>
-        toPercentPoint(session.date, session.stackedRatioSma20),
+        toPercentPoint(session.date, session.stackedRatioEma10),
       ),
     );
 
@@ -185,7 +198,7 @@ export function TrendBreadthChart({ sessions }: TrendBreadthChartProps) {
         ref={containerRef}
         className="h-48 w-full flex-1"
         role="img"
-        aria-label="Line chart of the daily share of universe stocks with stacked moving averages (close above EMA21, EMA9 above EMA21 above SMA50), with its 5-day and 20-day simple moving averages overlaid"
+        aria-label="Line chart of the 10-day and 20-day exponential moving averages of the daily share of universe stocks with stacked moving averages (close above EMA21, EMA9 above EMA21 above SMA50); the gap between them is shaded blue when EMA10 is above EMA20 and red otherwise"
       />
       {hover && (
         <div
@@ -204,21 +217,21 @@ export function TrendBreadthChart({ sessions }: TrendBreadthChartProps) {
             </span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: RATIO_COLOR }}>Ratio</span>
+            <span>Ratio</span>
             <span className="text-slate-50">
               {formatPercent(hover.session.stackedRatio)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: SMA5_COLOR }}>SMA5</span>
+            <span style={{ color: EMA10_COLOR }}>EMA10</span>
             <span className="text-slate-50">
-              {formatPercent(hover.session.stackedRatioSma5)}
+              {formatPercent(hover.session.stackedRatioEma10)}
             </span>
           </div>
           <div className="flex justify-between">
-            <span style={{ color: SMA20_COLOR }}>SMA20</span>
+            <span style={{ color: EMA20_COLOR }}>EMA20</span>
             <span className="text-slate-50">
-              {formatPercent(hover.session.stackedRatioSma20)}
+              {formatPercent(hover.session.stackedRatioEma20)}
             </span>
           </div>
         </div>

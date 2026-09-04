@@ -1,20 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { MarketBreadthRepository } from '../domain/repositories/market-breadth.repository.interface';
 import { MARKET_BREADTH_REPOSITORY } from '../constants/tokens';
+import { stackedRatio } from '../domain/services/moving-average.service';
 import {
-  gaugeParticipation,
-  ParticipationRegime,
-  trailingAverageRatios,
-} from '../domain/services/participation-regime.service';
-import {
-  stackedRatio,
-  TREND_SLOW_SMA_SESSIONS,
-  trendBreadthSeries,
-  TrendState,
-} from '../domain/services/trend-breadth.service';
+  BreadthState,
+  SLOW_EMA_SESSIONS,
+  emaCrossoverSeries,
+} from '../domain/services/ema-crossover.service';
 
 const DEFAULT_SESSION_LIMIT = 50;
-const TREND_WARMUP_SESSIONS = TREND_SLOW_SMA_SESSIONS - 1;
+const WARMUP_SESSIONS = SLOW_EMA_SESSIONS - 1;
 
 export interface MarketBreadthSessionDto {
   date: string;
@@ -22,34 +17,30 @@ export interface MarketBreadthSessionDto {
   newHighs: number;
   newLows: number;
   ratio: number | null;
-  averageRatio: number | null;
+  ratioEma10: number | null;
+  ratioEma20: number | null;
+  ratioState: BreadthState | null;
   stackedCount: number | null;
   stackedRatio: number | null;
-  stackedRatioSma5: number | null;
-  stackedRatioSma20: number | null;
-  trendState: TrendState | null;
+  stackedRatioEma10: number | null;
+  stackedRatioEma20: number | null;
+  trendState: BreadthState | null;
   missingSymbols: string[];
   partial: boolean;
   backfilled: boolean;
 }
 
-export interface ParticipationGaugeDto {
-  averageRatio: number;
-  regime: ParticipationRegime;
-  sampleSize: number;
-}
-
-export interface TrendGaugeDto {
-  state: TrendState;
-  sma5: number;
-  sma20: number;
+export interface BreadthGaugeDto {
+  state: BreadthState;
+  ema10: number;
+  ema20: number;
   sampleSize: number;
 }
 
 export interface QueryMarketBreadthResponseDto {
   sessions: MarketBreadthSessionDto[];
-  participation: ParticipationGaugeDto | null;
-  trend: TrendGaugeDto | null;
+  newHighLow: BreadthGaugeDto | null;
+  trend: BreadthGaugeDto | null;
 }
 
 @Injectable()
@@ -63,20 +54,22 @@ export class QueryMarketBreadthUseCase {
     limit: number = DEFAULT_SESSION_LIMIT,
   ): Promise<QueryMarketBreadthResponseDto> {
     const aggregates = await this.repository.getRecentAggregates(
-      limit + TREND_WARMUP_SESSIONS,
+      limit + WARMUP_SESSIONS,
     );
 
     const orderedWithWarmup = [...aggregates].reverse();
-    const trendSeries = trendBreadthSeries(
+    const newHighLowSeries = emaCrossoverSeries(
+      orderedWithWarmup.map((aggregate) => aggregate.ratio),
+    );
+    const trendSeries = emaCrossoverSeries(
       orderedWithWarmup.map((aggregate) =>
         stackedRatio(aggregate.stackedCount, aggregate.universeSize),
       ),
     );
 
     const ordered = orderedWithWarmup.slice(-limit);
+    const newHighLowSessions = newHighLowSeries.sessions.slice(-limit);
     const trendSessions = trendSeries.sessions.slice(-limit);
-    const ratios = ordered.map((aggregate) => aggregate.ratio);
-    const averageRatios = trailingAverageRatios(ratios);
 
     const sessions = ordered.map((aggregate, index) => ({
       date: aggregate.date.toISOString(),
@@ -84,19 +77,23 @@ export class QueryMarketBreadthUseCase {
       newHighs: aggregate.newHighs,
       newLows: aggregate.newLows,
       ratio: aggregate.ratio,
-      averageRatio: averageRatios[index],
+      ratioEma10: newHighLowSessions[index].ema10,
+      ratioEma20: newHighLowSessions[index].ema20,
+      ratioState: newHighLowSessions[index].state,
       stackedCount: aggregate.stackedCount,
       stackedRatio: trendSessions[index].ratio,
-      stackedRatioSma5: trendSessions[index].sma5,
-      stackedRatioSma20: trendSessions[index].sma20,
+      stackedRatioEma10: trendSessions[index].ema10,
+      stackedRatioEma20: trendSessions[index].ema20,
       trendState: trendSessions[index].state,
       missingSymbols: aggregate.missingSymbols,
       partial: aggregate.partial,
       backfilled: aggregate.backfilled,
     }));
 
-    const participation = gaugeParticipation(ratios);
-
-    return { sessions, participation, trend: trendSeries.trend };
+    return {
+      sessions,
+      newHighLow: newHighLowSeries.gauge,
+      trend: trendSeries.gauge,
+    };
   }
 }

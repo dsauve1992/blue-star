@@ -92,7 +92,7 @@ describe('QueryMarketBreadthUseCase', () => {
     expect(response.sessions[0].date).toBe(sessionDate(9));
   });
 
-  it('gives the oldest returned session a full twenty-sample slow average', async () => {
+  it('seeds the averages with warm-up sessions before the returned window', async () => {
     const warmupCounts = Array<number>(19).fill(0);
     const displayedCounts = Array<number>(10).fill(UNIVERSE_SIZE);
     repository.getRecentAggregates.mockResolvedValue(
@@ -102,8 +102,8 @@ describe('QueryMarketBreadthUseCase', () => {
     const response = await useCase.execute(10);
 
     expect(response.sessions[0].stackedRatio).toBeCloseTo(1, 5);
-    expect(response.sessions[0].stackedRatioSma5).toBeCloseTo(1 / 5, 5);
-    expect(response.sessions[0].stackedRatioSma20).toBeCloseTo(1 / 20, 5);
+    expect(response.sessions[0].stackedRatioEma10).toBeCloseTo(2 / 11, 5);
+    expect(response.sessions[0].stackedRatioEma20).toBeCloseTo(2 / 21, 5);
     expect(response.sessions[0].trendState).toBe('GOOD');
   });
 
@@ -115,17 +115,23 @@ describe('QueryMarketBreadthUseCase', () => {
     expect(response.sessions[0]).toMatchObject({
       stackedCount: 850,
       stackedRatio: 0.25,
-      stackedRatioSma5: 0.25,
-      stackedRatioSma20: 0.25,
+      stackedRatioEma10: 0.25,
+      stackedRatioEma20: 0.25,
       trendState: null,
     });
     expect(response.sessions[1]).toMatchObject({
       stackedCount: 1700,
       stackedRatio: 0.5,
-      stackedRatioSma5: 0.375,
-      stackedRatioSma20: 0.375,
       trendState: 'GOOD',
     });
+    expect(response.sessions[1].stackedRatioEma10).toBeCloseTo(
+      0.25 + 0.25 * (2 / 11),
+      5,
+    );
+    expect(response.sessions[1].stackedRatioEma20).toBeCloseTo(
+      0.25 + 0.25 * (2 / 21),
+      5,
+    );
   });
 
   it('reports the latest session as the headline trend', async () => {
@@ -139,8 +145,8 @@ describe('QueryMarketBreadthUseCase', () => {
     expect(latest.trendState).toBe('BAD');
     expect(response.trend).toEqual({
       state: latest.trendState,
-      sma5: latest.stackedRatioSma5,
-      sma20: latest.stackedRatioSma20,
+      ema10: latest.stackedRatioEma10,
+      ema20: latest.stackedRatioEma20,
       sampleSize: 7,
     });
   });
@@ -152,7 +158,7 @@ describe('QueryMarketBreadthUseCase', () => {
 
     expect(response.sessions.map((s) => s.stackedCount)).toEqual([null, null]);
     expect(response.sessions.map((s) => s.stackedRatio)).toEqual([null, null]);
-    expect(response.sessions.map((s) => s.stackedRatioSma5)).toEqual([
+    expect(response.sessions.map((s) => s.stackedRatioEma10)).toEqual([
       null,
       null,
     ]);
@@ -160,7 +166,7 @@ describe('QueryMarketBreadthUseCase', () => {
     expect(response.trend).toBeNull();
   });
 
-  it('gauges participation from the trailing five-session average ratio', async () => {
+  it('smooths the NH/NL ratio with a fast and a slow average and classifies the crossover', async () => {
     repository.getRecentAggregates.mockResolvedValue([
       makeAggregate('2026-09-03', 69, 22),
       makeAggregate('2026-09-02', 62, 29),
@@ -172,20 +178,54 @@ describe('QueryMarketBreadthUseCase', () => {
 
     const response = await useCase.execute();
 
-    expect(response.sessions.map((s) => s.averageRatio?.toFixed(2))).toEqual([
+    expect(response.sessions.map((s) => s.ratioEma10?.toFixed(2))).toEqual([
       '0.00',
+      '0.14',
+      '0.17',
+      '0.21',
+      '0.29',
       '0.38',
-      '0.36',
-      '0.36',
-      '0.43',
-      '0.58',
     ]);
-    expect(response.participation?.sampleSize).toBe(5);
-    expect(response.participation?.averageRatio).toBeCloseTo(0.58, 2);
-    expect(response.participation?.regime).toBe('YELLOW');
+    expect(response.sessions.map((s) => s.ratioEma20?.toFixed(2))).toEqual([
+      '0.00',
+      '0.07',
+      '0.10',
+      '0.12',
+      '0.18',
+      '0.23',
+    ]);
+    expect(response.sessions.map((s) => s.ratioState)).toEqual([
+      null,
+      'GOOD',
+      'GOOD',
+      'GOOD',
+      'GOOD',
+      'GOOD',
+    ]);
+    const latest = response.sessions.at(-1)!;
+    expect(response.newHighLow).toEqual({
+      state: 'GOOD',
+      ema10: latest.ratioEma10,
+      ema20: latest.ratioEma20,
+      sampleSize: 6,
+    });
   });
 
-  it('computes the NH/NL average only over the returned window', async () => {
+  it('is BAD for NH/NL when the fast average drops below the slow average', async () => {
+    repository.getRecentAggregates.mockResolvedValue([
+      makeAggregate(sessionDate(0), 10, 90),
+      ...Array.from({ length: 6 }, (_, index) =>
+        makeAggregate(sessionDate(index + 1), 80, 20),
+      ),
+    ]);
+
+    const response = await useCase.execute();
+
+    expect(response.sessions.at(-1)?.ratioState).toBe('BAD');
+    expect(response.newHighLow?.state).toBe('BAD');
+  });
+
+  it('warms up the NH/NL averages with sessions before the returned window', async () => {
     repository.getRecentAggregates.mockResolvedValue(
       Array.from({ length: 21 }, (_, index) =>
         makeAggregate(sessionDate(index), index === 0 ? 100 : 0, 100),
@@ -194,16 +234,19 @@ describe('QueryMarketBreadthUseCase', () => {
 
     const response = await useCase.execute(2);
 
-    expect(response.sessions[0].averageRatio).toBe(0);
-    expect(response.sessions[1].averageRatio).toBeCloseTo(0.25, 5);
+    expect(response.sessions[0].ratioEma10).toBe(0);
+    expect(response.sessions[0].ratioEma20).toBe(0);
+    expect(response.sessions[1].ratioEma10).toBeCloseTo(1 / 11, 5);
+    expect(response.sessions[1].ratioEma20).toBeCloseTo(1 / 21, 5);
+    expect(response.sessions[1].ratioState).toBe('GOOD');
   });
 
-  it('returns a null participation gauge when there are no sessions', async () => {
+  it('returns null gauges when there are no sessions', async () => {
     repository.getRecentAggregates.mockResolvedValue([]);
 
     const response = await useCase.execute();
 
-    expect(response.participation).toBeNull();
+    expect(response.newHighLow).toBeNull();
     expect(response.trend).toBeNull();
   });
 

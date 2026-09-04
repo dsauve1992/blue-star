@@ -6,25 +6,25 @@ import {
   CardTitle,
 } from "../../global/design-system";
 import { useMarketBreadth } from "../hooks/use-market-breadth";
-import type { TrendState } from "../api/market-breadth.types";
+import type { BreadthState } from "../api/market-breadth.types";
 import { formatPercent } from "../utils/format-percent";
 import { TrendBreadthChart } from "./TrendBreadthChart";
 
 const SESSIONS_TO_SHOW = 50;
 
-const trendBadgeVariant: Record<TrendState, "success" | "danger"> = {
+const trendBadgeVariant: Record<BreadthState, "success" | "danger"> = {
   GOOD: "success",
   BAD: "danger",
 };
 
-const trendLabel: Record<TrendState, string> = {
+const trendLabel: Record<BreadthState, string> = {
   GOOD: "Good",
   BAD: "Bad",
 };
 
-const trendDescription: Record<TrendState, string> = {
-  GOOD: "SMA5 of the stacked-MA ratio is at or above its SMA20 — short-term uptrends are broadening; fresh breakouts have support.",
-  BAD: "SMA5 of the stacked-MA ratio is below its SMA20 — short-term uptrends are narrowing; be selective with new entries.",
+const trendDescription: Record<BreadthState, string> = {
+  GOOD: "EMA10 of the stacked-MA ratio is at or above its EMA20 — short-term uptrends are broadening; fresh breakouts have support.",
+  BAD: "EMA10 of the stacked-MA ratio is below its EMA20 — short-term uptrends are narrowing; be selective with new entries.",
 };
 
 export function TrendBreadthCard() {
@@ -79,15 +79,15 @@ export function TrendBreadthCard() {
               {trend && (
                 <>
                   <span className="text-slate-600 dark:text-slate-300">
-                    SMA5:{" "}
-                    <span className="font-semibold text-green-500">
-                      {formatPercent(trend.sma5)}
+                    EMA10:{" "}
+                    <span className="font-semibold text-red-500">
+                      {formatPercent(trend.ema10)}
                     </span>
                   </span>
                   <span className="text-slate-600 dark:text-slate-300">
-                    SMA20:{" "}
-                    <span className="font-semibold text-amber-500">
-                      {formatPercent(trend.sma20)}
+                    EMA20:{" "}
+                    <span className="font-semibold text-blue-500">
+                      {formatPercent(trend.ema20)}
                     </span>
                   </span>
                 </>

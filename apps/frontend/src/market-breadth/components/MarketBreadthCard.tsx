@@ -6,39 +6,31 @@ import {
   CardTitle,
 } from "../../global/design-system";
 import { useMarketBreadth } from "../hooks/use-market-breadth";
-import type { ParticipationRegime } from "../api/market-breadth.types";
+import type { BreadthState } from "../api/market-breadth.types";
 import { MarketBreadthHistogram } from "./MarketBreadthHistogram";
 
 const SESSIONS_TO_SHOW = 50;
 
-const regimeBadgeVariant: Record<
-  ParticipationRegime,
-  "success" | "warning" | "danger"
-> = {
-  GREEN: "success",
-  YELLOW: "warning",
-  RED: "danger",
+const stateBadgeVariant: Record<BreadthState, "success" | "danger"> = {
+  GOOD: "success",
+  BAD: "danger",
 };
 
-const regimeLabel: Record<ParticipationRegime, string> = {
-  GREEN: "Go",
-  YELLOW: "Caution",
-  RED: "No-go",
+const stateLabel: Record<BreadthState, string> = {
+  GOOD: "Good",
+  BAD: "Bad",
 };
 
-const regimeDescription: Record<ParticipationRegime, string> = {
-  GREEN:
-    "5-day NH/(NH+NL) ≥ 0.60 — buyers control the extremes; breakouts have a tailwind.",
-  YELLOW:
-    "5-day NH/(NH+NL) between 0.40 and 0.60 — conflicted market; hold winners, don't add.",
-  RED: "5-day NH/(NH+NL) < 0.40 — new lows dominate; stay out regardless of index trend.",
+const stateDescription: Record<BreadthState, string> = {
+  GOOD: "EMA10 of NH/(NH+NL) is at or above its EMA20 — buyers are gaining control of the extremes; breakouts have a tailwind.",
+  BAD: "EMA10 of NH/(NH+NL) is below its EMA20 — new lows are gaining ground; stay out regardless of index trend.",
 };
 
 export function MarketBreadthCard() {
   const { data, isLoading, isError } = useMarketBreadth(SESSIONS_TO_SHOW);
   const sessions = data?.sessions ?? [];
   const latest = sessions[sessions.length - 1];
-  const participation = data?.participation ?? null;
+  const newHighLow = data?.newHighLow ?? null;
 
   return (
     <Card className="flex h-full flex-col">
@@ -47,9 +39,9 @@ export function MarketBreadthCard() {
           <CardTitle>New Highs / New Lows</CardTitle>
           <div className="flex items-center gap-2">
             {latest?.partial && <Badge variant="warning">Partial</Badge>}
-            {participation && (
-              <Badge variant={regimeBadgeVariant[participation.regime]}>
-                {regimeLabel[participation.regime]}
+            {newHighLow && (
+              <Badge variant={stateBadgeVariant[newHighLow.state]}>
+                {stateLabel[newHighLow.state]}
               </Badge>
             )}
           </div>
@@ -57,7 +49,7 @@ export function MarketBreadthCard() {
       </CardHeader>
       <CardContent className="flex flex-1 flex-col">
         {isLoading ? (
-          <div className="h-48 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
+          <div className="h-72 animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
         ) : isError ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">
             Couldn't load market breadth.
@@ -87,18 +79,26 @@ export function MarketBreadthCard() {
                   {latest.ratio === null ? "—" : latest.ratio.toFixed(2)}
                 </span>
               </span>
-              {participation && (
-                <span className="text-slate-600 dark:text-slate-300">
-                  5-day avg:{" "}
-                  <span className="font-semibold text-slate-900 dark:text-slate-50">
-                    {participation.averageRatio.toFixed(2)}
+              {newHighLow && (
+                <>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    EMA10:{" "}
+                    <span className="font-semibold text-red-500">
+                      {newHighLow.ema10.toFixed(2)}
+                    </span>
                   </span>
-                </span>
+                  <span className="text-slate-600 dark:text-slate-300">
+                    EMA20:{" "}
+                    <span className="font-semibold text-blue-500">
+                      {newHighLow.ema20.toFixed(2)}
+                    </span>
+                  </span>
+                </>
               )}
             </div>
-            {participation && (
+            {newHighLow && (
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                {regimeDescription[participation.regime]}
+                {stateDescription[newHighLow.state]}
               </p>
             )}
             <MarketBreadthHistogram sessions={sessions} />

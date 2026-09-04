@@ -2,6 +2,7 @@ import {
   isStacked,
   seededExponentialMovingAverage,
   simpleMovingAverage,
+  stackedRatio,
 } from './moving-average.service';
 
 describe('simpleMovingAverage', () => {
@@ -104,5 +105,19 @@ describe('isStacked', () => {
   it('is false when the order is inverted anywhere in the chain', () => {
     expect(isStacked({ close: 4, ema9: 1, ema21: 2, sma50: 0 })).toBe(false);
     expect(isStacked({ close: 4, ema9: 3, ema21: 1, sma50: 2 })).toBe(false);
+  });
+});
+
+describe('stackedRatio', () => {
+  it('divides the stacked count by the universe size', () => {
+    expect(stackedRatio(850, 3400)).toBeCloseTo(0.25, 5);
+  });
+
+  it('is null when the stacked count is null', () => {
+    expect(stackedRatio(null, 3400)).toBeNull();
+  });
+
+  it('is null when the universe is empty', () => {
+    expect(stackedRatio(0, 0)).toBeNull();
   });
 });
