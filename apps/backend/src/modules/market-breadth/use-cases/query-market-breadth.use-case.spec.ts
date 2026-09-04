@@ -60,6 +60,39 @@ describe('QueryMarketBreadthUseCase', () => {
     expect(repository.getRecentAggregates).toHaveBeenCalledWith(10);
   });
 
+  it('gauges participation from the trailing five-session average ratio', async () => {
+    repository.getRecentAggregates.mockResolvedValue([
+      makeAggregate('2026-09-03', 69, 22),
+      makeAggregate('2026-09-02', 62, 29),
+      makeAggregate('2026-09-01', 36, 60),
+      makeAggregate('2026-08-31', 20, 42),
+      makeAggregate('2026-08-28', 48, 15),
+      makeAggregate('2026-08-27', 0, 100),
+    ]);
+
+    const response = await useCase.execute();
+
+    expect(response.sessions.map((s) => s.averageRatio?.toFixed(2))).toEqual([
+      '0.00',
+      '0.38',
+      '0.36',
+      '0.36',
+      '0.43',
+      '0.58',
+    ]);
+    expect(response.participation?.sampleSize).toBe(5);
+    expect(response.participation?.averageRatio).toBeCloseTo(0.58, 2);
+    expect(response.participation?.regime).toBe('YELLOW');
+  });
+
+  it('returns a null participation gauge when there are no sessions', async () => {
+    repository.getRecentAggregates.mockResolvedValue([]);
+
+    const response = await useCase.execute();
+
+    expect(response.participation).toBeNull();
+  });
+
   it('returns a null ratio when both counts are zero', async () => {
     repository.getRecentAggregates.mockResolvedValue([
       makeAggregate('2026-08-31', 0, 0),

@@ -4,7 +4,7 @@ import { MarketBreadthCard } from "../../market-breadth/components/MarketBreadth
 
 export default function Dashboard() {
   return (
-    <PageContainer>
+    <PageContainer fullWidth>
       <div className="space-y-6">
         <div>
           <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
