@@ -10,7 +10,7 @@ import type { BreadthState } from "../api/market-breadth.types";
 import { formatPercent } from "../utils/format-percent";
 import { TrendBreadthChart } from "./TrendBreadthChart";
 
-const SESSIONS_TO_SHOW = 50;
+const SESSIONS_TO_SHOW = 150;
 
 const trendBadgeVariant: Record<BreadthState, "success" | "danger"> = {
   GOOD: "success",

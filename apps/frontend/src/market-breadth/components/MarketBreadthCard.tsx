@@ -9,7 +9,7 @@ import { useMarketBreadth } from "../hooks/use-market-breadth";
 import type { BreadthState } from "../api/market-breadth.types";
 import { MarketBreadthHistogram } from "./MarketBreadthHistogram";
 
-const SESSIONS_TO_SHOW = 50;
+const SESSIONS_TO_SHOW = 150;
 
 const stateBadgeVariant: Record<BreadthState, "success" | "danger"> = {
   GOOD: "success",
