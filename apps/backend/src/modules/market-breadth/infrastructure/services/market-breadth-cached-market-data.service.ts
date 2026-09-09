@@ -19,6 +19,8 @@ import { DateRange } from '../../../market-data/domain/value-objects/date-range'
 import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
 import { Symbol } from '../../../market-data/domain/value-objects/symbol';
 
+const MAX_END_GAP_DAYS = 1;
+
 @Injectable()
 export class MarketBreadthCachedMarketDataService implements MarketDataService {
   private readonly logger = new Logger(
@@ -154,7 +156,7 @@ export class MarketBreadthCachedMarketDataService implements MarketDataService {
       const daysGap = Math.floor(
         (endDateTime - latestCacheTime) / (1000 * 60 * 60 * 24),
       );
-      if (daysGap > maxStalenessDays) {
+      if (daysGap > MAX_END_GAP_DAYS) {
         return false;
       }
     }
