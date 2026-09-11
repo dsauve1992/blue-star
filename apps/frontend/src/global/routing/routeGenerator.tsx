@@ -8,7 +8,7 @@ import Login from "../auth/Login";
 import Dashboard from "../pages/Dashboard";
 import Profile from "../pages/Profile";
 import Settings from "../pages/Settings";
-import ConsolidationAnalysis from "../../stock-analysis/pages/ConsolidationAnalysis";
+import MomentumLeaders from "../../stock-analysis/pages/MomentumLeaders";
 import IndustryGroupExplorer from "../../stock-analysis/pages/IndustryGroupExplorer";
 import Watchlist from "../../watchlist/pages/Watchlist";
 import SectorRotation from "../../sector-rotation/pages/SectorRotation";
@@ -21,7 +21,7 @@ const componentMap = {
   "/dashboard": Dashboard,
   "/profile": Profile,
   "/settings": Settings,
-  "/stock-analysis/:type": ConsolidationAnalysis,
+  "/stock-analysis": MomentumLeaders,
   "/watchlists": Watchlist,
   "/sector-rotation": SectorRotation,
   "/industry-groups": IndustryGroupExplorer,

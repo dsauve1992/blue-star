@@ -1,10 +1,5 @@
 export {
-  CONSOLIDATION_QUERY_KEYS,
+  MOMENTUM_LEADERS_QUERY_KEYS,
   RS_RATING_QUERY_KEYS,
   INDUSTRY_GROUP_QUERY_KEYS,
-} from './query-keys';
-
-
-
-
-
+} from "./query-keys";

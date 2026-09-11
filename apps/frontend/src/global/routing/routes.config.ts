@@ -38,11 +38,10 @@ export const routes: RouteConfig[] = [
     showInNavigation: true,
   },
   {
-    path: "/stock-analysis/:type",
+    path: "/stock-analysis",
     label: "Stock Analysis",
     isProtected: true,
     showInNavigation: true,
-    navigationPath: "/stock-analysis/daily",
   },
   {
     path: "/watchlists",

@@ -31,6 +31,11 @@ import {
   QueryIndustryGroupRatingsUseCase,
   QueryIndustryGroupRatingsResponseDto,
 } from '../use-cases/query-industry-group-ratings.use-case';
+import {
+  QueryMomentumLeadersUseCase,
+  QueryMomentumLeadersResponseDto,
+} from '../use-cases/query-momentum-leaders.use-case';
+import { RunMomentumLeadersUseCase } from '../use-cases/run-momentum-leaders.use-case';
 
 @Controller('stock-analysis')
 export class StockAnalysisController {
@@ -42,7 +47,32 @@ export class StockAnalysisController {
     private readonly runIndustryGroupRsRatingsUseCase: RunIndustryGroupRsRatingsUseCase,
     private readonly queryIndustryGroupsUseCase: QueryIndustryGroupsUseCase,
     private readonly queryIndustryGroupRatingsUseCase: QueryIndustryGroupRatingsUseCase,
+    private readonly queryMomentumLeadersUseCase: QueryMomentumLeadersUseCase,
+    private readonly runMomentumLeadersUseCase: RunMomentumLeadersUseCase,
   ) {}
+
+  @Get('momentum-leaders')
+  @Public()
+  async getMomentumLeaders(): Promise<QueryMomentumLeadersResponseDto> {
+    try {
+      return await this.queryMomentumLeadersUseCase.execute();
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException(error);
+    }
+  }
+
+  @Post('momentum-leaders/run')
+  @Public()
+  async runMomentumLeaders(): Promise<{ message: string }> {
+    try {
+      await this.runMomentumLeadersUseCase.execute();
+      return { message: 'Momentum leaders scan completed' };
+    } catch (error) {
+      console.error(error);
+      throw new BadRequestException(error);
+    }
+  }
 
   @Get('consolidations')
   @Public()

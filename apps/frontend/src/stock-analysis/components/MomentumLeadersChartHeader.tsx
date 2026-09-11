@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, TrendingUp, Sparkles } from "lucide-react";
+import { RefreshCw, TrendingUp } from "lucide-react";
 import { Badge } from "src/global/design-system";
-import type { ConsolidationResult } from "../api/consolidation.client";
+import type { MomentumLeader } from "../api/momentum-leaders.client";
 import type { Watchlist } from "src/watchlist/api/watchlist.client";
 import { AddToWatchlistButton } from "src/watchlist/components/AddToWatchlistButton";
 
@@ -14,9 +14,9 @@ function getTickerLogoUrl(symbol: string): string {
   return `https://images.financialmodelingprep.com/symbol/${symbol}.png`;
 }
 
-interface ConsolidationChartHeaderProps {
+interface MomentumLeadersChartHeaderProps {
   selectedTicker: string | null;
-  selectedConsolidation: ConsolidationResult | undefined;
+  selectedLeader: MomentumLeader | undefined;
   watchlists: Watchlist[];
   isLoading: boolean;
   onRefetch: () => void;
@@ -27,9 +27,9 @@ interface ConsolidationChartHeaderProps {
   isCreatingWatchlist: boolean;
 }
 
-export function ConsolidationChartHeader({
+export function MomentumLeadersChartHeader({
   selectedTicker,
-  selectedConsolidation,
+  selectedLeader,
   watchlists,
   isLoading,
   onRefetch,
@@ -38,7 +38,7 @@ export function ConsolidationChartHeader({
   isAddingToWatchlist,
   isRemovingFromWatchlist,
   isCreatingWatchlist,
-}: ConsolidationChartHeaderProps) {
+}: MomentumLeadersChartHeaderProps) {
   const [logoFailed, setLogoFailed] = useState(false);
 
   // Reset logo failure when ticker changes
@@ -72,26 +72,35 @@ export function ConsolidationChartHeader({
                 </h2>
               </div>
             </div>
-            {selectedConsolidation?.isNew && (
-              <Badge variant="success" className="ml-2">
-                <Sparkles className="w-3 h-3 mr-1" />
-                New Signal
+            {selectedLeader?.consolidatingDaily && (
+              <Badge
+                variant="default"
+                className="ml-2 bg-purple-500/20 text-purple-300 border-purple-500/30"
+              >
+                Consolidating (D)
               </Badge>
             )}
-            {selectedConsolidation?.themes &&
-              selectedConsolidation.themes.length > 0 && (
-                <div className="flex flex-wrap gap-2 ml-2">
-                  {selectedConsolidation.themes.map((theme) => (
-                    <Badge
-                      key={theme}
-                      variant="default"
-                      className="bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
-                    >
-                      {theme}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+            {selectedLeader?.consolidatingWeekly && (
+              <Badge
+                variant="default"
+                className="ml-2 bg-purple-500/20 text-purple-300 border-purple-500/30"
+              >
+                Consolidating (W)
+              </Badge>
+            )}
+            {selectedLeader?.themes && selectedLeader.themes.length > 0 && (
+              <div className="flex flex-wrap gap-2 ml-2">
+                {selectedLeader.themes.map((theme) => (
+                  <Badge
+                    key={theme}
+                    variant="default"
+                    className="bg-blue-500/10 text-blue-400 border-blue-500/20 hover:bg-blue-500/20"
+                  >
+                    {theme}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </>
         ) : (
           <div>

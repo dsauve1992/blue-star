@@ -1,13 +1,11 @@
-import { useRef, useMemo, useCallback, useState, useEffect } from "react";
-import { useParams, useNavigate } from "react-router";
+import { useRef, useMemo, useCallback, useState } from "react";
 import { ChevronDown, BarChart3 } from "lucide-react";
 import { PageContainer } from "src/global/design-system/page-container";
-import { useConsolidations } from "../hooks/use-consolidations";
-import { useRunConsolidationAnalysis } from "../hooks/use-run-consolidation-analysis";
-import {
-  useConsolidationSelection,
-  type AnalysisType,
-} from "../hooks/use-consolidation-selection";
+import { useMomentumLeaders } from "../hooks/use-momentum-leaders";
+import { useRunMomentumLeaders } from "../hooks/use-run-momentum-leaders";
+import { useLeaderSelection } from "../hooks/use-leader-selection";
+import { useSortedLeaders } from "../hooks/use-sorted-leaders";
+import { leaderTickerFullName } from "../api/momentum-leaders.client";
 import { useConsolidationKeyboardNavigation } from "../hooks/use-consolidation-keyboard-navigation";
 import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
@@ -18,13 +16,12 @@ import {
   useRemoveTickerFromWatchlist,
   useCreateWatchlist,
 } from "src/watchlist/hooks/use-watchlists";
-import type { AnalyzeConsolidationsRequest } from "../api/consolidation.client";
 import {
   MAIN_CHART_TIMEFRAME_OPTIONS,
   type ChartInterval,
 } from "src/market-data/api/chart-data.client";
-import { ConsolidationSidebar } from "../components/ConsolidationSidebar";
-import { ConsolidationChartHeader } from "../components/ConsolidationChartHeader";
+import { MomentumLeadersSidebar } from "../components/MomentumLeadersSidebar";
+import { MomentumLeadersChartHeader } from "../components/MomentumLeadersChartHeader";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
@@ -44,15 +41,9 @@ function extractSymbol(ticker: string): string {
   return parts.length > 1 ? parts[1] : parts[0];
 }
 
-export default function ConsolidationAnalysis() {
-  const { type } = useParams<{ type: string }>();
-  const navigate = useNavigate();
-  const analysisType: AnalysisType = type === "weekly" ? "weekly" : "daily";
-
-  // Data fetching
-  const request: AnalyzeConsolidationsRequest = { type: analysisType };
-  const { data, isLoading, error, refetch } = useConsolidations(request);
-  const runAnalysis = useRunConsolidationAnalysis();
+export default function MomentumLeaders() {
+  const { data, isLoading, error, refetch } = useMomentumLeaders();
+  const runScan = useRunMomentumLeaders();
   const { data: watchlistsData } = useWatchlists();
   const addTickerToWatchlist = useAddTickerToWatchlist();
   const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
@@ -62,26 +53,22 @@ export default function ConsolidationAnalysis() {
   );
   const industryGroupStatuses = industryGroupStatusData?.sectors ?? [];
 
-  // Selection & filtering
+  const scannedLeaders = useMemo(() => data?.leaders ?? [], [data]);
   const {
-    selectedTicker,
-    setSelectedTicker,
-    industryGroupFilterMode,
-    setIndustryGroupFilterMode,
-    consolidations,
-    currentIndex,
-  } = useConsolidationSelection({
-    data,
-    analysisType,
-    industryGroupStatuses,
-  });
+    sortKey,
+    setSortKey,
+    sortedLeaders: leaders,
+    rsBySymbol,
+  } = useSortedLeaders(scannedLeaders);
+  const { selectedTicker, setSelectedTicker, currentIndex } =
+    useLeaderSelection(leaders);
 
   // Refs for keyboard navigation
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
 
   useConsolidationKeyboardNavigation({
-    tickers: consolidations.map((c) => c.tickerFullName),
+    tickers: leaders.map(leaderTickerFullName),
     selectedTicker,
     onTickerChange: setSelectedTicker,
     tickerRefs,
@@ -98,18 +85,12 @@ export default function ConsolidationAnalysis() {
   const [showFinancialFooter, setShowFinancialFooter] = useState(true);
 
   // Derived data
-  const selectedConsolidation = consolidations.find(
-    (c) => c.tickerFullName === selectedTicker,
+  const selectedLeader = leaders.find(
+    (l) => leaderTickerFullName(l) === selectedTicker,
   );
 
-  const defaultInterval: ChartInterval = analysisType === "daily" ? "D" : "W";
-  const [interval, setInterval] = useState<ChartInterval>(defaultInterval);
+  const [interval, setInterval] = useState<ChartInterval>("D");
   const [includeExtendedHours, setIncludeExtendedHours] = useState(true);
-
-  // Reset timeframe when switching between daily/weekly screener
-  useEffect(() => {
-    setInterval(defaultInterval);
-  }, [defaultInterval]);
 
   const movingAverages = useMemo(
     () => getDefaultMovingAverages(interval),
@@ -154,9 +135,7 @@ export default function ConsolidationAnalysis() {
     includeExtendedHours,
   );
 
-  const groupSymbol = useIndustryGroupSymbol(
-    selectedConsolidation?.industryGroup,
-  );
+  const groupSymbol = useIndustryGroupSymbol(selectedLeader?.industryGroup);
   const { candles: groupCandles, loadMore: loadMoreGroup } = useChartData(
     groupSymbol,
     groupSymbol ? GROUP_BENCHMARK_EXCHANGE : null,
@@ -185,35 +164,27 @@ export default function ConsolidationAnalysis() {
 
   const handleNavigate = useCallback(
     (direction: "up" | "down") => {
-      if (consolidations.length === 0) return;
+      if (leaders.length === 0) return;
       let newIndex: number;
       if (currentIndex === -1) {
         newIndex = 0;
       } else if (direction === "down") {
-        newIndex = Math.min(currentIndex + 1, consolidations.length - 1);
+        newIndex = Math.min(currentIndex + 1, leaders.length - 1);
       } else {
         newIndex = Math.max(currentIndex - 1, 0);
       }
-      handleTickerSelect(consolidations[newIndex].tickerFullName);
+      handleTickerSelect(leaderTickerFullName(leaders[newIndex]));
     },
-    [consolidations, currentIndex, handleTickerSelect],
+    [leaders, currentIndex, handleTickerSelect],
   );
 
-  const handleTypeChange = useCallback(
-    (newType: AnalysisType) => {
-      navigate(`/stock-analysis/${newType}`);
-    },
-    [navigate],
-  );
-
-  const handleRunAnalysis = useCallback(async () => {
+  const handleRunScan = useCallback(async () => {
     try {
-      await runAnalysis.mutateAsync({ type: analysisType });
-      setTimeout(() => refetch(), 2000);
+      await runScan.mutateAsync();
     } catch (err) {
-      console.error("Failed to run analysis:", err);
+      console.error("Failed to run scan:", err);
     }
-  }, [runAnalysis, analysisType, refetch]);
+  }, [runScan]);
 
   const handleToggleWatchlist = useCallback(
     async (watchlistId: string, isTickerInWatchlist: boolean) => {
@@ -222,9 +193,8 @@ export default function ConsolidationAnalysis() {
       const tickerToUse =
         watchlistsData?.watchlists
           .find((w) => w.id === watchlistId)
-          ?.tickers.find(
-            (t) => t === selectedTicker || t === tickerSymbol,
-          ) || selectedTicker;
+          ?.tickers.find((t) => t === selectedTicker || t === tickerSymbol) ||
+        selectedTicker;
       try {
         if (isTickerInWatchlist) {
           await removeTickerFromWatchlist.mutateAsync({
@@ -276,30 +246,29 @@ export default function ConsolidationAnalysis() {
         <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMDI5M2MiIGZpbGwtb3BhY2l0eT0iMC40Ij48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZoLTJ2LTRoMnY0em0tNiA2aC0ydi00aDJ2NHptMC02aC0ydi00aDJ2NHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30 pointer-events-none" />
 
         <div className="relative flex h-screen">
-          <ConsolidationSidebar
-            consolidations={consolidations}
+          <MomentumLeadersSidebar
+            leaders={leaders}
+            rsBySymbol={rsBySymbol}
+            sortKey={sortKey}
+            onSortChange={setSortKey}
             selectedTicker={selectedTicker}
-            analysisType={analysisType}
-            industryGroupFilterMode={industryGroupFilterMode}
             industryGroupStatuses={industryGroupStatuses}
             currentIndex={currentIndex}
             isLoading={isLoading}
             error={error}
             data={data}
-            isRunningAnalysis={runAnalysis.isPending}
+            isRunningScan={runScan.isPending}
             onTickerSelect={handleTickerSelect}
             onNavigate={handleNavigate}
-            onTypeChange={handleTypeChange}
-            onIndustryGroupFilterChange={setIndustryGroupFilterMode}
-            onRunAnalysis={handleRunAnalysis}
+            onRunScan={handleRunScan}
             tickerRefs={tickerRefs}
             listContainerRef={listContainerRef}
           />
 
           <main className="flex-1 flex flex-col min-w-0">
-            <ConsolidationChartHeader
+            <MomentumLeadersChartHeader
               selectedTicker={selectedTicker}
-              selectedConsolidation={selectedConsolidation}
+              selectedLeader={selectedLeader}
               watchlists={watchlistsData?.watchlists ?? []}
               isLoading={isLoading}
               onRefetch={() => refetch()}
@@ -337,7 +306,7 @@ export default function ConsolidationAnalysis() {
                             spyCandles,
                             spyLabel: BENCHMARK_SYMBOL,
                             groupCandles,
-                            groupLabel: selectedConsolidation?.industryGroup,
+                            groupLabel: selectedLeader?.industryGroup,
                           });
                           return benchmarks
                             ? {
@@ -379,9 +348,7 @@ export default function ConsolidationAnalysis() {
               {selectedTicker && (
                 <div className="flex-shrink-0">
                   <button
-                    onClick={() =>
-                      setShowFinancialFooter(!showFinancialFooter)
-                    }
+                    onClick={() => setShowFinancialFooter(!showFinancialFooter)}
                     className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors duration-150 group"
                     aria-expanded={showFinancialFooter}
                     aria-label={

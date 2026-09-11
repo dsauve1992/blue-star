@@ -14,3 +14,8 @@ export const INDUSTRY_GROUP_RS_RATING_COMPUTATION_SERVICE =
 // before we compute intra-group RS ratings for it. Below this, percentile
 // ranks are statistically noisy, so we skip the group entirely.
 export const MIN_INDUSTRY_GROUP_SIZE = 10;
+export const MOMENTUM_LEADER_REPOSITORY = 'MOMENTUM_LEADER_REPOSITORY';
+export const MOMENTUM_LEADERS_SCREENER_SERVICE =
+  'MOMENTUM_LEADERS_SCREENER_SERVICE';
+export const MOMENTUM_LEADERS_COMPUTATION_SERVICE =
+  'MOMENTUM_LEADERS_COMPUTATION_SERVICE';

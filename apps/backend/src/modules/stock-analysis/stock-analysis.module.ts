@@ -21,12 +21,21 @@ import { PythonRsRatingScreenerService } from './infrastructure/services/python-
 import { RsRatingComputationServiceImpl } from './infrastructure/services/rs-rating-computation.service';
 import { IndustryGroupRsRatingComputationServiceImpl } from './infrastructure/services/industry-group-rs-rating-computation.service';
 import { RsRatingCronService } from './infrastructure/services/rs-rating-cron.service';
+import { QueryMomentumLeadersUseCase } from './use-cases/query-momentum-leaders.use-case';
+import { RunMomentumLeadersUseCase } from './use-cases/run-momentum-leaders.use-case';
+import { MomentumLeaderRepositoryImpl } from './infrastructure/repositories/momentum-leader.repository';
+import { PythonMomentumLeadersScreenerService } from './infrastructure/services/python-momentum-leaders-screener.service';
+import { MomentumLeadersComputationServiceImpl } from './infrastructure/services/momentum-leaders-computation.service';
+import { MomentumLeadersCronService } from './infrastructure/services/momentum-leaders-cron.service';
 import {
   CONSOLIDATION_ANALYSIS_SERVICE,
   CONSOLIDATION_RESULT_REPOSITORY,
   CONSOLIDATION_SCREENER_SERVICE,
   INDUSTRY_GROUP_RS_RATING_COMPUTATION_SERVICE,
   INDUSTRY_GROUP_RS_RATING_REPOSITORY,
+  MOMENTUM_LEADER_REPOSITORY,
+  MOMENTUM_LEADERS_COMPUTATION_SERVICE,
+  MOMENTUM_LEADERS_SCREENER_SERVICE,
   RS_RATING_COMPUTATION_SERVICE,
   RS_RATING_REPOSITORY,
   RS_RATING_SCREENER_SERVICE,
@@ -84,8 +93,21 @@ export {
       provide: INDUSTRY_GROUP_RS_RATING_COMPUTATION_SERVICE,
       useClass: IndustryGroupRsRatingComputationServiceImpl,
     },
+    {
+      provide: MOMENTUM_LEADER_REPOSITORY,
+      useClass: MomentumLeaderRepositoryImpl,
+    },
+    {
+      provide: MOMENTUM_LEADERS_SCREENER_SERVICE,
+      useClass: PythonMomentumLeadersScreenerService,
+    },
+    {
+      provide: MOMENTUM_LEADERS_COMPUTATION_SERVICE,
+      useClass: MomentumLeadersComputationServiceImpl,
+    },
     ConsolidationCronService,
     RsRatingCronService,
+    MomentumLeadersCronService,
     QueryConsolidationAnalysisAnalyzeUseCase,
     RunConsolidationAnalysisUseCase,
     QueryRsRatingsUseCase,
@@ -93,6 +115,8 @@ export {
     RunIndustryGroupRsRatingsUseCase,
     QueryIndustryGroupsUseCase,
     QueryIndustryGroupRatingsUseCase,
+    QueryMomentumLeadersUseCase,
+    RunMomentumLeadersUseCase,
   ],
   exports: [
     CONSOLIDATION_SCREENER_SERVICE,
