@@ -10,6 +10,7 @@ interface MomentumLeaderRow {
   perf_1m: string;
   perf_3m: string;
   perf_6m: string;
+  adr_pct: string;
   rank_1m: string;
   rank_3m: string;
   rank_6m: string;
@@ -36,9 +37,9 @@ export class MomentumLeaderRepositoryImpl implements MomentumLeaderRepository {
       for (const leader of leaders) {
         await client.query(
           `INSERT INTO momentum_leaders
-           (scan_date, symbol, exchange, sector, perf_1m, perf_3m, perf_6m,
+           (scan_date, symbol, exchange, sector, perf_1m, perf_3m, perf_6m, adr_pct,
             rank_1m, rank_3m, rank_6m, rs_score, top_1m, top_3m, top_6m, universe_size)
-           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
           [
             scanDateStr,
             leader.symbol,
@@ -47,6 +48,7 @@ export class MomentumLeaderRepositoryImpl implements MomentumLeaderRepository {
             leader.perf1M,
             leader.perf3M,
             leader.perf6M,
+            leader.adrPct,
             leader.rank1M,
             leader.rank3M,
             leader.rank6M,
@@ -63,7 +65,7 @@ export class MomentumLeaderRepositoryImpl implements MomentumLeaderRepository {
 
   async getLatestScan(): Promise<MomentumLeader[]> {
     const result = (await this.databaseService.query(
-      `SELECT symbol, exchange, sector, perf_1m, perf_3m, perf_6m,
+      `SELECT symbol, exchange, sector, perf_1m, perf_3m, perf_6m, adr_pct,
               rank_1m, rank_3m, rank_6m, rs_score, top_1m, top_3m, top_6m,
               scan_date, universe_size
        FROM momentum_leaders
@@ -79,6 +81,7 @@ export class MomentumLeaderRepositoryImpl implements MomentumLeaderRepository {
         perf1M: parseFloat(row.perf_1m),
         perf3M: parseFloat(row.perf_3m),
         perf6M: parseFloat(row.perf_6m),
+        adrPct: parseFloat(row.adr_pct),
         rank1M: parseFloat(row.rank_1m),
         rank3M: parseFloat(row.rank_3m),
         rank6M: parseFloat(row.rank_6m),

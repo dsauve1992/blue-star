@@ -6,6 +6,7 @@ export class MomentumLeader {
     public readonly perf1M: number,
     public readonly perf3M: number,
     public readonly perf6M: number,
+    public readonly adrPct: number,
     public readonly rank1M: number,
     public readonly rank3M: number,
     public readonly rank6M: number,
@@ -24,6 +25,7 @@ export class MomentumLeader {
     perf1M: number;
     perf3M: number;
     perf6M: number;
+    adrPct: number;
     rank1M: number;
     rank3M: number;
     rank6M: number;
@@ -41,6 +43,7 @@ export class MomentumLeader {
       data.perf1M,
       data.perf3M,
       data.perf6M,
+      data.adrPct,
       data.rank1M,
       data.rank3M,
       data.rank6M,

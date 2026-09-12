@@ -88,6 +88,15 @@ export function MomentumLeadersChartHeader({
                 Consolidating (W)
               </Badge>
             )}
+            {selectedLeader && (
+              <Badge
+                variant="default"
+                className="ml-2 bg-slate-500/20 text-slate-300 border-slate-500/30"
+                title="Average daily range (14d)"
+              >
+                ADR {selectedLeader.adrPct.toFixed(1)}%
+              </Badge>
+            )}
             {selectedLeader?.themes && selectedLeader.themes.length > 0 && (
               <div className="flex flex-wrap gap-2 ml-2">
                 {selectedLeader.themes.map((theme) => (

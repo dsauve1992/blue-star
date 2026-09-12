@@ -1,0 +1,1 @@
+ALTER TABLE momentum_leaders ADD COLUMN adr_pct NUMERIC(6, 2) NOT NULL DEFAULT 0;

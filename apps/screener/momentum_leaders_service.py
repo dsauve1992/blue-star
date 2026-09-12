@@ -27,13 +27,14 @@ class UniverseStock:
     perf_1m: float
     perf_3m: float
     perf_6m: float
+    adr_pct: float
 
 
 def map_entry(entry: RawScreenerEntry) -> UniverseStock | None:
     fields = entry.data_fields
-    # columns: name, sector, Perf.1M, Perf.3M, Perf.6M
-    perf_1m, perf_3m, perf_6m = fields[2], fields[3], fields[4]
-    if perf_1m is None or perf_3m is None or perf_6m is None:
+    # columns: name, sector, Perf.1M, Perf.3M, Perf.6M, close, ADR
+    perf_1m, perf_3m, perf_6m, close, adr = fields[2], fields[3], fields[4], fields[5], fields[6]
+    if None in (perf_1m, perf_3m, perf_6m, close, adr) or close <= 0:
         return None
 
     exchange, _, symbol = entry.symbol_full.rpartition(':')
@@ -44,6 +45,7 @@ def map_entry(entry: RawScreenerEntry) -> UniverseStock | None:
         perf_1m=perf_1m,
         perf_3m=perf_3m,
         perf_6m=perf_6m,
+        adr_pct=adr / close * 100,
     )
 
 
@@ -69,6 +71,7 @@ def select_leaders(universe: List[UniverseStock]) -> List[dict]:
             "perf_1m": stock.perf_1m,
             "perf_3m": stock.perf_3m,
             "perf_6m": stock.perf_6m,
+            "adr_pct": round(stock.adr_pct, 2),
             "rank_1m": round(ranks["perf_1m"], 2),
             "rank_3m": round(ranks["perf_3m"], 2),
             "rank_6m": round(ranks["perf_6m"], 2),
@@ -85,7 +88,7 @@ def select_leaders(universe: List[UniverseStock]) -> List[dict]:
 def compute_momentum_leaders(quiet: bool = False) -> dict:
     screener = ScreenerService()
     parameters = ScreenerService.create_basic_parameters(
-        columns=["name", "sector", "Perf.1M", "Perf.3M", "Perf.6M"],
+        columns=["name", "sector", "Perf.1M", "Perf.3M", "Perf.6M", "close", "ADR"],
         filters=UNIVERSE_FILTERS,
         markets=["america"],
         sort_by="market_cap_basic",
@@ -130,7 +133,7 @@ def main():
             print("-" * 72)
             for r in result['leaders']:
                 tags = ''.join(t for t, on in (('1M ', r['top_1m']), ('3M ', r['top_3m']), ('6M', r['top_6m'])) if on)
-                print(f"  {r['symbol']:>8s}  RS {r['rs_score']:6.2f}  1M {r['perf_1m']:7.1f}%  3M {r['perf_3m']:7.1f}%  6M {r['perf_6m']:7.1f}%  {tags}")
+                print(f"  {r['symbol']:>8s}  RS {r['rs_score']:6.2f}  1M {r['perf_1m']:7.1f}%  3M {r['perf_3m']:7.1f}%  6M {r['perf_6m']:7.1f}%  ADR {r['adr_pct']:4.1f}%  {tags}")
 
     except Exception as error:
         if args.format == 'json':

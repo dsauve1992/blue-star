@@ -16,6 +16,7 @@ export interface MomentumLeaderDto {
   perf1M: number;
   perf3M: number;
   perf6M: number;
+  adrPct: number;
   rsScore: number;
   top1M: boolean;
   top3M: boolean;
@@ -77,6 +78,7 @@ export class QueryMomentumLeadersUseCase {
         perf1M: leader.perf1M,
         perf3M: leader.perf3M,
         perf6M: leader.perf6M,
+        adrPct: leader.adrPct,
         rsScore: leader.rsScore,
         top1M: leader.top1M,
         top3M: leader.top3M,

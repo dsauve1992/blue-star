@@ -7,6 +7,7 @@ export interface MomentumLeader {
   perf1M: number;
   perf3M: number;
   perf6M: number;
+  adrPct: number;
   rsScore: number;
   top1M: boolean;
   top3M: boolean;

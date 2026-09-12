@@ -5,6 +5,7 @@ export interface MomentumLeaderResult {
   perf1M: number;
   perf3M: number;
   perf6M: number;
+  adrPct: number;
   rank1M: number;
   rank3M: number;
   rank6M: number;

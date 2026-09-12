@@ -127,6 +127,12 @@ export function MomentumLeaderItem({
           >
             {formatPerf(leader.perf6M)}
           </span>
+          <span
+            className="ml-auto text-slate-300"
+            title="Average daily range (14d)"
+          >
+            ADR {leader.adrPct.toFixed(1)}%
+          </span>
         </div>
         <div className="flex flex-wrap gap-0.5 mt-1">
           {rsRating !== undefined && (

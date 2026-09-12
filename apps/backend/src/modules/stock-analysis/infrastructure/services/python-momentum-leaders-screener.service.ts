@@ -23,6 +23,7 @@ interface PythonLeader {
   perf_1m: number;
   perf_3m: number;
   perf_6m: number;
+  adr_pct: number;
   rank_1m: number;
   rank_3m: number;
   rank_6m: number;
@@ -158,6 +159,7 @@ export class PythonMomentumLeadersScreenerService
         perf1M: item.perf_1m,
         perf3M: item.perf_3m,
         perf6M: item.perf_6m,
+        adrPct: item.adr_pct,
         rank1M: item.rank_1m,
         rank3M: item.rank_3m,
         rank6M: item.rank_6m,
