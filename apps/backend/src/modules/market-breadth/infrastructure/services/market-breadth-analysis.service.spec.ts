@@ -110,6 +110,8 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
 
     expect(latest.newHighs).toBe(2);
     expect(latest.newLows).toBe(2);
+    expect(latest.newHighs20).toBe(2);
+    expect(latest.newLows20).toBe(2);
     expect(latest.universeSize).toBe(2);
     expect(latest.backfilled).toBe(false);
   });

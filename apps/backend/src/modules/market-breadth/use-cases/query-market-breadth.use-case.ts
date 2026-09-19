@@ -20,6 +20,12 @@ export interface MarketBreadthSessionDto {
   ratioEma10: number | null;
   ratioEma20: number | null;
   ratioState: BreadthState | null;
+  newHighs20: number | null;
+  newLows20: number | null;
+  ratio20: number | null;
+  ratio20Ema10: number | null;
+  ratio20Ema20: number | null;
+  ratio20State: BreadthState | null;
   stackedCount: number | null;
   stackedRatio: number | null;
   stackedRatioEma10: number | null;
@@ -40,6 +46,7 @@ export interface BreadthGaugeDto {
 export interface QueryMarketBreadthResponseDto {
   sessions: MarketBreadthSessionDto[];
   newHighLow: BreadthGaugeDto | null;
+  newHighLow20: BreadthGaugeDto | null;
   trend: BreadthGaugeDto | null;
 }
 
@@ -61,6 +68,9 @@ export class QueryMarketBreadthUseCase {
     const newHighLowSeries = emaCrossoverSeries(
       orderedWithWarmup.map((aggregate) => aggregate.ratio),
     );
+    const newHighLow20Series = emaCrossoverSeries(
+      orderedWithWarmup.map((aggregate) => aggregate.ratio20),
+    );
     const trendSeries = emaCrossoverSeries(
       orderedWithWarmup.map((aggregate) =>
         stackedRatio(aggregate.stackedCount, aggregate.universeSize),
@@ -69,6 +79,7 @@ export class QueryMarketBreadthUseCase {
 
     const ordered = orderedWithWarmup.slice(-limit);
     const newHighLowSessions = newHighLowSeries.sessions.slice(-limit);
+    const newHighLow20Sessions = newHighLow20Series.sessions.slice(-limit);
     const trendSessions = trendSeries.sessions.slice(-limit);
 
     const sessions = ordered.map((aggregate, index) => ({
@@ -80,6 +91,12 @@ export class QueryMarketBreadthUseCase {
       ratioEma10: newHighLowSessions[index].ema10,
       ratioEma20: newHighLowSessions[index].ema20,
       ratioState: newHighLowSessions[index].state,
+      newHighs20: aggregate.newHighs20,
+      newLows20: aggregate.newLows20,
+      ratio20: aggregate.ratio20,
+      ratio20Ema10: newHighLow20Sessions[index].ema10,
+      ratio20Ema20: newHighLow20Sessions[index].ema20,
+      ratio20State: newHighLow20Sessions[index].state,
       stackedCount: aggregate.stackedCount,
       stackedRatio: trendSessions[index].ratio,
       stackedRatioEma10: trendSessions[index].ema10,
@@ -93,6 +110,7 @@ export class QueryMarketBreadthUseCase {
     return {
       sessions,
       newHighLow: newHighLowSeries.gauge,
+      newHighLow20: newHighLow20Series.gauge,
       trend: trendSeries.gauge,
     };
   }

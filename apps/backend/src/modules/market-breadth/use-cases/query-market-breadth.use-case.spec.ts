@@ -10,12 +10,16 @@ function makeAggregate(
   newHighs: number,
   newLows: number,
   stackedCount: number | null = null,
+  newHighs20: number | null = null,
+  newLows20: number | null = null,
 ) {
   return MarketBreadthAggregate.create({
     date: BreadthDate.fromISOString(date),
     universeSize: UNIVERSE_SIZE,
     newHighs,
     newLows,
+    newHighs20,
+    newLows20,
     stackedCount,
     missingSymbols: [],
     partial: false,
@@ -62,6 +66,41 @@ describe('QueryMarketBreadthUseCase', () => {
       '2026-08-31',
     ]);
     expect(response.sessions[1].ratio).toBeCloseTo(120 / 160, 5);
+  });
+
+  it('derives the 20-day ratio, averages and gauge from the short-term counts', async () => {
+    repository.getRecentAggregates.mockResolvedValue([
+      makeAggregate('2026-08-31', 120, 40, null, 900, 100),
+      makeAggregate('2026-08-28', 100, 50, null, 500, 500),
+    ]);
+
+    const response = await useCase.execute();
+
+    expect(response.sessions[0]).toMatchObject({
+      newHighs20: 500,
+      newLows20: 500,
+      ratio20: 0.5,
+      ratio20Ema10: 0.5,
+      ratio20Ema20: 0.5,
+      ratio20State: null,
+    });
+    expect(response.sessions[1].ratio20).toBeCloseTo(0.9, 5);
+    expect(response.sessions[1].ratio20State).toBe('GOOD');
+    expect(response.newHighLow20?.state).toBe('GOOD');
+  });
+
+  it('leaves the 20-day gauge null for rows predating the short-term counts', async () => {
+    repository.getRecentAggregates.mockResolvedValue([
+      makeAggregate('2026-08-31', 120, 40),
+      makeAggregate('2026-08-28', 100, 50),
+    ]);
+
+    const response = await useCase.execute();
+
+    expect(response.sessions[1].ratio20).toBeNull();
+    expect(response.sessions[1].ratio20Ema10).toBeNull();
+    expect(response.newHighLow20).toBeNull();
+    expect(response.newHighLow).not.toBeNull();
   });
 
   it('fetches 19 warm-up sessions beyond the default of 50', async () => {

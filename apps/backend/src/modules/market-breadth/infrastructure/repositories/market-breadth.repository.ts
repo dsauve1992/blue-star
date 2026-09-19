@@ -14,6 +14,8 @@ interface AggregateRow {
   universe_size: number;
   new_highs: number;
   new_lows: number;
+  new_highs_20d?: number | null;
+  new_lows_20d?: number | null;
   stacked_count?: number | null;
   missing_symbols: string[];
   partial: boolean;
@@ -68,12 +70,14 @@ export class MarketBreadthRepositoryImpl implements MarketBreadthRepository {
   async saveAggregate(aggregate: MarketBreadthAggregate): Promise<void> {
     await this.db.query(
       `INSERT INTO market_breadth_daily_aggregates
-        (id, date, universe_size, new_highs, new_lows, stacked_count, missing_symbols, partial, backfilled, created_at, updated_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $10)
+        (id, date, universe_size, new_highs, new_lows, new_highs_20d, new_lows_20d, stacked_count, missing_symbols, partial, backfilled, created_at, updated_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $12)
        ON CONFLICT (date) DO UPDATE SET
          universe_size = EXCLUDED.universe_size,
          new_highs = EXCLUDED.new_highs,
          new_lows = EXCLUDED.new_lows,
+         new_highs_20d = EXCLUDED.new_highs_20d,
+         new_lows_20d = EXCLUDED.new_lows_20d,
          stacked_count = EXCLUDED.stacked_count,
          missing_symbols = EXCLUDED.missing_symbols,
          partial = EXCLUDED.partial,
@@ -85,6 +89,8 @@ export class MarketBreadthRepositoryImpl implements MarketBreadthRepository {
         aggregate.universeSize,
         aggregate.newHighs,
         aggregate.newLows,
+        aggregate.newHighs20,
+        aggregate.newLows20,
         aggregate.stackedCount,
         JSON.stringify(aggregate.missingSymbols),
         aggregate.partial,
@@ -112,6 +118,8 @@ export class MarketBreadthRepositoryImpl implements MarketBreadthRepository {
       universeSize: row.universe_size,
       newHighs: row.new_highs,
       newLows: row.new_lows,
+      newHighs20: row.new_highs_20d ?? null,
+      newLows20: row.new_lows_20d ?? null,
       stackedCount: row.stacked_count ?? null,
       missingSymbols: row.missing_symbols ?? [],
       partial: row.partial,

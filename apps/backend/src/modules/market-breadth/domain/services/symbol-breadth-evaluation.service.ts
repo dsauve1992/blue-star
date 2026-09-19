@@ -15,10 +15,13 @@ export interface SymbolDayResult {
   evaluable: boolean;
   newHigh: boolean;
   newLow: boolean;
+  newHigh20: boolean;
+  newLow20: boolean;
   stacked: boolean;
 }
 
 export const REQUIRED_TRAILING_SESSIONS = 252;
+export const SHORT_TERM_SESSIONS = 20;
 export const PARTIAL_RUN_MISSING_THRESHOLD = 0.05;
 export const MIN_EVALUABLE_COVERAGE = 0.8;
 export const FAST_EMA_PERIOD = 9;
@@ -29,6 +32,8 @@ const NOT_EVALUABLE: Readonly<SymbolDayResult> = Object.freeze({
   evaluable: false,
   newHigh: false,
   newLow: false,
+  newHigh20: false,
+  newLow20: false,
   stacked: false,
 });
 
@@ -43,12 +48,19 @@ export function evaluateSymbolOnDate(
 
   const today = candles[indexOfD];
   const { newHigh, newLow } = evaluateNewHighNewLow(candles, indexOfD, window);
+  const shortTerm = evaluateNewHighNewLow(
+    candles,
+    indexOfD,
+    Math.min(SHORT_TERM_SESSIONS, window),
+  );
   const closes = candles.slice(0, indexOfD + 1).map((c) => c.close);
 
   return {
     evaluable: true,
     newHigh,
     newLow,
+    newHigh20: shortTerm.newHigh,
+    newLow20: shortTerm.newLow,
     stacked: isStacked({
       close: today.close,
       ema9: seededExponentialMovingAverage(closes, FAST_EMA_PERIOD, indexOfD),
@@ -84,6 +96,8 @@ export interface DailyAggregateOutput {
   universeSize: number;
   newHighs: number;
   newLows: number;
+  newHighs20: number;
+  newLows20: number;
   stackedCount: number;
   partial: boolean;
 }
@@ -101,6 +115,8 @@ export function hasSufficientCoverage(
 export function aggregateDay(input: DailyAggregateInput): DailyAggregateOutput {
   const newHighs = input.evaluableResults.filter((r) => r.newHigh).length;
   const newLows = input.evaluableResults.filter((r) => r.newLow).length;
+  const newHighs20 = input.evaluableResults.filter((r) => r.newHigh20).length;
+  const newLows20 = input.evaluableResults.filter((r) => r.newLow20).length;
   const stackedCount = input.evaluableResults.filter((r) => r.stacked).length;
   const missingRatio =
     input.totalUniverseSize > 0
@@ -111,6 +127,8 @@ export function aggregateDay(input: DailyAggregateInput): DailyAggregateOutput {
     universeSize: input.evaluableResults.length,
     newHighs,
     newLows,
+    newHighs20,
+    newLows20,
     stackedCount,
     partial: missingRatio > PARTIAL_RUN_MISSING_THRESHOLD,
   };

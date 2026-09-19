@@ -10,7 +10,6 @@ import {
   type Time,
   type WhitespaceData,
 } from "lightweight-charts";
-import type { MarketBreadthSession } from "../api/market-breadth.types";
 import { EmaBandSeries, type EmaBandData } from "./ema-band-series";
 
 const NEW_HIGHS_COLOR = "#3b82f6";
@@ -29,6 +28,9 @@ const RATIO_PANE_STRETCH = 2;
 const COUNT_PANE_STRETCH = 1;
 
 type RatioPoint = LineData<Time> | WhitespaceData<Time>;
+type CountPoint =
+  | { time: Time; value: number; color: string }
+  | WhitespaceData<Time>;
 type BandPoint = EmaBandData | WhitespaceData<Time>;
 
 function toRatioPoint(date: string, ratio: number | null): RatioPoint {
@@ -45,12 +47,32 @@ function toBandPoint(
   return fast === null || slow === null ? { time } : { time, fast, slow };
 }
 
+function toCountPoint(
+  date: string,
+  count: number | null,
+  sign: 1 | -1,
+  color: string,
+): CountPoint {
+  const time = date as Time;
+  return count === null ? { time } : { time, value: sign * count, color };
+}
+
+export interface BreadthHighLowPoint {
+  date: string;
+  highs: number | null;
+  lows: number | null;
+  ema10: number | null;
+  ema20: number | null;
+}
+
 interface MarketBreadthHistogramProps {
-  sessions: MarketBreadthSession[];
+  points: BreadthHighLowPoint[];
+  ariaLabel: string;
 }
 
 export function MarketBreadthHistogram({
-  sessions,
+  points,
+  ariaLabel,
 }: MarketBreadthHistogramProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
@@ -158,40 +180,34 @@ export function MarketBreadthHistogram({
       return;
 
     newHighsSeriesRef.current.setData(
-      sessions.map((session) => ({
-        time: session.date as Time,
-        value: session.newHighs,
-        color: NEW_HIGHS_COLOR,
-      })),
-    );
-    newLowsSeriesRef.current.setData(
-      sessions.map((session) => ({
-        time: session.date as Time,
-        value: -session.newLows,
-        color: NEW_LOWS_COLOR,
-      })),
-    );
-    bandSeriesRef.current.setData(
-      sessions.map((session) =>
-        toBandPoint(session.date, session.ratioEma10, session.ratioEma20),
+      points.map((point) =>
+        toCountPoint(point.date, point.highs, 1, NEW_HIGHS_COLOR),
       ),
     );
+    newLowsSeriesRef.current.setData(
+      points.map((point) =>
+        toCountPoint(point.date, point.lows, -1, NEW_LOWS_COLOR),
+      ),
+    );
+    bandSeriesRef.current.setData(
+      points.map((point) => toBandPoint(point.date, point.ema10, point.ema20)),
+    );
     ema20SeriesRef.current.setData(
-      sessions.map((session) => toRatioPoint(session.date, session.ratioEma20)),
+      points.map((point) => toRatioPoint(point.date, point.ema20)),
     );
     ema10SeriesRef.current.setData(
-      sessions.map((session) => toRatioPoint(session.date, session.ratioEma10)),
+      points.map((point) => toRatioPoint(point.date, point.ema10)),
     );
 
     chartRef.current?.timeScale().fitContent();
-  }, [sessions]);
+  }, [points]);
 
   return (
     <div
       ref={containerRef}
       className="h-72 w-full flex-1"
       role="img"
-      aria-label="Two-pane chart: the 10-day and 20-day exponential moving averages of the new-high/new-low ratio, shaded blue when EMA10 is above EMA20 and red otherwise, above a mirrored histogram of daily 52-week new highs and new lows"
+      aria-label={ariaLabel}
     />
   );
 }

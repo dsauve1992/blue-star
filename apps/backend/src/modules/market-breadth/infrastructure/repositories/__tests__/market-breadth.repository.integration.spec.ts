@@ -78,6 +78,8 @@ describe('MarketBreadthRepository Integration', () => {
       universeSize: 3400,
       newHighs: 120,
       newLows: 45,
+      newHighs20: 640,
+      newLows20: 210,
       stackedCount: 1500,
       missingSymbols: ['ZZZZ'],
       partial: false,
@@ -91,11 +93,36 @@ describe('MarketBreadthRepository Integration', () => {
     expect(saved.universeSize).toBe(3400);
     expect(saved.newHighs).toBe(120);
     expect(saved.newLows).toBe(45);
+    expect(saved.newHighs20).toBe(640);
+    expect(saved.newLows20).toBe(210);
     expect(saved.stackedCount).toBe(1500);
     expect(saved.missingSymbols).toEqual(['ZZZZ']);
     expect(saved.partial).toBe(false);
     expect(saved.backfilled).toBe(false);
     expect(saved.ratio).toBeCloseTo(120 / 165, 5);
+    expect(saved.ratio20).toBeCloseTo(640 / 850, 5);
+  });
+
+  it('round-trips null 20-day counts for rows predating the short-term gauge', async () => {
+    await repository.saveAggregate(
+      MarketBreadthAggregate.create({
+        date: BreadthDate.fromISOString('2026-08-31'),
+        universeSize: 3400,
+        newHighs: 120,
+        newLows: 45,
+        newHighs20: null,
+        newLows20: null,
+        stackedCount: 1500,
+        missingSymbols: [],
+        partial: false,
+        backfilled: false,
+      }),
+    );
+
+    const [saved] = await repository.getRecentAggregates(1);
+    expect(saved.newHighs20).toBeNull();
+    expect(saved.newLows20).toBeNull();
+    expect(saved.ratio20).toBeNull();
   });
 
   it('round-trips a null stacked_count for rows without trend data', async () => {
@@ -105,6 +132,8 @@ describe('MarketBreadthRepository Integration', () => {
         universeSize: 3400,
         newHighs: 120,
         newLows: 45,
+        newHighs20: null,
+        newLows20: null,
         stackedCount: null,
         missingSymbols: [],
         partial: false,
@@ -123,6 +152,8 @@ describe('MarketBreadthRepository Integration', () => {
         universeSize: 3400,
         newHighs: 120,
         newLows: 45,
+        newHighs20: null,
+        newLows20: null,
         stackedCount: 0,
         missingSymbols: [],
         partial: false,
@@ -143,6 +174,8 @@ describe('MarketBreadthRepository Integration', () => {
         universeSize: 3400,
         newHighs: 100,
         newLows: 50,
+        newHighs20: null,
+        newLows20: null,
         stackedCount: null,
         missingSymbols: [],
         partial: false,
@@ -156,6 +189,8 @@ describe('MarketBreadthRepository Integration', () => {
         universeSize: 3410,
         newHighs: 110,
         newLows: 40,
+        newHighs20: null,
+        newLows20: null,
         stackedCount: 1200,
         missingSymbols: ['AAPL'],
         partial: false,
@@ -179,6 +214,8 @@ describe('MarketBreadthRepository Integration', () => {
           universeSize: 100,
           newHighs: 1,
           newLows: 1,
+          newHighs20: null,
+          newLows20: null,
           stackedCount: 0,
           missingSymbols: [],
           partial: false,
@@ -202,6 +239,8 @@ describe('MarketBreadthRepository Integration', () => {
         universeSize: 0,
         newHighs: 0,
         newLows: 0,
+        newHighs20: null,
+        newLows20: null,
         stackedCount: 0,
         missingSymbols: [],
         partial: false,
