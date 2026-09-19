@@ -205,7 +205,7 @@ export function MarketBreadthHistogram({
   return (
     <div
       ref={containerRef}
-      className="h-72 w-full flex-1"
+      className="min-h-72 w-full flex-1"
       role="img"
       aria-label={ariaLabel}
     />
