@@ -183,6 +183,33 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
     expect(repository.saveAggregate).not.toHaveBeenCalled();
   });
 
+  it('skips a session the data provider has published for only a few symbols', async () => {
+    const symbols = Array.from({ length: 20 }, (_, i) => `SYM${i}`);
+    const aheadCandles = buildDailyPricePoints(sessionCount + 1);
+
+    universeService.fetchUniverse.mockResolvedValue({
+      scan_date: '2026-08-31',
+      universe_size: symbols.length,
+      symbols,
+    });
+    marketDataService.getHistoricalData.mockImplementation((symbol) =>
+      Promise.resolve({
+        symbol,
+        dateRange: FAKE_DATE_RANGE,
+        pricePoints: symbol.value === 'SYM0' ? aheadCandles : candles,
+      }),
+    );
+
+    const result = await service.runDaily();
+
+    expect(result.sessionsRecomputed).toHaveLength(4);
+    expect(repository.saveAggregate).toHaveBeenCalledTimes(4);
+    const savedAggregates = repository.saveAggregate.mock.calls.map(
+      (call) => call[0],
+    );
+    expect(savedAggregates.every((a) => a.universeSize === 20)).toBe(true);
+  });
+
   describe('runBackfill', () => {
     it('does not persist membership', async () => {
       await service.runBackfill(5);

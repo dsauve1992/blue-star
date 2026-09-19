@@ -20,6 +20,7 @@ export interface SymbolDayResult {
 
 export const REQUIRED_TRAILING_SESSIONS = 252;
 export const PARTIAL_RUN_MISSING_THRESHOLD = 0.05;
+export const MIN_EVALUABLE_COVERAGE = 0.8;
 export const FAST_EMA_PERIOD = 9;
 export const SLOW_EMA_PERIOD = 21;
 export const TREND_SMA_PERIOD = 50;
@@ -85,6 +86,16 @@ export interface DailyAggregateOutput {
   newLows: number;
   stackedCount: number;
   partial: boolean;
+}
+
+export function hasSufficientCoverage(
+  evaluableCount: number,
+  expectedSymbolCount: number,
+): boolean {
+  if (expectedSymbolCount <= 0) {
+    return false;
+  }
+  return evaluableCount / expectedSymbolCount >= MIN_EVALUABLE_COVERAGE;
 }
 
 export function aggregateDay(input: DailyAggregateInput): DailyAggregateOutput {

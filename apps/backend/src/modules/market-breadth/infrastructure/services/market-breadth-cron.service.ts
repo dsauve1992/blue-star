@@ -14,7 +14,7 @@ export class MarketBreadthCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('0 20 * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('0 22 * * 1-5', { timeZone: 'America/Toronto' })
   async runDailyBreadth(): Promise<void> {
     const jobName = 'Market Breadth NH/NL';
     this.logger.log(`Starting ${jobName}`);

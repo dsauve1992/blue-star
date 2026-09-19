@@ -11,6 +11,7 @@ import {
   aggregateDay,
   BreadthCandle,
   evaluateSymbolOnDate,
+  hasSufficientCoverage,
   SymbolDayResult,
 } from '../../domain/services/symbol-breadth-evaluation.service';
 import {
@@ -129,7 +130,10 @@ export class MarketBreadthAnalysisServiceImpl
       sessions,
     );
 
+    const expectedSymbolCount = payload.symbols.length - missingSymbols.length;
+
     const aggregates: MarketBreadthAggregate[] = [];
+    const sessionsRecomputed: string[] = [];
     for (const sessionDate of sessionDates) {
       const aggregate = this.computeAndBuildAggregate({
         sessionDate,
@@ -138,14 +142,23 @@ export class MarketBreadthAnalysisServiceImpl
         missingSymbols,
         backfilled,
       });
+
+      if (!hasSufficientCoverage(aggregate.universeSize, expectedSymbolCount)) {
+        this.logger.warn(
+          `Skipping market breadth session ${sessionDate}: only ${aggregate.universeSize} of ${expectedSymbolCount} symbols had a candle for that session`,
+        );
+        continue;
+      }
+
       await this.repository.saveAggregate(aggregate);
       aggregates.push(aggregate);
+      sessionsRecomputed.push(sessionDate);
     }
 
     return {
       scanDate: payload.scan_date,
       universeSize: payload.universe_size,
-      sessionsRecomputed: sessionDates,
+      sessionsRecomputed,
       aggregates,
     };
   }

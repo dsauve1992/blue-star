@@ -2,6 +2,8 @@ import {
   aggregateDay,
   BreadthCandle,
   evaluateSymbolOnDate,
+  hasSufficientCoverage,
+  MIN_EVALUABLE_COVERAGE,
   PARTIAL_RUN_MISSING_THRESHOLD,
   REQUIRED_TRAILING_SESSIONS,
   SymbolDayResult,
@@ -262,5 +264,23 @@ describe('aggregateDay', () => {
       evaluableResults: [],
     });
     expect(output.partial).toBe(false);
+  });
+});
+
+describe('hasSufficientCoverage', () => {
+  it('accepts a session evaluated for every reachable symbol', () => {
+    expect(hasSufficientCoverage(2495, 2495)).toBe(true);
+  });
+
+  it('accepts a session at the coverage threshold', () => {
+    expect(hasSufficientCoverage(100 * MIN_EVALUABLE_COVERAGE, 100)).toBe(true);
+  });
+
+  it('rejects a session the data provider has barely published', () => {
+    expect(hasSufficientCoverage(14, 2495)).toBe(false);
+  });
+
+  it('rejects a session when no symbol is reachable', () => {
+    expect(hasSufficientCoverage(0, 0)).toBe(false);
   });
 });
