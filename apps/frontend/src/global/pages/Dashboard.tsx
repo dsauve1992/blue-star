@@ -1,7 +1,5 @@
 import { PageContainer } from "../design-system/page-container";
 import { MarketBreadthCard } from "../../market-breadth/components/MarketBreadthCard";
-import { TrendBreadthCard } from "../../market-breadth/components/TrendBreadthCard";
-import { ShortTermBreadthCard } from "../../market-breadth/components/ShortTermBreadthCard";
 
 export default function Dashboard() {
   return (
@@ -16,11 +14,7 @@ export default function Dashboard() {
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2">
-          <TrendBreadthCard />
-          <MarketBreadthCard />
-          <ShortTermBreadthCard />
-        </div>
+        <MarketBreadthCard />
       </div>
     </PageContainer>
   );
