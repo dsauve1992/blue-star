@@ -5,10 +5,6 @@ inputs:
     description: 'Node.js version'
     required: false
     default: '22'
-  cache-key:
-    description: 'Cache key for dependencies'
-    required: false
-    default: 'npm-deps'
 
 runs:
   using: 'composite'
@@ -24,11 +20,3 @@ runs:
       shell: bash
       run: |
         npm ci --prefer-offline --no-audit --no-fund --silent
-        
-    - name: Cache node_modules
-      uses: actions/cache@v4
-      with:
-        path: node_modules
-        key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-modules-
