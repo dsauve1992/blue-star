@@ -117,6 +117,6 @@ export class ComputeFinancialReportUseCase {
     if (previous === 0) {
       return current > 0 ? 100 : 0;
     }
-    return (current / previous - 1) * 100;
+    return ((current - previous) / Math.abs(previous)) * 100;
   }
 }
