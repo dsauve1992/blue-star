@@ -1,4 +1,4 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, UnauthorizedException } from '@nestjs/common';
 import { PassportStrategy } from '@nestjs/passport';
 import { ExtractJwt, Strategy } from 'passport-jwt';
 import { UserId } from '../../shared/value-objects/user-id';
@@ -11,7 +11,6 @@ interface JwtPayload {
   given_name?: string;
   family_name?: string;
   aud?: string;
-  iss?: string;
 }
 
 @Injectable()
@@ -36,16 +35,18 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
 
   validate(payload: JwtPayload) {
     if (!payload || !payload.sub) {
-      throw new Error('Invalid token payload');
+      throw new UnauthorizedException('Invalid token payload');
     }
 
-    // Validate issuer (audience validation removed for Kinde compatibility)
-    if (payload.iss !== `https://${kindeConfig.domain}`) {
-      throw new Error('Invalid token issuer');
+    let userId: UserId;
+    try {
+      userId = UserId.of(payload.sub);
+    } catch {
+      throw new UnauthorizedException('Invalid token subject');
     }
 
     return {
-      userId: UserId.of(payload.sub),
+      userId,
       email: payload.email,
       givenName: payload.given_name,
       familyName: payload.family_name,
