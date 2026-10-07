@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../../../../config/database.service';
-import { Symbol } from '../../domain/value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 import { PricePoint } from '../../domain/value-objects/price-point';
 import { MarketDataCacheRepository } from '../../domain/repositories/market-data-cache.repository.interface';
 import { Interval } from '../../domain/services/market-data.service';

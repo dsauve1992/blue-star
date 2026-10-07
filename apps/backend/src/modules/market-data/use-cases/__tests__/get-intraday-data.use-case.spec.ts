@@ -2,8 +2,8 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { GetIntradayDataUseCase } from '../get-intraday-data.use-case';
 import { MarketDataService } from '../../domain/services/market-data.service';
 import { MARKET_DATA_SERVICE } from '../../constants/tokens';
-import { Symbol } from '../../domain/value-objects/symbol';
-import { DateRange } from '../../domain/value-objects/date-range';
+import { Symbol } from '../../../../shared/value-objects/symbol';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import { PricePoint } from '../../domain/value-objects/price-point';
 
 describe('GetIntradayDataUseCase', () => {

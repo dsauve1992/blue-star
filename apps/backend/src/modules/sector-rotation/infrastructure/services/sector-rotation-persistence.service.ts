@@ -2,7 +2,7 @@ import { Injectable, Inject } from '@nestjs/common';
 import { RotationUniverse } from '../../domain/value-objects/rotation-universe';
 import { SectorRotationResult } from '../../domain/value-objects/sector-rotation-result';
 import { SectorRotationDataPoint } from '../../domain/value-objects/sector-rotation-data-point';
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import { SectorRotationPersistenceService } from '../../domain/services/sector-rotation-persistence.service';
 import {
   SectorRotationCalculationService,

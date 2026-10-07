@@ -1,11 +1,11 @@
-import { DateRange } from '../../domain/value-objects/date-range';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import type {
   HistoricalData,
   MarketDataService,
 } from '../../domain/services/market-data.service';
 import type { MarketDataCacheRepository } from '../../domain/repositories/market-data-cache.repository.interface';
 import { PricePoint } from '../../domain/value-objects/price-point';
-import { Symbol } from '../../domain/value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 import { CachedMarketDataService } from './cached-market-data.service';
 
 describe('CachedMarketDataService', () => {

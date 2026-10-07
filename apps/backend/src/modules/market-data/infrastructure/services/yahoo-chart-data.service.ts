@@ -4,8 +4,8 @@ import {
   ChartData,
   ChartInterval,
 } from '../../domain/services/chart-data.service';
-import { Symbol } from '../../domain/value-objects/symbol';
-import { DateRange } from '../../domain/value-objects/date-range';
+import { Symbol } from '../../../../shared/value-objects/symbol';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import {
   MarketDataService,
   Interval,

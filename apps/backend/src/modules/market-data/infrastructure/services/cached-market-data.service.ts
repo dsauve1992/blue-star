@@ -15,9 +15,9 @@ import {
   determineInterval,
   isCacheableHistoricalInterval,
 } from '../../domain/services/market-data.service';
-import { DateRange } from '../../domain/value-objects/date-range';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import { PricePoint } from '../../domain/value-objects/price-point';
-import { Symbol } from '../../domain/value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 
 const MAX_END_GAP_DAYS = 1;
 

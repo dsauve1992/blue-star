@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { DateRange } from '../../market-data/domain/value-objects/date-range';
+import { DateRange } from '../../../shared/value-objects/date-range';
 import { SectorRotationResult } from '../domain/value-objects/sector-rotation-result';
 import { SectorRotationPersistenceService } from '../domain/services/sector-rotation-persistence.service';
 import { SECTOR_ROTATION_PERSISTENCE_SERVICE } from '../constants/tokens';

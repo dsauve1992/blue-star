@@ -4,7 +4,7 @@ import {
   CompanyProfile,
   CompanyProfileService,
 } from '../../domain/services/company-profile.service';
-import { Symbol } from '../../domain/value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 
 interface FmpProfileResponse {
   symbol: string;

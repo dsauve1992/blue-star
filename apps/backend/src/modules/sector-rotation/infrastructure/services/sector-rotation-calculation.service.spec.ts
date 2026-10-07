@@ -1,6 +1,6 @@
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
-import { Symbol } from '../../../market-data/domain/value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 import type {
   HistoricalData,
   MarketDataService,

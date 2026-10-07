@@ -1,8 +1,8 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { GapDetectionServiceImpl } from './gap-detection.service';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
-import { Symbol } from '../../../market-data/domain/value-objects/symbol';
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
+import { Symbol } from '../../../../shared/value-objects/symbol';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
 import type {
   HistoricalData,
