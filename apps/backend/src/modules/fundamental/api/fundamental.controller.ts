@@ -1,6 +1,6 @@
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
 import { Public } from '../../auth/public.decorator';
-import { Symbol } from '../../market-data/domain/value-objects/symbol';
+import { Symbol } from '../../../shared/value-objects/symbol';
 import { ComputeFinancialReportUseCase } from '../use-cases/compute-financial-report.use-case';
 import { FundamentalApiMapper } from './fundamental-api.mapper';
 import { ComputeFinancialReportApiResponseDto } from './fundamental-api.dto';

@@ -2,7 +2,7 @@ import { MarketBreadthAnalysisServiceImpl } from './market-breadth-analysis.serv
 import { MarketBreadthUniverseService } from '../../domain/services/market-breadth-universe.service';
 import { MarketBreadthRepository } from '../../domain/repositories/market-breadth.repository.interface';
 import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
 import { REQUIRED_TRAILING_SESSIONS } from '../../domain/services/symbol-breadth-evaluation.service';
 

@@ -2,7 +2,7 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { GetCompanyProfileUseCase } from '../get-company-profile.use-case';
 import { CompanyProfileService } from '../../domain/services/company-profile.service';
 import { COMPANY_PROFILE_SERVICE } from '../../constants/tokens';
-import { Symbol } from '../../domain/value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 import { GetOrFetchStockClassificationUseCase } from '../../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
 import { StockClassification } from '../../../stock-classification/domain/entities/stock-classification.entity';
 

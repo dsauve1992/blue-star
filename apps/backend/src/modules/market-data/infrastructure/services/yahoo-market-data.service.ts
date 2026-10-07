@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import YahooFinance from 'yahoo-finance2';
-import { Symbol } from '../../domain/value-objects/symbol';
-import { DateRange } from '../../domain/value-objects/date-range';
+import { Symbol } from '../../../../shared/value-objects/symbol';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import { PricePoint } from '../../domain/value-objects/price-point';
 import {
   deduplicatePricePoints,

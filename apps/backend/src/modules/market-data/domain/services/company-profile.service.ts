@@ -1,4 +1,4 @@
-import { Symbol } from '../value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 
 export interface CompanyProfile {
   symbol: string;

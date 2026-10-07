@@ -1,5 +1,5 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
-import { Symbol } from '../domain/value-objects/symbol';
+import { Symbol } from '../../../shared/value-objects/symbol';
 import {
   CompanyProfile,
   CompanyProfileService,

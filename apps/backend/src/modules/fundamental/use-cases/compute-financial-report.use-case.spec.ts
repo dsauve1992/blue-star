@@ -1,7 +1,7 @@
 import { ComputeFinancialReportUseCase } from './compute-financial-report.use-case';
 import { FundamentalService } from '../../market-data/domain/services/fundamental.service';
 import { IncomeStatement } from '../../market-data/domain/value-objects/income-statement';
-import { Symbol } from '../../market-data/domain/value-objects/symbol';
+import { Symbol } from '../../../shared/value-objects/symbol';
 
 const statement = (
   fiscalYear: string,

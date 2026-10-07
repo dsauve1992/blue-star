@@ -1,4 +1,4 @@
-import { Symbol } from '../value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 import { PricePoint } from '../value-objects/price-point';
 import { Interval } from '../services/market-data.service';
 

@@ -1,4 +1,4 @@
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import { SectorRotationResult } from '../value-objects/sector-rotation-result';
 import { RotationUniverse } from '../value-objects/rotation-universe';
 

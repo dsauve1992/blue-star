@@ -1,5 +1,5 @@
 import { Injectable, Inject } from '@nestjs/common';
-import { Symbol } from '../../market-data/domain/value-objects/symbol';
+import { Symbol } from '../../../shared/value-objects/symbol';
 import { IncomeStatement } from '../../market-data/domain/value-objects/income-statement';
 import { FundamentalService } from '../../market-data/domain/services/fundamental.service';
 import { FUNDAMENTAL_SERVICE } from '../../market-data/constants/tokens';

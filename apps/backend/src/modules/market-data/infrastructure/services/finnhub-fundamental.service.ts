@@ -4,7 +4,7 @@ import {
   FundamentalService,
   GetIncomeStatementHistoryOptions,
 } from '../../domain/services/fundamental.service';
-import { Symbol } from '../../domain/value-objects/symbol';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 import { IncomeStatement } from '../../domain/value-objects/income-statement';
 
 interface FinnhubReportLineItem {

@@ -20,8 +20,8 @@ import {
   MARKET_BREADTH_UNIVERSE_SERVICE,
 } from '../../constants/tokens';
 import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
-import { Symbol } from '../../../market-data/domain/value-objects/symbol';
+import { DateRange } from '../../../../shared/value-objects/date-range';
+import { Symbol } from '../../../../shared/value-objects/symbol';
 import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
 
 export const RECOMPUTE_SESSIONS = 5;

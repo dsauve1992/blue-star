@@ -1,6 +1,6 @@
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
-import { Symbol } from '../domain/value-objects/symbol';
-import { DateRange } from '../domain/value-objects/date-range';
+import { Symbol } from '../../../shared/value-objects/symbol';
+import { DateRange } from '../../../shared/value-objects/date-range';
 import { GetHistoricalDataUseCase } from '../use-cases/get-historical-data.use-case';
 import { GetChartDataUseCase } from '../use-cases/get-chart-data.use-case';
 import { GetIntradayDataUseCase } from '../use-cases/get-intraday-data.use-case';

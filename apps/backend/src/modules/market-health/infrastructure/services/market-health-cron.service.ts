@@ -7,8 +7,8 @@ import { NotificationPriority } from '../../../notification/domain/services/noti
 import { NotificationTopic } from '../../../notification/domain/value-objects/notification-topic';
 import { NotificationTitle } from '../../../notification/domain/value-objects/notification-title';
 import { NotificationMessage } from '../../../notification/domain/value-objects/notification-message';
-import { Symbol } from '../../../market-data/domain/value-objects/symbol';
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
+import { Symbol } from '../../../../shared/value-objects/symbol';
+import { DateRange } from '../../../../shared/value-objects/date-range';
 import type { MarketHealthRepository } from '../../domain/repositories/market-health.repository.interface';
 import { MarketHealth } from '../../domain/entities/market-health.entity';
 import {
