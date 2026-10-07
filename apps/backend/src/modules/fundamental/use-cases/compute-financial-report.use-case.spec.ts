@@ -1,0 +1,114 @@
+import { ComputeFinancialReportUseCase } from './compute-financial-report.use-case';
+import { FundamentalService } from '../../market-data/domain/services/fundamental.service';
+import { IncomeStatement } from '../../market-data/domain/value-objects/income-statement';
+import { Symbol } from '../../market-data/domain/value-objects/symbol';
+
+const statement = (
+  fiscalYear: string,
+  period: string,
+  eps: number,
+  revenue = 100,
+) => IncomeStatement.of({ symbol: 'AAPL', fiscalYear, period, eps, revenue });
+
+describe('ComputeFinancialReportUseCase', () => {
+  let getIncomeStatementHistory: jest.Mock;
+  let useCase: ComputeFinancialReportUseCase;
+
+  const run = async (statements: IncomeStatement[]) => {
+    getIncomeStatementHistory.mockResolvedValue(statements);
+    const { report } = await useCase.execute({ symbol: Symbol.of('AAPL') });
+    return report.quarterlyGrowths;
+  };
+
+  beforeEach(() => {
+    getIncomeStatementHistory = jest.fn();
+    useCase = new ComputeFinancialReportUseCase({
+      getIncomeStatementHistory,
+    } as unknown as FundamentalService);
+  });
+
+  it('computes growth against a positive base', async () => {
+    const [latest] = await run([
+      statement('2024', 'Q1', 1.5, 200),
+      statement('2023', 'Q1', 1, 100),
+    ]);
+
+    expect(latest.epsGrowthPercent).toBeCloseTo(50);
+    expect(latest.revenueGrowthPercent).toBeCloseTo(100);
+  });
+
+  it('reports positive growth when EPS turns from negative to positive', async () => {
+    const [latest] = await run([
+      statement('2024', 'Q1', 0.5),
+      statement('2023', 'Q1', -1),
+    ]);
+
+    expect(latest.epsGrowthPercent).toBeCloseTo(150);
+  });
+
+  it('reports positive growth when a loss shrinks', async () => {
+    const [latest] = await run([
+      statement('2024', 'Q1', -0.5),
+      statement('2023', 'Q1', -1),
+    ]);
+
+    expect(latest.epsGrowthPercent).toBeCloseTo(50);
+  });
+
+  it('reports negative growth when a loss widens', async () => {
+    const [latest] = await run([
+      statement('2024', 'Q1', -2),
+      statement('2023', 'Q1', -1),
+    ]);
+
+    expect(latest.epsGrowthPercent).toBeCloseTo(-100);
+  });
+
+  it('handles a zero base', async () => {
+    const growths = await run([
+      statement('2024', 'Q1', 1),
+      statement('2024', 'Q2', -1),
+      statement('2024', 'Q3', 0),
+      statement('2023', 'Q1', 0),
+      statement('2023', 'Q2', 0),
+      statement('2023', 'Q3', 0),
+    ]);
+
+    const byQuarter = Object.fromEntries(
+      growths
+        .filter((g) => g.year === '2024')
+        .map((g) => [g.quarter, g.epsGrowthPercent]),
+    );
+    expect(byQuarter).toEqual({ Q1: 100, Q2: 0, Q3: 0 });
+  });
+
+  it('returns null growth when the prior-year quarter is missing', async () => {
+    const [latest] = await run([statement('2024', 'Q1', 1)]);
+
+    expect(latest.epsGrowthPercent).toBeNull();
+    expect(latest.revenueGrowthPercent).toBeNull();
+  });
+
+  it('orders newest first and ignores non-quarterly periods', async () => {
+    const growths = await run([
+      statement('2023', 'Q4', 1),
+      statement('2024', 'Q1', 1),
+      statement('2024', 'FY', 1),
+      statement('2023', 'Q2', 1),
+    ]);
+
+    expect(growths.map((g) => `${g.quarter}-${g.year}`)).toEqual([
+      'Q1-2024',
+      'Q4-2023',
+      'Q2-2023',
+    ]);
+  });
+
+  it('caps the report at 8 quarters', async () => {
+    const statements = ['2021', '2022', '2023', '2024'].flatMap((year) =>
+      ['Q1', 'Q2', 'Q3', 'Q4'].map((quarter) => statement(year, quarter, 1)),
+    );
+
+    expect(await run(statements)).toHaveLength(8);
+  });
+});
