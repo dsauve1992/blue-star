@@ -8,6 +8,8 @@ import type { StockClassifierService } from '../domain/services/stock-classifier
 import { StockClassification } from '../domain/entities/stock-classification.entity';
 import { mapIndustryKeyToGroup } from '../infrastructure/industry-key-to-group.map';
 
+const NULL_GROUP_RETRY_WINDOW_MS = 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class GetOrFetchStockClassificationUseCase {
   private readonly logger = new Logger(
@@ -24,11 +26,52 @@ export class GetOrFetchStockClassificationUseCase {
   async execute(ticker: string): Promise<StockClassification> {
     const normalized = ticker.trim().toUpperCase();
     const cached = await this.repository.findByTicker(normalized);
-    if (cached) {
+    if (cached?.industryGroup) {
       return cached;
     }
 
+    if (cached) {
+      return this.retryUnclassified(normalized, cached);
+    }
+
+    return this.classifyAndSave(normalized);
+  }
+
+  private async retryUnclassified(
+    ticker: string,
+    cached: StockClassification,
+  ): Promise<StockClassification> {
+    const remappedGroup = cached.industryKey
+      ? mapIndustryKeyToGroup(cached.industryKey)
+      : null;
+    if (remappedGroup) {
+      const healed = StockClassification.create({
+        ticker,
+        sector: cached.sector,
+        industry: cached.industry,
+        industryKey: cached.industryKey,
+        industryGroup: remappedGroup,
+      });
+      await this.repository.save(healed);
+      return healed;
+    }
+
+    const age = Date.now() - cached.classifiedAt.getTime();
+    if (age < NULL_GROUP_RETRY_WINDOW_MS) {
+      return cached;
+    }
+
+    return this.classifyAndSave(ticker, cached);
+  }
+
+  private async classifyAndSave(
+    normalized: string,
+    cached?: StockClassification,
+  ): Promise<StockClassification> {
     const raw = await this.classifier.classify(normalized);
+    if (cached && !raw.industryKey) {
+      return cached;
+    }
     const industryGroup = mapIndustryKeyToGroup(raw.industryKey);
     if (raw.industryKey && !industryGroup) {
       this.logger.warn(
