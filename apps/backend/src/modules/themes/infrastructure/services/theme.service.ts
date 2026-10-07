@@ -52,8 +52,6 @@ export class ThemeServiceImpl implements ThemeService {
           await this.themeRepository.saveTheme(updatedTheme);
         }
 
-        await this.themeRepository.deleteAllThemeTickers(theme.id);
-
         const tickerEntities = themeData.tickers.map((ticker) =>
           ThemeTickerEntity.of({
             id: randomUUID(),
@@ -63,7 +61,10 @@ export class ThemeServiceImpl implements ThemeService {
           }),
         );
 
-        await this.themeRepository.saveThemeTickers(theme.id, tickerEntities);
+        await this.themeRepository.replaceThemeTickers(
+          theme.id,
+          tickerEntities,
+        );
         this.logger.log(
           `Saved ${tickerEntities.length} tickers for theme: ${themeData.theme}`,
         );
