@@ -1,15 +1,15 @@
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
+import { DateRange } from '../../domain/value-objects/date-range';
 import type {
   HistoricalData,
   MarketDataService,
-} from '../../../market-data/domain/services/market-data.service';
-import type { MarketDataCacheRepository } from '../../../market-data/domain/repositories/market-data-cache.repository.interface';
-import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
-import { Symbol } from '../../../market-data/domain/value-objects/symbol';
-import { SectorRotationCachedMarketDataService } from './sector-rotation-cached-market-data.service';
+} from '../../domain/services/market-data.service';
+import type { MarketDataCacheRepository } from '../../domain/repositories/market-data-cache.repository.interface';
+import { PricePoint } from '../../domain/value-objects/price-point';
+import { Symbol } from '../../domain/value-objects/symbol';
+import { CachedMarketDataService } from './cached-market-data.service';
 
-describe('SectorRotationCachedMarketDataService', () => {
-  let service: SectorRotationCachedMarketDataService;
+describe('CachedMarketDataService', () => {
+  let service: CachedMarketDataService;
   let marketDataService: jest.Mocked<MarketDataService>;
   let cacheRepository: jest.Mocked<MarketDataCacheRepository>;
 
@@ -26,10 +26,7 @@ describe('SectorRotationCachedMarketDataService', () => {
       savePricePoints: jest.fn(),
     };
 
-    service = new SectorRotationCachedMarketDataService(
-      marketDataService,
-      cacheRepository,
-    );
+    service = new CachedMarketDataService(marketDataService, cacheRepository);
   });
 
   afterEach(() => {
@@ -70,7 +67,7 @@ describe('SectorRotationCachedMarketDataService', () => {
       point('2025-01-08T00:00:00.000Z', 101),
       point('2025-01-15T00:00:00.000Z', 102),
       point('2025-01-22T00:00:00.000Z', 103),
-      point('2025-01-29T00:00:00.000Z', 104),
+      point('2025-01-30T00:00:00.000Z', 104),
     ];
     cacheRepository.findBySymbolAndDateRange.mockResolvedValue(
       cachedPricePoints,
@@ -245,5 +242,28 @@ describe('SectorRotationCachedMarketDataService', () => {
       undefined,
     );
     expect(result).toEqual(historicalData(symbol, dateRange, intradayPoints));
+  });
+
+  it('should re-fetch when the cache ends more than one day before the requested end date', async () => {
+    const symbol = Symbol.of('XLE');
+    const dateRange = DateRange.of(
+      new Date('2025-01-01T00:00:00.000Z'),
+      new Date('2025-02-04T00:00:00.000Z'),
+    );
+    const cachedPricePoints = [
+      point('2025-01-01T00:00:00.000Z', 100),
+      point('2025-02-01T00:00:00.000Z', 101),
+    ];
+    const fetchedPricePoints = [point('2025-02-03T00:00:00.000Z', 102)];
+    cacheRepository.findBySymbolAndDateRange.mockResolvedValue(
+      cachedPricePoints,
+    );
+    marketDataService.getHistoricalData.mockResolvedValue(
+      historicalData(symbol, dateRange, fetchedPricePoints),
+    );
+
+    await service.getHistoricalData(symbol, dateRange, '1d');
+
+    expect(marketDataService.getHistoricalData).toHaveBeenCalledTimes(1);
   });
 });

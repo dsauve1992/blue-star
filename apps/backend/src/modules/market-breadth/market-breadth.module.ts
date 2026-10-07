@@ -1,11 +1,11 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../config/database.module';
 import { MarketDataModule } from '../market-data/market-data.module';
+import { CACHED_MARKET_DATA_SERVICE } from '../market-data/constants/tokens';
 import { NotificationModule } from '../notification/notification.module';
 import { MarketBreadthController } from './api/market-breadth.controller';
 import { MarketBreadthRepositoryImpl } from './infrastructure/repositories/market-breadth.repository';
 import { PythonMarketBreadthUniverseService } from './infrastructure/services/python-market-breadth-universe.service';
-import { MarketBreadthCachedMarketDataService } from './infrastructure/services/market-breadth-cached-market-data.service';
 import { MarketBreadthAnalysisServiceImpl } from './infrastructure/services/market-breadth-analysis.service';
 import { MarketBreadthCronService } from './infrastructure/services/market-breadth-cron.service';
 import { RunMarketBreadthUseCase } from './use-cases/run-market-breadth.use-case';
@@ -38,7 +38,7 @@ export {
     },
     {
       provide: MARKET_BREADTH_MARKET_DATA_SERVICE,
-      useClass: MarketBreadthCachedMarketDataService,
+      useExisting: CACHED_MARKET_DATA_SERVICE,
     },
     {
       provide: MARKET_BREADTH_ANALYSIS_SERVICE,
