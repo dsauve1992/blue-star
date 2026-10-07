@@ -14,7 +14,7 @@ import { RotationUniverse } from '../../domain/value-objects/rotation-universe';
 import { ZScoreNormalizer } from './z-score-normalizer.service';
 import { BenchmarkCalculator } from './benchmark-calculator.service';
 import { WeekUtils } from '../utils/week-utils';
-import { EMACalculator } from '../utils/ema-calculator';
+import { EMACalculator } from '../../../../shared/utils/ema-calculator';
 import { RollingStatsCalculator, RollingStats } from '../utils/rolling-stats';
 import { RRG_PARAMETERS } from '../../constants/rrg-parameters';
 import { SECTOR_ROTATION_MARKET_DATA_SERVICE } from '../../constants/tokens';
