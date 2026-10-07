@@ -2,30 +2,28 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import {
   MARKET_DATA_CACHE_REPOSITORY,
   MARKET_DATA_SERVICE,
-} from '../../../market-data/constants/tokens';
-import type { MarketDataCacheRepository } from '../../../market-data/domain/repositories/market-data-cache.repository.interface';
+} from '../../constants/tokens';
+import type { MarketDataCacheRepository } from '../../domain/repositories/market-data-cache.repository.interface';
 import type {
   HistoricalData,
   HistoricalDataFetchOptions,
   Interval,
   MarketDataService,
-} from '../../../market-data/domain/services/market-data.service';
+} from '../../domain/services/market-data.service';
 import {
   deduplicatePricePoints,
   determineInterval,
   isCacheableHistoricalInterval,
-} from '../../../market-data/domain/services/market-data.service';
-import { DateRange } from '../../../market-data/domain/value-objects/date-range';
-import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
-import { Symbol } from '../../../market-data/domain/value-objects/symbol';
+} from '../../domain/services/market-data.service';
+import { DateRange } from '../../domain/value-objects/date-range';
+import { PricePoint } from '../../domain/value-objects/price-point';
+import { Symbol } from '../../domain/value-objects/symbol';
 
 const MAX_END_GAP_DAYS = 1;
 
 @Injectable()
-export class MarketBreadthCachedMarketDataService implements MarketDataService {
-  private readonly logger = new Logger(
-    MarketBreadthCachedMarketDataService.name,
-  );
+export class CachedMarketDataService implements MarketDataService {
+  private readonly logger = new Logger(CachedMarketDataService.name);
 
   constructor(
     @Inject(MARKET_DATA_SERVICE)
