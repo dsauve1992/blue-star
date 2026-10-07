@@ -61,7 +61,7 @@ What this ticket deliberately does not touch.
 ## Verification
 Tests to add or run; for UI/behaviour changes, the flow to exercise in the running app.
 ## Category
-test | refactor | bug | security | ux | architecture
+test | refactor | bug | security | ux | architecture | devops
 ```
 
 If a `gh project` call fails with a missing-scope error, the token needs `read:project` and `project`; stop and report instead of working around it.
