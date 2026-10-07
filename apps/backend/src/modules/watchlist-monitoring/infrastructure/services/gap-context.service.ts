@@ -13,10 +13,7 @@ import {
 } from '../../../stock-analysis/constants/tokens';
 import type { RsRatingRepository } from '../../../stock-analysis/domain/repositories/rs-rating.repository.interface';
 import type { IndustryGroupRsRatingRepository } from '../../../stock-analysis/domain/repositories/industry-group-rs-rating.repository.interface';
-import { SECTOR_ROTATION_DATA_READ_REPOSITORY } from '../../../sector-rotation/constants/tokens';
-import type { SectorRotationDataReadRepository } from '../../../sector-rotation/domain/repositories/sector-rotation-data-read.repository.interface';
-import { RotationUniverseRegistry } from '../../../sector-rotation/infrastructure/universes/rotation-universe.registry';
-import { GICS_INDUSTRY_GROUP_UNIVERSE_ID } from '../../../sector-rotation/infrastructure/universes/gics-industry-group.universe';
+import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/use-cases/get-industry-group-quadrant.use-case';
 
 @Injectable()
 export class GapContextServiceImpl implements IGapContextService {
@@ -29,9 +26,7 @@ export class GapContextServiceImpl implements IGapContextService {
     private readonly rsRatingRepository: RsRatingRepository,
     @Inject(INDUSTRY_GROUP_RS_RATING_REPOSITORY)
     private readonly industryGroupRsRatingRepository: IndustryGroupRsRatingRepository,
-    @Inject(SECTOR_ROTATION_DATA_READ_REPOSITORY)
-    private readonly sectorRotationRepository: SectorRotationDataReadRepository,
-    private readonly universeRegistry: RotationUniverseRegistry,
+    private readonly getIndustryGroupQuadrant: GetIndustryGroupQuadrantUseCase,
   ) {}
 
   async enrich(ticker: WatchlistTicker): Promise<GapContext> {
@@ -94,17 +89,9 @@ export class GapContextServiceImpl implements IGapContextService {
   ): Promise<IndustryGroupQuadrant | null> {
     if (!industryGroup) return null;
     try {
-      const universe = this.universeRegistry.get(
-        GICS_INDUSTRY_GROUP_UNIVERSE_ID,
-      );
-      const member = universe.findByName(industryGroup);
-      if (!member) return null;
-
-      const dataPoint = await this.sectorRotationRepository.findLatestBySector(
-        GICS_INDUSTRY_GROUP_UNIVERSE_ID,
-        member.symbol,
-      );
-      return dataPoint?.quadrant.value ?? null;
+      const quadrant =
+        await this.getIndustryGroupQuadrant.execute(industryGroup);
+      return quadrant as IndustryGroupQuadrant | null;
     } catch (error) {
       this.warn('industry-group quadrant', industryGroup, error);
       return null;
