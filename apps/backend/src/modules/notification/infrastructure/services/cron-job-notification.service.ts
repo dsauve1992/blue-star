@@ -7,6 +7,8 @@ import { NotificationMessage } from '../../domain/value-objects/notification-mes
 import { NotificationTitle } from '../../domain/value-objects/notification-title';
 import { NotificationPriority } from '../../domain/services/notification.service';
 
+const MAX_MESSAGE_LENGTH = 4000;
+
 export interface CronJobNotificationOptions {
   jobName: string;
   jobType?: string;
@@ -58,7 +60,7 @@ export class CronJobNotificationService {
     try {
       await this.notificationService.send({
         topic: this.topic,
-        message: NotificationMessage.of(message),
+        message: NotificationMessage.of(this.truncate(message)),
         title: NotificationTitle.of(`${jobName} Completed`),
         priority: NotificationPriority.DEFAULT,
         tags,
@@ -85,7 +87,9 @@ export class CronJobNotificationService {
     try {
       await this.notificationService.send({
         topic: this.topic,
-        message: NotificationMessage.of(`${jobName} failed: ${errorMessage}`),
+        message: NotificationMessage.of(
+          this.truncate(`${jobName} failed: ${errorMessage}`),
+        ),
         title: NotificationTitle.of(`${jobName} Failed`),
         priority: NotificationPriority.HIGH,
         tags,
@@ -95,5 +99,11 @@ export class CronJobNotificationService {
         `Failed to send error notification for ${jobName}: ${notificationError instanceof Error ? notificationError.message : 'Unknown error'}`,
       );
     }
+  }
+
+  private truncate(message: string): string {
+    return message.length > MAX_MESSAGE_LENGTH
+      ? `${message.slice(0, MAX_MESSAGE_LENGTH - 1)}…`
+      : message;
   }
 }
