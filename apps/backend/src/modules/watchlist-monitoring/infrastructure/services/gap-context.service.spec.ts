@@ -12,19 +12,14 @@ import type { RsRatingRepository } from '../../../stock-analysis/domain/reposito
 import type { IndustryGroupRsRatingRepository } from '../../../stock-analysis/domain/repositories/industry-group-rs-rating.repository.interface';
 import { RsRating } from '../../../stock-analysis/domain/value-objects/rs-rating';
 import { IndustryGroupRsRating } from '../../../stock-analysis/domain/value-objects/industry-group-rs-rating';
-import { SECTOR_ROTATION_DATA_READ_REPOSITORY } from '../../../sector-rotation/constants/tokens';
-import type { SectorRotationDataReadRepository } from '../../../sector-rotation/domain/repositories/sector-rotation-data-read.repository.interface';
-import { SectorRotationDataPoint } from '../../../sector-rotation/domain/value-objects/sector-rotation-data-point';
-import { Quadrant } from '../../../sector-rotation/domain/value-objects/quadrant';
-import { RotationUniverseRegistry } from '../../../sector-rotation/infrastructure/universes/rotation-universe.registry';
-import { GICS_INDUSTRY_GROUP_UNIVERSE_ID } from '../../../sector-rotation/infrastructure/universes/gics-industry-group.universe';
+import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/use-cases/get-industry-group-quadrant.use-case';
 
 describe('GapContextServiceImpl', () => {
   let service: GapContextServiceImpl;
   let classificationRepository: jest.Mocked<StockClassificationRepository>;
   let rsRatingRepository: jest.Mocked<RsRatingRepository>;
   let industryGroupRsRatingRepository: jest.Mocked<IndustryGroupRsRatingRepository>;
-  let sectorRotationRepository: jest.Mocked<SectorRotationDataReadRepository>;
+  let getIndustryGroupQuadrant: jest.Mocked<GetIndustryGroupQuadrantUseCase>;
 
   const ticker = WatchlistTicker.of('NASDAQ:NVDA');
 
@@ -47,19 +42,13 @@ describe('GapContextServiceImpl', () => {
       listLatestGroups: jest.fn(),
       getLatestRatingsByGroup: jest.fn(),
     };
-    sectorRotationRepository = {
-      findByDateRange: jest.fn(),
-      findBySectorAndDateRange: jest.fn(),
-      findLatestDate: jest.fn(),
-      findLatestDateBySector: jest.fn(),
-      findLatestBySector: jest.fn(),
-      findExistingDates: jest.fn(),
-    };
+    getIndustryGroupQuadrant = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<GetIndustryGroupQuadrantUseCase>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         GapContextServiceImpl,
-        RotationUniverseRegistry,
         {
           provide: STOCK_CLASSIFICATION_REPOSITORY,
           useValue: classificationRepository,
@@ -70,8 +59,8 @@ describe('GapContextServiceImpl', () => {
           useValue: industryGroupRsRatingRepository,
         },
         {
-          provide: SECTOR_ROTATION_DATA_READ_REPOSITORY,
-          useValue: sectorRotationRepository,
+          provide: GetIndustryGroupQuadrantUseCase,
+          useValue: getIndustryGroupQuadrant,
         },
       ],
     }).compile();
@@ -109,18 +98,6 @@ describe('GapContextServiceImpl', () => {
     });
   }
 
-  function dataPoint(quadrant: Quadrant): SectorRotationDataPoint {
-    return SectorRotationDataPoint.of(
-      new Date('2026-06-20'),
-      '^SP500-4530',
-      100,
-      105,
-      110,
-      108,
-      quadrant,
-    );
-  }
-
   it('resolves all four context fields and joins industry group to its subindex quadrant', async () => {
     classificationRepository.findByTicker.mockResolvedValue(
       classification('Semiconductors & Semiconductor Equipment'),
@@ -129,9 +106,7 @@ describe('GapContextServiceImpl', () => {
     industryGroupRsRatingRepository.getLatestRating.mockResolvedValue(
       industryGroupRsRating(88),
     );
-    sectorRotationRepository.findLatestBySector.mockResolvedValue(
-      dataPoint(Quadrant.Leading),
-    );
+    getIndustryGroupQuadrant.execute.mockResolvedValue('Leading');
 
     const context = await service.enrich(ticker);
 
@@ -142,10 +117,8 @@ describe('GapContextServiceImpl', () => {
     expect(context.industryGroupRsRating).toBe(88);
     expect(context.industryGroupQuadrant).toBe('Leading');
 
-    // the quadrant lookup must use the subindex symbol for the group name
-    expect(sectorRotationRepository.findLatestBySector).toHaveBeenCalledWith(
-      GICS_INDUSTRY_GROUP_UNIVERSE_ID,
-      '^SP500-4530',
+    expect(getIndustryGroupQuadrant.execute).toHaveBeenCalledWith(
+      'Semiconductors & Semiconductor Equipment',
     );
     // lookups are keyed by the bare symbol, exchange prefix stripped
     expect(rsRatingRepository.getLatestRating).toHaveBeenCalledWith('NVDA');
@@ -164,38 +137,35 @@ describe('GapContextServiceImpl', () => {
     expect(context.globalRsRating).toBe(97);
     expect(context.industryGroupRsRating).toBeNull();
     expect(context.industryGroupQuadrant).toBeNull();
-    expect(sectorRotationRepository.findLatestBySector).not.toHaveBeenCalled();
+    expect(getIndustryGroupQuadrant.execute).not.toHaveBeenCalled();
   });
 
-  it('nulls the quadrant when the industry group has no rotation universe member', async () => {
-    classificationRepository.findByTicker.mockResolvedValue(
-      classification('Not A Real Group'),
-    );
-    rsRatingRepository.getLatestRating.mockResolvedValue(rsRating(50));
-    industryGroupRsRatingRepository.getLatestRating.mockResolvedValue(null);
-
-    const context = await service.enrich(ticker);
-
-    expect(context.industryGroup).toBe('Not A Real Group');
-    expect(context.industryGroupQuadrant).toBeNull();
-    expect(sectorRotationRepository.findLatestBySector).not.toHaveBeenCalled();
-  });
-
-  it('nulls the quadrant when no rotation data point exists for the subindex yet', async () => {
+  it('nulls the quadrant when the use case finds none', async () => {
     classificationRepository.findByTicker.mockResolvedValue(
       classification('Banks'),
     );
     rsRatingRepository.getLatestRating.mockResolvedValue(null);
     industryGroupRsRatingRepository.getLatestRating.mockResolvedValue(null);
-    sectorRotationRepository.findLatestBySector.mockResolvedValue(null);
+    getIndustryGroupQuadrant.execute.mockResolvedValue(null);
 
     const context = await service.enrich(ticker);
 
+    expect(context.industryGroup).toBe('Banks');
     expect(context.industryGroupQuadrant).toBeNull();
-    expect(sectorRotationRepository.findLatestBySector).toHaveBeenCalledWith(
-      GICS_INDUSTRY_GROUP_UNIVERSE_ID,
-      '^SP500-4010',
+  });
+
+  it('nulls the quadrant when the use case throws', async () => {
+    classificationRepository.findByTicker.mockResolvedValue(
+      classification('Banks'),
     );
+    rsRatingRepository.getLatestRating.mockResolvedValue(rsRating(50));
+    industryGroupRsRatingRepository.getLatestRating.mockResolvedValue(null);
+    getIndustryGroupQuadrant.execute.mockRejectedValue(new Error('db down'));
+
+    const context = await service.enrich(ticker);
+
+    expect(context.globalRsRating).toBe(50);
+    expect(context.industryGroupQuadrant).toBeNull();
   });
 
   it('is best-effort: a failing repository nulls only its own field', async () => {
@@ -206,9 +176,7 @@ describe('GapContextServiceImpl', () => {
     industryGroupRsRatingRepository.getLatestRating.mockResolvedValue(
       industryGroupRsRating(70),
     );
-    sectorRotationRepository.findLatestBySector.mockResolvedValue(
-      dataPoint(Quadrant.Improving),
-    );
+    getIndustryGroupQuadrant.execute.mockResolvedValue('Improving');
 
     const context = await service.enrich(ticker);
 
