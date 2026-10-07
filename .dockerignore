@@ -1,0 +1,13 @@
+**/node_modules
+**/dist
+**/.turbo
+.git
+**/.env
+**/.env.*
+!.env.production.example
+.idea
+.claude
+**/.cursor
+**/.DS_Store
+**/__pycache__
+**/.venv
