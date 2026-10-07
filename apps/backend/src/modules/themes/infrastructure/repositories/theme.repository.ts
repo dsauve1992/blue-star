@@ -61,11 +61,14 @@ export class ThemeRepositoryImpl implements ThemeRepository {
     return result.rows.map((row) => ThemeEntity.fromData(row));
   }
 
-  async saveThemeTickers(
+  async replaceThemeTickers(
     themeId: string,
     tickers: ThemeTickerEntity[],
   ): Promise<void> {
     await this.databaseService.transaction(async (client) => {
+      await client.query(`DELETE FROM theme_tickers WHERE theme_id = $1`, [
+        themeId,
+      ]);
       for (const ticker of tickers) {
         await client.query(
           `INSERT INTO theme_tickers (id, theme_id, ticker, created_at)
@@ -87,13 +90,6 @@ export class ThemeRepositoryImpl implements ThemeRepository {
     )) as { rows: ThemeTickerRow[] };
 
     return result.rows.map((row) => ThemeTickerEntity.fromData(row));
-  }
-
-  async deleteAllThemeTickers(themeId: string): Promise<void> {
-    await this.databaseService.query(
-      `DELETE FROM theme_tickers WHERE theme_id = $1`,
-      [themeId],
-    );
   }
 
   async findThemesByTickers(
