@@ -5,7 +5,7 @@ import { DateRange } from '../../../../shared/value-objects/date-range';
 import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
 import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
 import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
-import { EMACalculator } from '../../../sector-rotation/infrastructure/utils/ema-calculator';
+import { EMACalculator } from '../../../../shared/utils/ema-calculator';
 import {
   BreakoutDetectionResult,
   BreakoutDetectionService as IBreakoutDetectionService,
