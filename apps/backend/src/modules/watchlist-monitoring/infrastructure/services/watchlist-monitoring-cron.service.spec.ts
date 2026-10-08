@@ -5,14 +5,11 @@ import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
 import { LocalDate } from '../../domain/value-objects/local-date';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
 import { getMarketDateKey } from './market-time.util';
-import { Watchlist } from '../../../watchlist/domain/entities/watchlist';
 import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
-import { WatchlistName } from '../../../watchlist/domain/value-objects/watchlist-name';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
-import { UserId } from '../../../../shared/value-objects/user-id';
+import { FindWatchlistTickersUseCase } from '../../../watchlist/use-cases/find-watchlist-tickers.use-case';
 import type { WatchlistMonitoringReadRepository } from '../../domain/repositories/watchlist-monitoring-read.repository.interface';
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
-import type { WatchlistReadRepository } from '../../../watchlist/domain/repositories/watchlist-read.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
 import type { IGapDetectionService } from '../../domain/services/i-gap-detection.service';
 import type { NotificationService } from '../../../notification/domain/services/notification.service';
@@ -22,14 +19,13 @@ import {
   GAP_DETECTION_SERVICE,
   MONITORING_ALERT_LOG_REPOSITORY,
 } from '../../constants/tokens';
-import { WATCHLIST_READ_REPOSITORY } from '../../../watchlist/constants/tokens';
 import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
 
 describe('WatchlistMonitoringCronService — gap event emission', () => {
   let service: WatchlistMonitoringCronService;
   let monitoringReadRepository: jest.Mocked<WatchlistMonitoringReadRepository>;
   let alertLogRepository: jest.Mocked<MonitoringAlertLogRepository>;
-  let watchlistReadRepository: jest.Mocked<WatchlistReadRepository>;
+  let findWatchlistTickers: jest.Mocked<FindWatchlistTickersUseCase>;
   let gapDetectionService: jest.Mocked<IGapDetectionService>;
   let notificationService: jest.Mocked<NotificationService>;
   let eventEmitter: EventEmitter2;
@@ -38,16 +34,8 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
   const watchlistId = WatchlistId.of('wl-123');
   const ticker = WatchlistTicker.of('AAPL');
 
-  function buildWatchlist(): Watchlist {
-    const wl = Watchlist.fromData({
-      id: watchlistId,
-      userId: UserId.of('user-1'),
-      name: WatchlistName.of('Momentum'),
-      tickers: [ticker],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    });
-    return wl;
+  function buildWatchlist() {
+    return { id: watchlistId, name: 'Momentum', tickers: [ticker] };
   }
 
   beforeEach(async () => {
@@ -63,9 +51,9 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
       hasAlerted: jest.fn().mockResolvedValue(false),
       recordAlert: jest.fn().mockResolvedValue(undefined),
     };
-    watchlistReadRepository = {
-      findById: jest.fn().mockResolvedValue(buildWatchlist()),
-    } as unknown as jest.Mocked<WatchlistReadRepository>;
+    findWatchlistTickers = {
+      execute: jest.fn().mockResolvedValue(buildWatchlist()),
+    } as unknown as jest.Mocked<FindWatchlistTickersUseCase>;
     gapDetectionService = {
       detect: jest.fn().mockResolvedValue({
         ticker,
@@ -89,8 +77,8 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
           useValue: alertLogRepository,
         },
         {
-          provide: WATCHLIST_READ_REPOSITORY,
-          useValue: watchlistReadRepository,
+          provide: FindWatchlistTickersUseCase,
+          useValue: findWatchlistTickers,
         },
         {
           provide: BREAKOUT_DETECTION_SERVICE,
