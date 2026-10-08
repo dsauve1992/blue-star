@@ -29,7 +29,6 @@ COPY apps/theme_extractor ./apps/theme_extractor
 COPY apps/leader-scan ./apps/leader-scan
 
 # Copy market-breadth-universe (Python dependency)
-COPY apps/market-breadth-universe ./apps/market-breadth-universe
 
 # Build the application
 RUN npm run build --workspace=backend
@@ -71,7 +70,6 @@ COPY apps/theme_extractor ./apps/theme_extractor
 COPY apps/leader-scan ./apps/leader-scan
 
 # Copy market-breadth-universe (requests is already installed via py3-requests)
-COPY apps/market-breadth-universe ./apps/market-breadth-universe
 
 # Copy database migrations
 COPY apps/backend/database.json ./apps/backend/
