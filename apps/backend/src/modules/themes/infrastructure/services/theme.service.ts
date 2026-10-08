@@ -29,6 +29,13 @@ export class ThemeServiceImpl implements ThemeService {
       this.logger.log(`Extracted ${themesData.length} themes`);
 
       for (const themeData of themesData) {
+        if (themeData.tickers.length === 0) {
+          this.logger.warn(
+            `Skipping theme with no tickers: ${themeData.theme}`,
+          );
+          continue;
+        }
+
         let theme = await this.themeRepository.findThemeByName(themeData.theme);
 
         if (!theme) {

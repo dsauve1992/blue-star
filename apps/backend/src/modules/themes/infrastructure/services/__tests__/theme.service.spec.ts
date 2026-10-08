@@ -76,6 +76,53 @@ describe('ThemeServiceImpl', () => {
     expect(repository.replaceThemeTickers).toHaveBeenCalledTimes(2);
   });
 
+  it('leaves an existing theme untouched when it returns no tickers', async () => {
+    repository.findThemeByName.mockResolvedValue(
+      ThemeEntity.of({
+        id: 'theme-1',
+        name: 'AI',
+        createdAt: new Date('2025-01-01'),
+        updatedAt: new Date('2025-01-01'),
+      }),
+    );
+    extractor.extractThemes.mockResolvedValue([
+      { theme: 'AI', tickers: [] },
+    ] as never);
+
+    await service.extractAndSaveThemes();
+
+    expect(repository.saveTheme).not.toHaveBeenCalled();
+    expect(repository.replaceThemeTickers).not.toHaveBeenCalled();
+  });
+
+  it('skips only the empty theme in a mixed batch', async () => {
+    extractor.extractThemes.mockResolvedValue([
+      { theme: 'AI', tickers: [] },
+      { theme: 'Energy', tickers: ['xom'] },
+    ] as never);
+
+    await service.extractAndSaveThemes();
+
+    expect(repository.replaceThemeTickers).toHaveBeenCalledTimes(1);
+    const [themeId, tickers] = repository.replaceThemeTickers.mock.calls[0];
+    expect(repository.saveTheme).toHaveBeenCalledTimes(1);
+    const savedTheme = repository.saveTheme.mock.calls[0][0];
+    expect(savedTheme.name).toBe('Energy');
+    expect(themeId).toBe(savedTheme.id);
+    expect(tickers.map((t) => t.ticker)).toEqual(['XOM']);
+  });
+
+  it('does not create a new theme that returns no tickers', async () => {
+    repository.findThemeByName.mockResolvedValue(null);
+    extractor.extractThemes.mockResolvedValue([
+      { theme: 'Quantum', tickers: [] },
+    ] as never);
+
+    await service.extractAndSaveThemes();
+
+    expect(repository.saveTheme).not.toHaveBeenCalled();
+  });
+
   it('rethrows when the extractor fails', async () => {
     extractor.extractThemes.mockRejectedValue(new Error('python failed'));
 
