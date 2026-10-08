@@ -3,8 +3,7 @@ import { ConsolidationResultRepository } from '../domain/repositories/consolidat
 import { ConsolidationResult } from '../domain/value-objects/consolidation-result';
 import { ConsolidationRunStatus } from '../domain/value-objects/consolidation-run-status';
 import { CONSOLIDATION_RESULT_REPOSITORY } from '../constants/tokens';
-import { ThemeRepository } from '../../themes/domain/repositories/theme.repository.interface';
-import { THEME_REPOSITORY } from '../../themes/constants/tokens';
+import { GetThemeNamesByTickersUseCase } from '../../themes/use-cases/get-theme-names-by-tickers.use-case';
 import { GetOrFetchStockClassificationUseCase } from '../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
 
 export interface QueryConsolidationAnalysisRequestDto {
@@ -26,8 +25,7 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
   constructor(
     @Inject(CONSOLIDATION_RESULT_REPOSITORY)
     private readonly repository: ConsolidationResultRepository,
-    @Inject(THEME_REPOSITORY)
-    private readonly themeRepository: ThemeRepository,
+    private readonly getThemeNamesByTickers: GetThemeNamesByTickersUseCase,
     private readonly getOrFetchClassification: GetOrFetchStockClassificationUseCase,
   ) {}
 
@@ -39,12 +37,10 @@ export class QueryConsolidationAnalysisAnalyzeUseCase {
     const symbols = results.map((r) => r.symbol);
     const classifications =
       await this.getOrFetchClassification.executeMany(symbols);
-    const themesBySymbol =
-      await this.themeRepository.findThemesByTickers(symbols);
+    const themesBySymbol = await this.getThemeNamesByTickers.execute(symbols);
 
     const consolidationResults: ConsolidationResult[] = results.map((r) => {
-      const themes = themesBySymbol.get(r.symbol.toUpperCase()) ?? [];
-      const themeNames = themes.map((theme) => theme.name);
+      const themeNames = themesBySymbol.get(r.symbol.toUpperCase()) ?? [];
       const classification = classifications.get(r.symbol.toUpperCase());
 
       return ConsolidationResult.of({

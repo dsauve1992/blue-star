@@ -5,13 +5,14 @@ import { ThemeRepositoryImpl } from './infrastructure/repositories/theme.reposit
 import { PythonThemeExtractorService } from './infrastructure/services/python-theme-extractor.service';
 import { ThemeServiceImpl } from './infrastructure/services/theme.service';
 import { ThemeCronService } from './infrastructure/services/theme-cron.service';
+import { GetThemeNamesByTickersUseCase } from './use-cases/get-theme-names-by-tickers.use-case';
 import {
   THEME_REPOSITORY,
   THEME_EXTRACTOR_SERVICE,
   THEME_SERVICE,
 } from './constants/tokens';
 
-export { THEME_REPOSITORY, THEME_EXTRACTOR_SERVICE, THEME_SERVICE };
+export { THEME_EXTRACTOR_SERVICE, THEME_SERVICE };
 
 @Module({
   imports: [DatabaseModule, NotificationModule],
@@ -30,7 +31,8 @@ export { THEME_REPOSITORY, THEME_EXTRACTOR_SERVICE, THEME_SERVICE };
       useClass: ThemeServiceImpl,
     },
     ThemeCronService,
+    GetThemeNamesByTickersUseCase,
   ],
-  exports: [THEME_REPOSITORY],
+  exports: [GetThemeNamesByTickersUseCase],
 })
 export class ThemesModule {}
