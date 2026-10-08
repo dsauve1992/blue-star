@@ -87,7 +87,7 @@ export class WatchlistClient {
     const response = await apiClient.delete<RemoveTickerFromWatchlistResponse>(
       `/watchlists/${watchlistId}/tickers/${encodeURIComponent(ticker)}`,
     );
-    return response.data || response;
+    return response.data;
   }
 
   async deleteWatchlist(
@@ -96,7 +96,7 @@ export class WatchlistClient {
     const response = await apiClient.delete<DeleteWatchlistResponse>(
       `/watchlists/${watchlistId}`,
     );
-    return response.data || response;
+    return response.data;
   }
 
   async renameWatchlist(

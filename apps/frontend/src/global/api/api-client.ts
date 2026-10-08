@@ -5,7 +5,6 @@ import axios, {
   AxiosError,
 } from "axios";
 import {
-  type ApiResponse,
   type ApiError,
   type ApiRequestConfig,
   type ApiClientConfig,
@@ -79,50 +78,31 @@ export class ApiClient {
     url: string,
     data?: R,
     config?: ApiRequestConfig,
-  ): Promise<ApiResponse<T>> {
-    const response = await this.client.post<ApiResponse<T>>(
-      url,
-      data,
-      this.buildAxiosConfig(config),
-    );
-    return response.data;
+  ): Promise<AxiosResponse<T>> {
+    return this.client.post<T>(url, data, this.buildAxiosConfig(config));
   }
 
   async put<T, R>(
     url: string,
     data?: R,
     config?: ApiRequestConfig,
-  ): Promise<ApiResponse<T>> {
-    const response = await this.client.put<ApiResponse<T>>(
-      url,
-      data,
-      this.buildAxiosConfig(config),
-    );
-    return response.data;
+  ): Promise<AxiosResponse<T>> {
+    return this.client.put<T>(url, data, this.buildAxiosConfig(config));
   }
 
   async patch<T, R>(
     url: string,
     data?: R,
     config?: ApiRequestConfig,
-  ): Promise<ApiResponse<T>> {
-    const response = await this.client.patch<ApiResponse<T>>(
-      url,
-      data,
-      this.buildAxiosConfig(config),
-    );
-    return response.data;
+  ): Promise<AxiosResponse<T>> {
+    return this.client.patch<T>(url, data, this.buildAxiosConfig(config));
   }
 
   async delete<T>(
     url: string,
     config?: ApiRequestConfig,
-  ): Promise<ApiResponse<T>> {
-    const response = await this.client.delete<ApiResponse<T>>(
-      url,
-      this.buildAxiosConfig(config),
-    );
-    return response.data;
+  ): Promise<AxiosResponse<T>> {
+    return this.client.delete<T>(url, this.buildAxiosConfig(config));
   }
 
   private buildAxiosConfig(config?: ApiRequestConfig): AxiosRequestConfig {
