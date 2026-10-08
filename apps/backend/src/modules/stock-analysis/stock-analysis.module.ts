@@ -11,6 +11,8 @@ import { RunRsRatingsUseCase } from './use-cases/run-rs-ratings.use-case';
 import { RunIndustryGroupRsRatingsUseCase } from './use-cases/run-industry-group-rs-ratings.use-case';
 import { QueryIndustryGroupsUseCase } from './use-cases/query-industry-groups.use-case';
 import { QueryIndustryGroupRatingsUseCase } from './use-cases/query-industry-group-ratings.use-case';
+import { GetLatestRsRatingUseCase } from './use-cases/get-latest-rs-rating.use-case';
+import { GetLatestIndustryGroupRsRatingUseCase } from './use-cases/get-latest-industry-group-rs-rating.use-case';
 import { PythonConsolidationScreenerService } from './infrastructure/services/python-consolidation-screener.service';
 import { ConsolidationAnalysisServiceImpl } from './infrastructure/services/consolidation-analysis.service';
 import { ConsolidationCronService } from './infrastructure/services/consolidation-cron.service';
@@ -117,11 +119,13 @@ export {
     QueryIndustryGroupRatingsUseCase,
     QueryMomentumLeadersUseCase,
     RunMomentumLeadersUseCase,
+    GetLatestRsRatingUseCase,
+    GetLatestIndustryGroupRsRatingUseCase,
   ],
   exports: [
     CONSOLIDATION_SCREENER_SERVICE,
-    RS_RATING_REPOSITORY,
-    INDUSTRY_GROUP_RS_RATING_REPOSITORY,
+    GetLatestRsRatingUseCase,
+    GetLatestIndustryGroupRsRatingUseCase,
   ],
 })
 export class StockAnalysisModule {}

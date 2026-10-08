@@ -7,12 +7,8 @@ import {
 import { GapContextService as IGapContextService } from '../../domain/services/gap-context.service';
 import { STOCK_CLASSIFICATION_REPOSITORY } from '../../../stock-classification/constants/tokens';
 import type { StockClassificationRepository } from '../../../stock-classification/domain/repositories/stock-classification.repository.interface';
-import {
-  RS_RATING_REPOSITORY,
-  INDUSTRY_GROUP_RS_RATING_REPOSITORY,
-} from '../../../stock-analysis/constants/tokens';
-import type { RsRatingRepository } from '../../../stock-analysis/domain/repositories/rs-rating.repository.interface';
-import type { IndustryGroupRsRatingRepository } from '../../../stock-analysis/domain/repositories/industry-group-rs-rating.repository.interface';
+import { GetLatestRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-rs-rating.use-case';
+import { GetLatestIndustryGroupRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-industry-group-rs-rating.use-case';
 import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/use-cases/get-industry-group-quadrant.use-case';
 
 @Injectable()
@@ -22,10 +18,8 @@ export class GapContextServiceImpl implements IGapContextService {
   constructor(
     @Inject(STOCK_CLASSIFICATION_REPOSITORY)
     private readonly classificationRepository: StockClassificationRepository,
-    @Inject(RS_RATING_REPOSITORY)
-    private readonly rsRatingRepository: RsRatingRepository,
-    @Inject(INDUSTRY_GROUP_RS_RATING_REPOSITORY)
-    private readonly industryGroupRsRatingRepository: IndustryGroupRsRatingRepository,
+    private readonly getLatestRsRating: GetLatestRsRatingUseCase,
+    private readonly getLatestIndustryGroupRsRating: GetLatestIndustryGroupRsRatingUseCase,
     private readonly getIndustryGroupQuadrant: GetIndustryGroupQuadrantUseCase,
   ) {}
 
@@ -63,8 +57,7 @@ export class GapContextServiceImpl implements IGapContextService {
 
   private async lookupGlobalRsRating(symbol: string): Promise<number | null> {
     try {
-      const rating = await this.rsRatingRepository.getLatestRating(symbol);
-      return rating?.rsRating ?? null;
+      return await this.getLatestRsRating.execute(symbol);
     } catch (error) {
       this.warn('global RS rating', symbol, error);
       return null;
@@ -75,9 +68,7 @@ export class GapContextServiceImpl implements IGapContextService {
     symbol: string,
   ): Promise<number | null> {
     try {
-      const rating =
-        await this.industryGroupRsRatingRepository.getLatestRating(symbol);
-      return rating?.rsRating ?? null;
+      return await this.getLatestIndustryGroupRsRating.execute(symbol);
     } catch (error) {
       this.warn('industry-group RS rating', symbol, error);
       return null;
