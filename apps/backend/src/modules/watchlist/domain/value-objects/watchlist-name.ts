@@ -1,13 +1,15 @@
+import { InvariantError } from '../domain-errors';
+
 export class WatchlistName {
   private constructor(public readonly value: string) {}
 
   static of(name: string): WatchlistName {
     if (!name || name.trim().length === 0) {
-      throw new Error(`WatchlistName cannot be empty: ${name}`);
+      throw new InvariantError(`WatchlistName cannot be empty: ${name}`);
     }
     const trimmed = name.trim();
     if (trimmed.length > 255) {
-      throw new Error(
+      throw new InvariantError(
         `WatchlistName cannot exceed 255 characters: ${trimmed.length}`,
       );
     }
