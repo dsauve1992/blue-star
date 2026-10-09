@@ -76,11 +76,39 @@ jobs:
           DB_DATABASE: blue_star_test_db
           DB_SSL: false
 
+  python-test:
+    name: python-test (${{ matrix.app }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        app: [leader-scan, market-breadth-universe, hot-theme-detection]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+          cache: pip
+          cache-dependency-path: apps/${{ matrix.app }}/requirements.txt
+
+      - name: Install dependencies
+        working-directory: apps/${{ matrix.app }}
+        run: pip install -r requirements.txt
+
+      - name: Run tests
+        working-directory: apps/${{ matrix.app }}
+        run: python -m pytest -q
+
   build:
     name: Build
     runs-on: ubuntu-latest
     timeout-minutes: 15
-    needs: [lint-and-typecheck, test]
+    needs: [lint-and-typecheck, test, python-test]
     
     steps:
       - name: Checkout code
