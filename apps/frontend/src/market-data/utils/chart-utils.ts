@@ -104,10 +104,21 @@ export function computeRS(
     }
   }
 
+  const firstValid = rsLine.findIndex((v) => v !== null);
+  if (firstValid === -1) {
+    return {
+      rsLine,
+      rsSma: rsLine.map(() => null),
+      newHighIndices: new Set(),
+      newLowIndices: new Set(),
+      divergenceIndices: new Set(),
+    };
+  }
+
   // Forward-fill nulls so SMA can compute smoothly
   const filled: number[] = [];
   let lastValid = 0;
-  for (const v of rsLine) {
+  for (const v of rsLine.slice(firstValid)) {
     if (v !== null) {
       lastValid = v;
       filled.push(v);
@@ -115,7 +126,10 @@ export function computeRS(
   }
 
   // SMA of the RS ratio
-  const rsSma = computeSMA(filled, smaPeriod);
+  const rsSma = [
+    ...new Array<null>(firstValid).fill(null),
+    ...computeSMA(filled, smaPeriod),
+  ];
   for (let i = 0; i < rsSma.length; i++) {
     if (rsLine[i] === null) rsSma[i] = null;
   }
@@ -123,7 +137,7 @@ export function computeRS(
   // Detect new highs and lows within the lookback window
   const newHighIndices = new Set<number>();
   const newLowIndices = new Set<number>();
-  for (let i = lookback; i < rsLine.length; i++) {
+  for (let i = firstValid + lookback; i < rsLine.length; i++) {
     if (rsLine[i] === null) continue;
     let isNewHigh = true;
     let isNewLow = true;
