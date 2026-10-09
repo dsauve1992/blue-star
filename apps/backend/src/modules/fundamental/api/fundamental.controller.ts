@@ -17,20 +17,20 @@ export class FundamentalController {
   async computeFinancialReport(
     @Query('symbol') symbol: string,
   ): Promise<ComputeFinancialReportApiResponseDto> {
+    let symbolValueObject: Symbol;
     try {
-      const symbolValueObject = Symbol.of(symbol);
-
-      const request = {
-        symbol: symbolValueObject,
-      };
-
-      const useCaseResponse =
-        await this.computeFinancialReportUseCase.execute(request);
-      return this.fundamentalApiMapper.mapComputeFinancialReportResponse(
-        useCaseResponse,
-      );
+      symbolValueObject = Symbol.of(symbol);
     } catch (error) {
-      throw new BadRequestException(error);
+      throw new BadRequestException(
+        error instanceof Error ? error.message : 'Invalid symbol',
+      );
     }
+
+    const useCaseResponse = await this.computeFinancialReportUseCase.execute({
+      symbol: symbolValueObject,
+    });
+    return this.fundamentalApiMapper.mapComputeFinancialReportResponse(
+      useCaseResponse,
+    );
   }
 }
