@@ -1,12 +1,11 @@
-import { Inject, Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
 import {
   GapContext,
   IndustryGroupQuadrant,
 } from '../../domain/value-objects/gap-context';
 import { GapContextService as IGapContextService } from '../../domain/services/gap-context.service';
-import { STOCK_CLASSIFICATION_REPOSITORY } from '../../../stock-classification/constants/tokens';
-import type { StockClassificationRepository } from '../../../stock-classification/domain/repositories/stock-classification.repository.interface';
+import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/use-cases/get-industry-groups-for-tickers.use-case';
 import { GetLatestRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-rs-rating.use-case';
 import { GetLatestIndustryGroupRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-industry-group-rs-rating.use-case';
 import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/use-cases/get-industry-group-quadrant.use-case';
@@ -16,8 +15,7 @@ export class GapContextServiceImpl implements IGapContextService {
   private readonly logger = new Logger(GapContextServiceImpl.name);
 
   constructor(
-    @Inject(STOCK_CLASSIFICATION_REPOSITORY)
-    private readonly classificationRepository: StockClassificationRepository,
+    private readonly getIndustryGroups: GetIndustryGroupsForTickersUseCase,
     private readonly getLatestRsRating: GetLatestRsRatingUseCase,
     private readonly getLatestIndustryGroupRsRating: GetLatestIndustryGroupRsRatingUseCase,
     private readonly getIndustryGroupQuadrant: GetIndustryGroupQuadrantUseCase,
@@ -46,9 +44,8 @@ export class GapContextServiceImpl implements IGapContextService {
 
   private async lookupIndustryGroup(symbol: string): Promise<string | null> {
     try {
-      const classification =
-        await this.classificationRepository.findByTicker(symbol);
-      return classification?.industryGroup ?? null;
+      const groups = await this.getIndustryGroups.execute([symbol]);
+      return groups.get(symbol.toUpperCase()) ?? null;
     } catch (error) {
       this.warn('industry group', symbol, error);
       return null;

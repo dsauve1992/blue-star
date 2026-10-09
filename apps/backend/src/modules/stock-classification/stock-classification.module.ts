@@ -6,9 +6,8 @@ import {
 } from './constants/tokens';
 import { StockClassificationRepositoryImpl } from './infrastructure/repositories/stock-classification.repository';
 import { PythonStockClassifierService } from './infrastructure/services/python-stock-classifier.service';
+import { GetIndustryGroupsForTickersUseCase } from './use-cases/get-industry-groups-for-tickers.use-case';
 import { GetOrFetchStockClassificationUseCase } from './use-cases/get-or-fetch-stock-classification.use-case';
-
-export { STOCK_CLASSIFICATION_REPOSITORY, STOCK_CLASSIFIER_SERVICE };
 
 @Module({
   imports: [DatabaseModule],
@@ -22,10 +21,11 @@ export { STOCK_CLASSIFICATION_REPOSITORY, STOCK_CLASSIFIER_SERVICE };
       useClass: PythonStockClassifierService,
     },
     GetOrFetchStockClassificationUseCase,
+    GetIndustryGroupsForTickersUseCase,
   ],
   exports: [
     GetOrFetchStockClassificationUseCase,
-    STOCK_CLASSIFICATION_REPOSITORY,
+    GetIndustryGroupsForTickersUseCase,
   ],
 })
 export class StockClassificationModule {}
