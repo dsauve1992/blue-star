@@ -8,8 +8,7 @@ import {
   MIN_INDUSTRY_GROUP_SIZE,
   RS_RATING_REPOSITORY,
 } from '../../constants/tokens';
-import { STOCK_CLASSIFICATION_REPOSITORY } from '../../../stock-classification/constants/tokens';
-import type { StockClassificationRepository } from '../../../stock-classification/domain/repositories/stock-classification.repository.interface';
+import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/use-cases/get-industry-groups-for-tickers.use-case';
 import { GetOrFetchStockClassificationUseCase } from '../../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
 
 interface ScoredSymbol {
@@ -28,11 +27,10 @@ export class IndustryGroupRsRatingComputationServiceImpl
   constructor(
     @Inject(RS_RATING_REPOSITORY)
     private readonly rsRatingRepository: RsRatingRepository,
-    @Inject(STOCK_CLASSIFICATION_REPOSITORY)
-    private readonly classificationRepository: StockClassificationRepository,
     @Inject(INDUSTRY_GROUP_RS_RATING_REPOSITORY)
     private readonly industryGroupRepository: IndustryGroupRsRatingRepository,
     private readonly getOrFetchClassification: GetOrFetchStockClassificationUseCase,
+    private readonly getIndustryGroups: GetIndustryGroupsForTickersUseCase,
   ) {}
 
   async computeIndustryGroupRsRatings(): Promise<void> {
@@ -51,8 +49,7 @@ export class IndustryGroupRsRatingComputationServiceImpl
     // yet. Without this, the screener's lazy-classification path leaves most of
     // the RS universe unclassified at cron time, so the IG ratings only cover
     // the small subset that has been viewed since the previous run.
-    const existingGroups =
-      await this.classificationRepository.findGroupsForTickers(symbols);
+    const existingGroups = await this.getIndustryGroups.execute(symbols);
     const unclassified = symbols.filter((s) => !existingGroups.has(s));
     if (unclassified.length > 0) {
       this.logger.log(
@@ -61,8 +58,7 @@ export class IndustryGroupRsRatingComputationServiceImpl
       await this.getOrFetchClassification.executeMany(unclassified);
     }
 
-    const groupBySymbol =
-      await this.classificationRepository.findGroupsForTickers(symbols);
+    const groupBySymbol = await this.getIndustryGroups.execute(symbols);
 
     const byGroup = new Map<string, ScoredSymbol[]>();
     for (const rating of latest) {

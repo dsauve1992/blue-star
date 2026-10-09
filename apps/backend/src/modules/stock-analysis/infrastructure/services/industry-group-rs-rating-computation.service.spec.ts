@@ -5,14 +5,13 @@ import {
 } from './industry-group-rs-rating-computation.service';
 import { RsRatingRepository } from '../../domain/repositories/rs-rating.repository.interface';
 import { IndustryGroupRsRatingRepository } from '../../domain/repositories/industry-group-rs-rating.repository.interface';
-import { StockClassificationRepository } from '../../../stock-classification/domain/repositories/stock-classification.repository.interface';
 import { RsRating } from '../../domain/value-objects/rs-rating';
 import { IndustryGroupRsRating } from '../../domain/value-objects/industry-group-rs-rating';
 import {
   INDUSTRY_GROUP_RS_RATING_REPOSITORY,
   RS_RATING_REPOSITORY,
 } from '../../constants/tokens';
-import { STOCK_CLASSIFICATION_REPOSITORY } from '../../../stock-classification/constants/tokens';
+import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/use-cases/get-industry-groups-for-tickers.use-case';
 import { GetOrFetchStockClassificationUseCase } from '../../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
 
 describe('percentileRank', () => {
@@ -41,7 +40,7 @@ describe('percentileRank', () => {
 describe('IndustryGroupRsRatingComputationServiceImpl', () => {
   let service: IndustryGroupRsRatingComputationServiceImpl;
   let rsRatingRepo: jest.Mocked<RsRatingRepository>;
-  let classificationRepo: jest.Mocked<StockClassificationRepository>;
+  let getIndustryGroups: jest.Mocked<GetIndustryGroupsForTickersUseCase>;
   let industryGroupRepo: jest.Mocked<IndustryGroupRsRatingRepository>;
   let getOrFetchClassification: jest.Mocked<GetOrFetchStockClassificationUseCase>;
 
@@ -55,11 +54,9 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       getAllForLatestDate: jest.fn(),
     } as jest.Mocked<RsRatingRepository>;
 
-    classificationRepo = {
-      findByTicker: jest.fn(),
-      save: jest.fn(),
-      findGroupsForTickers: jest.fn(),
-    } as unknown as jest.Mocked<StockClassificationRepository>;
+    getIndustryGroups = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<GetIndustryGroupsForTickersUseCase>;
 
     industryGroupRepo = {
       saveRatings: jest.fn(),
@@ -79,8 +76,8 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
         IndustryGroupRsRatingComputationServiceImpl,
         { provide: RS_RATING_REPOSITORY, useValue: rsRatingRepo },
         {
-          provide: STOCK_CLASSIFICATION_REPOSITORY,
-          useValue: classificationRepo,
+          provide: GetIndustryGroupsForTickersUseCase,
+          useValue: getIndustryGroups,
         },
         {
           provide: INDUSTRY_GROUP_RS_RATING_REPOSITORY,
@@ -110,7 +107,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       makeRating(`SML${i}`, i),
     );
     rsRatingRepo.getAllForLatestDate.mockResolvedValue(ratings);
-    classificationRepo.findGroupsForTickers.mockResolvedValue(
+    getIndustryGroups.execute.mockResolvedValue(
       new Map(ratings.map((r) => [r.symbol, 'Tiny Group'])),
     );
 
@@ -128,7 +125,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       ...classified,
       ...unclassified,
     ]);
-    classificationRepo.findGroupsForTickers.mockResolvedValue(
+    getIndustryGroups.execute.mockResolvedValue(
       new Map(classified.map((r) => [r.symbol, 'Semiconductors'])),
     );
 
@@ -145,7 +142,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       makeRating(`SEM${i + 1}`, i + 1),
     );
     rsRatingRepo.getAllForLatestDate.mockResolvedValue(members);
-    classificationRepo.findGroupsForTickers.mockResolvedValue(
+    getIndustryGroups.execute.mockResolvedValue(
       new Map(members.map((r) => [r.symbol, 'Semiconductors'])),
     );
 
@@ -171,7 +168,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       makeRating(`X${i}`, i),
     );
     rsRatingRepo.getAllForLatestDate.mockResolvedValue(members);
-    classificationRepo.findGroupsForTickers.mockResolvedValue(
+    getIndustryGroups.execute.mockResolvedValue(
       new Map(members.map((r) => [r.symbol, 'Big Group'])),
     );
 
@@ -189,7 +186,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
 
     await service.computeIndustryGroupRsRatings();
 
-    expect(classificationRepo.findGroupsForTickers).not.toHaveBeenCalled();
+    expect(getIndustryGroups.execute).not.toHaveBeenCalled();
     expect(industryGroupRepo.saveRatings).not.toHaveBeenCalled();
   });
 
@@ -209,7 +206,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
     const afterBackfill = new Map(initialGroups);
     afterBackfill.set('NEW', 'Semiconductors');
 
-    classificationRepo.findGroupsForTickers
+    getIndustryGroups.execute
       .mockResolvedValueOnce(initialGroups)
       .mockResolvedValueOnce(afterBackfill);
 
@@ -227,7 +224,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       makeRating(`SEM${i + 1}`, i + 1),
     );
     rsRatingRepo.getAllForLatestDate.mockResolvedValue(members);
-    classificationRepo.findGroupsForTickers.mockResolvedValue(
+    getIndustryGroups.execute.mockResolvedValue(
       new Map(members.map((r) => [r.symbol, 'Semiconductors'])),
     );
 
@@ -241,7 +238,7 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
       makeRating(`SEM${i + 1}`, i + 1),
     );
     rsRatingRepo.getAllForLatestDate.mockResolvedValue(members);
-    classificationRepo.findGroupsForTickers.mockResolvedValue(
+    getIndustryGroups.execute.mockResolvedValue(
       new Map(members.map((r) => [r.symbol, 'Semiconductors'])),
     );
 
