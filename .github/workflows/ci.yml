@@ -164,7 +164,7 @@ jobs:
           docker run -d --name backend --network host \
             -e NODE_ENV=production -e DB_HOST=localhost -e DB_PORT=5432 \
             -e DB_USERNAME=postgres -e DB_PASSWORD=postgres -e DB_DATABASE=blue_star_smoke -e DB_SSL=false \
-            -e FINNHUB_API_KEY=ci-dummy -e FINANCIAL_MODELING_PREP_API_KEY=ci-dummy \
+            -e SEC_EDGAR_CONTACT_EMAIL=ci@example.com -e FINANCIAL_MODELING_PREP_API_KEY=ci-dummy \
             -e NTFY_BASE_URL=http://127.0.0.1:9 \
             blue-star-backend:ci
           for i in $(seq 1 60); do

@@ -2,7 +2,7 @@ export interface QuarterlyGrowthApiDto {
   quarter: string;
   year: string;
   eps: number;
-  revenue: number;
+  revenue: number | null;
   epsGrowthPercent: number | null;
   revenueGrowthPercent: number | null;
 }

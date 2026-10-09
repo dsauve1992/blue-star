@@ -3,7 +3,7 @@ export class IncomeStatement {
     public readonly symbol: string,
     public readonly fiscalYear: string,
     public readonly period: string,
-    public readonly revenue: number,
+    public readonly revenue: number | null,
     public readonly eps: number,
   ) {}
 
@@ -11,7 +11,7 @@ export class IncomeStatement {
     symbol: string;
     fiscalYear: string;
     period: string;
-    revenue: number;
+    revenue: number | null;
     eps: number;
   }): IncomeStatement {
     return new IncomeStatement(

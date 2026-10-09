@@ -18,7 +18,7 @@ interface QuarterlyData {
   quarter: string;
   year: string;
   eps: number;
-  revenue: number;
+  revenue: number | null;
 }
 
 @Injectable()
@@ -98,9 +98,10 @@ export class ComputeFinancialReportUseCase {
         ? this.calculateGrowthPercent(current.eps, previous.eps)
         : null;
 
-      const revenueGrowthPercent = previous
-        ? this.calculateGrowthPercent(current.revenue, previous.revenue)
-        : null;
+      const revenueGrowthPercent =
+        current.revenue != null && previous?.revenue != null
+          ? this.calculateGrowthPercent(current.revenue, previous.revenue)
+          : null;
 
       return QuarterlyGrowth.of({
         quarter: current.quarter,
