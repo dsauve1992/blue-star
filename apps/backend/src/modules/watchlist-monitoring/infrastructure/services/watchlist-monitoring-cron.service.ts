@@ -120,25 +120,17 @@ export class WatchlistMonitoringCronService {
     ticker: string,
     watchlistName: string,
   ): Promise<void> {
-    try {
-      await this.notificationService.send({
-        topic: this.breakoutTopic,
-        title: NotificationTitle.of(`Breakout Alert: ${ticker}`),
-        message: NotificationMessage.of(
-          `${ticker} from watchlist "${watchlistName}" is breaking out!`,
-        ),
-        priority: NotificationPriority.HIGH,
-        tags: ['📈', 'breakout', ticker],
-      });
+    await this.notificationService.send({
+      topic: this.breakoutTopic,
+      title: NotificationTitle.of(`Breakout Alert: ${ticker}`),
+      message: NotificationMessage.of(
+        `${ticker} from watchlist "${watchlistName}" is breaking out!`,
+      ),
+      priority: NotificationPriority.HIGH,
+      tags: ['📈', 'breakout', ticker],
+    });
 
-      this.logger.log(`Breakout alert sent for ${ticker}`);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      this.logger.warn(
-        `Failed to send breakout alert for ${ticker}: ${errorMessage}`,
-      );
-    }
+    this.logger.log(`Breakout alert sent for ${ticker}`);
   }
 
   @Cron('45 9 * * 1-5', { timeZone: 'America/Toronto' })

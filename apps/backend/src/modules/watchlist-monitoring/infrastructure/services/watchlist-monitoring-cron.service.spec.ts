@@ -4,6 +4,7 @@ import { WatchlistMonitoringCronService } from './watchlist-monitoring-cron.serv
 import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
 import { LocalDate } from '../../domain/value-objects/local-date';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
+import * as marketTime from './market-time.util';
 import { getMarketDateKey } from './market-time.util';
 import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
@@ -144,6 +145,100 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
       'AAPL',
       getMarketDateKey(),
       MonitoringType.GAP,
+    );
+  });
+});
+
+describe('WatchlistMonitoringCronService — breakout alerting', () => {
+  let service: WatchlistMonitoringCronService;
+  let alertLogRepository: jest.Mocked<MonitoringAlertLogRepository>;
+  let breakoutDetectionService: jest.Mocked<BreakoutDetectionService>;
+  let notificationService: jest.Mocked<NotificationService>;
+
+  const watchlistId = WatchlistId.of('wl-123');
+  const aapl = WatchlistTicker.of('AAPL');
+  const msft = WatchlistTicker.of('MSFT');
+
+  beforeEach(async () => {
+    jest.spyOn(marketTime, 'isWithinMarketHours').mockReturnValue(true);
+    alertLogRepository = {
+      hasAlerted: jest.fn().mockResolvedValue(false),
+      recordAlert: jest.fn().mockResolvedValue(undefined),
+    };
+    breakoutDetectionService = {
+      detect: jest
+        .fn()
+        .mockImplementation((ticker: WatchlistTicker) =>
+          Promise.resolve({ ticker, detected: true }),
+        ),
+    } as unknown as jest.Mocked<BreakoutDetectionService>;
+    notificationService = { send: jest.fn().mockResolvedValue(undefined) };
+
+    const module: TestingModule = await Test.createTestingModule({
+      providers: [
+        WatchlistMonitoringCronService,
+        EventEmitter2,
+        {
+          provide: WATCHLIST_MONITORING_READ_REPOSITORY,
+          useValue: {
+            findAllActiveByType: jest
+              .fn()
+              .mockResolvedValue([{ watchlistId } as never]),
+          } as Partial<WatchlistMonitoringReadRepository>,
+        },
+        {
+          provide: MONITORING_ALERT_LOG_REPOSITORY,
+          useValue: alertLogRepository,
+        },
+        {
+          provide: FindWatchlistTickersUseCase,
+          useValue: {
+            execute: jest.fn().mockResolvedValue({
+              id: watchlistId,
+              name: 'Momentum',
+              tickers: [aapl, msft],
+            }),
+          },
+        },
+        {
+          provide: BREAKOUT_DETECTION_SERVICE,
+          useValue: breakoutDetectionService,
+        },
+        { provide: GAP_DETECTION_SERVICE, useValue: { detect: jest.fn() } },
+        { provide: NOTIFICATION_SERVICE, useValue: notificationService },
+      ],
+    }).compile();
+
+    service = module.get(WatchlistMonitoringCronService);
+  });
+
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
+  it('records the BREAKOUT alert after the notification is sent', async () => {
+    await service.monitorBreakouts();
+
+    expect(alertLogRepository.recordAlert).toHaveBeenCalledWith(
+      'AAPL',
+      getMarketDateKey(),
+      MonitoringType.BREAKOUT,
+    );
+  });
+
+  it('does not record the alert when sending fails, and continues with the next ticker', async () => {
+    notificationService.send
+      .mockRejectedValueOnce(new Error('ntfy down'))
+      .mockResolvedValue(undefined);
+
+    await service.monitorBreakouts();
+
+    expect(notificationService.send).toHaveBeenCalledTimes(2);
+    expect(alertLogRepository.recordAlert).toHaveBeenCalledTimes(1);
+    expect(alertLogRepository.recordAlert).toHaveBeenCalledWith(
+      'MSFT',
+      getMarketDateKey(),
+      MonitoringType.BREAKOUT,
     );
   });
 });
