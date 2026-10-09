@@ -5,8 +5,7 @@ import {
   CONSOLIDATION_RESULT_REPOSITORY,
   MOMENTUM_LEADER_REPOSITORY,
 } from '../constants/tokens';
-import { ThemeRepository } from '../../themes/domain/repositories/theme.repository.interface';
-import { THEME_REPOSITORY } from '../../themes/constants/tokens';
+import { GetThemeNamesByTickersUseCase } from '../../themes/use-cases/get-theme-names-by-tickers.use-case';
 import { GetOrFetchStockClassificationUseCase } from '../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
 
 export interface MomentumLeaderDto {
@@ -42,8 +41,7 @@ export class QueryMomentumLeadersUseCase {
     private readonly repository: MomentumLeaderRepository,
     @Inject(CONSOLIDATION_RESULT_REPOSITORY)
     private readonly consolidationRepository: ConsolidationResultRepository,
-    @Inject(THEME_REPOSITORY)
-    private readonly themeRepository: ThemeRepository,
+    private readonly getThemeNamesByTickers: GetThemeNamesByTickersUseCase,
     private readonly getOrFetchClassification: GetOrFetchStockClassificationUseCase,
   ) {}
 
@@ -64,7 +62,7 @@ export class QueryMomentumLeadersUseCase {
       this.consolidationRepository.getLatestResults('daily'),
       this.consolidationRepository.getLatestResults('weekly'),
       this.getOrFetchClassification.executeMany(symbols),
-      this.themeRepository.findThemesByTickers(symbols),
+      this.getThemeNamesByTickers.execute(symbols),
     ]);
     const dailySymbols = new Set(daily.map((r) => r.symbol.toUpperCase()));
     const weeklySymbols = new Set(weekly.map((r) => r.symbol.toUpperCase()));
@@ -85,7 +83,7 @@ export class QueryMomentumLeadersUseCase {
         top6M: leader.top6M,
         consolidatingDaily: dailySymbols.has(key),
         consolidatingWeekly: weeklySymbols.has(key),
-        themes: (themesBySymbol.get(key) ?? []).map((theme) => theme.name),
+        themes: themesBySymbol.get(key) ?? [],
         industryGroup: classifications.get(key)?.industryGroup ?? null,
       };
     });
