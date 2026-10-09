@@ -54,24 +54,14 @@ export class StockAnalysisController {
   @Get('momentum-leaders')
   @Public()
   async getMomentumLeaders(): Promise<QueryMomentumLeadersResponseDto> {
-    try {
-      return await this.queryMomentumLeadersUseCase.execute();
-    } catch (error) {
-      console.error(error);
-      throw new BadRequestException(error);
-    }
+    return await this.queryMomentumLeadersUseCase.execute();
   }
 
   @Post('momentum-leaders/run')
   @Public()
   async runMomentumLeaders(): Promise<{ message: string }> {
-    try {
-      await this.runMomentumLeadersUseCase.execute();
-      return { message: 'Momentum leaders scan completed' };
-    } catch (error) {
-      console.error(error);
-      throw new BadRequestException(error);
-    }
+    await this.runMomentumLeadersUseCase.execute();
+    return { message: 'Momentum leaders scan completed' };
   }
 
   @Get('consolidations')
@@ -79,25 +69,17 @@ export class StockAnalysisController {
   async analyzeConsolidations(
     @Query('type') type: 'daily' | 'weekly',
   ): Promise<QueryConsolidationAnalysisResponseDto> {
-    try {
-      if (!type || (type !== 'daily' && type !== 'weekly')) {
-        throw new BadRequestException(
-          'Type query parameter is required and must be either "daily" or "weekly"',
-        );
-      }
-
-      const request: QueryConsolidationAnalysisRequestDto = {
-        type,
-      };
-
-      return await this.analyzeConsolidationsUseCase.execute(request);
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      console.error(error);
-      throw new BadRequestException(error);
+    if (!type || (type !== 'daily' && type !== 'weekly')) {
+      throw new BadRequestException(
+        'Type query parameter is required and must be either "daily" or "weekly"',
+      );
     }
+
+    const request: QueryConsolidationAnalysisRequestDto = {
+      type,
+    };
+
+    return await this.analyzeConsolidationsUseCase.execute(request);
   }
 
   @Post('consolidations/run')
@@ -105,22 +87,14 @@ export class StockAnalysisController {
   async runConsolidationAnalysis(
     @Body() body: RunConsolidationAnalysisRequestDto,
   ): Promise<{ message: string }> {
-    try {
-      if (!body.type || (body.type !== 'daily' && body.type !== 'weekly')) {
-        throw new BadRequestException(
-          'Type is required and must be either "daily" or "weekly"',
-        );
-      }
-
-      await this.runConsolidationAnalysisUseCase.execute(body);
-      return { message: 'Analysis started successfully' };
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      console.error(error);
-      throw new BadRequestException(error);
+    if (!body.type || (body.type !== 'daily' && body.type !== 'weekly')) {
+      throw new BadRequestException(
+        'Type is required and must be either "daily" or "weekly"',
+      );
     }
+
+    await this.runConsolidationAnalysisUseCase.execute(body);
+    return { message: 'Analysis started successfully' };
   }
 
   @Get('rs-ratings')
@@ -128,39 +102,26 @@ export class StockAnalysisController {
   async getRsRatings(
     @Query('symbols') symbols: string,
   ): Promise<QueryRsRatingsResponseDto> {
-    try {
-      if (!symbols || !symbols.trim()) {
-        throw new BadRequestException(
-          'symbols query parameter is required (comma-separated)',
-        );
-      }
-
-      const symbolList = symbols
-        .split(',')
-        .map((s) => s.trim())
-        .filter((s) => s.length > 0);
-
-      return await this.queryRsRatingsUseCase.execute({
-        symbols: symbolList,
-      });
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      console.error(error);
-      throw new BadRequestException(error);
+    if (!symbols || !symbols.trim()) {
+      throw new BadRequestException(
+        'symbols query parameter is required (comma-separated)',
+      );
     }
+
+    const symbolList = symbols
+      .split(',')
+      .map((s) => s.trim())
+      .filter((s) => s.length > 0);
+
+    return await this.queryRsRatingsUseCase.execute({
+      symbols: symbolList,
+    });
   }
 
   @Get('industry-groups')
   @Public()
   async listIndustryGroups(): Promise<QueryIndustryGroupsResponseDto> {
-    try {
-      return await this.queryIndustryGroupsUseCase.execute();
-    } catch (error) {
-      console.error(error);
-      throw new BadRequestException(error);
-    }
+    return await this.queryIndustryGroupsUseCase.execute();
   }
 
   @Get('industry-groups/:group/rs-ratings')
@@ -168,54 +129,29 @@ export class StockAnalysisController {
   async getIndustryGroupRatings(
     @Param('group') group: string,
   ): Promise<QueryIndustryGroupRatingsResponseDto> {
-    try {
-      if (!group || !group.trim()) {
-        throw new BadRequestException('group path parameter is required');
-      }
-      return await this.queryIndustryGroupRatingsUseCase.execute({
-        industryGroup: group,
-      });
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      // Let NotFoundException propagate untouched
-      if (
-        typeof error === 'object' &&
-        error !== null &&
-        'status' in error &&
-        (error as { status: number }).status === 404
-      ) {
-        throw error;
-      }
-      console.error(error);
-      throw new BadRequestException(error);
+    if (!group || !group.trim()) {
+      throw new BadRequestException('group path parameter is required');
     }
+    return await this.queryIndustryGroupRatingsUseCase.execute({
+      industryGroup: group,
+    });
   }
 
   @Post('rs-ratings/run')
   @Public()
   async runRsRatings(): Promise<{ message: string }> {
+    await this.runRsRatingsUseCase.execute();
+    // Intra-group is best-effort: market-wide ratings are already persisted,
+    // so a failure here only logs and is reported as "with warnings".
     try {
-      await this.runRsRatingsUseCase.execute();
-      // Intra-group is best-effort: market-wide ratings are already persisted,
-      // so a failure here only logs and is reported as "with warnings".
-      try {
-        await this.runIndustryGroupRsRatingsUseCase.execute();
-        return { message: 'RS rating computation started successfully' };
-      } catch (innerError) {
-        console.error(innerError);
-        return {
-          message:
-            'Market-wide RS ratings computed; industry-group RS ratings failed.',
-        };
-      }
-    } catch (error) {
-      if (error instanceof BadRequestException) {
-        throw error;
-      }
-      console.error(error);
-      throw new BadRequestException(error);
+      await this.runIndustryGroupRsRatingsUseCase.execute();
+      return { message: 'RS rating computation started successfully' };
+    } catch (innerError) {
+      console.error(innerError);
+      return {
+        message:
+          'Market-wide RS ratings computed; industry-group RS ratings failed.',
+      };
     }
   }
 }
