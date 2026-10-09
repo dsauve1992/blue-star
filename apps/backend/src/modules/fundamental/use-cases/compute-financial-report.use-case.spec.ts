@@ -7,7 +7,7 @@ const statement = (
   fiscalYear: string,
   period: string,
   eps: number,
-  revenue = 100,
+  revenue: number | null = 100,
 ) => IncomeStatement.of({ symbol: 'AAPL', fiscalYear, period, eps, revenue });
 
 describe('ComputeFinancialReportUseCase', () => {
@@ -87,6 +87,18 @@ describe('ComputeFinancialReportUseCase', () => {
 
     expect(latest.epsGrowthPercent).toBeNull();
     expect(latest.revenueGrowthPercent).toBeNull();
+  });
+
+  it('returns null revenue growth when either quarter has no revenue', async () => {
+    const [latest, previous] = await run([
+      statement('2024', 'Q1', -0.5, null),
+      statement('2023', 'Q1', -1, null),
+    ]);
+
+    expect(latest.revenue).toBeNull();
+    expect(latest.revenueGrowthPercent).toBeNull();
+    expect(latest.epsGrowthPercent).toBeCloseTo(50);
+    expect(previous.revenue).toBeNull();
   });
 
   it('orders newest first and ignores non-quarterly periods', async () => {

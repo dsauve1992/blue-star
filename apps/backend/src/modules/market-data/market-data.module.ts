@@ -5,7 +5,7 @@ import { GetHistoricalDataUseCase } from './use-cases/get-historical-data.use-ca
 import { GetChartDataUseCase } from './use-cases/get-chart-data.use-case';
 import { GetIntradayDataUseCase } from './use-cases/get-intraday-data.use-case';
 import { YahooMarketDataService } from './infrastructure/services/yahoo-market-data.service';
-import { FinnhubFundamentalService } from './infrastructure/services/finnhub-fundamental.service';
+import { SecEdgarFundamentalService } from './infrastructure/services/sec-edgar-fundamental.service';
 import { FinancialModelingPrepCompanyProfileService } from './infrastructure/services/financial-modeling-prep-company-profile.service';
 import { YahooChartDataService } from './infrastructure/services/yahoo-chart-data.service';
 import { CachedMarketDataService } from './infrastructure/services/cached-market-data.service';
@@ -43,7 +43,7 @@ export {
     },
     {
       provide: FUNDAMENTAL_SERVICE,
-      useClass: FinnhubFundamentalService,
+      useClass: SecEdgarFundamentalService,
     },
     {
       provide: MARKET_DATA_CACHE_REPOSITORY,

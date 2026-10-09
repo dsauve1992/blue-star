@@ -35,9 +35,7 @@ describe('FundamentalController', () => {
 
   it('returns 500 when the use case fails upstream', async () => {
     execute.mockRejectedValue(
-      new Error(
-        'Finnhub financials-reported request failed for AAPL: HTTP 429',
-      ),
+      new Error('SEC companyfacts request failed for AAPL: HTTP 429'),
     );
 
     await request(server())

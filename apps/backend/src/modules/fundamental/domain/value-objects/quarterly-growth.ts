@@ -3,7 +3,7 @@ export class QuarterlyGrowth {
     public readonly quarter: string,
     public readonly year: string,
     public readonly eps: number,
-    public readonly revenue: number,
+    public readonly revenue: number | null,
     public readonly epsGrowthPercent: number | null,
     public readonly revenueGrowthPercent: number | null,
   ) {}
@@ -12,7 +12,7 @@ export class QuarterlyGrowth {
     quarter: string;
     year: string;
     eps: number;
-    revenue: number;
+    revenue: number | null;
     epsGrowthPercent: number | null;
     revenueGrowthPercent: number | null;
   }): QuarterlyGrowth {

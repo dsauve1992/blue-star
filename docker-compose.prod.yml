@@ -21,7 +21,7 @@ services:
       - DB_DATABASE=${DB_DATABASE}
       - DB_SSL=${DB_SSL:-false}
       - FINANCIAL_MODELING_PREP_API_KEY=${FINANCIAL_MODELING_PREP_API_KEY:-}
-      - FINNHUB_API_KEY=${FINNHUB_API_KEY:-}
+      - SEC_EDGAR_CONTACT_EMAIL=${SEC_EDGAR_CONTACT_EMAIL:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
