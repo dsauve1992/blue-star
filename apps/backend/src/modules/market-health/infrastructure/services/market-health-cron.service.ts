@@ -18,6 +18,7 @@ import {
 import { MARKET_HEALTH_REPOSITORY } from '../../constants/tokens';
 import { MARKET_DATA_SERVICE } from '../../../market-data/market-data.module';
 import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
+import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
 
 @Injectable()
 export class MarketHealthCronService {
@@ -26,6 +27,11 @@ export class MarketHealthCronService {
   private readonly notificationTopic = NotificationTopic.of(
     'blue-star-market-health',
   );
+  private readonly jobOptions = {
+    jobName: 'Daily Market Health',
+    jobType: 'market-health',
+    frequency: 'daily',
+  } as const;
 
   constructor(
     @Inject(MARKET_DATA_SERVICE)
@@ -34,6 +40,7 @@ export class MarketHealthCronService {
     private readonly marketHealthRepository: MarketHealthRepository,
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationService: NotificationService,
+    private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
   @Cron('0 8 * * 1-5', { timeZone: 'America/Toronto' })
@@ -62,6 +69,10 @@ export class MarketHealthCronService {
       if (closes.length < 22) {
         this.logger.warn(
           `Not enough data points to compute EMAs: ${closes.length}`,
+        );
+        await this.cronJobNotificationService.notifyJobError(
+          this.jobOptions,
+          new Error(`Not enough data points to compute EMAs: ${closes.length}`),
         );
         return;
       }
@@ -99,6 +110,10 @@ export class MarketHealthCronService {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Market health computation failed: ${errorMessage}`);
+      await this.cronJobNotificationService.notifyJobError(
+        this.jobOptions,
+        error,
+      );
     }
   }
 

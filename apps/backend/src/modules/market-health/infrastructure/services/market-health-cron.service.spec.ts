@@ -5,6 +5,7 @@ import { NotificationPriority } from '../../../notification/domain/services/noti
 import type { MarketHealthRepository } from '../../domain/repositories/market-health.repository.interface';
 import type { MarketHealth } from '../../domain/entities/market-health.entity';
 import { MarketHealthStatusValue } from '../../domain/value-objects/market-health-status';
+import type { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
 import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
 
 describe('MarketHealthCronService', () => {
@@ -12,6 +13,7 @@ describe('MarketHealthCronService', () => {
   let marketDataService: jest.Mocked<MarketDataService>;
   let marketHealthRepository: jest.Mocked<MarketHealthRepository>;
   let notificationService: jest.Mocked<NotificationService>;
+  let notifyJobError: jest.Mock;
 
   const rising = Array.from({ length: 30 }, (_, i) => 100 + i);
   const falling = Array.from({ length: 30 }, (_, i) => 130 - i);
@@ -47,10 +49,12 @@ describe('MarketHealthCronService', () => {
       findLatest: jest.fn(),
     };
     notificationService = { send: jest.fn().mockResolvedValue(undefined) };
+    notifyJobError = jest.fn().mockResolvedValue(undefined);
     service = new MarketHealthCronService(
       marketDataService,
       marketHealthRepository,
       notificationService,
+      { notifyJobError } as unknown as CronJobNotificationService,
     );
   });
 
@@ -63,6 +67,7 @@ describe('MarketHealthCronService', () => {
     expect(notificationService.send).toHaveBeenCalledWith(
       expect.objectContaining({ priority: NotificationPriority.DEFAULT }),
     );
+    expect(notifyJobError).not.toHaveBeenCalled();
   });
 
   it('saves WARNING when EMA9 is above EMA21 but EMA9 is falling', async () => {
@@ -86,13 +91,18 @@ describe('MarketHealthCronService', () => {
     );
   });
 
-  it('does nothing with fewer than 22 price points', async () => {
+  it('alerts and saves nothing with fewer than 22 price points', async () => {
     givenCloses(rising.slice(0, 21));
 
     await service.computeMarketHealth();
 
     expect(marketHealthRepository.save).not.toHaveBeenCalled();
     expect(notificationService.send).not.toHaveBeenCalled();
+    expect(notifyJobError).toHaveBeenCalledTimes(1);
+    expect(notifyJobError).toHaveBeenCalledWith(
+      expect.objectContaining({ jobName: 'Daily Market Health' }),
+      new Error('Not enough data points to compute EMAs: 21'),
+    );
   });
 
   it('computes from 22 price points', async () => {
@@ -138,12 +148,17 @@ describe('MarketHealthCronService', () => {
     expect(marketHealthRepository.save).toHaveBeenCalledTimes(1);
   });
 
-  it('swallows market data failures without saving', async () => {
-    marketDataService.getHistoricalData.mockRejectedValue(new Error('boom'));
+  it('alerts and swallows market data failures without saving', async () => {
+    const error = new Error('boom');
+    marketDataService.getHistoricalData.mockRejectedValue(error);
 
     await expect(service.computeMarketHealth()).resolves.toBeUndefined();
 
     expect(marketHealthRepository.save).not.toHaveBeenCalled();
     expect(notificationService.send).not.toHaveBeenCalled();
+    expect(notifyJobError).toHaveBeenCalledWith(
+      expect.objectContaining({ jobName: 'Daily Market Health' }),
+      error,
+    );
   });
 });
