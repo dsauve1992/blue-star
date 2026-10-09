@@ -52,7 +52,7 @@ RUN npm ci --workspace=backend --omit=dev
 
 # Install additional Python dependencies for screener
 COPY apps/screener/requirements.txt ./apps/screener/
-RUN pip3 install --no-cache-dir --break-system-packages yfinance
+RUN pip3 install --no-cache-dir --break-system-packages "$(grep '^yfinance' apps/screener/requirements.txt)"
 
 # Install additional Python dependencies for theme_extractor
 COPY apps/theme_extractor/requirements.txt ./apps/theme_extractor/
