@@ -8,12 +8,11 @@ import { DeleteWatchlistUseCase } from './use-cases/delete-watchlist.use-case';
 import { RenameWatchlistUseCase } from './use-cases/rename-watchlist.use-case';
 import { ListWatchlistsUseCase } from './use-cases/list-watchlists.use-case';
 import { GetWatchlistByIdUseCase } from './use-cases/get-watchlist-by-id.use-case';
+import { FindWatchlistTickersUseCase } from './use-cases/find-watchlist-tickers.use-case';
 import {
   WATCHLIST_READ_REPOSITORY,
   WATCHLIST_WRITE_REPOSITORY,
 } from './constants/tokens';
-
-export { WATCHLIST_READ_REPOSITORY };
 import { DatabaseModule } from '../../config/database.module';
 import { WatchlistWriteRepository } from './infrastructure/repositories/watchlist-write.repository';
 import { WatchlistReadRepository } from './infrastructure/repositories/watchlist-read.repository';
@@ -40,7 +39,8 @@ import { TradingViewSymbolSearchService } from './infrastructure/services/tradin
     RenameWatchlistUseCase,
     ListWatchlistsUseCase,
     GetWatchlistByIdUseCase,
+    FindWatchlistTickersUseCase,
   ],
-  exports: [WATCHLIST_READ_REPOSITORY],
+  exports: [GetWatchlistByIdUseCase, FindWatchlistTickersUseCase],
 })
 export class WatchlistModule {}

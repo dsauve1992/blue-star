@@ -5,13 +5,13 @@ import { MonitoringType } from '../../domain/value-objects/monitoring-type';
 import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
 import { GapContext } from '../../domain/value-objects/gap-context';
 import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
+import { FindWatchlistTickersUseCase } from '../../../watchlist/use-cases/find-watchlist-tickers.use-case';
 import { NotificationTopic } from '../../../notification/domain/value-objects/notification-topic';
 import { NotificationMessage } from '../../../notification/domain/value-objects/notification-message';
 import { NotificationTitle } from '../../../notification/domain/value-objects/notification-title';
 import { NotificationPriority } from '../../../notification/domain/services/notification.service';
 import type { WatchlistMonitoringReadRepository } from '../../domain/repositories/watchlist-monitoring-read.repository.interface';
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
-import type { WatchlistReadRepository } from '../../../watchlist/domain/repositories/watchlist-read.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
 import type { IGapDetectionService } from '../../domain/services/i-gap-detection.service';
 import type { NotificationService } from '../../../notification/domain/services/notification.service';
@@ -19,7 +19,6 @@ import { WATCHLIST_MONITORING_READ_REPOSITORY } from '../../constants/tokens';
 import { BREAKOUT_DETECTION_SERVICE } from '../../constants/tokens';
 import { GAP_DETECTION_SERVICE } from '../../constants/tokens';
 import { MONITORING_ALERT_LOG_REPOSITORY } from '../../constants/tokens';
-import { WATCHLIST_READ_REPOSITORY } from '../../../watchlist/constants/tokens';
 import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
 import {
   getMarketDateKey,
@@ -38,8 +37,7 @@ export class WatchlistMonitoringCronService {
     private readonly monitoringReadRepository: WatchlistMonitoringReadRepository,
     @Inject(MONITORING_ALERT_LOG_REPOSITORY)
     private readonly monitoringAlertLogRepository: MonitoringAlertLogRepository,
-    @Inject(WATCHLIST_READ_REPOSITORY)
-    private readonly watchlistReadRepository: WatchlistReadRepository,
+    private readonly findWatchlistTickers: FindWatchlistTickersUseCase,
     @Inject(BREAKOUT_DETECTION_SERVICE)
     private readonly breakoutDetectionService: BreakoutDetectionService,
     @Inject(GAP_DETECTION_SERVICE)
@@ -79,7 +77,7 @@ export class WatchlistMonitoringCronService {
   }
 
   private async processMonitoring(watchlistId: WatchlistId): Promise<void> {
-    const watchlist = await this.watchlistReadRepository.findById(watchlistId);
+    const watchlist = await this.findWatchlistTickers.execute(watchlistId);
 
     if (!watchlist) {
       this.logger.warn(
@@ -101,7 +99,7 @@ export class WatchlistMonitoringCronService {
             MonitoringType.BREAKOUT,
           ))
         ) {
-          await this.sendBreakoutAlert(ticker.value, watchlist.name.value);
+          await this.sendBreakoutAlert(ticker.value, watchlist.name);
           await this.monitoringAlertLogRepository.recordAlert(
             ticker.value,
             marketDate,
@@ -169,7 +167,7 @@ export class WatchlistMonitoringCronService {
   }
 
   private async processGapMonitoring(watchlistId: WatchlistId): Promise<void> {
-    const watchlist = await this.watchlistReadRepository.findById(watchlistId);
+    const watchlist = await this.findWatchlistTickers.execute(watchlistId);
 
     if (!watchlist) {
       this.logger.warn(
@@ -194,7 +192,7 @@ export class WatchlistMonitoringCronService {
             MonitoringType.GAP,
           ))
         ) {
-          await this.sendGapAlert(ticker.value, watchlist.name.value);
+          await this.sendGapAlert(ticker.value, watchlist.name);
           await this.monitoringAlertLogRepository.recordAlert(
             ticker.value,
             marketDate.key,
@@ -207,7 +205,7 @@ export class WatchlistMonitoringCronService {
             new GapDetectedEvent(
               ticker,
               watchlist.id,
-              watchlist.name.value,
+              watchlist.name,
               marketDate,
               detectedAt,
               result.entryPrice,
