@@ -5,6 +5,8 @@ import {
   SendNotificationRequest,
 } from '../../domain/services/notification.service';
 
+const NTFY_TIMEOUT_MS = 10_000;
+
 interface NtfyRequest {
   topic: string;
   message: string;
@@ -50,24 +52,26 @@ export class NtfyNotificationService implements NotificationService {
       headers['Authorization'] = `Bearer ${this.apiKey}`;
     }
 
+    let response: Response;
     try {
-      const response = await fetch(this.baseUrl, {
+      response = await fetch(this.baseUrl, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(NTFY_TIMEOUT_MS),
       });
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        throw new Error(
-          `Failed to send notification: ${response.status} ${response.statusText} - ${errorText}`,
-        );
-      }
     } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to send notification: ${error.message}`);
-      }
-      throw new Error('Failed to send notification: Unknown error');
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      throw new Error(`Failed to send notification: ${message}`, {
+        cause: error,
+      });
+    }
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(
+        `Failed to send notification: ${response.status} ${response.statusText} - ${errorText}`,
+      );
     }
   }
 }
