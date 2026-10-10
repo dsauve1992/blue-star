@@ -298,6 +298,188 @@ describe('SecEdgarFundamentalService', () => {
     expect(await fetchQuarters()).toEqual([]);
   });
 
+  describe('annual financials', () => {
+    interface AnnualFilingInput {
+      fiscalYear: number;
+      form?: string;
+      unit?: string;
+      eps: Record<number, number>;
+      netIncome?: number;
+      equity?: number;
+    }
+
+    function annualFacts(filings: AnnualFilingInput[]) {
+      const epsByUnit: Record<string, unknown[]> = {};
+      const netIncome: unknown[] = [];
+      const equity: unknown[] = [];
+      for (const filing of filings) {
+        const base = {
+          accn: `k-${filing.fiscalYear}`,
+          fy: filing.fiscalYear,
+          fp: 'FY',
+          form: filing.form ?? '10-K',
+          filed: `${filing.fiscalYear + 1}-02-15`,
+        };
+        const yearEnd = `${filing.fiscalYear}-12-31`;
+        const unit = filing.unit ?? 'USD/shares';
+        for (const [year, val] of Object.entries(filing.eps)) {
+          (epsByUnit[unit] ??= []).push({
+            ...base,
+            start: `${year}-01-01`,
+            end: `${year}-12-31`,
+            val,
+          });
+        }
+        if (filing.netIncome != null) {
+          netIncome.push({
+            ...base,
+            start: `${filing.fiscalYear}-01-01`,
+            end: yearEnd,
+            val: filing.netIncome,
+          });
+        }
+        if (filing.equity != null) {
+          equity.push({ ...base, end: yearEnd, val: filing.equity });
+        }
+      }
+      return {
+        facts: {
+          'us-gaap': {
+            EarningsPerShareDiluted: { units: epsByUnit },
+            NetIncomeLoss: { units: { USD: netIncome } },
+            StockholdersEquity: { units: { USD: equity } },
+          },
+        },
+      };
+    }
+
+    const fetchYears = (limit?: number) =>
+      service.getAnnualFinancialsHistory(Symbol.of('TEST'), { limit });
+
+    it('should return fiscal years newest first with net income and year-end equity', async () => {
+      mockSec(
+        annualFacts([
+          { fiscalYear: 2023, eps: { 2023: 2 }, netIncome: 200, equity: 1000 },
+          {
+            fiscalYear: 2024,
+            eps: { 2024: 3, 2023: 2 },
+            netIncome: 300,
+            equity: 1200,
+          },
+        ]),
+      );
+
+      const years = await fetchYears();
+
+      expect(years.map((y) => ({ ...y }))).toEqual([
+        {
+          symbol: 'TEST',
+          fiscalYear: '2024',
+          eps: 3,
+          comparableEps: { current: 3, previous: 2 },
+          netIncome: 300,
+          stockholdersEquity: 1200,
+        },
+        {
+          symbol: 'TEST',
+          fiscalYear: '2023',
+          eps: 2,
+          comparableEps: null,
+          netIncome: 200,
+          stockholdersEquity: 1000,
+        },
+      ]);
+    });
+
+    it('should pair EPS from the same filing so a stock split does not mix share bases', async () => {
+      mockSec(
+        annualFacts([
+          { fiscalYear: 2022, eps: { 2022: 40 } },
+          { fiscalYear: 2023, eps: { 2023: 20, 2022: 40 } },
+          { fiscalYear: 2024, eps: { 2024: 3, 2023: 2 } },
+        ]),
+      );
+
+      const years = await fetchYears();
+
+      expect(years.map((y) => [y.fiscalYear, y.comparableEps])).toEqual([
+        ['2024', { current: 3, previous: 2 }],
+        ['2023', { current: 20, previous: 40 }],
+        ['2022', null],
+      ]);
+    });
+
+    it('should only pair a fiscal year with the one immediately before it', async () => {
+      mockSec(annualFacts([{ fiscalYear: 2024, eps: { 2024: 3, 2022: 1 } }]));
+
+      const [latest] = await fetchYears();
+
+      expect(latest.comparableEps).toBeNull();
+    });
+
+    it('should fall back to another currency for the comparable pair of a 20-F filer', async () => {
+      const facts = annualFacts([
+        { fiscalYear: 2025, form: '20-F', eps: { 2025: -0.59 } },
+        {
+          fiscalYear: 2025,
+          form: '20-F',
+          unit: 'HKD/shares',
+          eps: { 2025: -4.61, 2024: -5.99 },
+        },
+      ]);
+      mockSec(facts);
+
+      const years = await fetchYears();
+
+      expect(years.map((y) => ({ ...y }))).toEqual([
+        expect.objectContaining({
+          fiscalYear: '2025',
+          eps: -0.59,
+          comparableEps: { current: -4.61, previous: -5.99 },
+        }),
+      ]);
+    });
+
+    it('should ignore quarterly periods', async () => {
+      mockSec(companyFacts(calendarYear2024));
+
+      const years = await fetchYears();
+
+      expect(years.map((y) => [y.fiscalYear, y.eps])).toEqual([['2024', 4.6]]);
+      expect(years[0].netIncome).toBeNull();
+      expect(years[0].stockholdersEquity).toBeNull();
+    });
+
+    it('should cap the history at the requested number of years', async () => {
+      mockSec(
+        annualFacts(
+          [2020, 2021, 2022, 2023, 2024].map((year) => ({
+            fiscalYear: year,
+            eps: { [year]: 1 },
+          })),
+        ),
+      );
+
+      const years = await fetchYears(3);
+
+      expect(years.map((y) => y.fiscalYear)).toEqual(['2024', '2023', '2022']);
+    });
+
+    it('should share one companyfacts download between concurrent requests', async () => {
+      mockSec(companyFacts(calendarYear2024));
+
+      await Promise.all([
+        service.getIncomeStatementHistory(Symbol.of('TEST')),
+        service.getAnnualFinancialsHistory(Symbol.of('TEST')),
+      ]);
+
+      const companyFactsCalls = fetchMock.mock.calls.filter(([url]) =>
+        (url as string).includes('companyfacts'),
+      );
+      expect(companyFactsCalls).toHaveLength(1);
+    });
+  });
+
   it('should throw when SEC responds with an error', async () => {
     mockSec(undefined, 503);
 

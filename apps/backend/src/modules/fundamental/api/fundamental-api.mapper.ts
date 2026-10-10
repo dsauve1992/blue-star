@@ -1,7 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { FinancialReport } from '../domain/value-objects/financial-report';
 import { QuarterlyGrowth } from '../domain/value-objects/quarterly-growth';
+import { AnnualGrowth } from '../domain/value-objects/annual-growth';
 import {
+  AnnualGrowthApiDto,
   FinancialReportApiDto,
   QuarterlyGrowthApiDto,
   ComputeFinancialReportApiResponseDto,
@@ -23,11 +25,23 @@ export class FundamentalApiMapper {
     };
   }
 
+  mapAnnualGrowthToApiDto(annualGrowth: AnnualGrowth): AnnualGrowthApiDto {
+    return {
+      year: annualGrowth.year,
+      eps: annualGrowth.eps,
+      epsGrowthPercent: annualGrowth.epsGrowthPercent,
+      returnOnEquityPercent: annualGrowth.returnOnEquityPercent,
+    };
+  }
+
   mapFinancialReportToApiDto(report: FinancialReport): FinancialReportApiDto {
     return {
       symbol: report.symbol,
       quarterlyGrowths: report.quarterlyGrowths.map((qg) =>
         this.mapQuarterlyGrowthToApiDto(qg),
+      ),
+      annualGrowths: report.annualGrowths.map((ag) =>
+        this.mapAnnualGrowthToApiDto(ag),
       ),
     };
   }

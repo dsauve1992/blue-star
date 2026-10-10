@@ -1,6 +1,7 @@
 import { ComputeFinancialReportUseCase } from './compute-financial-report.use-case';
 import { FundamentalService } from '../domain/services/fundamental.service';
 import { IncomeStatement } from '../domain/value-objects/income-statement';
+import { AnnualFinancials } from '../domain/value-objects/annual-financials';
 import { Symbol } from '../../../shared/value-objects/symbol';
 
 const statement = (
@@ -10,8 +11,27 @@ const statement = (
   revenue: number | null = 100,
 ) => IncomeStatement.of({ symbol: 'AAPL', fiscalYear, period, eps, revenue });
 
+const annual = (
+  fiscalYear: string,
+  eps: number,
+  options: {
+    comparableEps?: { current: number; previous: number };
+    netIncome?: number | null;
+    stockholdersEquity?: number | null;
+  } = {},
+) =>
+  AnnualFinancials.of({
+    symbol: 'AAPL',
+    fiscalYear,
+    eps,
+    comparableEps: options.comparableEps ?? null,
+    netIncome: options.netIncome ?? null,
+    stockholdersEquity: options.stockholdersEquity ?? null,
+  });
+
 describe('ComputeFinancialReportUseCase', () => {
   let getIncomeStatementHistory: jest.Mock;
+  let getAnnualFinancialsHistory: jest.Mock;
   let useCase: ComputeFinancialReportUseCase;
 
   const run = async (statements: IncomeStatement[]) => {
@@ -22,8 +42,10 @@ describe('ComputeFinancialReportUseCase', () => {
 
   beforeEach(() => {
     getIncomeStatementHistory = jest.fn();
+    getAnnualFinancialsHistory = jest.fn().mockResolvedValue([]);
     useCase = new ComputeFinancialReportUseCase({
       getIncomeStatementHistory,
+      getAnnualFinancialsHistory,
     } as unknown as FundamentalService);
   });
 
@@ -122,5 +144,67 @@ describe('ComputeFinancialReportUseCase', () => {
     );
 
     expect(await run(statements)).toHaveLength(8);
+  });
+
+  describe('annual growth', () => {
+    const runAnnual = async (years: AnnualFinancials[]) => {
+      getIncomeStatementHistory.mockResolvedValue([]);
+      getAnnualFinancialsHistory.mockResolvedValue(years);
+      const { report } = await useCase.execute({ symbol: Symbol.of('AAPL') });
+      return report.annualGrowths;
+    };
+
+    it('computes EPS growth from the comparable pair, not from the neighbouring year', async () => {
+      const growths = await runAnnual([
+        annual('2023', 20),
+        annual('2024', 3, { comparableEps: { current: 3, previous: 2 } }),
+      ]);
+
+      expect(growths.map((g) => [g.year, g.eps, g.epsGrowthPercent])).toEqual([
+        ['2024', 3, 50],
+        ['2023', 20, null],
+      ]);
+    });
+
+    it('reports positive growth when a loss narrows', async () => {
+      const [latest] = await runAnnual([
+        annual('2025', -0.59, {
+          comparableEps: { current: -4.61, previous: -5.99 },
+        }),
+      ]);
+
+      expect(latest.epsGrowthPercent).toBeCloseTo(23.04, 1);
+    });
+
+    it('computes return on equity from net income and year-end equity', async () => {
+      const [latest] = await runAnnual([
+        annual('2024', 3, { netIncome: 170, stockholdersEquity: 1000 }),
+      ]);
+
+      expect(latest.returnOnEquityPercent).toBeCloseTo(17);
+    });
+
+    it('returns null return on equity when equity is missing or not positive', async () => {
+      const growths = await runAnnual([
+        annual('2024', 1, { netIncome: 100 }),
+        annual('2023', 1, { netIncome: 100, stockholdersEquity: -50 }),
+        annual('2022', 1, { stockholdersEquity: 1000 }),
+      ]);
+
+      expect(growths.map((g) => g.returnOnEquityPercent)).toEqual([
+        null,
+        null,
+        null,
+      ]);
+    });
+
+    it('requests the last four fiscal years', async () => {
+      await runAnnual([]);
+
+      expect(getAnnualFinancialsHistory).toHaveBeenCalledWith(
+        Symbol.of('AAPL'),
+        { limit: 4 },
+      );
+    });
   });
 });
