@@ -1,10 +1,12 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { Symbol } from '../../../shared/value-objects/symbol';
 import { IncomeStatement } from '../domain/value-objects/income-statement';
+import { AnnualFinancials } from '../domain/value-objects/annual-financials';
 import { FundamentalService } from '../domain/services/fundamental.service';
 import { FUNDAMENTAL_SERVICE } from '../constants/tokens';
 import { FinancialReport } from '../domain/value-objects/financial-report';
 import { QuarterlyGrowth } from '../domain/value-objects/quarterly-growth';
+import { AnnualGrowth } from '../domain/value-objects/annual-growth';
 
 export interface ComputeFinancialReportRequestDto {
   symbol: Symbol;
@@ -31,11 +33,15 @@ export class ComputeFinancialReportUseCase {
   async execute(
     request: ComputeFinancialReportRequestDto,
   ): Promise<ComputeFinancialReportResponseDto> {
-    const incomeStatements =
-      await this.fundamentalService.getIncomeStatementHistory(request.symbol, {
+    const [incomeStatements, annualFinancials] = await Promise.all([
+      this.fundamentalService.getIncomeStatementHistory(request.symbol, {
         period: 'quarter',
         limit: 16,
-      });
+      }),
+      this.fundamentalService.getAnnualFinancialsHistory(request.symbol, {
+        limit: 4,
+      }),
+    ]);
 
     const quarterlyData = this.extractQuarterlyData(incomeStatements);
     const quarterlyGrowths = this.calculateYearOverYearGrowth(quarterlyData);
@@ -44,6 +50,7 @@ export class ComputeFinancialReportUseCase {
     const report = FinancialReport.of({
       symbol: request.symbol.value,
       quarterlyGrowths: last8Quarters,
+      annualGrowths: this.calculateAnnualGrowth(annualFinancials),
     });
 
     return { report };
@@ -112,6 +119,39 @@ export class ComputeFinancialReportUseCase {
         revenueGrowthPercent,
       });
     });
+  }
+
+  private calculateAnnualGrowth(
+    annualFinancials: AnnualFinancials[],
+  ): AnnualGrowth[] {
+    return [...annualFinancials]
+      .sort((a, b) => b.fiscalYear.localeCompare(a.fiscalYear))
+      .map((year) =>
+        AnnualGrowth.of({
+          year: year.fiscalYear,
+          eps: year.eps,
+          epsGrowthPercent: year.comparableEps
+            ? this.calculateGrowthPercent(
+                year.comparableEps.current,
+                year.comparableEps.previous,
+              )
+            : null,
+          returnOnEquityPercent: this.calculateReturnOnEquityPercent(year),
+        }),
+      );
+  }
+
+  private calculateReturnOnEquityPercent(
+    year: AnnualFinancials,
+  ): number | null {
+    if (
+      year.netIncome == null ||
+      year.stockholdersEquity == null ||
+      year.stockholdersEquity <= 0
+    ) {
+      return null;
+    }
+    return (year.netIncome / year.stockholdersEquity) * 100;
   }
 
   private calculateGrowthPercent(current: number, previous: number): number {

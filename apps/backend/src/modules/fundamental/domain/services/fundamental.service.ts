@@ -1,4 +1,5 @@
 import { Symbol } from '../../../../shared/value-objects/symbol';
+import { AnnualFinancials } from '../value-objects/annual-financials';
 import { IncomeStatement } from '../value-objects/income-statement';
 
 export type IncomeStatementPeriod =
@@ -20,4 +21,8 @@ export interface FundamentalService {
     symbol: Symbol,
     options?: GetIncomeStatementHistoryOptions,
   ): Promise<IncomeStatement[]>;
+  getAnnualFinancialsHistory(
+    symbol: Symbol,
+    options?: { limit?: number },
+  ): Promise<AnnualFinancials[]>;
 }

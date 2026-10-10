@@ -67,7 +67,11 @@ describe('FundamentalController', () => {
 
   it('returns the mapped report for a valid symbol', async () => {
     execute.mockResolvedValue({
-      report: FinancialReport.of({ symbol: 'AAPL', quarterlyGrowths: [] }),
+      report: FinancialReport.of({
+        symbol: 'AAPL',
+        quarterlyGrowths: [],
+        annualGrowths: [],
+      }),
     });
 
     const response = await request(server())
