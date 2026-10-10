@@ -223,24 +223,16 @@ export class WatchlistMonitoringCronService {
     ticker: string,
     watchlistName: string,
   ): Promise<void> {
-    try {
-      await this.notificationService.send({
-        topic: this.gapTopic,
-        title: NotificationTitle.of(`Gap Alert: ${ticker}`),
-        message: NotificationMessage.of(
-          `${ticker} from watchlist "${watchlistName}" is gapping up!`,
-        ),
-        priority: NotificationPriority.HIGH,
-        tags: ['🚀', 'gap', ticker],
-      });
+    await this.notificationService.send({
+      topic: this.gapTopic,
+      title: NotificationTitle.of(`Gap Alert: ${ticker}`),
+      message: NotificationMessage.of(
+        `${ticker} from watchlist "${watchlistName}" is gapping up!`,
+      ),
+      priority: NotificationPriority.HIGH,
+      tags: ['🚀', 'gap', ticker],
+    });
 
-      this.logger.log(`Gap alert sent for ${ticker}`);
-    } catch (error) {
-      const errorMessage =
-        error instanceof Error ? error.message : 'Unknown error';
-      this.logger.warn(
-        `Failed to send gap alert for ${ticker}: ${errorMessage}`,
-      );
-    }
+    this.logger.log(`Gap alert sent for ${ticker}`);
   }
 }
