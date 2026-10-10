@@ -131,4 +131,31 @@ describe('LeaderScanRepository Integration', () => {
     expect(result!.scanDate.toISOString()).toBe(newer.toISOString());
     expect(result!.rsScore.value).toBeCloseTo(0.99, 5);
   });
+
+  it('should return null for a symbol that dropped out of the latest scan', async () => {
+    const older = ScanDate.of(new Date('2026-04-17'));
+    const newer = ScanDate.of(new Date('2026-04-24'));
+
+    const olderRun = LeaderScanRun.create(older);
+    olderRun.markCompleted(700, 2);
+    const newerRun = LeaderScanRun.create(newer);
+    newerRun.markCompleted(733, 1);
+
+    await repository.saveRun(olderRun);
+    await repository.saveResults(olderRun, [
+      makeResult('NVDA', older, { rsScore: 0.98 }),
+      makeResult('AAPL', older, { rsScore: 0.97 }),
+    ]);
+    await repository.saveRun(newerRun);
+    await repository.saveResults(newerRun, [
+      makeResult('NVDA', newer, { rsScore: 0.99 }),
+    ]);
+
+    expect(await repository.getLatestResultForSymbol('AAPL')).toBeNull();
+
+    const nvda = await repository.getLatestResultForSymbol('NVDA');
+    expect(nvda).not.toBeNull();
+    expect(nvda!.scanDate.toISOString()).toBe(newer.toISOString());
+    expect(nvda!.rsScore.value).toBeCloseTo(0.99, 5);
+  });
 });

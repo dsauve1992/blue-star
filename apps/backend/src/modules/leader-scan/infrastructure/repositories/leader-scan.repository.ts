@@ -131,7 +131,7 @@ export class LeaderScanRepositoryImpl implements LeaderScanRepository {
     const result = (await this.db.query(
       `SELECT * FROM leader_scan_results
        WHERE symbol = $1
-       ORDER BY scan_date DESC
+         AND scan_date = (SELECT MAX(scan_date) FROM leader_scan_results)
        LIMIT 1`,
       [symbol],
     )) as { rows: LeaderScanResultRow[] };
