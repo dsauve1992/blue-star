@@ -7,6 +7,8 @@ import { FUNDAMENTAL_SERVICE } from '../constants/tokens';
 import { FinancialReport } from '../domain/value-objects/financial-report';
 import { QuarterlyGrowth } from '../domain/value-objects/quarterly-growth';
 import { AnnualGrowth } from '../domain/value-objects/annual-growth';
+import { CanslimRating } from '../domain/value-objects/canslim-rating';
+import { rateCanslimFinancials } from '../domain/canslim-rating-calculator';
 
 export interface ComputeFinancialReportRequestDto {
   symbol: Symbol;
@@ -14,6 +16,7 @@ export interface ComputeFinancialReportRequestDto {
 
 export interface ComputeFinancialReportResponseDto {
   report: FinancialReport;
+  rating: CanslimRating;
 }
 
 interface QuarterlyData {
@@ -53,7 +56,13 @@ export class ComputeFinancialReportUseCase {
       annualGrowths: this.calculateAnnualGrowth(annualFinancials),
     });
 
-    return { report };
+    return {
+      report,
+      rating: rateCanslimFinancials(
+        report.quarterlyGrowths,
+        report.annualGrowths,
+      ),
+    };
   }
 
   private extractQuarterlyData(

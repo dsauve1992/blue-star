@@ -60,9 +60,10 @@ export function AddToWatchlistButton({
           e.stopPropagation();
           setShowWatchlistDropdown(!showWatchlistDropdown);
         }}
-        className="flex items-center gap-2 px-3 py-1 rounded-lg text-xs font-medium
+        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium
                   bg-blue-600/50 text-white hover:bg-blue-600/70
-                  border border-blue-500/50 transition-all duration-200"
+                  border border-blue-500/50 transition-colors duration-150
+                  focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400"
       >
         <BookmarkPlus className="w-3 h-3" />
         Add to Watchlist

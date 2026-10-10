@@ -7,8 +7,10 @@ import {
   FinancialReportApiDto,
   QuarterlyGrowthApiDto,
   ComputeFinancialReportApiResponseDto,
+  RateFinancialsWithAiApiResponseDto,
 } from './fundamental-api.dto';
 import { ComputeFinancialReportResponseDto } from '../use-cases/compute-financial-report.use-case';
+import { RateFinancialsWithAiResponseDto } from '../use-cases/rate-financials-with-ai.use-case';
 
 @Injectable()
 export class FundamentalApiMapper {
@@ -51,6 +53,26 @@ export class FundamentalApiMapper {
   ): ComputeFinancialReportApiResponseDto {
     return {
       report: this.mapFinancialReportToApiDto(useCaseResponse.report),
+      rating: {
+        grade: useCaseResponse.rating.grade,
+        scorePercent: useCaseResponse.rating.scorePercent,
+        criteria: useCaseResponse.rating.criteria.map((c) => ({ ...c })),
+      },
+    };
+  }
+
+  mapRateFinancialsWithAiResponse({
+    rating,
+  }: RateFinancialsWithAiResponseDto): RateFinancialsWithAiApiResponseDto {
+    return {
+      rating: {
+        model: rating.model,
+        grade: rating.grade,
+        gradeConfidence: rating.gradeConfidence,
+        gradeProbabilities: { ...rating.gradeProbabilities },
+        currentEarnings: { ...rating.currentEarnings },
+        annualEarnings: { ...rating.annualEarnings },
+      },
     };
   }
 }

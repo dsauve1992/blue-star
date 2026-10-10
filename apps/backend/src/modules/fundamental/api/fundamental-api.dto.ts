@@ -20,6 +20,42 @@ export interface FinancialReportApiDto {
   annualGrowths: AnnualGrowthApiDto[];
 }
 
+export interface CanslimCriterionApiDto {
+  key: string;
+  label: string;
+  status: 'pass' | 'partial' | 'fail' | 'unscored';
+  points: number | null;
+  detail: string;
+}
+
+export interface CanslimRatingApiDto {
+  grade: 'A' | 'B' | 'C' | 'D' | 'F' | null;
+  scorePercent: number | null;
+  criteria: CanslimCriterionApiDto[];
+}
+
 export interface ComputeFinancialReportApiResponseDto {
   report: FinancialReportApiDto;
+  rating: CanslimRatingApiDto;
+}
+
+type CanslimGradeApiDto = 'A' | 'B' | 'C' | 'D' | 'F';
+
+export interface AiDimensionScoreApiDto {
+  scorePercent: number;
+  confidence: number;
+  label: string;
+}
+
+export interface AiFinancialRatingApiDto {
+  model: string;
+  grade: CanslimGradeApiDto;
+  gradeConfidence: number;
+  gradeProbabilities: Record<CanslimGradeApiDto, number>;
+  currentEarnings: AiDimensionScoreApiDto;
+  annualEarnings: AiDimensionScoreApiDto;
+}
+
+export interface RateFinancialsWithAiApiResponseDto {
+  rating: AiFinancialRatingApiDto;
 }

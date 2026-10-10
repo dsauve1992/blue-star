@@ -277,10 +277,11 @@ export default function MomentumLeaders() {
               isAddingToWatchlist={addTickerToWatchlist.isPending}
               isRemovingFromWatchlist={removeTickerFromWatchlist.isPending}
               isCreatingWatchlist={createWatchlist.isPending}
+              canslimRating={financialData?.rating ?? null}
             />
 
             {/* Chart Content */}
-            <div className="flex-1 flex flex-col min-h-0 p-6 gap-2 overflow-hidden">
+            <div className="flex-1 flex flex-col min-h-0 px-4 pt-3 pb-1 gap-1 overflow-hidden">
               <div className="flex-1 min-h-0">
                 {selectedTicker && chartProps ? (
                   <div className="h-full rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
@@ -349,7 +350,7 @@ export default function MomentumLeaders() {
                 <div className="flex-shrink-0">
                   <button
                     onClick={() => setShowFinancialFooter(!showFinancialFooter)}
-                    className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors duration-150 group"
+                    className="w-full flex items-center justify-center gap-1.5 py-1 text-xs text-slate-500 hover:text-slate-300 transition-colors duration-150 group"
                     aria-expanded={showFinancialFooter}
                     aria-label={
                       showFinancialFooter

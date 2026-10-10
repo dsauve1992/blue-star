@@ -33,6 +33,7 @@ import {
 } from "src/market-data/api/chart-data.client";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
+import { CanslimRatingBadge } from "src/stock-analysis/components/CanslimRatingBadge";
 import { AddToWatchlistButton } from "src/watchlist/components/AddToWatchlistButton";
 import {
   useWatchlists,
@@ -379,17 +380,23 @@ export default function IndustryGroupExplorer() {
                         </span>
                       )}
                     </div>
-                    <AddToWatchlistButton
-                      ticker={selectedTicker}
-                      watchlists={watchlistsData?.watchlists ?? []}
-                      onToggleWatchlist={handleToggleWatchlist}
-                      onCreateWatchlist={handleCreateWatchlist}
-                      isAddingToWatchlist={addTickerToWatchlist.isPending}
-                      isRemovingFromWatchlist={
-                        removeTickerFromWatchlist.isPending
-                      }
-                      isCreatingWatchlist={createWatchlist.isPending}
-                    />
+                    <div className="flex shrink-0 items-center gap-2">
+                      <CanslimRatingBadge
+                        symbol={selectedSymbol}
+                        rating={financialData?.rating ?? null}
+                      />
+                      <AddToWatchlistButton
+                        ticker={selectedTicker}
+                        watchlists={watchlistsData?.watchlists ?? []}
+                        onToggleWatchlist={handleToggleWatchlist}
+                        onCreateWatchlist={handleCreateWatchlist}
+                        isAddingToWatchlist={addTickerToWatchlist.isPending}
+                        isRemovingFromWatchlist={
+                          removeTickerFromWatchlist.isPending
+                        }
+                        isCreatingWatchlist={createWatchlist.isPending}
+                      />
+                    </div>
                   </div>
                 )}
 
