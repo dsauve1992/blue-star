@@ -16,11 +16,13 @@ export class StartupService implements OnModuleInit {
   ) {}
 
   async onModuleInit() {
+    let migrationsOk = true;
     try {
       console.log('Running database migrations on startup...');
       await this.migrationService.runMigrations();
       console.log('Database migrations completed successfully');
     } catch (error) {
+      migrationsOk = false;
       console.error('Failed to run database migrations:', error);
       // Don't throw here to allow the application to start
       // In production, you might want to fail fast
@@ -28,13 +30,24 @@ export class StartupService implements OnModuleInit {
 
     try {
       console.log('Sending startup notification...');
-      await this.notificationService.send({
-        topic: NotificationTopic.of('blue-star-backend'),
-        message: NotificationMessage.of('Backend server is up and running! 🚀'),
-        title: NotificationTitle.of('Blue Star Backend Started'),
-        priority: NotificationPriority.DEFAULT,
-        tags: ['✅', 'backend', 'startup'],
-      });
+      await this.notificationService.send(
+        migrationsOk
+          ? {
+              topic: NotificationTopic.of('blue-star-backend'),
+              message: NotificationMessage.of('Backend server is up and running! 🚀'),
+              title: NotificationTitle.of('Blue Star Backend Started'),
+              priority: NotificationPriority.DEFAULT,
+              tags: ['✅', 'backend', 'startup'],
+            }
+          : {
+              // Never report a healthy start when the schema did not migrate.
+              topic: NotificationTopic.of('blue-star-backend'),
+              message: NotificationMessage.of('Backend started, but database migrations failed. Check the logs.'),
+              title: NotificationTitle.of('Blue Star Backend: migration failed'),
+              priority: NotificationPriority.HIGH,
+              tags: ['⚠️', 'backend', 'migration'],
+            },
+      );
       console.log('Startup notification sent successfully');
     } catch (error) {
       console.error('Failed to send startup notification:', error);
