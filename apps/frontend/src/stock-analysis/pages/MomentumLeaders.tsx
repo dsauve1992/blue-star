@@ -277,7 +277,6 @@ export default function MomentumLeaders() {
               isAddingToWatchlist={addTickerToWatchlist.isPending}
               isRemovingFromWatchlist={removeTickerFromWatchlist.isPending}
               isCreatingWatchlist={createWatchlist.isPending}
-              canslimRating={financialData?.rating ?? null}
             />
 
             {/* Chart Content */}

@@ -4,8 +4,6 @@ import { Badge } from "src/global/design-system";
 import type { MomentumLeader } from "../api/momentum-leaders.client";
 import type { Watchlist } from "src/watchlist/api/watchlist.client";
 import { AddToWatchlistButton } from "src/watchlist/components/AddToWatchlistButton";
-import type { CanslimRatingApiDto } from "src/fundamental/api/fundamental.client";
-import { CanslimRatingBadge } from "./CanslimRatingBadge";
 
 function extractSymbol(ticker: string): string {
   const parts = ticker.split(":");
@@ -27,7 +25,6 @@ interface MomentumLeadersChartHeaderProps {
   isAddingToWatchlist: boolean;
   isRemovingFromWatchlist: boolean;
   isCreatingWatchlist: boolean;
-  canslimRating: CanslimRatingApiDto | null;
 }
 
 export function MomentumLeadersChartHeader({
@@ -41,7 +38,6 @@ export function MomentumLeadersChartHeader({
   isAddingToWatchlist,
   isRemovingFromWatchlist,
   isCreatingWatchlist,
-  canslimRating,
 }: MomentumLeadersChartHeaderProps) {
   const [logoFailed, setLogoFailed] = useState(false);
 
@@ -126,12 +122,6 @@ export function MomentumLeadersChartHeader({
       </div>
 
       <div className="flex shrink-0 items-center gap-2">
-        {selectedTicker && (
-          <CanslimRatingBadge
-            symbol={extractSymbol(selectedTicker)}
-            rating={canslimRating}
-          />
-        )}
         {selectedTicker && (
           <AddToWatchlistButton
             ticker={selectedTicker}

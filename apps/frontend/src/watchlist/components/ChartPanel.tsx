@@ -3,8 +3,7 @@ import { ChevronDown, BarChart3 } from "lucide-react";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
-import { CanslimRatingBadge } from "src/stock-analysis/components/CanslimRatingBadge";
-import type { ComputeFinancialReportApiResponseDto } from "src/fundamental/api/fundamental.client";
+import type { FinancialReportApiDto } from "src/fundamental/api/fundamental.client";
 import {
   MAIN_CHART_TIMEFRAME_OPTIONS,
   type ChartInterval,
@@ -39,7 +38,7 @@ interface ChartPanelProps {
     bars: number;
   } | null;
   movingAverages: MovingAverageConfig[];
-  financialData: ComputeFinancialReportApiResponseDto | undefined;
+  financialData: { report: FinancialReportApiDto } | undefined;
   financialLoading: boolean;
   financialError: Error | null;
   spyCandles?: ChartCandleDto[];
@@ -113,19 +112,17 @@ export function ChartPanel({
   return (
     <main className="flex-1 flex flex-col min-w-0">
       <div className="flex-1 flex flex-col min-h-0 p-4 gap-2 overflow-hidden">
-        {selectedTicker && symbol && (
+        {selectedTicker && sectorName && (
           <div className="flex-shrink-0 flex items-center gap-3 px-1 py-1">
-            {sectorName && (
-              <span className="text-xs text-slate-400">
-                {sectorName}
-                {profileData?.profile?.industry && (
-                  <span className="text-slate-500">
-                    {" "}
-                    · {profileData.profile.industry}
-                  </span>
-                )}
-              </span>
-            )}
+            <span className="text-xs text-slate-400">
+              {sectorName}
+              {profileData?.profile?.industry && (
+                <span className="text-slate-500">
+                  {" "}
+                  · {profileData.profile.industry}
+                </span>
+              )}
+            </span>
             {quadrant && (
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getQuadrantColor(quadrant)}`}
@@ -133,12 +130,6 @@ export function ChartPanel({
                 {quadrant}
               </span>
             )}
-            <div className="ml-auto">
-              <CanslimRatingBadge
-                symbol={symbol}
-                rating={financialData?.rating ?? null}
-              />
-            </div>
           </div>
         )}
 
