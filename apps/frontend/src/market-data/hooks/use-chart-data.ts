@@ -43,7 +43,15 @@ export function useChartData(
       ),
     enabled: !!symbol && !!exchange,
     staleTime: 5 * 60 * 1000,
-    placeholderData: (previousData) => previousData,
+    placeholderData: (previousData, previousQuery) => {
+      const previousKey = previousQuery?.queryKey;
+      const isSameChart =
+        previousKey?.[2] === (symbol ?? "") &&
+        previousKey?.[3] === (exchange ?? "") &&
+        previousKey?.[4] === interval &&
+        previousKey?.[6] === includeExtendedHours;
+      return isSameChart ? previousData : undefined;
+    },
   });
 
   const loadMore = useCallback(() => {
