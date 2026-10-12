@@ -7,7 +7,7 @@
  * `null` and the caller stores NULL — the favorable-quadrant filter then
  * excludes the stock until the map is extended.
  */
-const INDUSTRY_KEY_TO_GROUP: Record<string, string> = {
+export const INDUSTRY_KEY_TO_GROUP: Record<string, string> = {
   // ===== Energy (1010) =====
   'oil-gas-integrated': 'Energy',
   'oil-gas-e-p': 'Energy',
@@ -31,7 +31,7 @@ const INDUSTRY_KEY_TO_GROUP: Record<string, string> = {
   'other-precious-metals-mining': 'Materials',
   gold: 'Materials',
   silver: 'Materials',
-  coking: 'Materials',
+  'coking-coal': 'Materials',
   'lumber-wood-production': 'Materials',
   'packaging-containers': 'Materials',
 
@@ -56,6 +56,7 @@ const INDUSTRY_KEY_TO_GROUP: Record<string, string> = {
   'security-protection-services': 'Commercial & Professional Services',
   'waste-management': 'Commercial & Professional Services',
   'rental-leasing-services': 'Commercial & Professional Services',
+  'business-equipment-supplies': 'Commercial & Professional Services',
 
   // ===== Transportation (2030) =====
   airlines: 'Transportation',
