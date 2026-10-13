@@ -108,11 +108,24 @@ curl http://127.0.0.1:3000/api/leader-scan/latest  # real data from Postgres
 Most other routes require a Kinde JWT; public ones are marked `@Public()` in
 their controllers.
 
-Frontend — open `http://localhost:5173` in a browser (claude-in-chrome works)
-and screenshot. Unauthenticated you get the "Trade Smarter with Blue Star"
-landing page; the dashboard and app pages sit behind Kinde login — never
-automate the login form. The rendered landing page plus a clean console is the
-pass condition.
+Frontend — open `http://localhost:5173` in a browser and screenshot.
+Unauthenticated you get the "Trade Smarter with Blue Star" landing page; the
+dashboard and app pages sit behind Kinde login.
+
+To get past login, use the dedicated test account (a normal user, not the
+user's own, so its watchlists/positions are disposable). Its credentials live
+in the gitignored `apps/frontend/.env.local` as `E2E_USER_EMAIL` /
+`E2E_USER_PASSWORD` — reference them by name, never print them.
+
+```bash
+node .claude/skills/run/login.mjs   # APP_URL overrides http://localhost:5173
+```
+
+It logs in with Playwright and saves the session to the gitignored
+`apps/frontend/.auth/user.json`. Reuse it instead of logging in again:
+`browser.newContext({ storageState: 'apps/frontend/.auth/user.json' })`. If a
+page bounces to the landing page, the session expired — rerun the script. On
+failure it saves a screenshot to `apps/frontend/.auth/login-failure.png`.
 
 ## Shutdown
 
