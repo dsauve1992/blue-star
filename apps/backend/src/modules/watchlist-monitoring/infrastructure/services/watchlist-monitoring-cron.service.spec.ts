@@ -147,6 +147,33 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
       MonitoringType.GAP,
     );
   });
+
+  it('does not record or emit when sending fails, and continues with the next ticker', async () => {
+    const ticker2 = WatchlistTicker.of('MSFT');
+    findWatchlistTickers.execute.mockResolvedValue({
+      id: watchlistId,
+      name: 'Momentum',
+      tickers: [ticker, ticker2],
+    } as never);
+    notificationService.send
+      .mockRejectedValueOnce(new Error('ntfy down'))
+      .mockResolvedValue(undefined);
+
+    await service.monitorGaps();
+
+    expect(notificationService.send).toHaveBeenCalledTimes(2);
+    expect(alertLogRepository.recordAlert).toHaveBeenCalledTimes(1);
+    expect(alertLogRepository.recordAlert).toHaveBeenCalledWith(
+      'MSFT',
+      getMarketDateKey(),
+      MonitoringType.GAP,
+    );
+    expect(emitSpy).toHaveBeenCalledTimes(1);
+    expect(emitSpy).toHaveBeenCalledWith(
+      GapDetectedEvent.NAME,
+      expect.objectContaining({ ticker: ticker2 }),
+    );
+  });
 });
 
 describe('WatchlistMonitoringCronService — breakout alerting', () => {
