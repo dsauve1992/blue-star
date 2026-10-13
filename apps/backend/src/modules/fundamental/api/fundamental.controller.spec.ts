@@ -7,21 +7,30 @@ import { DomainErrorFilter } from '../../../common/filters/domain-error.filter';
 import { Symbol } from '../../../shared/value-objects/symbol';
 import { FinancialReport } from '../domain/value-objects/financial-report';
 import { ComputeFinancialReportUseCase } from '../use-cases/compute-financial-report.use-case';
+import { GetEarningsExpectationsUseCase } from '../use-cases/get-earnings-expectations.use-case';
+import { EarningsExpectations } from '../domain/value-objects/earnings-expectations';
+import { EarningsSurprise } from '../domain/value-objects/earnings-surprise';
 import { FundamentalApiMapper } from './fundamental-api.mapper';
 import { FundamentalController } from './fundamental.controller';
 
 describe('FundamentalController', () => {
   let app: INestApplication;
   const execute = jest.fn();
+  const executeExpectations = jest.fn();
   const server = () => app.getHttpServer() as Server;
 
   beforeEach(async () => {
     execute.mockReset();
+    executeExpectations.mockReset();
     const moduleRef = await Test.createTestingModule({
       controllers: [FundamentalController],
       providers: [
         FundamentalApiMapper,
         { provide: ComputeFinancialReportUseCase, useValue: { execute } },
+        {
+          provide: GetEarningsExpectationsUseCase,
+          useValue: { execute: executeExpectations },
+        },
         { provide: APP_FILTER, useClass: DomainErrorFilter },
       ],
     }).compile();
@@ -84,5 +93,41 @@ describe('FundamentalController', () => {
     expect(execute).toHaveBeenCalledWith({
       symbol: Symbol.of('AAPL'),
     });
+  });
+
+  it('returns the mapped expectations with computed surprise percent', async () => {
+    executeExpectations.mockResolvedValue({
+      expectations: EarningsExpectations.of({
+        symbol: 'IOVA',
+        surprises: [
+          EarningsSurprise.of({
+            quarterEnd: '2026-06-30',
+            epsActual: 1.2,
+            epsEstimate: 1,
+          }),
+        ],
+        estimateTrends: [],
+      }),
+    });
+
+    const response = await request(server())
+      .get('/fundamental/expectations?symbol=IOVA')
+      .expect(200);
+
+    const body = response.body as {
+      expectations: { surprises: { surprisePercent: number }[] };
+    };
+    expect(body.expectations.surprises[0].surprisePercent).toBeCloseTo(20);
+    expect(executeExpectations).toHaveBeenCalledWith({
+      symbol: Symbol.of('IOVA'),
+    });
+  });
+
+  it('returns 400 for a malformed symbol on the expectations endpoint', async () => {
+    await request(server())
+      .get('/fundamental/expectations?symbol=AA%20PL!')
+      .expect(400);
+
+    expect(executeExpectations).not.toHaveBeenCalled();
   });
 });

@@ -4,11 +4,15 @@ import { LoadingSpinner } from "src/global/design-system";
 import { Alert, AlertDescription } from "src/global/design-system";
 import type {
   AnnualGrowthApiDto,
+  EarningsExpectationsApiDto,
+  EstimatePeriod,
   FinancialReportApiDto,
   QuarterlyGrowthApiDto,
 } from "src/fundamental/api/fundamental.client";
+import { useEarningsExpectations } from "src/fundamental/hooks/use-earnings-expectations";
 
 interface FinancialReportChartFooterProps {
+  symbol: string | null;
   report: FinancialReportApiDto | null;
   isLoading: boolean;
   error: Error | null;
@@ -60,13 +64,33 @@ function formatQuarterLabel(quarter: string, year: string): string {
 }
 
 export function FinancialReportChartFooter({
+  symbol,
   report,
   isLoading,
   error,
 }: FinancialReportChartFooterProps) {
+  const expectations = useEarningsExpectations(symbol);
+
+  return (
+    <div className="flex-shrink-0 border-t border-slate-700/50 pt-3 mt-3 flex flex-wrap items-start gap-x-10 gap-y-3 overflow-x-auto">
+      <SecFinancialTables report={report} isLoading={isLoading} error={error} />
+      <EarningsExpectationsTables
+        expectations={expectations.data?.expectations ?? null}
+        isLoading={expectations.isLoading}
+        error={expectations.error}
+      />
+    </div>
+  );
+}
+
+function SecFinancialTables({
+  report,
+  isLoading,
+  error,
+}: Omit<FinancialReportChartFooterProps, "symbol">) {
   if (isLoading) {
     return (
-      <div className="flex-shrink-0 flex items-center justify-center gap-2 py-4 border-t border-slate-700/50">
+      <div className="flex items-center gap-2 py-1">
         <LoadingSpinner />
         <span className="text-xs text-slate-400">
           Loading financial data...
@@ -77,13 +101,11 @@ export function FinancialReportChartFooter({
 
   if (error) {
     return (
-      <div className="flex-shrink-0 border-t border-slate-700/50 p-4">
-        <Alert variant="danger">
-          <AlertDescription>
-            Failed to load financial report. Please try again.
-          </AlertDescription>
-        </Alert>
-      </div>
+      <Alert variant="danger">
+        <AlertDescription>
+          Failed to load financial report. Please try again.
+        </AlertDescription>
+      </Alert>
     );
   }
 
@@ -92,7 +114,7 @@ export function FinancialReportChartFooter({
   }
 
   return (
-    <div className="flex-shrink-0 border-t border-slate-700/50 pt-3 mt-3 flex flex-wrap items-start gap-x-10 gap-y-3 overflow-x-auto">
+    <>
       {report.quarterlyGrowths.length ? (
         <QuarterlyGrowthTable quarters={report.quarterlyGrowths} />
       ) : (
@@ -103,7 +125,130 @@ export function FinancialReportChartFooter({
       {report.annualGrowths.length > 0 && (
         <AnnualGrowthTable years={report.annualGrowths} />
       )}
-    </div>
+    </>
+  );
+}
+
+const ESTIMATE_PERIOD_LABELS: Record<EstimatePeriod, string> = {
+  "0q": "This Q",
+  "+1q": "Next Q",
+  "0y": "This FY",
+  "+1y": "Next FY",
+};
+
+function formatQuarterEnd(isoDate: string): string {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  const month = date.toLocaleString("en-US", {
+    month: "short",
+    timeZone: "UTC",
+  });
+  return `${month} '${isoDate.slice(2, 4)}`;
+}
+
+function formatRevisionCounts(up: number | null, down: number | null): string {
+  if (up === null && down === null) return "";
+  return `↑${up ?? 0} ↓${down ?? 0}`;
+}
+
+function EarningsExpectationsTables({
+  expectations,
+  isLoading,
+  error,
+}: {
+  expectations: EarningsExpectationsApiDto | null;
+  isLoading: boolean;
+  error: Error | null;
+}) {
+  if (isLoading) {
+    return (
+      <div className="flex items-center gap-2 py-1">
+        <LoadingSpinner />
+        <span className="text-xs text-slate-400">Loading estimates...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <p className="text-xs text-slate-400 py-1">
+        Analyst estimates unavailable
+      </p>
+    );
+  }
+
+  if (!expectations) {
+    return null;
+  }
+
+  const { surprises, estimateTrends } = expectations;
+  if (!surprises.length && !estimateTrends.length) {
+    return <p className="text-xs text-slate-400 py-1">No analyst coverage</p>;
+  }
+
+  return (
+    <>
+      {surprises.length > 0 && (
+        <GrowthTable
+          caption="EPS Surprise"
+          columns={surprises.map((s) => ({
+            key: s.quarterEnd,
+            label: formatQuarterEnd(s.quarterEnd),
+          }))}
+          rows={[
+            {
+              label: "vs Est.",
+              cells: surprises.map((s) => ({
+                growth: s.surprisePercent,
+                growthClassName: getGrowthColor(s.surprisePercent),
+                value: `${formatEps(s.epsActual)} vs ${formatEps(s.epsEstimate)}`,
+              })),
+            },
+          ]}
+        />
+      )}
+      {estimateTrends.length > 0 && (
+        <GrowthTable
+          caption="Estimate Revisions"
+          columns={estimateTrends.map((t) => ({
+            key: t.period,
+            label: ESTIMATE_PERIOD_LABELS[t.period],
+          }))}
+          rows={[
+            {
+              label: "EPS 30d",
+              cells: estimateTrends.map((t) => ({
+                growth: t.epsRevision30DaysPercent,
+                growthClassName: getGrowthColor(t.epsRevision30DaysPercent),
+                value: formatRevisionCounts(
+                  t.upRevisionsLast30Days,
+                  t.downRevisionsLast30Days,
+                ),
+              })),
+            },
+            {
+              label: "EPS 90d",
+              cells: estimateTrends.map((t) => ({
+                growth: t.epsRevision90DaysPercent,
+                growthClassName: getGrowthColor(t.epsRevision90DaysPercent),
+                value:
+                  t.epsEstimate === null ? undefined : formatEps(t.epsEstimate),
+              })),
+            },
+            {
+              label: "Revenue",
+              cells: estimateTrends.map((t) => ({
+                growth: t.revenueGrowthPercent,
+                growthClassName: getGrowthColor(t.revenueGrowthPercent),
+                value:
+                  t.revenueEstimate === null
+                    ? undefined
+                    : formatNumber(t.revenueEstimate),
+              })),
+            },
+          ]}
+        />
+      )}
+    </>
   );
 }
 

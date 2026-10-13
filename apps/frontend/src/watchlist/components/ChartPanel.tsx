@@ -229,6 +229,7 @@ export function ChartPanel({
               }`}
             >
               <FinancialReportChartFooter
+                symbol={symbol}
                 report={financialData?.report ?? null}
                 isLoading={financialLoading}
                 error={financialError}

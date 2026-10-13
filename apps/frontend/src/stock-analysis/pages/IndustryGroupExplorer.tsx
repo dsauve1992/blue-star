@@ -496,6 +496,7 @@ export default function IndustryGroupExplorer() {
                       }`}
                     >
                       <FinancialReportChartFooter
+                        symbol={selectedSymbol}
                         report={financialData?.report ?? null}
                         isLoading={financialLoading}
                         error={financialError}

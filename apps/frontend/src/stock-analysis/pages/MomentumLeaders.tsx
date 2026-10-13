@@ -374,6 +374,7 @@ export default function MomentumLeaders() {
                     }`}
                   >
                     <FinancialReportChartFooter
+                      symbol={symbolToFetch}
                       report={financialData?.report ?? null}
                       isLoading={financialLoading}
                       error={financialError}
