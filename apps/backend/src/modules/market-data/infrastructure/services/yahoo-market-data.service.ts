@@ -85,7 +85,14 @@ export class YahooMarketDataService implements MarketDataService {
         Number.isFinite(close)
       ) {
         points.push(
-          PricePoint.of(new Date(q.date), open, high, low, close, volume),
+          PricePoint.of(
+            new Date(q.date),
+            open,
+            Math.max(high, open, close),
+            Math.min(low, open, close),
+            close,
+            volume,
+          ),
         );
       }
     }

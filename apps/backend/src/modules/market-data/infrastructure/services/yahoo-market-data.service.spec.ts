@@ -137,4 +137,44 @@ describe('YahooMarketDataService', () => {
       includePrePost: true,
     });
   });
+
+  it('should widen high/low to contain open and close when yahoo reports an inconsistent bar', async () => {
+    const { service, yahooFinance } = createService();
+    const symbol = Symbol.of('DELL');
+    const dateRange = DateRange.of(
+      new Date('2026-10-01T00:00:00.000Z'),
+      new Date('2026-10-14T00:00:00.000Z'),
+    );
+    yahooFinance.chart.mockResolvedValue({
+      quotes: [
+        {
+          date: new Date('2026-10-14T13:30:00.000Z'),
+          open: 547.99,
+          high: 547.17,
+          low: 502.34,
+          close: 505.75,
+          volume: 8260015,
+        },
+        {
+          date: new Date('2026-10-13T13:30:00.000Z'),
+          open: 500,
+          high: 510,
+          low: 501,
+          close: 505,
+          volume: 1000,
+        },
+      ],
+    });
+
+    const result = await service.getHistoricalData(symbol, dateRange, '1d');
+
+    expect(result.pricePoints).toHaveLength(2);
+    const [gapBar, lowBar] = [...result.pricePoints].sort(
+      (a, b) => b.date.getTime() - a.date.getTime(),
+    );
+    expect(gapBar.high).toBe(547.99);
+    expect(gapBar.low).toBe(502.34);
+    expect(lowBar.low).toBe(500);
+    expect(lowBar.high).toBe(510);
+  });
 });
