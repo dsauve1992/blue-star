@@ -1,182 +1,60 @@
-import { useRef, useMemo, useCallback, useState } from "react";
-import { ChevronDown, BarChart3 } from "lucide-react";
+import { useCallback, useMemo, useState } from "react";
 import { PageContainer } from "src/global/design-system/page-container";
+import {
+  Alert,
+  AlertDescription,
+  Button,
+  LoadingSpinner,
+} from "src/global/design-system";
 import { useMomentumLeaders } from "../hooks/use-momentum-leaders";
 import { useRunMomentumLeaders } from "../hooks/use-run-momentum-leaders";
 import { useLeaderSelection } from "../hooks/use-leader-selection";
 import { useSortedLeaders } from "../hooks/use-sorted-leaders";
+import {
+  useLeaderGroups,
+  type LeaderGroupBy,
+} from "../hooks/use-leader-groups";
 import { leaderTickerFullName } from "../api/momentum-leaders.client";
 import { useConsolidationKeyboardNavigation } from "../hooks/use-consolidation-keyboard-navigation";
-import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
 import { INDUSTRY_GROUP_UNIVERSE_ID } from "../utils/industry-group-utils";
-import {
-  useWatchlists,
-  useAddTickerToWatchlist,
-  useRemoveTickerFromWatchlist,
-  useCreateWatchlist,
-} from "src/watchlist/hooks/use-watchlists";
-import {
-  MAIN_CHART_TIMEFRAME_OPTIONS,
-  type ChartInterval,
-} from "src/market-data/api/chart-data.client";
-import { MomentumLeadersSidebar } from "../components/MomentumLeadersSidebar";
-import { MomentumLeadersChartHeader } from "../components/MomentumLeadersChartHeader";
-import { TechnicalChart } from "src/market-data/components/TechnicalChart";
-import { useChartData } from "src/market-data/hooks/use-chart-data";
-import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
-import {
-  buildRsBenchmarks,
-  GROUP_BENCHMARK_EXCHANGE,
-} from "src/market-data/utils/rs-benchmarks";
-import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
-import { FinancialReportChartFooter } from "../components/FinancialReportChartFooter";
-import { LoadingSpinner } from "src/global/design-system";
-
-const BENCHMARK_SYMBOL = "SPY";
-const BENCHMARK_EXCHANGE = "AMEX";
-
-function extractSymbol(ticker: string): string {
-  const parts = ticker.split(":");
-  return parts.length > 1 ? parts[1] : parts[0];
-}
+import { LeadersToolbar } from "../components/LeadersToolbar";
+import { LeadersWorkspace } from "../components/LeadersWorkspace";
 
 export default function MomentumLeaders() {
-  const { data, isLoading, error, refetch } = useMomentumLeaders();
+  const { data, isLoading, isFetching, error, refetch } = useMomentumLeaders();
   const runScan = useRunMomentumLeaders();
-  const { data: watchlistsData } = useWatchlists();
-  const addTickerToWatchlist = useAddTickerToWatchlist();
-  const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
-  const createWatchlist = useCreateWatchlist();
   const { data: industryGroupStatusData } = useLatestSectorStatus(
     INDUSTRY_GROUP_UNIVERSE_ID,
   );
-  const industryGroupStatuses = industryGroupStatusData?.sectors ?? [];
+  const industryGroupStatuses = useMemo(
+    () => industryGroupStatusData?.sectors ?? [],
+    [industryGroupStatusData],
+  );
 
+  const [groupBy, setGroupBy] = useState<LeaderGroupBy>("industryGroup");
   const scannedLeaders = useMemo(() => data?.leaders ?? [], [data]);
-  const {
-    sortKey,
-    setSortKey,
-    sortedLeaders: leaders,
+  const { sortKey, setSortKey, sortedLeaders, rsBySymbol, isLoadingRatings } =
+    useSortedLeaders(scannedLeaders);
+  const { groups, orderedLeaders } = useLeaderGroups(
+    sortedLeaders,
+    groupBy,
     rsBySymbol,
-  } = useSortedLeaders(scannedLeaders);
-  const { selectedTicker, setSelectedTicker, currentIndex } =
-    useLeaderSelection(leaders);
+    industryGroupStatuses,
+  );
+  const { selectedTicker, setSelectedTicker } = useLeaderSelection(
+    isLoadingRatings ? [] : orderedLeaders,
+  );
 
-  // Refs for keyboard navigation
-  const listContainerRef = useRef<HTMLDivElement>(null);
-  const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
-
+  const orderedTickers = useMemo(
+    () => orderedLeaders.map(leaderTickerFullName),
+    [orderedLeaders],
+  );
   useConsolidationKeyboardNavigation({
-    tickers: leaders.map(leaderTickerFullName),
+    tickers: orderedTickers,
     selectedTicker,
     onTickerChange: setSelectedTicker,
-    tickerRefs,
-    listContainerRef,
   });
-
-  // Financial data
-  const symbolToFetch = selectedTicker ? extractSymbol(selectedTicker) : null;
-  const {
-    data: financialData,
-    isLoading: financialLoading,
-    error: financialError,
-  } = useFinancialReport(symbolToFetch);
-  const [showFinancialFooter, setShowFinancialFooter] = useState(true);
-
-  // Derived data
-  const selectedLeader = leaders.find(
-    (l) => leaderTickerFullName(l) === selectedTicker,
-  );
-
-  const [interval, setInterval] = useState<ChartInterval>("D");
-  const [includeExtendedHours, setIncludeExtendedHours] = useState(true);
-
-  const movingAverages = useMemo(
-    () => getDefaultMovingAverages(interval),
-    [interval],
-  );
-
-  const bars = interval === "W" ? 156 : 520;
-
-  const chartProps = useMemo(() => {
-    if (!selectedTicker) return null;
-    return {
-      exchange: selectedTicker.split(":")[0] || "NASDAQ",
-      symbol: selectedTicker.split(":")[1] || selectedTicker,
-      interval,
-      bars,
-    };
-  }, [selectedTicker, interval, bars]);
-
-  const {
-    candles,
-    isLoading: chartLoading,
-    error: chartError,
-    loadMore,
-    isLoadingMore,
-  } = useChartData(
-    chartProps?.symbol ?? null,
-    chartProps?.exchange ?? null,
-    chartProps?.interval,
-    chartProps?.bars,
-    includeExtendedHours,
-  );
-
-  const {
-    candles: spyCandles,
-    loadMore: loadMoreSpy,
-    isLoadingMore: isLoadingMoreSpy,
-  } = useChartData(
-    BENCHMARK_SYMBOL,
-    BENCHMARK_EXCHANGE,
-    interval,
-    bars,
-    includeExtendedHours,
-  );
-
-  const groupSymbol = useIndustryGroupSymbol(selectedLeader?.industryGroup);
-  const { candles: groupCandles, loadMore: loadMoreGroup } = useChartData(
-    groupSymbol,
-    groupSymbol ? GROUP_BENCHMARK_EXCHANGE : null,
-    interval,
-    bars,
-    includeExtendedHours,
-  );
-
-  const handleLoadMore = useCallback(() => {
-    loadMore();
-    loadMoreSpy();
-    loadMoreGroup();
-  }, [loadMore, loadMoreSpy, loadMoreGroup]);
-
-  // Handlers
-  const handleTickerSelect = useCallback(
-    (tickerFullName: string) => {
-      setSelectedTicker(tickerFullName);
-      const tickerElement = tickerRefs.current.get(tickerFullName);
-      if (tickerElement && listContainerRef.current) {
-        tickerElement.scrollIntoView({ behavior: "smooth", block: "nearest" });
-      }
-    },
-    [setSelectedTicker],
-  );
-
-  const handleNavigate = useCallback(
-    (direction: "up" | "down") => {
-      if (leaders.length === 0) return;
-      let newIndex: number;
-      if (currentIndex === -1) {
-        newIndex = 0;
-      } else if (direction === "down") {
-        newIndex = Math.min(currentIndex + 1, leaders.length - 1);
-      } else {
-        newIndex = Math.max(currentIndex - 1, 0);
-      }
-      handleTickerSelect(leaderTickerFullName(leaders[newIndex]));
-    },
-    [leaders, currentIndex, handleTickerSelect],
-  );
 
   const handleRunScan = useCallback(async () => {
     try {
@@ -186,203 +64,57 @@ export default function MomentumLeaders() {
     }
   }, [runScan]);
 
-  const handleToggleWatchlist = useCallback(
-    async (watchlistId: string, isTickerInWatchlist: boolean) => {
-      if (!selectedTicker) return;
-      const tickerSymbol = extractSymbol(selectedTicker);
-      const tickerToUse =
-        watchlistsData?.watchlists
-          .find((w) => w.id === watchlistId)
-          ?.tickers.find((t) => t === selectedTicker || t === tickerSymbol) ||
-        selectedTicker;
-      try {
-        if (isTickerInWatchlist) {
-          await removeTickerFromWatchlist.mutateAsync({
-            watchlistId,
-            ticker: tickerToUse,
-          });
-        } else {
-          await addTickerToWatchlist.mutateAsync({
-            watchlistId,
-            request: { ticker: selectedTicker },
-          });
-        }
-      } catch (err) {
-        console.error(
-          `Failed to ${isTickerInWatchlist ? "remove" : "add"} ticker:`,
-          err,
-        );
-      }
-    },
-    [
-      selectedTicker,
-      watchlistsData,
-      addTickerToWatchlist,
-      removeTickerFromWatchlist,
-    ],
-  );
-
-  const handleCreateWatchlist = useCallback(
-    async (name: string) => {
-      if (!selectedTicker) return;
-      try {
-        const response = await createWatchlist.mutateAsync({ name });
-        await addTickerToWatchlist.mutateAsync({
-          watchlistId: response.watchlistId,
-          request: { ticker: selectedTicker },
-        });
-      } catch (err) {
-        console.error("Failed to create watchlist:", err);
-      }
-    },
-    [selectedTicker, createWatchlist, addTickerToWatchlist],
-  );
+  const hasData = (data?.count ?? 0) > 0;
 
   return (
     <PageContainer fullWidth noPadding>
-      <div className="w-full relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        {/* Background Pattern */}
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none" />
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48ZyBmaWxsPSJub25lIiBmaWxsLXJ1bGU9ImV2ZW5vZGQiPjxnIGZpbGw9IiMyMDI5M2MiIGZpbGwtb3BhY2l0eT0iMC40Ij48cGF0aCBkPSJNMzYgMzRoLTJ2LTRoMnY0em0wLTZoLTJ2LTRoMnY0em0tNiA2aC0ydi00aDJ2NHptMC02aC0ydi00aDJ2NHoiLz48L2c+PC9nPjwvc3ZnPg==')] opacity-30 pointer-events-none" />
+      <div className="w-full h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <LeadersToolbar
+          data={data}
+          groupBy={groupBy}
+          onGroupByChange={setGroupBy}
+          sortKey={sortKey}
+          onSortChange={setSortKey}
+          isRefreshing={isFetching}
+          onRefresh={() => refetch()}
+        />
 
-        <div className="relative flex h-screen">
-          <MomentumLeadersSidebar
-            leaders={leaders}
-            rsBySymbol={rsBySymbol}
-            sortKey={sortKey}
-            onSortChange={setSortKey}
-            selectedTicker={selectedTicker}
-            industryGroupStatuses={industryGroupStatuses}
-            currentIndex={currentIndex}
-            isLoading={isLoading}
-            error={error}
-            data={data}
-            isRunningScan={runScan.isPending}
-            onTickerSelect={handleTickerSelect}
-            onNavigate={handleNavigate}
-            onRunScan={handleRunScan}
-            tickerRefs={tickerRefs}
-            listContainerRef={listContainerRef}
-          />
-
-          <main className="flex-1 flex flex-col min-w-0">
-            <MomentumLeadersChartHeader
-              selectedTicker={selectedTicker}
-              selectedLeader={selectedLeader}
-              watchlists={watchlistsData?.watchlists ?? []}
-              isLoading={isLoading}
-              onRefetch={() => refetch()}
-              onToggleWatchlist={handleToggleWatchlist}
-              onCreateWatchlist={handleCreateWatchlist}
-              isAddingToWatchlist={addTickerToWatchlist.isPending}
-              isRemovingFromWatchlist={removeTickerFromWatchlist.isPending}
-              isCreatingWatchlist={createWatchlist.isPending}
-            />
-
-            {/* Chart Content */}
-            <div className="flex-1 flex flex-col min-h-0 px-4 pt-3 pb-1 gap-1 overflow-hidden">
-              <div className="flex-1 min-h-0">
-                {selectedTicker && chartProps ? (
-                  <div className="h-full rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
-                    {chartLoading ? (
-                      <div className="h-full flex items-center justify-center">
-                        <LoadingSpinner />
-                      </div>
-                    ) : chartError ? (
-                      <div className="h-full flex items-center justify-center text-red-400 text-sm">
-                        Failed to load chart data
-                      </div>
-                    ) : candles ? (
-                      <TechnicalChart
-                        candles={candles}
-                        ticker={chartProps?.symbol}
-                        exchange={chartProps?.exchange}
-                        movingAverages={movingAverages}
-                        visibleBars={interval === "W" ? 52 : 130}
-                        volume={{ show: true }}
-                        showTradingView
-                        rs={(() => {
-                          const benchmarks = buildRsBenchmarks({
-                            spyCandles,
-                            spyLabel: BENCHMARK_SYMBOL,
-                            groupCandles,
-                            groupLabel: selectedLeader?.industryGroup,
-                          });
-                          return benchmarks
-                            ? {
-                                benchmarks,
-                                smaPeriod: 50,
-                                lookback: interval === "W" ? 52 : 260,
-                              }
-                            : undefined;
-                        })()}
-                        timeframe={{
-                          value: interval,
-                          onChange: setInterval,
-                          options: MAIN_CHART_TIMEFRAME_OPTIONS,
-                        }}
-                        extendedHours={{
-                          includeExtendedHours,
-                          onIncludeExtendedHoursChange: setIncludeExtendedHours,
-                        }}
-                        onLoadMore={handleLoadMore}
-                        isLoadingMore={isLoadingMore || isLoadingMoreSpy}
-                      />
-                    ) : null}
-                  </div>
-                ) : (
-                  <div className="h-full flex flex-col items-center justify-center rounded-2xl border border-slate-700/50 border-dashed bg-slate-800/20">
-                    <div className="p-6 rounded-full bg-slate-700/30 mb-6">
-                      <BarChart3 className="w-16 h-16 text-slate-500" />
-                    </div>
-                    <h3 className="text-xl font-semibold text-slate-300 mb-2">
-                      No Ticker Selected
-                    </h3>
-                    <p className="text-slate-500 text-center max-w-md">
-                      Select a ticker from the list on the left to view its
-                      interactive chart with technical indicators.
-                    </p>
-                  </div>
-                )}
-              </div>
-              {selectedTicker && (
-                <div className="flex-shrink-0">
-                  <button
-                    onClick={() => setShowFinancialFooter(!showFinancialFooter)}
-                    className="w-full flex items-center justify-center gap-1.5 py-1 text-xs text-slate-500 hover:text-slate-300 transition-colors duration-150 group"
-                    aria-expanded={showFinancialFooter}
-                    aria-label={
-                      showFinancialFooter
-                        ? "Hide financial data"
-                        : "Show financial data"
-                    }
-                  >
-                    <span className="opacity-70 group-hover:opacity-100 transition-opacity">
-                      {showFinancialFooter ? "Hide" : "Show"} Financials
-                    </span>
-                    <ChevronDown
-                      className={`w-3.5 h-3.5 transition-transform duration-200 ease-out ${
-                        showFinancialFooter ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                  <div
-                    className={`overflow-hidden transition-all duration-200 ease-out ${
-                      showFinancialFooter
-                        ? "max-h-[500px] opacity-100"
-                        : "max-h-0 opacity-0"
-                    }`}
-                  >
-                    <FinancialReportChartFooter
-                      report={financialData?.report ?? null}
-                      isLoading={financialLoading}
-                      error={financialError}
-                    />
-                  </div>
-                </div>
-              )}
+        <div className="flex-1 min-h-0 flex">
+          {isLoading ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-3">
+              <LoadingSpinner />
+              <span className="text-sm text-slate-400">Loading leaders...</span>
             </div>
-          </main>
+          ) : error ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Alert variant="danger">
+                <AlertDescription>
+                  Failed to load momentum leaders. Please try again.
+                </AlertDescription>
+              </Alert>
+            </div>
+          ) : !hasData ? (
+            <div className="flex-1 flex flex-col items-center justify-center gap-4">
+              <Alert variant="warning">
+                <AlertDescription>No scan has been run yet.</AlertDescription>
+              </Alert>
+              <Button
+                variant="default"
+                onClick={handleRunScan}
+                disabled={runScan.isPending}
+              >
+                {runScan.isPending ? "Running Scan..." : "Run Scan Now"}
+              </Button>
+            </div>
+          ) : (
+            <LeadersWorkspace
+              groups={groups}
+              orderedLeaders={orderedLeaders}
+              rsBySymbol={rsBySymbol}
+              selectedTicker={selectedTicker}
+              onSelect={setSelectedTicker}
+            />
+          )}
         </div>
       </div>
     </PageContainer>

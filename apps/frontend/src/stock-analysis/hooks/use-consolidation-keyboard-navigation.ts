@@ -1,19 +1,15 @@
-import { useEffect, type RefObject } from "react";
+import { useEffect } from "react";
 
 interface UseConsolidationKeyboardNavigationParams {
   tickers: string[];
   selectedTicker: string | null;
   onTickerChange: (ticker: string) => void;
-  tickerRefs: React.MutableRefObject<Map<string, HTMLDivElement>>;
-  listContainerRef: RefObject<HTMLDivElement | null>;
 }
 
 export function useConsolidationKeyboardNavigation({
   tickers,
   selectedTicker,
   onTickerChange,
-  tickerRefs,
-  listContainerRef,
 }: UseConsolidationKeyboardNavigationParams) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -46,16 +42,7 @@ export function useConsolidationKeyboardNavigation({
           newIndex = Math.max(currentIndex - 1, 0);
         }
 
-        const newTicker = tickers[newIndex];
-        onTickerChange(newTicker);
-
-        const tickerElement = tickerRefs.current.get(newTicker);
-        if (tickerElement && listContainerRef.current) {
-          tickerElement.scrollIntoView({
-            behavior: "smooth",
-            block: "nearest",
-          });
-        }
+        onTickerChange(tickers[newIndex]);
       }
     };
 
@@ -63,5 +50,5 @@ export function useConsolidationKeyboardNavigation({
     return () => {
       window.removeEventListener("keydown", handleKeyDown);
     };
-  }, [tickers, selectedTicker, onTickerChange, tickerRefs, listContainerRef]);
+  }, [tickers, selectedTicker, onTickerChange]);
 }
