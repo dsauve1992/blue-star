@@ -21,7 +21,7 @@ export function useSortedLeaders(leaders: MomentumLeader[]) {
   const [sortKey, setSortKey] = useState<LeaderSortKey>("rs");
 
   const symbols = useMemo(() => leaders.map((l) => l.symbol), [leaders]);
-  const { data: rsData } = useRsRatings(symbols);
+  const { data: rsData, isLoading: isLoadingRatings } = useRsRatings(symbols);
 
   const rsBySymbol = useMemo(() => {
     const map = new Map<string, LeaderRsRatings>();
@@ -56,5 +56,5 @@ export function useSortedLeaders(leaders: MomentumLeader[]) {
     });
   }, [leaders, sortKey, rsBySymbol]);
 
-  return { sortKey, setSortKey, sortedLeaders, rsBySymbol };
+  return { sortKey, setSortKey, sortedLeaders, rsBySymbol, isLoadingRatings };
 }

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { RefreshCw, TrendingUp } from "lucide-react";
+import { TrendingUp } from "lucide-react";
 import { Badge } from "src/global/design-system";
 import type { MomentumLeader } from "../api/momentum-leaders.client";
 import type { Watchlist } from "src/watchlist/api/watchlist.client";
@@ -18,8 +18,6 @@ interface MomentumLeadersChartHeaderProps {
   selectedTicker: string | null;
   selectedLeader: MomentumLeader | undefined;
   watchlists: Watchlist[];
-  isLoading: boolean;
-  onRefetch: () => void;
   onToggleWatchlist: (watchlistId: string, isInWatchlist: boolean) => void;
   onCreateWatchlist: (name: string) => Promise<void>;
   isAddingToWatchlist: boolean;
@@ -31,8 +29,6 @@ export function MomentumLeadersChartHeader({
   selectedTicker,
   selectedLeader,
   watchlists,
-  isLoading,
-  onRefetch,
   onToggleWatchlist,
   onCreateWatchlist,
   isAddingToWatchlist,
@@ -133,19 +129,6 @@ export function MomentumLeadersChartHeader({
             isCreatingWatchlist={isCreatingWatchlist}
           />
         )}
-
-        <button
-          onClick={() => onRefetch()}
-          disabled={isLoading}
-          className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium
-                  bg-slate-800/60 text-slate-300 hover:bg-slate-700/50 hover:text-white
-                  border border-slate-600/50 hover:border-slate-500 transition-colors duration-150
-                  focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400
-                  disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <RefreshCw className={`w-3 h-3 ${isLoading ? "animate-spin" : ""}`} />
-          Refresh
-        </button>
       </div>
     </header>
   );
