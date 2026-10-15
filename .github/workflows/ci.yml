@@ -83,7 +83,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [leader-scan, market-breadth-universe, hot-theme-detection]
+        app: [leader-scan, hot-theme-detection]
 
     steps:
       - name: Checkout code

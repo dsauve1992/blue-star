@@ -75,6 +75,7 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
       getMembership: jest.fn(),
       saveAggregate: jest.fn().mockResolvedValue(undefined),
       getRecentAggregates: jest.fn(),
+      deleteAll: jest.fn(),
     };
 
     service = new MarketBreadthAnalysisServiceImpl(

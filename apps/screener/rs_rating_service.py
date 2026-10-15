@@ -65,8 +65,7 @@ def percentile_rank(values: List[float], value: float) -> float:
 
 
 # US primary-listed common stock, close > $1, market cap > $300M, 30-day
-# average traded value > $5M. Reused by apps/market-breadth-universe to keep
-# both CLIs scanning the same universe.
+# average traded value > $5M.
 UNIVERSE_FILTERS = [
     {"left": "close", "operation": "greater", "right": 1},
     {"left": "market_cap_basic", "operation": "greater", "right": 300000000},

@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """
 Momentum Leaders Service
-Selects the top performers of the market-breadth universe: for each of the
+Selects the top performers of the RS-rating universe: for each of the
 1M, 3M and 6M horizons, keeps the top 2% of the universe, then unions the
 three slices. Same selection as apps/hot-theme-detection.
 """

@@ -48,7 +48,7 @@ ssh -i ~/.ssh/id_rsa artemis@artemis.local "sudo docker compose -f /opt/blue-sta
 ```
 
 Known failure mode: `apps/backend/Dockerfile` explicitly `COPY`s each Python
-sub-app (screener, theme_extractor, leader-scan, market-breadth-universe,
+sub-app (screener, theme_extractor, leader-scan,
 ...) individually — it does **not** copy `apps/*` wholesale. A PR that adds
 a new Python module the backend spawns (a new
 `Python*Service`/`infrastructure/services/python-*.service.ts`) but forgets

@@ -7,4 +7,6 @@ export interface MarketBreadthRepository {
 
   saveAggregate(aggregate: MarketBreadthAggregate): Promise<void>;
   getRecentAggregates(limit: number): Promise<MarketBreadthAggregate[]>;
+
+  deleteAll(): Promise<void>;
 }

@@ -49,6 +49,7 @@ describe('QueryMarketBreadthUseCase', () => {
       getMembership: jest.fn(),
       saveAggregate: jest.fn(),
       getRecentAggregates: jest.fn(),
+      deleteAll: jest.fn(),
     };
     useCase = new QueryMarketBreadthUseCase(repository);
   });

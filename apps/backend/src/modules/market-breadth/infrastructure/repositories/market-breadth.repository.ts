@@ -111,6 +111,13 @@ export class MarketBreadthRepositoryImpl implements MarketBreadthRepository {
     return result.rows.map((row) => this.toEntity(row));
   }
 
+  async deleteAll(): Promise<void> {
+    await this.db.transaction(async (client) => {
+      await client.query('DELETE FROM market_breadth_daily_aggregates');
+      await client.query('DELETE FROM market_breadth_universe_membership');
+    });
+  }
+
   private toEntity(row: AggregateRow): MarketBreadthAggregate {
     return MarketBreadthAggregate.fromData({
       id: row.id,

@@ -26,7 +26,7 @@ import { PricePoint } from '../../../market-data/domain/value-objects/price-poin
 
 export const RECOMPUTE_SESSIONS = 5;
 export const DAILY_CANDLE_LOOKBACK_DAYS = 400;
-export const BACKFILL_SESSIONS = 60;
+export const BACKFILL_SESSIONS = 170;
 export const BACKFILL_CANDLE_LOOKBACK_DAYS = 800;
 
 const FETCH_CONCURRENCY = 10;

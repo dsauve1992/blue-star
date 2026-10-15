@@ -3,9 +3,10 @@ import { DatabaseModule } from '../../config/database.module';
 import { MarketDataModule } from '../market-data/market-data.module';
 import { CACHED_MARKET_DATA_SERVICE } from '../market-data/constants/tokens';
 import { NotificationModule } from '../notification/notification.module';
+import { StockAnalysisModule } from '../stock-analysis/stock-analysis.module';
 import { MarketBreadthController } from './api/market-breadth.controller';
 import { MarketBreadthRepositoryImpl } from './infrastructure/repositories/market-breadth.repository';
-import { PythonMarketBreadthUniverseService } from './infrastructure/services/python-market-breadth-universe.service';
+import { MomentumLeadersBreadthUniverseService } from './infrastructure/services/momentum-leaders-breadth-universe.service';
 import { MarketBreadthAnalysisServiceImpl } from './infrastructure/services/market-breadth-analysis.service';
 import { MarketBreadthCronService } from './infrastructure/services/market-breadth-cron.service';
 import { RunMarketBreadthUseCase } from './use-cases/run-market-breadth.use-case';
@@ -25,7 +26,12 @@ export {
 };
 
 @Module({
-  imports: [DatabaseModule, MarketDataModule, NotificationModule],
+  imports: [
+    DatabaseModule,
+    MarketDataModule,
+    NotificationModule,
+    StockAnalysisModule,
+  ],
   controllers: [MarketBreadthController],
   providers: [
     {
@@ -34,7 +40,7 @@ export {
     },
     {
       provide: MARKET_BREADTH_UNIVERSE_SERVICE,
-      useClass: PythonMarketBreadthUniverseService,
+      useClass: MomentumLeadersBreadthUniverseService,
     },
     {
       provide: MARKET_BREADTH_MARKET_DATA_SERVICE,

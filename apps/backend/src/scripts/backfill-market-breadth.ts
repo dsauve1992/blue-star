@@ -1,11 +1,17 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from '../app.module';
 import { MarketBreadthAnalysisService } from '../modules/market-breadth/domain/services/market-breadth-analysis.service';
-import { MARKET_BREADTH_ANALYSIS_SERVICE } from '../modules/market-breadth/constants/tokens';
+import { MarketBreadthRepository } from '../modules/market-breadth/domain/repositories/market-breadth.repository.interface';
+import {
+  MARKET_BREADTH_ANALYSIS_SERVICE,
+  MARKET_BREADTH_REPOSITORY,
+} from '../modules/market-breadth/constants/tokens';
 import { BACKFILL_SESSIONS } from '../modules/market-breadth/infrastructure/services/market-breadth-analysis.service';
 
 async function main(): Promise<void> {
-  const sessionsArg = process.argv[2];
+  const args = process.argv.slice(2);
+  const flush = args.includes('--flush');
+  const sessionsArg = args.find((arg) => arg !== '--flush');
 
   if (sessionsArg !== undefined && !/^[1-9]\d*$/.test(sessionsArg)) {
     console.error(`Invalid session count: ${sessionsArg}`);
@@ -18,8 +24,15 @@ async function main(): Promise<void> {
   const analysisService = app.get<MarketBreadthAnalysisService>(
     MARKET_BREADTH_ANALYSIS_SERVICE,
   );
+  const repository = app.get<MarketBreadthRepository>(
+    MARKET_BREADTH_REPOSITORY,
+  );
 
   try {
+    if (flush) {
+      await repository.deleteAll();
+      console.log('Flushed all market breadth aggregates and membership.');
+    }
     const result = await analysisService.runBackfill(sessions);
     console.log(
       `Backfilled ${result.sessionsRecomputed.length} sessions from a universe of ${result.universeSize} symbols.`,
