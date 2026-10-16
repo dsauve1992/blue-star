@@ -162,6 +162,10 @@ export function SectorRotationRRGChart({
         nameGap: 30,
         min: axisRanges.xMin,
         max: axisRanges.xMax,
+        axisLabel: {
+          showMinLabel: false,
+          showMaxLabel: false,
+        },
         splitLine: {
           lineStyle: {
             color: isDarkMode ? "#374151" : "#e5e7eb",
@@ -180,6 +184,10 @@ export function SectorRotationRRGChart({
         nameGap: 30,
         min: axisRanges.yMin,
         max: axisRanges.yMax,
+        axisLabel: {
+          showMinLabel: false,
+          showMaxLabel: false,
+        },
         splitLine: {
           lineStyle: {
             color: isDarkMode ? "#374151" : "#e5e7eb",
