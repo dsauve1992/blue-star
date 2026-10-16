@@ -17,8 +17,11 @@ export function IndustryGroupSelector({
 }: IndustryGroupSelectorProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [activeIndex, setActiveIndex] = useState(0);
   const rootRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const listRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -42,15 +45,49 @@ export function IndustryGroupSelector({
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return groups;
-    return groups.filter((g) =>
-      g.industryGroup.toLowerCase().includes(q),
-    );
+    return groups.filter((g) => g.industryGroup.toLowerCase().includes(q));
   }, [groups, search]);
+
+  useEffect(() => {
+    setActiveIndex(0);
+  }, [search, isOpen]);
+
+  useEffect(() => {
+    listRef.current
+      ?.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [activeIndex]);
+
+  function select(group: string) {
+    onSelect(group);
+    setIsOpen(false);
+  }
+
+  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.min(i + 1, filtered.length - 1));
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setActiveIndex((i) => Math.max(i - 1, 0));
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      const group = filtered[activeIndex];
+      if (group) select(group.industryGroup);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setIsOpen(false);
+      triggerRef.current?.focus();
+    }
+  }
 
   return (
     <div ref={rootRef} className="relative">
       <button
+        ref={triggerRef}
         onClick={() => setIsOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={isOpen}
         disabled={isLoading || groups.length === 0}
         className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
       >
@@ -78,27 +115,35 @@ export function IndustryGroupSelector({
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
+              onKeyDown={handleKeyDown}
               placeholder="Filter groups..."
               className="flex-1 bg-transparent text-xs text-slate-200 placeholder:text-slate-500 outline-none"
             />
           </div>
-          <div className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
+          <div
+            ref={listRef}
+            role="listbox"
+            className="overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent"
+          >
             {filtered.length === 0 && (
               <div className="px-3 py-3 text-xs text-slate-500 text-center">
                 No matches
               </div>
             )}
-            {filtered.map((g) => (
+            {filtered.map((g, index) => (
               <button
                 key={g.industryGroup}
-                onClick={() => {
-                  onSelect(g.industryGroup);
-                  setIsOpen(false);
-                }}
-                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs hover:bg-slate-700/50 transition-colors ${
-                  selectedGroup === g.industryGroup
-                    ? "bg-slate-700/40 text-white"
-                    : "text-slate-300"
+                data-index={index}
+                role="option"
+                aria-selected={selectedGroup === g.industryGroup}
+                onClick={() => select(g.industryGroup)}
+                onMouseEnter={() => setActiveIndex(index)}
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs transition-colors ${
+                  index === activeIndex
+                    ? "bg-slate-700/60 text-white"
+                    : selectedGroup === g.industryGroup
+                      ? "bg-slate-700/30 text-white"
+                      : "text-slate-300"
                 }`}
               >
                 <span className="truncate">{g.industryGroup}</span>
