@@ -4,6 +4,7 @@ import { useTheme } from "src/global/design-system";
 import type { SectorRotationDataPoint } from "../api/sector-rotation.client";
 import { useMemo } from "react";
 import { parseLocalDate } from "../utils/parse-local-date";
+import { createRrgLabelLayout } from "../utils/rrg-label-layout";
 
 interface SectorRotationRRGChartProps {
   dataPoints: SectorRotationDataPoint[];
@@ -214,6 +215,13 @@ export function SectorRotationRRGChart({
             formatter: "{b}",
             fontSize: 10,
             color: isDarkMode ? "#d1d5db" : "#374151",
+          },
+          labelLayout: createRrgLabelLayout(),
+          labelLine: {
+            show: true,
+            lineStyle: {
+              color: isDarkMode ? "#6b7280" : "#9ca3af",
+            },
           },
           markLine: {
             silent: true,
