@@ -3,7 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { LeaderScanAnalysisService } from '../../domain/services/leader-scan-analysis.service';
 import { ScanDate } from '../../domain/value-objects/scan-date';
 import { LEADER_SCAN_ANALYSIS_SERVICE } from '../../constants/tokens';
-import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
+import { CronJobNotificationService } from '../../../notification/notification.module';
 
 @Injectable()
 export class LeaderScanCronService {

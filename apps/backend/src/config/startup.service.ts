@@ -1,11 +1,13 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
 import { MigrationService } from './migration.service';
-import { NOTIFICATION_SERVICE } from '../modules/notification/constants/tokens';
-import type { NotificationService } from '../modules/notification/domain/services/notification.service';
-import { NotificationTopic } from '../modules/notification/domain/value-objects/notification-topic';
-import { NotificationMessage } from '../modules/notification/domain/value-objects/notification-message';
-import { NotificationTitle } from '../modules/notification/domain/value-objects/notification-title';
-import { NotificationPriority } from '../modules/notification/domain/services/notification.service';
+import {
+  NOTIFICATION_SERVICE,
+  NotificationMessage,
+  NotificationPriority,
+  NotificationTitle,
+  NotificationTopic,
+  type NotificationService,
+} from '../modules/notification/notification.module';
 
 @Injectable()
 export class StartupService implements OnModuleInit {

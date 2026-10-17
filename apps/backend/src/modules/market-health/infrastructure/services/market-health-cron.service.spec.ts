@@ -1,10 +1,12 @@
 import { MarketHealthCronService } from './market-health-cron.service';
-import type { NotificationService } from '../../../notification/domain/services/notification.service';
-import { NotificationPriority } from '../../../notification/domain/services/notification.service';
+import {
+  NotificationPriority,
+  type CronJobNotificationService,
+  type NotificationService,
+} from '../../../notification/notification.module';
 import { MarketHealth } from '../../domain/entities/market-health.entity';
 import { MarketHealthStatus } from '../../domain/value-objects/market-health-status';
 import type { ComputeMarketHealthUseCase } from '../../use-cases/compute-market-health.use-case';
-import type { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
 
 describe('MarketHealthCronService', () => {
   let service: MarketHealthCronService;

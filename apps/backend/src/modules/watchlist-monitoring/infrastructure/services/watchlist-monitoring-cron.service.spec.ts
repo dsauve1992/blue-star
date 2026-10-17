@@ -13,14 +13,16 @@ import type { WatchlistMonitoringReadRepository } from '../../domain/repositorie
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
 import type { IGapDetectionService } from '../../domain/services/i-gap-detection.service';
-import type { NotificationService } from '../../../notification/domain/services/notification.service';
+import {
+  NOTIFICATION_SERVICE,
+  type NotificationService,
+} from '../../../notification/notification.module';
 import {
   WATCHLIST_MONITORING_READ_REPOSITORY,
   BREAKOUT_DETECTION_SERVICE,
   GAP_DETECTION_SERVICE,
   MONITORING_ALERT_LOG_REPOSITORY,
 } from '../../constants/tokens';
-import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
 
 describe('WatchlistMonitoringCronService — gap event emission', () => {
   let service: WatchlistMonitoringCronService;

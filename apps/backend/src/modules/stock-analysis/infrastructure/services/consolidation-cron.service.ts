@@ -3,7 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { ConsolidationAnalysisService } from '../../domain/services/consolidation-analysis.service';
 import { AnalysisDate } from '../../domain/value-objects/analysis-date';
 import { CONSOLIDATION_ANALYSIS_SERVICE } from '../../constants/tokens';
-import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
+import { CronJobNotificationService } from '../../../notification/notification.module';
 
 @Injectable()
 export class ConsolidationCronService {

@@ -3,7 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { SectorRotationPersistenceService } from '../../domain/services/sector-rotation-persistence.service';
 import { SECTOR_ROTATION_PERSISTENCE_SERVICE } from '../../constants/tokens';
 import { RotationUniverseRegistry } from '../universes/rotation-universe.registry';
-import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
+import { CronJobNotificationService } from '../../../notification/notification.module';
 
 @Injectable()
 export class SectorRotationCronService {

@@ -1,17 +1,19 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import type { NotificationService } from '../../../notification/domain/services/notification.service';
-import { NotificationPriority } from '../../../notification/domain/services/notification.service';
-import { NotificationTopic } from '../../../notification/domain/value-objects/notification-topic';
-import { NotificationTitle } from '../../../notification/domain/value-objects/notification-title';
-import { NotificationMessage } from '../../../notification/domain/value-objects/notification-message';
+import {
+  CronJobNotificationService,
+  NOTIFICATION_SERVICE,
+  NotificationMessage,
+  NotificationPriority,
+  NotificationTitle,
+  NotificationTopic,
+  type NotificationService,
+} from '../../../notification/notification.module';
 import {
   MarketHealthStatus,
   MarketHealthStatusValue,
 } from '../../domain/value-objects/market-health-status';
 import { ComputeMarketHealthUseCase } from '../../use-cases/compute-market-health.use-case';
-import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
-import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
 
 @Injectable()
 export class MarketHealthCronService {
