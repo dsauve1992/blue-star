@@ -1,3 +1,4 @@
+import { useLayoutEffect, useRef } from 'react';
 import { Card } from 'src/global/design-system';
 import { useTheme } from 'src/global/design-system';
 import type { SectorRotationDataPoint } from '../api/sector-rotation.client';
@@ -18,6 +19,12 @@ export function SectorRotationTimeline({
 }: SectorRotationTimelineProps) {
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
+  const scrollContainerRef = useRef<HTMLDivElement>(null);
+
+  useLayoutEffect(() => {
+    const container = scrollContainerRef.current;
+    if (container) container.scrollLeft = container.scrollWidth;
+  }, [dataPoints]);
 
   if (!dataPoints || dataPoints.length === 0) {
     return (
@@ -73,12 +80,12 @@ export function SectorRotationTimeline({
           Showing {uniqueDates.length} weeks of data
         </p>
       </div>
-      <div className="overflow-x-auto">
+      <div ref={scrollContainerRef} className="overflow-x-auto">
         <div className="inline-block min-w-full">
           <table className="w-full border-collapse">
             <thead>
               <tr>
-                <th className="sticky left-0 z-10 bg-background border border-border p-2 text-left text-sm font-medium">
+                <th className="sticky left-0 z-10 bg-white dark:bg-slate-800 border border-border p-2 text-left text-sm font-medium">
                   Sector
                 </th>
                 {uniqueDates.map((date) => (
@@ -102,7 +109,7 @@ export function SectorRotationTimeline({
                     key={symbol}
                     className={!isEnabled ? 'opacity-40' : ''}
                   >
-                    <td className="sticky left-0 z-10 bg-background border border-border p-2 text-sm font-medium">
+                    <td className="sticky left-0 z-10 bg-white dark:bg-slate-800 border border-border p-2 text-sm font-medium">
                       <div className="flex items-center gap-2">
                         <input
                           type="checkbox"
