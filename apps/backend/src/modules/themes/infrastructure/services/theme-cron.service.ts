@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { ThemeService } from '../../domain/services/theme.service';
 import { THEME_SERVICE } from '../../constants/tokens';
-import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
+import { CronJobNotificationService } from '../../../notification/notification.module';
 
 @Injectable()
 export class ThemeCronService {

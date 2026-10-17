@@ -6,7 +6,7 @@ import {
   INDUSTRY_GROUP_RS_RATING_COMPUTATION_SERVICE,
   RS_RATING_COMPUTATION_SERVICE,
 } from '../../constants/tokens';
-import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
+import { CronJobNotificationService } from '../../../notification/notification.module';
 
 @Injectable()
 export class RsRatingCronService {

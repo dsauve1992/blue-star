@@ -2,7 +2,7 @@ import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
 import { MomentumLeadersComputationService } from '../../domain/services/momentum-leaders-computation.service';
 import { MOMENTUM_LEADERS_COMPUTATION_SERVICE } from '../../constants/tokens';
-import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
+import { CronJobNotificationService } from '../../../notification/notification.module';
 
 @Injectable()
 export class MomentumLeadersCronService {

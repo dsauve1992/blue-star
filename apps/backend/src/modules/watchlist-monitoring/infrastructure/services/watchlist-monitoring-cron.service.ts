@@ -6,20 +6,22 @@ import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
 import { GapContext } from '../../domain/value-objects/gap-context';
 import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
 import { FindWatchlistTickersUseCase } from '../../../watchlist/use-cases/find-watchlist-tickers.use-case';
-import { NotificationTopic } from '../../../notification/domain/value-objects/notification-topic';
-import { NotificationMessage } from '../../../notification/domain/value-objects/notification-message';
-import { NotificationTitle } from '../../../notification/domain/value-objects/notification-title';
-import { NotificationPriority } from '../../../notification/domain/services/notification.service';
+import {
+  NOTIFICATION_SERVICE,
+  NotificationMessage,
+  NotificationPriority,
+  NotificationTitle,
+  NotificationTopic,
+  type NotificationService,
+} from '../../../notification/notification.module';
 import type { WatchlistMonitoringReadRepository } from '../../domain/repositories/watchlist-monitoring-read.repository.interface';
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
 import type { IGapDetectionService } from '../../domain/services/i-gap-detection.service';
-import type { NotificationService } from '../../../notification/domain/services/notification.service';
 import { WATCHLIST_MONITORING_READ_REPOSITORY } from '../../constants/tokens';
 import { BREAKOUT_DETECTION_SERVICE } from '../../constants/tokens';
 import { GAP_DETECTION_SERVICE } from '../../constants/tokens';
 import { MONITORING_ALERT_LOG_REPOSITORY } from '../../constants/tokens';
-import { NOTIFICATION_SERVICE } from '../../../notification/constants/tokens';
 import {
   getMarketDateKey,
   isWithinMarketHours,
