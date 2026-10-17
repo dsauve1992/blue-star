@@ -72,6 +72,8 @@ export function WatchlistCardBar({
       await onCreateWatchlist(newWatchlistName.trim());
       setNewWatchlistName("");
       setShowCreateForm(false);
+    } catch {
+      // parent logs; keep form open so user can retry
     } finally {
       setIsCreating(false);
     }
