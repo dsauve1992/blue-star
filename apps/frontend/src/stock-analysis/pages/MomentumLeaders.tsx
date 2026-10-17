@@ -81,9 +81,11 @@ export default function MomentumLeaders() {
 
         <div className="flex-1 min-h-0 flex">
           {isLoading ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-3">
-              <LoadingSpinner />
-              <span className="text-sm text-slate-400">Loading leaders...</span>
+            <div className="flex-1 flex items-center justify-center">
+              <LoadingSpinner
+                label="Loading leaders..."
+                className="[&>span]:text-slate-400"
+              />
             </div>
           ) : error ? (
             <div className="flex-1 flex items-center justify-center">
