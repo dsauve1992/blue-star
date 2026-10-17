@@ -109,6 +109,7 @@ export default function Watchlist() {
         setSelectedWatchlistId(response.watchlistId);
       } catch (err) {
         console.error("Failed to create watchlist:", err);
+        throw err;
       }
     },
     [createWatchlist, setSelectedWatchlistId],
@@ -143,6 +144,7 @@ export default function Watchlist() {
         });
       } catch (err) {
         console.error("Failed to rename watchlist:", err);
+        throw err;
       }
     },
     [renameWatchlist],
