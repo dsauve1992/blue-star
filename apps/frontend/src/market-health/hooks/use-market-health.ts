@@ -9,6 +9,7 @@ export function useMarketHealth() {
     queryKey: MARKET_HEALTH_QUERY_KEYS.current(),
     queryFn: () => marketHealthClient.getMarketHealth(),
     staleTime: 5 * 60 * 1000,
+    refetchInterval: 30 * 60 * 1000,
     retry: false,
   });
 }

@@ -24,12 +24,18 @@ export function MarketHealthBar() {
     return null;
   }
 
+  const asOf = new Date(data.computedAt).toLocaleDateString(undefined, {
+    month: 'short',
+    day: 'numeric',
+  });
+  const label = `${statusLabelMap[data.status]} (as of ${asOf})`;
+
   return (
     <div
       className={`h-1 ${statusColorMap[data.status]} transition-colors duration-300`}
       role="status"
-      aria-label={statusLabelMap[data.status]}
-      title={statusLabelMap[data.status]}
+      aria-label={label}
+      title={label}
     />
   );
 }
