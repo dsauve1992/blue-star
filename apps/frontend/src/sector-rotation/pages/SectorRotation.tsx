@@ -202,7 +202,7 @@ export default function SectorRotation() {
   return (
     <PageContainer>
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
           <div>
             <h1 className="text-3xl font-bold">Sector Rotation Analysis</h1>
             <p className="text-muted-foreground mt-2">
@@ -210,12 +210,12 @@ export default function SectorRotation() {
               {activeUniverse?.label ?? "rotation universe"}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
             {universesData && universesData.universes.length > 1 && (
               <select
                 value={activeUniverseId ?? ""}
                 onChange={(e) => setSelectedUniverseId(e.target.value)}
-                className="h-9 rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                className="h-9 w-full sm:w-auto rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
                 aria-label="Select rotation universe"
               >
                 {universesData.universes.map((u) => (
