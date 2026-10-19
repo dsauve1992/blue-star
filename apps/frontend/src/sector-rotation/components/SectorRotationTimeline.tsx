@@ -4,6 +4,19 @@ import { useTheme } from 'src/global/design-system';
 import type { SectorRotationDataPoint } from '../api/sector-rotation.client';
 import { parseLocalDate } from '../utils/parse-local-date';
 
+const QUADRANT_STYLES = [
+  { quadrant: 'Leading', code: 'Ld', color: 'bg-green-500' },
+  { quadrant: 'Weakening', code: 'Wk', color: 'bg-yellow-500' },
+  { quadrant: 'Lagging', code: 'Lg', color: 'bg-red-500' },
+  { quadrant: 'Improving', code: 'Im', color: 'bg-blue-500' },
+] as const;
+
+const UNKNOWN_QUADRANT_STYLE = { code: '?', color: 'bg-gray-500' };
+
+const quadrantStyle = (quadrant: string) =>
+  QUADRANT_STYLES.find((style) => style.quadrant === quadrant) ??
+  UNKNOWN_QUADRANT_STYLE;
+
 interface SectorRotationTimelineProps {
   dataPoints: SectorRotationDataPoint[];
   enabledSectors: Set<string>;
@@ -41,36 +54,6 @@ export function SectorRotationTimeline({
   const sectorSymbols = Array.from(
     new Set(dataPoints.map((p) => p.sectorSymbol)),
   ).sort();
-
-  const getQuadrantColor = (quadrant: string): string => {
-    switch (quadrant) {
-      case 'Leading':
-        return 'bg-green-500';
-      case 'Weakening':
-        return 'bg-yellow-500';
-      case 'Lagging':
-        return 'bg-red-500';
-      case 'Improving':
-        return 'bg-blue-500';
-      default:
-        return 'bg-gray-500';
-    }
-  };
-
-  const getQuadrantLabel = (quadrant: string): string => {
-    switch (quadrant) {
-      case 'Leading':
-        return 'L';
-      case 'Weakening':
-        return 'W';
-      case 'Lagging':
-        return 'L';
-      case 'Improving':
-        return 'I';
-      default:
-        return '?';
-    }
-  };
 
   return (
     <Card className="p-6">
@@ -130,18 +113,17 @@ export function SectorRotationTimeline({
                       (p) => p.sectorSymbol === symbol && p.date === date,
                     );
                     const quadrant = point?.quadrant || 'Lagging';
+                    const style = quadrantStyle(quadrant);
                     return (
                       <td
                         key={`${symbol}-${date}`}
-                        className={`border border-border p-1 text-center text-xs ${getQuadrantColor(
-                          quadrant,
-                        )} ${isDarkMode ? 'opacity-80' : 'opacity-70'}`}
+                        className={`border border-border p-1 text-center text-xs ${style.color} ${isDarkMode ? 'opacity-80' : 'opacity-70'}`}
                         title={`${sectorNames[symbol] ? `${sectorNames[symbol]} (${symbol})` : symbol} - ${parseLocalDate(
                           date,
                         ).toLocaleDateString()}: ${quadrant}`}
                       >
                         <span className="text-white font-bold">
-                          {getQuadrantLabel(quadrant)}
+                          {style.code}
                         </span>
                       </td>
                     );
@@ -154,22 +136,16 @@ export function SectorRotationTimeline({
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-green-500 rounded"></div>
-          <span>Leading</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-yellow-500 rounded"></div>
-          <span>Weakening</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-500 rounded"></div>
-          <span>Lagging</span>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-blue-500 rounded"></div>
-          <span>Improving</span>
-        </div>
+        {QUADRANT_STYLES.map(({ quadrant, code, color }) => (
+          <div key={quadrant} className="flex items-center gap-2">
+            <span
+              className={`inline-flex h-5 min-w-7 items-center justify-center rounded px-1 text-xs font-bold text-white ${color}`}
+            >
+              {code}
+            </span>
+            <span>{quadrant}</span>
+          </div>
+        ))}
       </div>
     </Card>
   );
