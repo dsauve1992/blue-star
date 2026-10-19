@@ -33,7 +33,7 @@ export function LeadersToolbar({
   onRefresh,
 }: LeadersToolbarProps) {
   return (
-    <header className="flex items-center gap-4 px-4 py-2 border-b border-slate-700/50 bg-slate-900/40">
+    <header className="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2 border-b border-slate-700/50 bg-slate-900/40">
       <div className="flex items-center gap-2 shrink-0">
         <div className="p-1.5 rounded-lg bg-gradient-to-br from-blue-500 to-purple-600 shadow-md">
           <BarChart3 className="w-4 h-4 text-white" />
@@ -42,7 +42,7 @@ export function LeadersToolbar({
       </div>
 
       {data && data.count > 0 && (
-        <dl className="flex items-center gap-3 text-xs font-mono tabular-nums">
+        <dl className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono tabular-nums">
           <div className="flex gap-1">
             <dt className="text-slate-500">Leaders</dt>
             <dd className="text-white">
@@ -57,13 +57,15 @@ export function LeadersToolbar({
           {data.scanDate && (
             <div className="flex gap-1">
               <dt className="text-slate-500">Scan</dt>
-              <dd className="text-slate-300">{data.scanDate}</dd>
+              <dd className="whitespace-nowrap text-slate-300">
+                {data.scanDate}
+              </dd>
             </div>
           )}
         </dl>
       )}
 
-      <div className="ml-auto flex items-center gap-2">
+      <div className="ml-auto flex flex-wrap items-center gap-2">
         <select
           value={groupBy}
           onChange={(e) => onGroupByChange(e.target.value as LeaderGroupBy)}
