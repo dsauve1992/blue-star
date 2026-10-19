@@ -1,5 +1,5 @@
 import { useState, useCallback } from "react";
-import { ChevronDown, BarChart3 } from "lucide-react";
+import { ChevronDown, BarChart3, AlertTriangle } from "lucide-react";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
@@ -27,10 +27,41 @@ import { LoadingSpinner } from "src/global/design-system";
 
 const BENCHMARK_SYMBOL = "SPY";
 
+function getEmptyStateCopy(
+  watchlistsError: Error | null,
+  selectedWatchlist: Watchlist | undefined,
+) {
+  if (watchlistsError) {
+    return {
+      title: "Couldn't load your watchlists",
+      description: "Check that the backend is reachable, then reload the page.",
+    };
+  }
+  if (!selectedWatchlist) {
+    return {
+      title: "No watchlists yet",
+      description:
+        "Create one with + New above, then add tickers to chart them.",
+    };
+  }
+  if (selectedWatchlist.tickers.length === 0) {
+    return {
+      title: "This watchlist is empty",
+      description: "Add a ticker with the search box on the left.",
+    };
+  }
+  return {
+    title: "No Ticker Selected",
+    description: "Select a ticker from the list on the left.",
+  };
+}
+
 interface ChartPanelProps {
   symbol: string | null;
   selectedTicker: string | null;
   selectedWatchlist: Watchlist | undefined;
+  isLoadingWatchlists: boolean;
+  watchlistsError: Error | null;
   chartProps: {
     exchange: string;
     symbol: string;
@@ -54,6 +85,8 @@ export function ChartPanel({
   symbol,
   selectedTicker,
   selectedWatchlist,
+  isLoadingWatchlists,
+  watchlistsError,
   chartProps,
   movingAverages,
   financialData,
@@ -68,6 +101,7 @@ export function ChartPanel({
   onIncludeExtendedHoursChange,
 }: ChartPanelProps) {
   const [showFinancialFooter, setShowFinancialFooter] = useState(true);
+  const emptyState = getEmptyStateCopy(watchlistsError, selectedWatchlist);
 
   const { data: profileData } = useCompanyProfile(symbol);
   const { data: industryGroupStatusData } = useLatestSectorStatus(
@@ -182,18 +216,26 @@ export function ChartPanel({
                 />
               ) : null}
             </div>
+          ) : isLoadingWatchlists ? (
+            <div className="h-full flex items-center justify-center rounded-xl border border-slate-700/50 border-dashed bg-slate-800/20">
+              <LoadingSpinner />
+            </div>
           ) : (
             <div className="h-full flex flex-col items-center justify-center rounded-xl border border-slate-700/50 border-dashed bg-slate-800/20">
-              <div className="p-6 rounded-full bg-slate-700/30 mb-6">
-                <BarChart3 className="w-16 h-16 text-slate-500" />
+              <div
+                className={`p-6 rounded-full mb-6 ${watchlistsError ? "bg-red-500/10" : "bg-slate-700/30"}`}
+              >
+                {watchlistsError ? (
+                  <AlertTriangle className="w-16 h-16 text-red-400" />
+                ) : (
+                  <BarChart3 className="w-16 h-16 text-slate-500" />
+                )}
               </div>
               <h3 className="text-xl font-semibold text-slate-300 mb-2">
-                No Ticker Selected
+                {emptyState.title}
               </h3>
               <p className="text-slate-500 text-center max-w-md">
-                {selectedWatchlist
-                  ? "Select a ticker from the list on the left."
-                  : "Select a watchlist from the cards above."}
+                {emptyState.description}
               </p>
             </div>
           )}
