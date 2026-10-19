@@ -302,6 +302,8 @@ export default function Watchlist() {
               symbol={symbolToFetch}
               selectedTicker={selectedTicker}
               selectedWatchlist={selectedWatchlist}
+              isLoadingWatchlists={isLoading}
+              watchlistsError={error}
               chartProps={chartProps}
               movingAverages={movingAverages}
               financialData={financialData}
