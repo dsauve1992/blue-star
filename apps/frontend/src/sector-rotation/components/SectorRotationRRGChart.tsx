@@ -245,10 +245,21 @@ export function SectorRotationRRGChart({
           },
           markArea: {
             silent: true,
+            label: {
+              show: true,
+              fontSize: 12,
+              fontWeight: "bold",
+              distance: 10,
+            },
             data: [
               [
                 {
+                  name: "Leading",
                   coord: [100, 100],
+                  label: {
+                    position: "insideTopRight",
+                    color: getQuadrantColor("Leading"),
+                  },
                   itemStyle: {
                     color: getQuadrantBackgroundColor("Leading", isDarkMode),
                     opacity: 0.15,
@@ -264,7 +275,12 @@ export function SectorRotationRRGChart({
               ],
               [
                 {
+                  name: "Weakening",
                   coord: [100, axisRanges.yMin],
+                  label: {
+                    position: "insideBottomRight",
+                    color: getQuadrantColor("Weakening"),
+                  },
                   itemStyle: {
                     color: getQuadrantBackgroundColor("Weakening", isDarkMode),
                     opacity: 0.15,
@@ -280,7 +296,12 @@ export function SectorRotationRRGChart({
               ],
               [
                 {
+                  name: "Lagging",
                   coord: [axisRanges.xMin, axisRanges.yMin],
+                  label: {
+                    position: "insideBottomLeft",
+                    color: getQuadrantColor("Lagging"),
+                  },
                   itemStyle: {
                     color: getQuadrantBackgroundColor("Lagging", isDarkMode),
                     opacity: 0.15,
@@ -296,7 +317,12 @@ export function SectorRotationRRGChart({
               ],
               [
                 {
+                  name: "Improving",
                   coord: [axisRanges.xMin, 100],
+                  label: {
+                    position: "insideTopLeft",
+                    color: getQuadrantColor("Improving"),
+                  },
                   itemStyle: {
                     color: getQuadrantBackgroundColor("Improving", isDarkMode),
                     opacity: 0.15,
@@ -358,52 +384,6 @@ export function SectorRotationRRGChart({
           return "";
         },
       },
-      graphic: [
-        {
-          type: "text",
-          left: "center",
-          top: "5%",
-          style: {
-            fill: getQuadrantColor("Leading"),
-            fontSize: 12,
-            fontWeight: "bold",
-          },
-          z: 100,
-        },
-        {
-          type: "text",
-          right: "5%",
-          top: "center",
-          style: {
-            fill: getQuadrantColor("Weakening"),
-            fontSize: 12,
-            fontWeight: "bold",
-          },
-          z: 100,
-        },
-        {
-          type: "text",
-          left: "center",
-          bottom: "5%",
-          style: {
-            fill: getQuadrantColor("Lagging"),
-            fontSize: 12,
-            fontWeight: "bold",
-          },
-          z: 100,
-        },
-        {
-          type: "text",
-          left: "5%",
-          top: "center",
-          style: {
-            fill: getQuadrantColor("Improving"),
-            fontSize: 12,
-            fontWeight: "bold",
-          },
-          z: 100,
-        },
-      ],
     }),
     [seriesData, axisRanges, isDarkMode, filteredDataPoints],
   );
