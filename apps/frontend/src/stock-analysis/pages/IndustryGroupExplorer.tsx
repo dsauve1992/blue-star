@@ -252,9 +252,9 @@ export default function IndustryGroupExplorer() {
       <div className="w-full relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative flex flex-col h-screen">
-          <div className="flex-1 flex min-h-0">
-            <aside className="w-72 flex-shrink-0 border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
+        <div className="relative flex flex-col md:h-screen">
+          <div className="flex-1 flex flex-col md:flex-row min-h-0">
+            <aside className="w-full max-h-[40vh] md:w-72 md:max-h-none flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
               <div className="px-3 py-2 border-b border-slate-700/50 space-y-2">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Layers className="w-3.5 h-3.5" />
@@ -356,7 +356,7 @@ export default function IndustryGroupExplorer() {
             </aside>
 
             <main className="flex-1 flex flex-col min-w-0">
-              <div className="flex-1 flex flex-col min-h-0 p-4 gap-2 overflow-hidden">
+              <div className="flex-1 flex flex-col min-h-0 p-4 gap-2 md:overflow-hidden">
                 {selectedSymbol && selectedTicker && (
                   <div className="flex-shrink-0 flex items-center justify-between gap-3 px-1 py-1">
                     <div className="flex items-center gap-3 min-w-0">
@@ -393,7 +393,7 @@ export default function IndustryGroupExplorer() {
                   </div>
                 )}
 
-                <div className="flex-1 min-h-0">
+                <div className="h-[420px] md:h-auto md:flex-1 md:min-h-0">
                   {selectedSymbol ? (
                     <div className="h-full rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
                       {chartLoading ? (
