@@ -10,6 +10,7 @@ import {
 import { useMarketBreadth } from "../hooks/use-market-breadth";
 import type { BreadthGauge, BreadthState } from "../api/market-breadth.types";
 import { formatPercent } from "../utils/format-percent";
+import { formatSessionDate } from "../utils/format-session-date";
 import { MarketBreadthChart } from "./MarketBreadthChart";
 
 const SESSIONS_TO_SHOW = 150;
@@ -98,16 +99,24 @@ function GaugeSummary({
 }
 
 export function MarketBreadthCard() {
-  const { data, isLoading, isError, refetch } = useMarketBreadth(SESSIONS_TO_SHOW);
+  const { data, isLoading, isError, refetch } =
+    useMarketBreadth(SESSIONS_TO_SHOW);
   const sessions = data?.sessions ?? [];
   const latest = sessions.at(-1);
 
   return (
     <Card>
       <CardHeader>
-        <div className="flex items-center justify-between">
+        <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1">
           <CardTitle>Market Breadth</CardTitle>
-          {latest?.partial && <Badge variant="warning">Partial</Badge>}
+          {latest && (
+            <div className="flex items-center gap-2">
+              <span className="text-sm text-slate-500 dark:text-slate-400">
+                As of {formatSessionDate(latest.date)}
+              </span>
+              {latest.partial && <Badge variant="warning">Partial</Badge>}
+            </div>
+          )}
         </div>
       </CardHeader>
       <CardContent>
