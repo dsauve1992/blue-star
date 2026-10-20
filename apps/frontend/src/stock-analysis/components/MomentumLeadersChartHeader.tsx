@@ -43,7 +43,7 @@ export function MomentumLeadersChartHeader({
   }, [selectedTicker]);
 
   return (
-    <header className="relative z-10 flex items-center justify-between gap-4 px-4 py-2.5 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
+    <header className="relative z-10 flex flex-wrap items-center justify-between gap-x-4 gap-y-2 px-4 py-2.5 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
       <div className="flex items-center gap-2 flex-wrap">
         {selectedTicker ? (
           <>
