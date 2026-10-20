@@ -266,7 +266,7 @@ export default function Watchlist() {
       <div className="w-full relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative flex flex-col h-screen">
+        <div className="relative flex flex-col md:h-screen">
           <WatchlistCardBar
             watchlists={data?.watchlists ?? []}
             selectedWatchlistId={selectedWatchlistId}
@@ -278,7 +278,7 @@ export default function Watchlist() {
             onDropTicker={handleDropTickerOnWatchlist}
           />
 
-          <div className="flex-1 flex min-h-0">
+          <div className="flex-1 flex flex-col md:flex-row min-h-0">
             {selectedWatchlist && (
               <TickerSidebar
                 tickers={tickers}
