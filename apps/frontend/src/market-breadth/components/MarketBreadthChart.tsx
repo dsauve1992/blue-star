@@ -346,7 +346,7 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
       {paneTops.map((top, paneIndex) => (
         <div
           key={PANES[paneIndex].label}
-          className="pointer-events-none absolute left-2 z-10 font-mono text-[10px] text-slate-400"
+          className="pointer-events-none absolute left-2 right-14 z-10 font-mono text-[10px] text-slate-400"
           style={{ top: top + 4 }}
         >
           {PANES[paneIndex].label}
