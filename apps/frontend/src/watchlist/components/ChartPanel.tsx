@@ -146,17 +146,20 @@ export function ChartPanel({
   return (
     <main className="flex-1 flex flex-col min-w-0">
       <div className="flex-1 flex flex-col min-h-0 p-4 gap-2 overflow-hidden">
-        {selectedTicker && sectorName && (
+        {selectedTicker && symbol && (
           <div className="flex-shrink-0 flex items-center gap-3 px-1 py-1">
-            <span className="text-xs text-slate-400">
-              {sectorName}
-              {profileData?.profile?.industry && (
-                <span className="text-slate-500">
-                  {" "}
-                  · {profileData.profile.industry}
-                </span>
-              )}
-            </span>
+            <h2 className="text-xl font-bold text-white">{symbol}</h2>
+            {sectorName && (
+              <span className="text-xs text-slate-400">
+                {sectorName}
+                {profileData?.profile?.industry && (
+                  <span className="text-slate-500">
+                    {" "}
+                    · {profileData.profile.industry}
+                  </span>
+                )}
+              </span>
+            )}
             {quadrant && (
               <span
                 className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getQuadrantColor(quadrant)}`}
