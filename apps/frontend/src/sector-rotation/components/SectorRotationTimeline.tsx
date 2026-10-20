@@ -22,6 +22,27 @@ interface SectorRotationTimelineProps {
   enabledSectors: Set<string>;
   onToggleSector: (sectorSymbol: string) => void;
   sectorNames?: Record<string, string>;
+  windowStart?: Date | null;
+  windowEnd?: Date | null;
+}
+
+function scrollWindowIntoView(container: HTMLDivElement) {
+  const windowHeaders = container.querySelectorAll('th[data-in-window]');
+  if (windowHeaders.length === 0) {
+    container.scrollLeft = container.scrollWidth;
+    return;
+  }
+  const containerRect = container.getBoundingClientRect();
+  const stickyWidth =
+    container.querySelector('th')?.getBoundingClientRect().width ?? 0;
+  const firstRect = windowHeaders[0].getBoundingClientRect();
+  const lastRect =
+    windowHeaders[windowHeaders.length - 1].getBoundingClientRect();
+  if (lastRect.right > containerRect.right) {
+    container.scrollLeft += lastRect.right - containerRect.right;
+  } else if (firstRect.left < containerRect.left + stickyWidth) {
+    container.scrollLeft -= containerRect.left + stickyWidth - firstRect.left;
+  }
 }
 
 export function SectorRotationTimeline({
@@ -29,6 +50,8 @@ export function SectorRotationTimeline({
   enabledSectors,
   onToggleSector,
   sectorNames = {},
+  windowStart,
+  windowEnd,
 }: SectorRotationTimelineProps) {
   const { theme } = useTheme();
   const isDarkMode = theme === 'dark';
@@ -36,8 +59,8 @@ export function SectorRotationTimeline({
 
   useLayoutEffect(() => {
     const container = scrollContainerRef.current;
-    if (container) container.scrollLeft = container.scrollWidth;
-  }, [dataPoints]);
+    if (container) scrollWindowIntoView(container);
+  }, [dataPoints, windowStart, windowEnd]);
 
   if (!dataPoints || dataPoints.length === 0) {
     return (
@@ -51,6 +74,12 @@ export function SectorRotationTimeline({
     new Set(dataPoints.map((p) => p.date)),
   ).sort();
 
+  const isInWindow = (date: string) => {
+    if (!windowStart || !windowEnd) return false;
+    const time = parseLocalDate(date).getTime();
+    return time >= windowStart.getTime() && time <= windowEnd.getTime();
+  };
+
   const sectorSymbols = Array.from(
     new Set(dataPoints.map((p) => p.sectorSymbol)),
   ).sort();
@@ -61,6 +90,15 @@ export function SectorRotationTimeline({
         <h3 className="text-lg font-semibold">Quadrant Timeline</h3>
         <p className="text-sm text-muted-foreground">
           Showing {uniqueDates.length} weeks of data
+          {windowStart && windowEnd && (
+            <>
+              {' · '}
+              <span className="font-medium text-blue-600 dark:text-blue-400">
+                highlighted weeks
+              </span>{' '}
+              are plotted on the RRG
+            </>
+          )}
         </p>
       </div>
       <div ref={scrollContainerRef} className="overflow-x-auto">
@@ -74,7 +112,10 @@ export function SectorRotationTimeline({
                 {uniqueDates.map((date) => (
                   <th
                     key={date}
-                    className="border border-border p-1 text-center text-xs font-medium min-w-[24px]"
+                    data-in-window={isInWindow(date) || undefined}
+                    className={`border border-border p-1 text-center text-xs font-medium min-w-[24px] ${
+                      isInWindow(date) ? 'bg-blue-600 text-white' : ''
+                    }`}
                   >
                     {parseLocalDate(date).toLocaleDateString('en-US', {
                       month: 'short',

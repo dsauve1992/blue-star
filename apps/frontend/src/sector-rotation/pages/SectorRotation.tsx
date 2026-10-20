@@ -327,6 +327,8 @@ export default function SectorRotation() {
           enabledSectors={enabledSectors}
           onToggleSector={handleToggleSector}
           sectorNames={sectorNames}
+          windowStart={displayStartDate}
+          windowEnd={displayEndDate}
         />
 
         {showComparison && (
