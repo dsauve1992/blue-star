@@ -1,5 +1,7 @@
+import { RefreshCw } from "lucide-react";
 import {
   Badge,
+  Button,
   Card,
   CardContent,
   CardHeader,
@@ -96,7 +98,7 @@ function GaugeSummary({
 }
 
 export function MarketBreadthCard() {
-  const { data, isLoading, isError } = useMarketBreadth(SESSIONS_TO_SHOW);
+  const { data, isLoading, isError, refetch } = useMarketBreadth(SESSIONS_TO_SHOW);
   const sessions = data?.sessions ?? [];
   const latest = sessions.at(-1);
 
@@ -112,9 +114,15 @@ export function MarketBreadthCard() {
         {isLoading ? (
           <div className="h-[760px] animate-pulse rounded bg-slate-100 dark:bg-slate-800" />
         ) : isError ? (
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Couldn't load market breadth.
-          </p>
+          <div className="flex flex-wrap items-center gap-3">
+            <p className="text-sm text-slate-500 dark:text-slate-400">
+              Couldn't load market breadth.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
+          </div>
         ) : sessions.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">
             No market breadth data yet.
