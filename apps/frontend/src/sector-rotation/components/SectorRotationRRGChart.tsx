@@ -2,9 +2,12 @@ import ReactECharts from "echarts-for-react";
 import { Card } from "src/global/design-system";
 import { useTheme } from "src/global/design-system";
 import type { SectorRotationDataPoint } from "../api/sector-rotation.client";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
+import type { ECharts } from "echarts";
 import { parseLocalDate } from "../utils/parse-local-date";
 import { createRrgLabelLayout } from "../utils/rrg-label-layout";
+
+const COMPACT_LABEL_WIDTH = 640;
 
 interface SectorRotationRRGChartProps {
   dataPoints: SectorRotationDataPoint[];
@@ -25,6 +28,13 @@ export function SectorRotationRRGChart({
 }: SectorRotationRRGChartProps) {
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
+  const [chartWidth, setChartWidth] = useState(Infinity);
+  const chartEvents = useMemo(
+    () => ({
+      rendered: (_: unknown, chart: ECharts) => setChartWidth(chart.getWidth()),
+    }),
+    [],
+  );
 
   const filteredDataPoints = useMemo(() => {
     let filtered = dataPoints;
@@ -212,7 +222,10 @@ export function SectorRotationRRGChart({
           label: {
             show: true,
             position: "right",
-            formatter: "{b}",
+            formatter: ({ dataIndex }: { dataIndex: number }) =>
+              chartWidth < COMPACT_LABEL_WIDTH
+                ? seriesData[dataIndex].latestPoint.sectorSymbol
+                : seriesData[dataIndex].name,
             fontSize: 10,
             color: isDarkMode ? "#d1d5db" : "#374151",
           },
@@ -385,7 +398,7 @@ export function SectorRotationRRGChart({
         },
       },
     }),
-    [seriesData, axisRanges, isDarkMode, filteredDataPoints],
+    [seriesData, axisRanges, isDarkMode, filteredDataPoints, chartWidth],
   );
 
   if (!dataPoints || dataPoints.length === 0) {
@@ -418,6 +431,8 @@ export function SectorRotationRRGChart({
         option={option}
         style={{ height: "600px", width: "100%" }}
         opts={{ renderer: "svg" }}
+        onEvents={chartEvents}
+        onChartReady={(chart: ECharts) => setChartWidth(chart.getWidth())}
       />
     </Card>
   );
