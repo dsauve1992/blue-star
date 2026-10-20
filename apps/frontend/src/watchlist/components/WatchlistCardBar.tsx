@@ -302,7 +302,7 @@ function WatchlistCard({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`
-        group relative flex-shrink-0 w-36 px-2.5 py-1.5 rounded cursor-pointer
+        group relative flex-shrink-0 w-40 px-2.5 py-1.5 rounded cursor-pointer
         border transition-all duration-200
         ${
           isDragOver
@@ -357,23 +357,26 @@ function WatchlistCard({
               </button>
             )}
           </div>
-          <div className="flex items-center gap-1.5 mt-0.5">
-            <p className="text-[10px] text-slate-400">
+          <div className="flex items-center gap-1 mt-0.5">
+            <p className="text-[10px] text-slate-400 whitespace-nowrap">
               {watchlist.tickers.length} ticker
               {watchlist.tickers.length !== 1 ? "s" : ""}
             </p>
             <button
               onClick={handleToggleMonitoring}
               disabled={isToggling}
+              aria-pressed={isMonitoringActive}
               title={
-                isMonitoringActive ? "Disable monitoring" : "Enable monitoring"
+                isMonitoringActive
+                  ? "Breakout and gap alerts are on. Click to turn off"
+                  : "Breakout and gap alerts are off. Click to turn on"
               }
               className={`
-                p-0.5 rounded transition-all flex-shrink-0
+                flex items-center gap-0.5 px-1 py-px rounded-full border text-[10px] font-medium leading-tight transition-all flex-shrink-0
                 ${
                   isMonitoringActive
-                    ? "text-green-400 hover:text-green-300"
-                    : "text-slate-600 hover:text-slate-400"
+                    ? "border-green-500/40 bg-green-500/15 text-green-400 hover:bg-green-500/25"
+                    : "border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200"
                 }
                 ${isToggling ? "opacity-50 cursor-not-allowed" : ""}
               `}
@@ -381,6 +384,7 @@ function WatchlistCard({
               <Radio
                 className={`w-2.5 h-2.5 ${isMonitoringActive ? "animate-pulse" : ""}`}
               />
+              {isMonitoringActive ? "Alerts on" : "Alerts off"}
             </button>
           </div>
         </div>
