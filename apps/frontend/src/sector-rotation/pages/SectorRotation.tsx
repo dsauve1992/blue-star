@@ -311,7 +311,7 @@ export default function SectorRotation() {
           </Card>
         )}
 
-        <Card className="p-6">
+        <Card className="p-3 sm:p-6">
           <SectorRotationRRGChart
             dataPoints={data.result.dataPoints}
             trailWeeks={12}

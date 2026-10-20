@@ -150,7 +150,7 @@ export function SectorRotationRRGChart({
       backgroundColor: "transparent",
       animation: false,
       grid: {
-        left: "10%",
+        left: 56,
         right: "10%",
         top: "10%",
         bottom: "10%",
@@ -405,7 +405,7 @@ export function SectorRotationRRGChart({
   }
 
   return (
-    <Card className="p-6">
+    <Card className="p-3 sm:p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold">Sector Rotation (RRG Chart)</h3>
         <p className="text-sm text-muted-foreground">
