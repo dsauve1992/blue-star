@@ -81,6 +81,7 @@ function LeaderChartCardInner({
             movingAverages={GRID_MOVING_AVERAGES}
             visibleBars={GRID_VISIBLE_BARS}
             volume={{ show: true }}
+            showLegend={false}
             showTooltip={false}
             showExport={false}
           />
