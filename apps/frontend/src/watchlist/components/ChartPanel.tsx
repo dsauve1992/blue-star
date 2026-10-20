@@ -167,7 +167,7 @@ export function ChartPanel({
           </div>
         )}
 
-        <div className="flex-1 min-h-0">
+        <div className="h-[420px] md:h-auto md:flex-1 md:min-h-0">
           {selectedTicker && chartProps ? (
             <div className="h-full rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
               {chartLoading ? (

@@ -121,7 +121,7 @@ export function TickerSidebar({
   );
 
   return (
-    <aside className="w-56 flex-shrink-0 border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
+    <aside className="w-full max-h-[35vh] md:w-56 md:max-h-none flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
       {/* Add Ticker Search */}
       <div className="px-3 py-2 border-b border-slate-700/50">
         <TickerSearchCombobox
