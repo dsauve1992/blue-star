@@ -38,10 +38,10 @@ export function LeadersWorkspace({
   }, [selectedTicker]);
 
   return (
-    <div className="flex-1 min-w-0 flex">
+    <div className="flex-1 min-w-0 min-h-0 flex flex-col md:flex-row">
       <div
         ref={scrollRootRef}
-        className="w-[55%] shrink-0 overflow-y-auto px-4 pb-4"
+        className="flex-1 min-h-0 md:flex-none md:w-[55%] md:shrink-0 overflow-y-auto px-4 pb-4"
       >
         {groups.map((group) => (
           <section key={group.key}>
@@ -50,7 +50,7 @@ export function LeadersWorkspace({
                 <LeaderGroupHeader group={group} />
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3 pt-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
               {group.leaders.map((leader) => {
                 const ticker = leaderTickerFullName(leader);
                 return (
@@ -69,7 +69,7 @@ export function LeadersWorkspace({
         ))}
       </div>
 
-      <aside className="flex-1 min-w-0 border-l border-slate-700/50 bg-slate-900/30">
+      <aside className="order-first h-[55vh] shrink-0 md:order-none md:h-auto md:flex-1 md:shrink min-w-0 border-b md:border-b-0 md:border-l border-slate-700/50 bg-slate-900/30">
         {selectedLeader ? (
           <LeaderDetail key={selectedTicker} leader={selectedLeader} />
         ) : (

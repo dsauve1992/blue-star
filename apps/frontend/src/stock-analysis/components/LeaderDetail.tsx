@@ -165,8 +165,8 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
         isRemovingFromWatchlist={removeTickerFromWatchlist.isPending}
         isCreatingWatchlist={createWatchlist.isPending}
       />
-      <div className="flex-1 flex flex-col min-h-0 px-4 pt-3 pb-1 gap-1 overflow-hidden">
-        <div className="flex-1 min-h-0 rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30">
+      <div className="flex-1 flex flex-col min-h-0 px-4 pt-3 pb-1 gap-1 overflow-y-auto md:overflow-hidden">
+        <div className="flex-1 min-h-[280px] md:min-h-0 rounded-2xl overflow-hidden border border-slate-700/50 bg-slate-800/30">
           {chartLoading ? (
             <div className="h-full flex items-center justify-center">
               <LoadingSpinner />
