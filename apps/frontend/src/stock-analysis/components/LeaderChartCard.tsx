@@ -44,7 +44,7 @@ function LeaderChartCardInner({
     <div
       ref={cardRef}
       data-ticker={tickerFullName}
-      className={`flex flex-col h-80 rounded-xl overflow-hidden border bg-slate-800/30 transition-colors duration-150 ${
+      className={`flex flex-col h-80 scroll-mt-12 rounded-xl overflow-hidden border bg-slate-800/30 transition-colors duration-150 ${
         isSelected
           ? "border-blue-400 ring-1 ring-blue-400/60"
           : "border-slate-700/50 hover:border-blue-500/50"
