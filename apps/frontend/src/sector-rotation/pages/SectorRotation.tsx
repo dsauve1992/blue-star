@@ -311,16 +311,14 @@ export default function SectorRotation() {
           </Card>
         )}
 
-        <Card className="p-3 sm:p-6">
-          <SectorRotationRRGChart
-            dataPoints={data.result.dataPoints}
-            trailWeeks={12}
-            startDate={displayStartDate}
-            endDate={displayEndDate}
-            enabledSectors={enabledSectors}
-            sectorNames={sectorNames}
-          />
-        </Card>
+        <SectorRotationRRGChart
+          dataPoints={data.result.dataPoints}
+          trailWeeks={12}
+          startDate={displayStartDate}
+          endDate={displayEndDate}
+          enabledSectors={enabledSectors}
+          sectorNames={sectorNames}
+        />
 
         <SectorRotationTimeline
           dataPoints={data.result.dataPoints}
