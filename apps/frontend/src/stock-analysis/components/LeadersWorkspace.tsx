@@ -14,6 +14,7 @@ interface LeadersWorkspaceProps {
   groups: LeaderGroup[];
   orderedLeaders: MomentumLeader[];
   rsBySymbol: Map<string, LeaderRsRatings>;
+  showIndustryGroup: boolean;
   selectedTicker: string | null;
   onSelect: (tickerFullName: string) => void;
 }
@@ -22,6 +23,7 @@ export function LeadersWorkspace({
   groups,
   orderedLeaders,
   rsBySymbol,
+  showIndustryGroup,
   selectedTicker,
   onSelect,
 }: LeadersWorkspaceProps) {
@@ -58,6 +60,7 @@ export function LeadersWorkspace({
                     key={`${group.key}:${ticker}`}
                     leader={leader}
                     rsRating={rsBySymbol.get(leader.symbol)?.rsRating}
+                    showIndustryGroup={showIndustryGroup}
                     scrollRootRef={scrollRootRef}
                     isSelected={ticker === selectedTicker}
                     onOpen={onSelect}

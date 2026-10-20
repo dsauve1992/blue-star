@@ -16,6 +16,7 @@ const GRID_MOVING_AVERAGES = getDefaultMovingAverages("D");
 interface LeaderChartCardProps {
   leader: MomentumLeader;
   rsRating?: number;
+  showIndustryGroup: boolean;
   scrollRootRef: RefObject<HTMLElement | null>;
   isSelected?: boolean;
   onOpen: (tickerFullName: string) => void;
@@ -24,6 +25,7 @@ interface LeaderChartCardProps {
 function LeaderChartCardInner({
   leader,
   rsRating,
+  showIndustryGroup,
   scrollRootRef,
   isSelected = false,
   onOpen,
@@ -60,7 +62,7 @@ function LeaderChartCardInner({
         <span className="shrink-0 whitespace-nowrap font-mono text-slate-400">
           ADR {leader.adrPct.toFixed(1)}%
         </span>
-        {leader.industryGroup && (
+        {showIndustryGroup && leader.industryGroup && (
           <span className="ml-auto min-w-0 truncate text-slate-500">
             {leader.industryGroup}
           </span>
