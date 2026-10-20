@@ -360,6 +360,9 @@ export default function IndustryGroupExplorer() {
                 {selectedSymbol && selectedTicker && (
                   <div className="flex-shrink-0 flex items-center justify-between gap-3 px-1 py-1">
                     <div className="flex items-center gap-3 min-w-0">
+                      <h2 className="text-xl font-bold text-white">
+                        {selectedSymbol}
+                      </h2>
                       {profileData?.profile?.sector && (
                         <span className="text-xs text-slate-400">
                           {profileData.profile.sector}
