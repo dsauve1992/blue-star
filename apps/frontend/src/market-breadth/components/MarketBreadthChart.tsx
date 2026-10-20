@@ -14,6 +14,7 @@ import {
 import { EmaBandSeries, type EmaBandData } from "./ema-band-series";
 import type { MarketBreadthSession } from "../api/market-breadth.types";
 import { formatPercent } from "../utils/format-percent";
+import { formatSessionDate } from "../utils/format-session-date";
 
 const HIGHS_COLOR = "#3b82f6";
 const LOWS_COLOR = "#ef4444";
@@ -222,15 +223,6 @@ function measurePaneTops(chart: IChartApi, container: HTMLElement): number[] {
     );
 }
 
-function formatDate(date: string): string {
-  return new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
-
 function formatRatio(ratio: number | null): string {
   return ratio === null ? "—" : ratio.toFixed(2);
 }
@@ -358,7 +350,7 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
           style={{ left: hover.x, width: TOOLTIP_WIDTH }}
         >
           <div className="mb-1 font-semibold text-slate-50">
-            {formatDate(hover.session.date)}
+            {formatSessionDate(hover.session.date)}
           </div>
           <TooltipSection title="Trend breadth">
             <TooltipRow
