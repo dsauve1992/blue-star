@@ -82,6 +82,10 @@ npx tsc --noEmit && npm run lint && npm run test
 - Incremental development: make one change, run quality gates, fix issues, proceed
 - Code should be self-explanatory: clear names and structure, not comments. Don't add comments by default — assume the code speaks for itself. Only comment when something genuinely can't be made clear in code (e.g. a non-obvious external constraint), and keep it rare
 - See apps/backend/CLAUDE.md and apps/frontend/CLAUDE.md for domain-specific conventions
+- Standing decisions (rejected proposals, corrected approaches) live in docs/decisions.md; check it before proposing or implementing, and add an entry whenever a ticket or PR is rejected or the user corrects you
+
+@docs/architecture.md
+@docs/decisions.md
 
 ## Claude Code Hooks
 
