@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { BookmarkPlus, Check } from "lucide-react";
+import { BookmarkCheck, BookmarkPlus, Check } from "lucide-react";
 import type { Watchlist } from "../api/watchlist.client";
 
 function extractSymbol(ticker: string): string {
@@ -29,6 +29,12 @@ export function AddToWatchlistButton({
   const [showWatchlistDropdown, setShowWatchlistDropdown] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const tickerSymbol = extractSymbol(ticker);
+  const containsTicker = (watchlist: Watchlist) =>
+    watchlist.tickers.includes(ticker) ||
+    watchlist.tickers.includes(tickerSymbol);
+  const savedIn = watchlists.filter(containsTicker);
+  const isSaved = savedIn.length > 0;
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -60,13 +66,32 @@ export function AddToWatchlistButton({
           e.stopPropagation();
           setShowWatchlistDropdown(!showWatchlistDropdown);
         }}
-        className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium
-                  bg-blue-600/50 text-white hover:bg-blue-600/70
-                  border border-blue-500/50 transition-colors duration-150
-                  focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400"
+        title={
+          isSaved
+            ? `In ${savedIn.map((watchlist) => watchlist.name).join(", ")}`
+            : undefined
+        }
+        className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-medium
+                  border transition-colors duration-150
+                  focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400
+                  ${
+                    isSaved
+                      ? "bg-emerald-500/15 text-emerald-300 hover:bg-emerald-500/25 border-emerald-500/40"
+                      : "bg-blue-600/50 text-white hover:bg-blue-600/70 border-blue-500/50"
+                  }`}
       >
-        <BookmarkPlus className="w-3 h-3" />
-        Add to Watchlist
+        {isSaved ? (
+          <BookmarkCheck className="w-3 h-3 flex-shrink-0" />
+        ) : (
+          <BookmarkPlus className="w-3 h-3 flex-shrink-0" />
+        )}
+        <span className="max-w-[12rem] truncate">
+          {isSaved
+            ? savedIn.length === 1
+              ? `In ${savedIn[0].name}`
+              : `In ${savedIn.length} watchlists`
+            : "Add to Watchlist"}
+        </span>
       </button>
 
       {showWatchlistDropdown && (
@@ -77,10 +102,7 @@ export function AddToWatchlistButton({
                 Select Watchlist
               </div>
               {watchlists.map((watchlist) => {
-                const tickerSymbol = extractSymbol(ticker);
-                const isTickerInWatchlist =
-                  watchlist.tickers.includes(ticker) ||
-                  watchlist.tickers.includes(tickerSymbol);
+                const isTickerInWatchlist = containsTicker(watchlist);
                 return (
                   <button
                     key={watchlist.id}
