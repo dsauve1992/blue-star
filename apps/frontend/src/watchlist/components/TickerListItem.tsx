@@ -126,7 +126,7 @@ export function TickerListItem({
                 className={`inline-flex items-center px-1 py-0.5 rounded text-[9px] font-medium border flex-shrink-0 ${getRsRatingColor(rsRating)}`}
                 title="Market-wide RS rating (1-99)"
               >
-                {rsRating}
+                RS {rsRating}
               </span>
             )}
             {industryGroupRsRating != null && (
