@@ -7,6 +7,11 @@ function extractSymbol(ticker: string): string {
   return parts.length > 1 ? parts[1] : parts[0];
 }
 
+function extractExchange(ticker: string): string | null {
+  const parts = ticker.split(":");
+  return parts.length > 1 ? parts[0] : null;
+}
+
 function getTickerLogoUrl(symbol: string): string {
   return `https://images.financialmodelingprep.com/symbol/${symbol}.png`;
 }
@@ -57,6 +62,7 @@ export function TickerListItem({
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const symbol = extractSymbol(ticker);
+  const exchange = extractExchange(ticker);
   const logoUrl = getTickerLogoUrl(symbol);
 
   const handleDragStart = (e: React.DragEvent<HTMLDivElement>) => {
@@ -114,10 +120,17 @@ export function TickerListItem({
       </div>
 
       <div className="flex flex-col min-w-0 flex-1 gap-0.5">
-        <span
-          className={`text-xs font-medium truncate ${isSelected ? "text-white" : "text-slate-300"}`}
-        >
-          {ticker}
+        <span className="truncate min-w-0 leading-tight">
+          <span
+            className={`text-sm font-semibold ${isSelected ? "text-white" : "text-slate-300"}`}
+          >
+            {symbol}
+          </span>
+          {exchange && (
+            <span className="ml-1.5 text-[10px] text-slate-500">
+              {exchange}
+            </span>
+          )}
         </span>
         {(rsRating !== undefined || industryGroupRsRating != null) && (
           <div className="flex items-center gap-1">
