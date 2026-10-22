@@ -10,7 +10,8 @@ Two pieces: NestJS backend (port 3000, prefix `/api`), Vite frontend (port
 nothing to create.
 
 **Dev points at the local Docker Postgres, never the Pi.** `apps/backend/.env`
-must have `DB_HOST=localhost` / `DB_PORT=5432` / `DB_DATABASE=blue_star_db`;
+must have `DB_HOST=localhost` / `DB_DATABASE=blue_star_db` (`DB_PORT` is 5432
+unless overridden, see port conflicts);
 `database.json`'s `dev` block reads the same `DB_*` vars. The container is
 `blue-star-postgres` from `apps/backend/docker-compose.yml`. Before launching,
 always verify — refuse to start if either check fails:
@@ -100,6 +101,22 @@ VITE_API_URL=http://127.0.0.1:3002/api npm run dev -- --port 5173 --strictPort
   If 5173 is taken, find the owner with `lsof -nP -iTCP:5173 -sTCP:LISTEN`; do
   not kill it. Exercise the logged-out pages only, or stop and report that
   login-gated verification is blocked.
+- **Postgres can move too.** Other projects (`~/git/app/backend`) may hold 5432,
+  which makes `db:up` fail with "port is already allocated". Check
+  `lsof -nP -iTCP:5432 -sTCP:LISTEN`; if taken, pick a free port (e.g. 5433) and
+  export `DB_PORT` in every shell that touches the DB. The shell value overrides
+  `apps/backend/.env`, and compose publishes it as the host port:
+
+```bash
+export DB_PORT=5433
+npm run db:up --workspace=backend
+npm run migrate:up --workspace=backend
+PORT=3002 FRONTEND_URL=http://localhost:5173 npm run dev --workspace=backend
+```
+
+The `DB_HOST=localhost` check still applies; only the port differs. Inspect
+with `docker exec` as usual (it uses the container's internal 5432).
+
 - Probe the backend at `http://127.0.0.1:<port>`, the frontend at
   `http://localhost:5173` (Vite listens on `[::1]` only, so `127.0.0.1:5173`
   refuses connections).
@@ -130,10 +147,15 @@ node .claude/skills/run/login.mjs   # APP_URL overrides http://localhost:5173
 ```
 
 It logs in with Playwright and saves the session to the gitignored
-`apps/frontend/.auth/user.json`. Reuse it instead of logging in again:
-`browser.newContext({ storageState: 'apps/frontend/.auth/user.json' })`. If a
-page bounces to the landing page, the session expired — rerun the script. On
-failure it saves a screenshot to `apps/frontend/.auth/login-failure.png`.
+`apps/frontend/.auth/user.json`. That file holds only Kinde cookies: the SDK
+keeps tokens in memory, so replaying it with
+`browser.newContext({ storageState: ... })` lands on the sign-in page with 401s.
+To drive authenticated pages, log in fresh inside the same browser session
+(the steps in `login.mjs`), run headed, and wait for the first request to the
+backend carrying `Authorization: Bearer` before judging a page. The console
+shows a `Token exchange failed: 500` from the duplicate callback; ignore it if
+bearer requests return 200. On failure `login.mjs` saves a screenshot to
+`apps/frontend/.auth/login-failure.png`.
 
 ## Shutdown
 
