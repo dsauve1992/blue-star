@@ -80,18 +80,26 @@ interfaces and Vite binds `[::1]`. Consequences:
   smoke test against `localhost` can false-positive. Always check
   `lsof -nP -iTCP:3000 -iTCP:5173 -sTCP:LISTEN` before launching, and note
   which process owns what.
-- Don't kill the other project's dev servers. Run the backend on a free port
-  instead and point the frontend at it via **`127.0.0.1`, not `localhost`**
-  (browsers and curl resolve `localhost` to `::1` first and would hit the
-  other app):
+- Don't kill the other project's dev servers.
+- **The backend can use any free port. The frontend must stay on 5173.** Kinde's
+  callback/logout URLs allow only `http://localhost:5173` (no port wildcard), so
+  login fails on any other frontend port.
+- Run the backend on a free port, point the frontend at it via **`127.0.0.1`,
+  not `localhost`** (browsers and curl resolve `localhost` to `::1` first and
+  would hit the other app), and set `FRONTEND_URL` so CORS allows the frontend
+  origin (it defaults to `http://localhost:5173`):
 
 ```bash
 # backend (from apps/backend/)
-PORT=3002 npm run dev
+PORT=3002 FRONTEND_URL=http://localhost:5173 npm run dev
 # frontend (from apps/frontend/) — shell env overrides .env
-VITE_API_URL=http://127.0.0.1:3002/api npm run dev
+VITE_API_URL=http://127.0.0.1:3002/api npm run dev -- --port 5173 --strictPort
 ```
 
+- `--strictPort` makes Vite fail instead of silently drifting to another port.
+  If 5173 is taken, find the owner with `lsof -nP -iTCP:5173 -sTCP:LISTEN`; do
+  not kill it. Exercise the logged-out pages only, or stop and report that
+  login-gated verification is blocked.
 - Probe the backend at `http://127.0.0.1:<port>`, the frontend at
   `http://localhost:5173` (Vite listens on `[::1]` only, so `127.0.0.1:5173`
   refuses connections).
