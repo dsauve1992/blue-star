@@ -13,6 +13,15 @@ import { SELECT_CHEVRON_STYLE } from "./select-chevron-style";
 const SELECT_CLASS =
   "appearance-none rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1 pr-8 text-xs text-slate-200 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer";
 
+function formatScanDate(scanDate: string): string {
+  return new Date(`${scanDate}T00:00:00Z`).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 interface LeadersToolbarProps {
   data: MomentumLeadersResponse | undefined;
   groupBy: LeaderGroupBy;
@@ -47,7 +56,10 @@ export function LeadersToolbar({
             <dt className="text-slate-500">Leaders</dt>
             <dd className="text-white">
               {data.count}
-              <span className="text-slate-500">/{data.universeSize}</span>
+              <span className="text-slate-500">
+                {" "}
+                of {data.universeSize.toLocaleString("en-US")}
+              </span>
             </dd>
           </div>
           <div className="flex gap-1">
@@ -58,7 +70,7 @@ export function LeadersToolbar({
             <div className="flex gap-1">
               <dt className="text-slate-500">Scan</dt>
               <dd className="whitespace-nowrap text-slate-300">
-                {data.scanDate}
+                {formatScanDate(data.scanDate)}
               </dd>
             </div>
           )}
