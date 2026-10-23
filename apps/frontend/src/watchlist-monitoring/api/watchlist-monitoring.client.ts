@@ -2,6 +2,8 @@ import { apiClient } from "../../global/api/api-instance";
 
 export type MonitoringType = "BREAKOUT" | "GAP";
 
+export const MONITORING_TYPES: MonitoringType[] = ["BREAKOUT", "GAP"];
+
 export interface MonitoringStatus {
   watchlistId: string;
   type: MonitoringType;
