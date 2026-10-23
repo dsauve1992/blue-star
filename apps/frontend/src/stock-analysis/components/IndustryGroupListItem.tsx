@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 function getTickerLogoUrl(symbol: string): string {
   return `https://images.financialmodelingprep.com/symbol/${symbol}.png`;
@@ -29,9 +29,15 @@ export function IndustryGroupListItem({
 }: IndustryGroupListItemProps) {
   const [logoFailed, setLogoFailed] = useState(false);
   const logoUrl = getTickerLogoUrl(symbol);
+  const rowRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (isSelected) rowRef.current?.scrollIntoView({ block: "nearest" });
+  }, [isSelected]);
 
   return (
     <div
+      ref={rowRef}
       onClick={() => onSelect(symbol)}
       className={`
         group relative flex items-center gap-2 px-2 py-1.5 cursor-pointer
