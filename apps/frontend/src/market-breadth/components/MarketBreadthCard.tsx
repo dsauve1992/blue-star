@@ -44,11 +44,24 @@ function formatRatio(value: number): string {
   return value.toFixed(2);
 }
 
+function formatSigned(value: number, digits: number): string {
+  return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(digits)}`;
+}
+
+function formatRatioGap(gap: number): string {
+  return formatSigned(gap, 3);
+}
+
+function formatPercentGap(gap: number): string {
+  return `${formatSigned(gap * 100, 2)} pts`;
+}
+
 interface GaugeSummaryProps {
   title: string;
   gauge: BreadthGauge | null;
   descriptions: Record<BreadthState, string>;
   format: (value: number) => string;
+  formatGap: (gap: number) => string;
 }
 
 function GaugeSummary({
@@ -56,6 +69,7 @@ function GaugeSummary({
   gauge,
   descriptions,
   format,
+  formatGap,
 }: GaugeSummaryProps) {
   return (
     <div className="space-y-1">
@@ -71,7 +85,7 @@ function GaugeSummary({
       </div>
       {gauge ? (
         <>
-          <div className="flex gap-x-4 text-sm">
+          <div className="flex flex-wrap gap-x-4 text-sm">
             <span className="text-slate-600 dark:text-slate-300">
               EMA10:{" "}
               <span className="font-semibold text-red-500">
@@ -82,6 +96,12 @@ function GaugeSummary({
               EMA20:{" "}
               <span className="font-semibold text-blue-500">
                 {format(gauge.ema20)}
+              </span>
+            </span>
+            <span className="text-slate-600 dark:text-slate-300">
+              Gap:{" "}
+              <span className="font-semibold">
+                {formatGap(gauge.ema10 - gauge.ema20)}
               </span>
             </span>
           </div>
@@ -144,18 +164,21 @@ export function MarketBreadthCard() {
                 gauge={data?.trend ?? null}
                 descriptions={trendDescription}
                 format={formatPercent}
+                formatGap={formatPercentGap}
               />
               <GaugeSummary
                 title="New Highs / New Lows"
                 gauge={data?.newHighLow ?? null}
                 descriptions={newHighLowDescription}
                 format={formatRatio}
+                formatGap={formatRatioGap}
               />
               <GaugeSummary
                 title="20-Day Highs / Lows"
                 gauge={data?.newHighLow20 ?? null}
                 descriptions={shortTermDescription}
                 format={formatRatio}
+                formatGap={formatRatioGap}
               />
             </div>
             <MarketBreadthChart sessions={sessions} />
