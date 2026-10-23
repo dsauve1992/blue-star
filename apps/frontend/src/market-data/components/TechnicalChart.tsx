@@ -1131,7 +1131,7 @@ function QuadrantLegend() {
     <div
       style={{
         position: "absolute",
-        bottom: 8,
+        bottom: 34,
         left: 8,
         zIndex: 10,
         pointerEvents: "none",
