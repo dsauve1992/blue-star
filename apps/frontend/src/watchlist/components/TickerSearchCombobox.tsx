@@ -23,6 +23,7 @@ export function TickerSearchCombobox({
   const [debouncedQuery, setDebouncedQuery] = useState("");
   const [highlightedIndex, setHighlightedIndex] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
+  const [addError, setAddError] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -57,19 +58,25 @@ export function TickerSearchCombobox({
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
 
-  const submitFreeText = async () => {
-    const value = inputValue.trim().toUpperCase();
-    if (!value) return;
-    await onAddTicker(value);
-    setInputValue("");
+  const addTicker = async (ticker: string) => {
+    try {
+      await onAddTicker(ticker);
+      setInputValue("");
+      setAddError(null);
+    } catch {
+      setAddError(`Couldn't add ${ticker}. Try again.`);
+    }
     setIsOpen(false);
   };
 
-  const submitResult = async (result: TradingViewSearchResult) => {
-    await onAddTicker(result.fullSymbol);
-    setInputValue("");
-    setIsOpen(false);
+  const submitFreeText = async () => {
+    const value = inputValue.trim().toUpperCase();
+    if (!value) return;
+    await addTicker(value);
   };
+
+  const submitResult = (result: TradingViewSearchResult) =>
+    addTicker(result.fullSymbol);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -121,6 +128,7 @@ export function TickerSearchCombobox({
             value={inputValue}
             onChange={(e) => {
               setInputValue(e.target.value);
+              setAddError(null);
               setIsOpen(true);
             }}
             onFocus={() => setIsOpen(true)}
@@ -142,6 +150,12 @@ export function TickerSearchCombobox({
           <Plus className="w-3.5 h-3.5" />
         </button>
       </form>
+
+      {addError && (
+        <p role="alert" className="mt-1.5 text-[11px] text-red-400">
+          {addError}
+        </p>
+      )}
 
       {showDropdown && (
         <div className="absolute left-0 right-0 top-full mt-1 z-50 rounded-md border border-slate-600/50 bg-slate-900/95 backdrop-blur-xl shadow-lg max-h-72 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent">
