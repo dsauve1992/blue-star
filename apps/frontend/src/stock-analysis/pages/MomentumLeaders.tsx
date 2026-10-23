@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { PageContainer } from "src/global/design-system/page-container";
 import {
   Alert,
@@ -56,14 +56,6 @@ export default function MomentumLeaders() {
     onTickerChange: setSelectedTicker,
   });
 
-  const handleRunScan = useCallback(async () => {
-    try {
-      await runScan.mutateAsync();
-    } catch (err) {
-      console.error("Failed to run scan:", err);
-    }
-  }, [runScan]);
-
   const hasData = (data?.count ?? 0) > 0;
 
   return (
@@ -96,13 +88,20 @@ export default function MomentumLeaders() {
               </Alert>
             </div>
           ) : !hasData ? (
-            <div className="flex-1 flex flex-col items-center justify-center gap-4">
-              <Alert variant="warning">
+            <div className="flex-1 flex flex-col items-center justify-center gap-4 px-4">
+              <Alert variant="warning" className="max-w-md">
                 <AlertDescription>No scan has been run yet.</AlertDescription>
               </Alert>
+              {runScan.isError && (
+                <Alert variant="danger" className="max-w-md">
+                  <AlertDescription>
+                    The scan failed to run. Please try again.
+                  </AlertDescription>
+                </Alert>
+              )}
               <Button
                 variant="default"
-                onClick={handleRunScan}
+                onClick={() => runScan.mutate()}
                 disabled={runScan.isPending}
               >
                 {runScan.isPending ? "Running Scan..." : "Run Scan Now"}
