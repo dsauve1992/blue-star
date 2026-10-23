@@ -26,6 +26,7 @@ import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { LoadingSpinner } from "src/global/design-system";
 import { MomentumLeadersChartHeader } from "./MomentumLeadersChartHeader";
 import { FinancialReportChartFooter } from "./FinancialReportChartFooter";
+import { ChartLoadError } from "./ChartLoadError";
 
 const BENCHMARK_SYMBOL = "SPY";
 const BENCHMARK_EXCHANGE = "AMEX";
@@ -62,6 +63,7 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
     candles,
     isLoading: chartLoading,
     error: chartError,
+    refetch: refetchChart,
     loadMore,
     isLoadingMore,
   } = useChartData(
@@ -162,9 +164,10 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
               <LoadingSpinner />
             </div>
           ) : chartError ? (
-            <div className="h-full flex items-center justify-center text-red-400 text-sm">
-              Failed to load chart data
-            </div>
+            <ChartLoadError
+              symbol={leader.symbol}
+              onRetry={() => refetchChart()}
+            />
           ) : candles ? (
             <TechnicalChart
               candles={candles}
