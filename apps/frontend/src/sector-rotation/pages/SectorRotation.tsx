@@ -358,7 +358,7 @@ export default function SectorRotation() {
         {showComparison && (
           <Card className="p-6">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <h2 className="text-xl font-semibold">
                     Persisted vs Live Comparison
@@ -368,6 +368,7 @@ export default function SectorRotation() {
                   </p>
                 </div>
                 <Button
+                  className="self-start"
                   variant="outline"
                   size="sm"
                   onClick={() => refetchComparison()}
@@ -397,7 +398,7 @@ export default function SectorRotation() {
 
               {comparisonData && (
                 <div className="space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
                       <div className="text-sm text-muted-foreground">
                         Total Data Points
@@ -452,7 +453,7 @@ export default function SectorRotation() {
                           Maximum Differences Found
                         </h3>
                       </div>
-                      <div className="grid grid-cols-3 gap-4 mt-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
                         <div>
                           <div className="text-xs text-muted-foreground">X</div>
                           <div className="text-lg font-semibold">
@@ -491,7 +492,7 @@ export default function SectorRotation() {
                   {comparisonData.summary.differentDataPoints > 0 && (
                     <div className="space-y-2">
                       <h3 className="font-semibold">Differences Details</h3>
-                      <div className="max-h-96 overflow-y-auto">
+                      <div className="max-h-96 overflow-auto">
                         <table className="w-full text-sm">
                           <thead className="sticky top-0 bg-slate-100 dark:bg-slate-800">
                             <tr>
