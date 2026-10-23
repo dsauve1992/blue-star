@@ -13,6 +13,7 @@ import { Button } from "src/global/design-system";
 import { LoadingSpinner } from "src/global/design-system";
 import type { Watchlist } from "../api/watchlist.client";
 import {
+  monitoringCoverage,
   useMonitoringStatus,
   useActivateMonitoring,
   useDeactivateMonitoring,
@@ -198,12 +199,16 @@ function WatchlistCard({
   const activateMonitoring = useActivateMonitoring();
   const deactivateMonitoring = useDeactivateMonitoring();
 
-  const isMonitoringActive =
-    monitoringData?.monitorings.some((m) => m.active) ?? false;
+  const monitorings = monitoringData?.monitorings ?? [];
+  const coverage = monitoringCoverage(monitorings);
+  const activeTypes = monitorings
+    .filter((m) => m.active)
+    .map((m) => m.type)
+    .join(", ");
 
   const handleToggleMonitoring = (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (isMonitoringActive) {
+    if (coverage === "all") {
       deactivateMonitoring.mutate({ watchlistId: watchlist.id });
     } else {
       activateMonitoring.mutate({ watchlistId: watchlist.id });
@@ -368,26 +373,36 @@ function WatchlistCard({
             <button
               onClick={handleToggleMonitoring}
               disabled={isToggling}
-              aria-pressed={isMonitoringActive}
+              aria-pressed={
+                coverage === "partial" ? "mixed" : coverage === "all"
+              }
               title={
-                isMonitoringActive
+                coverage === "all"
                   ? "Breakout and gap alerts are on. Click to turn off"
-                  : "Breakout and gap alerts are off. Click to turn on"
+                  : coverage === "partial"
+                    ? `Monitoring partially enabled (${activeTypes}). Click to enable all`
+                    : "Breakout and gap alerts are off. Click to turn on"
               }
               className={`
                 flex items-center gap-0.5 px-1 py-px rounded-full border text-[10px] font-medium leading-tight transition-all flex-shrink-0
                 ${
-                  isMonitoringActive
+                  coverage === "all"
                     ? "border-green-500/40 bg-green-500/15 text-green-400 hover:bg-green-500/25"
-                    : "border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                    : coverage === "partial"
+                      ? "border-amber-500/40 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
+                      : "border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200"
                 }
                 ${isToggling ? "opacity-50 cursor-not-allowed" : ""}
               `}
             >
               <Radio
-                className={`w-2.5 h-2.5 ${isMonitoringActive ? "animate-pulse" : ""}`}
+                className={`w-2.5 h-2.5 ${coverage === "all" ? "animate-pulse" : ""}`}
               />
-              {isMonitoringActive ? "Alerts on" : "Alerts off"}
+              {coverage === "all"
+                ? "Alerts on"
+                : coverage === "partial"
+                  ? "Alerts partial"
+                  : "Alerts off"}
             </button>
           </div>
         </div>
