@@ -10,7 +10,7 @@ export default function Dashboard() {
             Dashboard
           </h1>
           <p className="text-slate-600 dark:text-slate-300 mt-1">
-            Welcome back! Here's your portfolio overview
+            Market breadth at a glance
           </p>
         </div>
 
