@@ -6,6 +6,9 @@ export default function Profile() {
   const { user, logout } = useKindeAuth();
   const name = [user?.givenName, user?.familyName].filter(Boolean).join(" ");
 
+  const [emailLocal, ...emailRest] = (user?.email ?? "Not set").split("@");
+  const emailDomain = emailRest.length ? `@${emailRest.join("@")}` : "";
+
   return (
     <PageContainer fullWidth>
       <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
@@ -16,11 +19,15 @@ export default function Profile() {
       </p>
       <Card className="mt-6 max-w-xl p-6">
         <h2 className="text-lg font-semibold">Account</h2>
-        <dl className="mt-4 grid grid-cols-[6rem_1fr] gap-y-3 text-sm">
+        <dl className="mt-4 grid grid-cols-1 gap-y-0.5 text-sm sm:grid-cols-[6rem_1fr] sm:gap-y-3">
           <dt className="text-slate-500 dark:text-slate-400">Name</dt>
-          <dd>{name || "Not set"}</dd>
+          <dd className="mb-2 sm:mb-0">{name || "Not set"}</dd>
           <dt className="text-slate-500 dark:text-slate-400">Email</dt>
-          <dd className="break-all">{user?.email ?? "Not set"}</dd>
+          <dd className="break-words">
+            {emailLocal}
+            <wbr />
+            {emailDomain}
+          </dd>
         </dl>
         <Button
           variant="outline"
