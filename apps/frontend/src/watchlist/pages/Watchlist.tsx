@@ -178,14 +178,10 @@ export default function Watchlist() {
   const handleAddTicker = useCallback(
     async (ticker: string) => {
       if (!selectedWatchlistId) return;
-      try {
-        await addTickerToWatchlist.mutateAsync({
-          watchlistId: selectedWatchlistId,
-          request: { ticker },
-        });
-      } catch (err) {
-        console.error("Failed to add ticker:", err);
-      }
+      await addTickerToWatchlist.mutateAsync({
+        watchlistId: selectedWatchlistId,
+        request: { ticker },
+      });
     },
     [selectedWatchlistId, addTickerToWatchlist],
   );
