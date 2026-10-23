@@ -63,6 +63,7 @@ export default function IndustryGroupExplorer() {
     data: groupsData,
     isLoading: groupsLoading,
     error: groupsError,
+    refetch: refetchGroups,
   } = useIndustryGroups();
 
   const {
@@ -107,6 +108,7 @@ export default function IndustryGroupExplorer() {
     candles,
     isLoading: chartLoading,
     error: chartError,
+    refetch: refetchChart,
     loadMore,
     isLoadingMore,
   } = useChartData(
@@ -262,6 +264,15 @@ export default function IndustryGroupExplorer() {
                     <AlertDescription>
                       Failed to load industry groups.
                     </AlertDescription>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="mt-3"
+                      onClick={() => refetchGroups()}
+                    >
+                      <RefreshCw className="w-4 h-4 mr-2" />
+                      Retry
+                    </Button>
                   </Alert>
                 )}
                 {selectedGroup && ratingsData && (
@@ -408,8 +419,16 @@ export default function IndustryGroupExplorer() {
                           <LoadingSpinner />
                         </div>
                       ) : chartError ? (
-                        <div className="h-full flex items-center justify-center text-red-400 text-sm">
+                        <div className="h-full flex flex-col items-center justify-center gap-3 text-red-400 text-sm">
                           Failed to load chart data
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => refetchChart()}
+                          >
+                            <RefreshCw className="w-4 h-4 mr-2" />
+                            Retry
+                          </Button>
                         </div>
                       ) : candles ? (
                         <TechnicalChart
