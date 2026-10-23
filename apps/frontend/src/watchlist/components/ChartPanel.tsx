@@ -72,6 +72,7 @@ interface ChartPanelProps {
   financialData: { report: FinancialReportApiDto } | undefined;
   financialLoading: boolean;
   financialError: Error | null;
+  onFinancialRetry: () => void;
   spyCandles?: ChartCandleDto[];
   interval: ChartInterval;
   onIntervalChange: (interval: ChartInterval) => void;
@@ -92,6 +93,7 @@ export function ChartPanel({
   financialData,
   financialLoading,
   financialError,
+  onFinancialRetry,
   spyCandles,
   interval,
   onIntervalChange,
@@ -277,6 +279,7 @@ export function ChartPanel({
                 report={financialData?.report ?? null}
                 isLoading={financialLoading}
                 error={financialError}
+                onRetry={onFinancialRetry}
               />
             </div>
           </div>

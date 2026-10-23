@@ -46,6 +46,7 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
     data: financialData,
     isLoading: financialLoading,
     error: financialError,
+    refetch: refetchFinancials,
   } = useFinancialReport(leader.symbol);
   const [showFinancials, setShowFinancials] = useState(true);
 
@@ -223,6 +224,7 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
               report={financialData?.report ?? null}
               isLoading={financialLoading}
               error={financialError}
+              onRetry={() => refetchFinancials()}
             />
           </div>
         </div>
