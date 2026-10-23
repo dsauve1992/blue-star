@@ -404,7 +404,7 @@ export function SectorRotationRRGChart({
   if (!dataPoints || dataPoints.length === 0) {
     return (
       <Card className="p-6 text-center">
-        <p className="text-muted-foreground">No data available</p>
+        <p className="text-slate-500 dark:text-slate-400">No data available</p>
       </Card>
     );
   }
@@ -412,7 +412,9 @@ export function SectorRotationRRGChart({
   if (filteredDataPoints.length === 0) {
     return (
       <Card className="p-6 text-center">
-        <p className="text-muted-foreground">No sectors selected</p>
+        <p className="text-slate-500 dark:text-slate-400">
+          No sectors selected
+        </p>
       </Card>
     );
   }
@@ -421,7 +423,7 @@ export function SectorRotationRRGChart({
     <Card className="p-3 sm:p-6">
       <div className="mb-4">
         <h3 className="text-lg font-semibold">Sector Rotation (RRG Chart)</h3>
-        <p className="text-sm text-muted-foreground">
+        <p className="text-sm text-slate-500 dark:text-slate-400">
           {startDate && endDate
             ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
             : `Latest data: ${latestDate.toLocaleDateString()}`}
