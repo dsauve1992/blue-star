@@ -288,7 +288,7 @@ export default function IndustryGroupExplorer() {
                 tabIndex={0}
               >
                 {!selectedGroup && (
-                  <div className="flex flex-col items-center justify-center h-full text-center px-4">
+                  <div className="hidden md:flex flex-col items-center justify-center h-full text-center px-4">
                     <div className="p-3 rounded-full bg-slate-700/50 mb-3">
                       <Layers className="w-6 h-6 text-slate-500" />
                     </div>
