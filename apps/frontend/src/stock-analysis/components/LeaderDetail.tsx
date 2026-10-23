@@ -110,23 +110,16 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
           .find((w) => w.id === watchlistId)
           ?.tickers.find((t) => t === tickerFullName || t === leader.symbol) ||
         tickerFullName;
-      try {
-        if (isTickerInWatchlist) {
-          await removeTickerFromWatchlist.mutateAsync({
-            watchlistId,
-            ticker: tickerToUse,
-          });
-        } else {
-          await addTickerToWatchlist.mutateAsync({
-            watchlistId,
-            request: { ticker: tickerFullName },
-          });
-        }
-      } catch (err) {
-        console.error(
-          `Failed to ${isTickerInWatchlist ? "remove" : "add"} ticker:`,
-          err,
-        );
+      if (isTickerInWatchlist) {
+        await removeTickerFromWatchlist.mutateAsync({
+          watchlistId,
+          ticker: tickerToUse,
+        });
+      } else {
+        await addTickerToWatchlist.mutateAsync({
+          watchlistId,
+          request: { ticker: tickerFullName },
+        });
       }
     },
     [
@@ -140,15 +133,11 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
 
   const handleCreateWatchlist = useCallback(
     async (name: string) => {
-      try {
-        const response = await createWatchlist.mutateAsync({ name });
-        await addTickerToWatchlist.mutateAsync({
-          watchlistId: response.watchlistId,
-          request: { ticker: tickerFullName },
-        });
-      } catch (err) {
-        console.error("Failed to create watchlist:", err);
-      }
+      const response = await createWatchlist.mutateAsync({ name });
+      await addTickerToWatchlist.mutateAsync({
+        watchlistId: response.watchlistId,
+        request: { ticker: tickerFullName },
+      });
     },
     [tickerFullName, createWatchlist, addTickerToWatchlist],
   );

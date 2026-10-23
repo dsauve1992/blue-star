@@ -18,7 +18,10 @@ interface MomentumLeadersChartHeaderProps {
   selectedTicker: string | null;
   selectedLeader: MomentumLeader | undefined;
   watchlists: Watchlist[];
-  onToggleWatchlist: (watchlistId: string, isInWatchlist: boolean) => void;
+  onToggleWatchlist: (
+    watchlistId: string,
+    isInWatchlist: boolean,
+  ) => Promise<void>;
   onCreateWatchlist: (name: string) => Promise<void>;
   isAddingToWatchlist: boolean;
   isRemovingFromWatchlist: boolean;
