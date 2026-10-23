@@ -9,20 +9,12 @@ import {
   type LeaderGroupBy,
 } from "../hooks/use-leader-groups";
 import { SELECT_CHEVRON_STYLE } from "./select-chevron-style";
+import { formatScanDate } from "../utils/format-scan-date";
 
 const SELECT_CLASS =
   "appearance-none rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1 pr-8 text-xs text-slate-200 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer";
 
 const SELECT_FIELD_CLASS = "flex items-center gap-1.5 text-xs text-slate-500";
-
-function formatScanDate(scanDate: string): string {
-  return new Date(`${scanDate}T00:00:00Z`).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-    timeZone: "UTC",
-  });
-}
 
 interface LeadersToolbarProps {
   data: MomentumLeadersResponse | undefined;
