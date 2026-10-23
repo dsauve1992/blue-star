@@ -167,23 +167,16 @@ export default function IndustryGroupExplorer() {
           .find((w) => w.id === watchlistId)
           ?.tickers.find((t) => t === selectedTicker || t === selectedSymbol) ||
         selectedTicker;
-      try {
-        if (isTickerInWatchlist) {
-          await removeTickerFromWatchlist.mutateAsync({
-            watchlistId,
-            ticker: tickerToUse,
-          });
-        } else {
-          await addTickerToWatchlist.mutateAsync({
-            watchlistId,
-            request: { ticker: selectedTicker },
-          });
-        }
-      } catch (err) {
-        console.error(
-          `Failed to ${isTickerInWatchlist ? "remove" : "add"} ticker:`,
-          err,
-        );
+      if (isTickerInWatchlist) {
+        await removeTickerFromWatchlist.mutateAsync({
+          watchlistId,
+          ticker: tickerToUse,
+        });
+      } else {
+        await addTickerToWatchlist.mutateAsync({
+          watchlistId,
+          request: { ticker: selectedTicker },
+        });
       }
     },
     [
@@ -198,15 +191,11 @@ export default function IndustryGroupExplorer() {
   const handleCreateWatchlist = useCallback(
     async (name: string) => {
       if (!selectedTicker) return;
-      try {
-        const response = await createWatchlist.mutateAsync({ name });
-        await addTickerToWatchlist.mutateAsync({
-          watchlistId: response.watchlistId,
-          request: { ticker: selectedTicker },
-        });
-      } catch (err) {
-        console.error("Failed to create watchlist:", err);
-      }
+      const response = await createWatchlist.mutateAsync({ name });
+      await addTickerToWatchlist.mutateAsync({
+        watchlistId: response.watchlistId,
+        request: { ticker: selectedTicker },
+      });
     },
     [selectedTicker, createWatchlist, addTickerToWatchlist],
   );

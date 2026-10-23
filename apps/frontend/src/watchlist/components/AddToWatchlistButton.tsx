@@ -10,7 +10,10 @@ function extractSymbol(ticker: string): string {
 interface AddToWatchlistButtonProps {
   ticker: string;
   watchlists: Watchlist[];
-  onToggleWatchlist: (watchlistId: string, isInWatchlist: boolean) => void;
+  onToggleWatchlist: (
+    watchlistId: string,
+    isInWatchlist: boolean,
+  ) => Promise<void>;
   onCreateWatchlist: (name: string) => Promise<void>;
   isAddingToWatchlist: boolean;
   isRemovingFromWatchlist: boolean;
@@ -28,6 +31,7 @@ export function AddToWatchlistButton({
 }: AddToWatchlistButtonProps) {
   const [showWatchlistDropdown, setShowWatchlistDropdown] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const tickerSymbol = extractSymbol(ticker);
   const containsTicker = (watchlist: Watchlist) =>
@@ -55,8 +59,29 @@ export function AddToWatchlistButton({
   const handleCreateWatchlist = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newWatchlistName.trim()) return;
-    await onCreateWatchlist(newWatchlistName.trim());
-    setNewWatchlistName("");
+    try {
+      await onCreateWatchlist(newWatchlistName.trim());
+      setNewWatchlistName("");
+      setErrorMessage(null);
+    } catch {
+      setErrorMessage("Couldn't create the watchlist. Try again.");
+    }
+  };
+
+  const handleToggleWatchlist = async (
+    watchlist: Watchlist,
+    isTickerInWatchlist: boolean,
+  ) => {
+    try {
+      await onToggleWatchlist(watchlist.id, isTickerInWatchlist);
+      setErrorMessage(null);
+    } catch {
+      setErrorMessage(
+        `Couldn't ${isTickerInWatchlist ? "remove" : "add"} ${tickerSymbol} ${
+          isTickerInWatchlist ? "from" : "to"
+        } ${watchlist.name}. Try again.`,
+      );
+    }
   };
 
   return (
@@ -65,6 +90,7 @@ export function AddToWatchlistButton({
         onClick={(e) => {
           e.stopPropagation();
           setShowWatchlistDropdown(!showWatchlistDropdown);
+          setErrorMessage(null);
         }}
         title={
           isSaved
@@ -107,7 +133,7 @@ export function AddToWatchlistButton({
                   <button
                     key={watchlist.id}
                     onClick={() =>
-                      onToggleWatchlist(watchlist.id, isTickerInWatchlist)
+                      handleToggleWatchlist(watchlist, isTickerInWatchlist)
                     }
                     disabled={isAddingToWatchlist || isRemovingFromWatchlist}
                     className="w-full flex items-center justify-between px-3 py-2 rounded-md text-sm text-slate-200 hover:bg-slate-700/50 transition-colors
@@ -121,6 +147,15 @@ export function AddToWatchlistButton({
                 );
               })}
             </div>
+          )}
+
+          {errorMessage && (
+            <p
+              role="alert"
+              className="border-t border-slate-700/50 px-5 py-2 text-xs text-red-400"
+            >
+              {errorMessage}
+            </p>
           )}
 
           <div className="border-t border-slate-700/50 p-2">
