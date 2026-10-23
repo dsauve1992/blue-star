@@ -203,13 +203,13 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
         <div className="flex-shrink-0">
           <button
             onClick={() => setShowFinancials(!showFinancials)}
-            className="w-full flex items-center justify-center gap-1.5 py-1 text-xs text-slate-500 hover:text-slate-300 transition-colors duration-150 group"
+            className="w-full flex items-center justify-center gap-1.5 py-1 text-xs text-slate-400 hover:text-slate-200 transition-colors duration-150"
             aria-expanded={showFinancials}
             aria-label={
               showFinancials ? "Hide financial data" : "Show financial data"
             }
           >
-            <span className="opacity-70 group-hover:opacity-100 transition-opacity">
+            <span>
               {showFinancials ? "Hide" : "Show"} Financials
             </span>
             <ChevronDown
