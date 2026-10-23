@@ -31,6 +31,12 @@ export class LeaderScanAnalysisServiceImpl
     try {
       const payload = await this.screener.runScan();
 
+      if (payload.universe_size === 0) {
+        throw new Error(
+          'Leader scan returned an empty universe; TradingView data is likely missing or its columns changed',
+        );
+      }
+
       const results: LeaderScanResult[] = payload.results.map((raw) =>
         LeaderScanResult.create({
           symbol: raw.ticker,
