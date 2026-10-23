@@ -1638,6 +1638,12 @@ function ChartToolbar({
           onMouseLeave={(e) => {
             e.currentTarget.style.opacity = "0.6";
           }}
+          onFocus={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+          onBlur={(e) => {
+            e.currentTarget.style.opacity = "0.6";
+          }}
           title={`Open ${tradingViewChartSymbol(ticker, exchange)} on TradingView`}
         >
           TV
@@ -1662,6 +1668,12 @@ function ChartToolbar({
             e.currentTarget.style.opacity = "1";
           }}
           onMouseLeave={(e) => {
+            e.currentTarget.style.opacity = "0.6";
+          }}
+          onFocus={(e) => {
+            e.currentTarget.style.opacity = "1";
+          }}
+          onBlur={(e) => {
             e.currentTarget.style.opacity = "0.6";
           }}
           title="Download chart as PNG"
