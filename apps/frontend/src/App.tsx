@@ -5,11 +5,14 @@ import { TokenProviderSetup } from "src/global/api/token-provider-setup";
 import "src/App.css";
 import AppSidebar from "src/global/routing/AppSidebar";
 import { generateRoutes } from "src/global/routing/routeGenerator";
+import { useDocumentTitle } from "src/global/routing/useDocumentTitle";
 import { AnimatedLayout } from "src/global/design-system/animated-layout";
 import NotFound from "src/global/pages/NotFound";
 import { MarketHealthBar } from "src/market-health/components/MarketHealthBar";
 
 function Layout() {
+  useDocumentTitle();
+
   return (
     <>
       <MarketHealthBar />
