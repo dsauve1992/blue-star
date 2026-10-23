@@ -302,9 +302,13 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
       }
       const overflowsRight =
         param.point.x + TOOLTIP_OFFSET + TOOLTIP_WIDTH > container.clientWidth;
-      const x = overflowsRight
+      const preferredX = overflowsRight
         ? param.point.x - TOOLTIP_OFFSET - TOOLTIP_WIDTH
         : param.point.x + TOOLTIP_OFFSET;
+      const x = Math.max(
+        0,
+        Math.min(preferredX, container.clientWidth - TOOLTIP_WIDTH),
+      );
       setHover({ x, session });
     };
     chart.subscribeCrosshairMove(handleCrosshairMove);
