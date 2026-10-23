@@ -32,7 +32,9 @@ export default function SectorRotation() {
   const sectorNames = useMemo<Record<string, string>>(
     () =>
       activeUniverse
-        ? Object.fromEntries(activeUniverse.members.map((m) => [m.symbol, m.name]))
+        ? Object.fromEntries(
+            activeUniverse.members.map((m) => [m.symbol, m.name]),
+          )
         : {},
     [activeUniverse],
   );
@@ -178,12 +180,67 @@ export default function SectorRotation() {
     );
   }
 
+  const header = (
+    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 className="text-3xl font-bold">Sector Rotation Analysis</h1>
+        <p className="text-muted-foreground mt-2">
+          Relative Rotation Graph (RRG) and quadrant timeline for{" "}
+          {activeUniverse?.label ?? "rotation universe"}
+        </p>
+      </div>
+      <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
+        {universesData && universesData.universes.length > 1 && (
+          <select
+            value={activeUniverseId ?? ""}
+            onChange={(e) => setSelectedUniverseId(e.target.value)}
+            className="h-9 w-full sm:w-auto rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            aria-label="Select rotation universe"
+          >
+            {universesData.universes.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.label}
+              </option>
+            ))}
+          </select>
+        )}
+        {!error && (
+          <>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowComparison(!showComparison)}
+            >
+              {showComparison ? "Hide" : "Show"} Comparison
+            </Button>
+            <Button variant="outline" size="sm" onClick={() => refetch()}>
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Refresh
+            </Button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+
   if (error) {
     return (
       <PageContainer>
-        <Alert variant="danger">
-          Error loading sector rotation data: {error.message}
-        </Alert>
+        <div className="space-y-6">
+          {header}
+          <Alert variant="danger">
+            <p>Couldn't load sector rotation data: {error.message}</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-3"
+              onClick={() => refetch()}
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retry
+            </Button>
+          </Alert>
+        </div>
       </PageContainer>
     );
   }
@@ -202,42 +259,7 @@ export default function SectorRotation() {
   return (
     <PageContainer>
       <div className="space-y-6">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h1 className="text-3xl font-bold">Sector Rotation Analysis</h1>
-            <p className="text-muted-foreground mt-2">
-              Relative Rotation Graph (RRG) and quadrant timeline for{" "}
-              {activeUniverse?.label ?? "rotation universe"}
-            </p>
-          </div>
-          <div className="flex flex-wrap items-center gap-2 lg:shrink-0">
-            {universesData && universesData.universes.length > 1 && (
-              <select
-                value={activeUniverseId ?? ""}
-                onChange={(e) => setSelectedUniverseId(e.target.value)}
-                className="h-9 w-full sm:w-auto rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                aria-label="Select rotation universe"
-              >
-                {universesData.universes.map((u) => (
-                  <option key={u.id} value={u.id}>
-                    {u.label}
-                  </option>
-                ))}
-              </select>
-            )}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowComparison(!showComparison)}
-            >
-              {showComparison ? "Hide" : "Show"} Comparison
-            </Button>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
-              Refresh
-            </Button>
-          </div>
-        </div>
+        {header}
 
         {fullRange.weeks.length > 0 && (
           <Card className="p-6">
@@ -482,9 +504,8 @@ export default function SectorRotation() {
                                 (diff) =>
                                   Math.abs(diff.differences.x) > 0.0001 ||
                                   Math.abs(diff.differences.y) > 0.0001 ||
-                                  Math.abs(
-                                    diff.differences.relativeStrength,
-                                  ) > 0.0001,
+                                  Math.abs(diff.differences.relativeStrength) >
+                                    0.0001,
                               )
                               .map((diff, idx) => (
                                 <tr
@@ -492,7 +513,9 @@ export default function SectorRotation() {
                                   className="border-t border-slate-200 dark:border-slate-700"
                                 >
                                   <td className="p-2">
-                                    {parseLocalDate(diff.date).toLocaleDateString()}
+                                    {parseLocalDate(
+                                      diff.date,
+                                    ).toLocaleDateString()}
                                   </td>
                                   <td className="p-2">{diff.sectorSymbol}</td>
                                   <td className="p-2 text-right font-mono">
