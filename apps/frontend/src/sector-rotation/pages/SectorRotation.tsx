@@ -174,7 +174,7 @@ export default function SectorRotation() {
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
         <h1 className="text-3xl font-bold">Sector Rotation Analysis</h1>
-        <p className="text-muted-foreground mt-2">
+        <p className="text-slate-500 dark:text-slate-400 mt-2">
           Relative Rotation Graph (RRG) and quadrant timeline for{" "}
           {activeUniverse?.label ?? "rotation universe"}
         </p>
@@ -270,13 +270,13 @@ export default function SectorRotation() {
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <h3 className="text-sm font-medium mb-1">Time Window</h3>
-                  <p className="text-xs text-muted-foreground">
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
                     {displayStartDate && displayEndDate
                       ? `${displayStartDate.toLocaleDateString()} - ${displayEndDate.toLocaleDateString()}`
                       : "Select a time window"}
                   </p>
                 </div>
-                <div className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
+                <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap shrink-0">
                   Week {sliderPosition + 1} -{" "}
                   {Math.min(sliderPosition + 5, fullRange.weeks.length)} of{" "}
                   {fullRange.weeks.length}
@@ -325,7 +325,7 @@ export default function SectorRotation() {
                   }
                 `}</style>
               </div>
-              <div className="flex justify-between text-xs text-muted-foreground">
+              <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
                   {fullRange.start ? fullRange.start.toLocaleDateString() : ""}
                 </span>
@@ -363,7 +363,7 @@ export default function SectorRotation() {
                   <h2 className="text-xl font-semibold">
                     Persisted vs Live Comparison
                   </h2>
-                  <p className="text-sm text-muted-foreground mt-1">
+                  <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                     Compare database-persisted data with live computation
                   </p>
                 </div>
@@ -400,7 +400,7 @@ export default function SectorRotation() {
                 <div className="space-y-4">
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="p-4 bg-slate-50 dark:bg-slate-800 rounded-lg">
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-slate-500 dark:text-slate-400">
                         Total Data Points
                       </div>
                       <div className="text-2xl font-bold mt-1">
@@ -408,7 +408,7 @@ export default function SectorRotation() {
                       </div>
                     </div>
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
                         <CheckCircle2 className="w-4 h-4 text-green-600 dark:text-green-400" />
                         Matching
                       </div>
@@ -417,7 +417,7 @@ export default function SectorRotation() {
                       </div>
                     </div>
                     <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                      <div className="text-sm text-muted-foreground flex items-center gap-1">
+                      <div className="text-sm text-slate-500 dark:text-slate-400 flex items-center gap-1">
                         <AlertTriangle className="w-4 h-4 text-red-600 dark:text-red-400" />
                         Different
                       </div>
@@ -426,7 +426,7 @@ export default function SectorRotation() {
                       </div>
                     </div>
                     <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                      <div className="text-sm text-muted-foreground">
+                      <div className="text-sm text-slate-500 dark:text-slate-400">
                         Match Rate
                       </div>
                       <div className="text-2xl font-bold mt-1 text-amber-600 dark:text-amber-400">
@@ -455,19 +455,23 @@ export default function SectorRotation() {
                       </div>
                       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
                         <div>
-                          <div className="text-xs text-muted-foreground">X</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">
+                            X
+                          </div>
                           <div className="text-lg font-semibold">
                             {comparisonData.summary.maxDifference.x.toFixed(6)}
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">Y</div>
+                          <div className="text-xs text-slate-500 dark:text-slate-400">
+                            Y
+                          </div>
                           <div className="text-lg font-semibold">
                             {comparisonData.summary.maxDifference.y.toFixed(6)}
                           </div>
                         </div>
                         <div>
-                          <div className="text-xs text-muted-foreground">
+                          <div className="text-xs text-slate-500 dark:text-slate-400">
                             Relative Strength
                           </div>
                           <div className="text-lg font-semibold">
