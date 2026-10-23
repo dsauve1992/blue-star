@@ -363,7 +363,7 @@ export default function IndustryGroupExplorer() {
               <div className="flex-1 flex flex-col min-h-0 p-4 gap-2 md:overflow-hidden">
                 {selectedSymbol && selectedTicker && (
                   <div className="flex-shrink-0 flex items-center justify-between gap-3 px-1 py-1">
-                    <div className="flex items-center gap-3 min-w-0">
+                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
                       <h2 className="text-xl font-bold text-white">
                         {selectedSymbol}
                       </h2>
@@ -380,7 +380,7 @@ export default function IndustryGroupExplorer() {
                       )}
                       {quadrant && (
                         <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${getQuadrantColor(quadrant)}`}
+                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap border ${getQuadrantColor(quadrant)}`}
                         >
                           {quadrant}
                         </span>
