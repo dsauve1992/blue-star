@@ -148,7 +148,7 @@ export function IndustryGroupSelector({
               >
                 <span>{g.industryGroup}</span>
                 <span className="tabular-nums text-[10px] text-slate-500 flex-shrink-0">
-                  {g.memberCount}
+                  {g.memberCount} {g.memberCount === 1 ? "stock" : "stocks"}
                 </span>
               </button>
             ))}
