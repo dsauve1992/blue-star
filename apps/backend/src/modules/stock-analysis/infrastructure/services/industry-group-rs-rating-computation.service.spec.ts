@@ -219,6 +219,33 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
     );
   });
 
+  it('retries classification for RS-rated symbols whose stored group is null', async () => {
+    const members = Array.from({ length: 10 }, (_, i) =>
+      makeRating(`SEM${i + 1}`, i + 1),
+    );
+    const unmapped = makeRating('OLD', 5);
+    rsRatingRepo.getAllForLatestDate.mockResolvedValue([...members, unmapped]);
+
+    const initialGroups = new Map<string, string | null>(
+      members.map((r) => [r.symbol, 'Semiconductors']),
+    );
+    initialGroups.set('OLD', null);
+    const afterRetry = new Map(initialGroups);
+    afterRetry.set('OLD', 'Semiconductors');
+
+    getIndustryGroups.execute
+      .mockResolvedValueOnce(initialGroups)
+      .mockResolvedValueOnce(afterRetry);
+
+    await service.computeIndustryGroupRsRatings();
+
+    expect(getOrFetchClassification.executeMany).toHaveBeenCalledWith(['OLD']);
+    const saved = industryGroupRepo.saveRatings.mock.calls[0][0];
+    expect(saved.map((r) => r.symbol).sort()).toEqual(
+      [...members.map((m) => m.symbol), 'OLD'].sort(),
+    );
+  });
+
   it('skips backfill when every RS-rated symbol is already classified', async () => {
     const members = Array.from({ length: 10 }, (_, i) =>
       makeRating(`SEM${i + 1}`, i + 1),

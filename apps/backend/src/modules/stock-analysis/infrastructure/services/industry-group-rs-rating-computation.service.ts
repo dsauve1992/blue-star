@@ -50,7 +50,7 @@ export class IndustryGroupRsRatingComputationServiceImpl
     // the RS universe unclassified at cron time, so the IG ratings only cover
     // the small subset that has been viewed since the previous run.
     const existingGroups = await this.getIndustryGroups.execute(symbols);
-    const unclassified = symbols.filter((s) => !existingGroups.has(s));
+    const unclassified = symbols.filter((s) => !existingGroups.get(s));
     if (unclassified.length > 0) {
       this.logger.log(
         `Backfilling classifications for ${unclassified.length} of ${symbols.length} RS-rated symbols.`,
