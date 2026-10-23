@@ -16,6 +16,8 @@ import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import type { ChartInterval } from "src/market-data/api/chart-data.client";
 import { PageContainer } from "src/global/design-system/page-container";
+import { Alert, AlertDescription } from "src/global/design-system";
+import { X } from "lucide-react";
 import { WatchlistCardBar } from "../components/WatchlistCardBar";
 import { TickerSidebar } from "../components/TickerSidebar";
 import { ChartPanel } from "../components/ChartPanel";
@@ -51,6 +53,8 @@ export default function Watchlist() {
     selectedWatchlist,
     tickers,
   } = useWatchlistSelection({ data });
+
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -120,6 +124,7 @@ export default function Watchlist() {
     async (watchlistId: string) => {
       if (window.confirm("Are you sure you want to delete this watchlist?")) {
         try {
+          setActionError(null);
           await deleteWatchlist.mutateAsync(watchlistId);
           if (selectedWatchlistId === watchlistId) {
             const remaining =
@@ -130,6 +135,7 @@ export default function Watchlist() {
           }
         } catch (err) {
           console.error("Failed to delete watchlist:", err);
+          setActionError("Could not delete the watchlist. Please try again.");
         }
       }
     },
@@ -155,6 +161,7 @@ export default function Watchlist() {
     async (ticker: string) => {
       if (!selectedWatchlistId) return;
       try {
+        setActionError(null);
         await removeTickerFromWatchlist.mutateAsync({
           watchlistId: selectedWatchlistId,
           ticker,
@@ -165,6 +172,7 @@ export default function Watchlist() {
         }
       } catch (err) {
         console.error("Failed to remove ticker:", err);
+        setActionError("Could not remove the ticker. Please try again.");
       }
     },
     [
@@ -195,6 +203,7 @@ export default function Watchlist() {
     ) => {
       if (sourceWatchlistId === targetWatchlistId) return;
       try {
+        setActionError(null);
         await moveTicker.mutateAsync({
           sourceWatchlistId,
           targetWatchlistId,
@@ -209,6 +218,7 @@ export default function Watchlist() {
         }
       } catch (err) {
         console.error("Failed to move ticker:", err);
+        setActionError("Could not move the ticker. Please try again.");
       }
     },
     [
@@ -242,9 +252,11 @@ export default function Watchlist() {
   const handleCopyTicker = useCallback(
     async (ticker: string, targetWatchlistId: string) => {
       try {
+        setActionError(null);
         await copyTicker.mutateAsync({ targetWatchlistId, ticker });
       } catch (err) {
         console.error("Failed to copy ticker:", err);
+        setActionError("Could not copy the ticker. Please try again.");
       }
     },
     [copyTicker],
@@ -274,6 +286,25 @@ export default function Watchlist() {
             onRenameWatchlist={handleRenameWatchlist}
             onDropTicker={handleDropTickerOnWatchlist}
           />
+
+          {actionError && (
+            <div className="px-4 pt-3">
+              <Alert
+                variant="danger"
+                className="flex items-center justify-between gap-3 py-3"
+              >
+                <AlertDescription>{actionError}</AlertDescription>
+                <button
+                  type="button"
+                  aria-label="Dismiss error"
+                  onClick={() => setActionError(null)}
+                  className="shrink-0 rounded p-1 hover:bg-danger-100 dark:hover:bg-danger-900/40"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </Alert>
+            </div>
+          )}
 
           <div className="flex-1 flex flex-col md:flex-row min-h-0">
             {selectedWatchlist && (
