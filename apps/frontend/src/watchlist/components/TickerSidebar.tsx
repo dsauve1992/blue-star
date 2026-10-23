@@ -206,18 +206,22 @@ export function TickerSidebar({
           <div className="flex items-center justify-between gap-1">
             <button
               onClick={() => navigateTicker("up")}
+              aria-label="Previous ticker"
+              title="Previous ticker"
               disabled={currentIndex <= 0}
-              className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronUp className="w-3.5 h-3.5" />
             </button>
-            <span className="text-[10px] text-slate-500 tabular-nums">
-              {currentIndex + 1}/{tickers.length}
+            <span className="text-xs text-slate-400 tabular-nums">
+              {currentIndex + 1} of {tickers.length}
             </span>
             <button
               onClick={() => navigateTicker("down")}
+              aria-label="Next ticker"
+              title="Next ticker"
               disabled={currentIndex >= tickers.length - 1}
-              className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
             >
               <ChevronDown className="w-3.5 h-3.5" />
             </button>
