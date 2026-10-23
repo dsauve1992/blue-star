@@ -18,7 +18,10 @@ export function LeaderGroupHeader({
         {group.label}
       </span>
       {group.industryGroupRsRating !== null && (
-        <span className="shrink-0 font-mono text-emerald-400">
+        <span
+          className="shrink-0 font-mono text-emerald-400"
+          title="Industry group RS rating"
+        >
           IG {group.industryGroupRsRating}
         </span>
       )}
@@ -29,8 +32,10 @@ export function LeaderGroupHeader({
           {group.quadrant}
         </span>
       )}
-      <span className="shrink-0 font-mono text-slate-500">
-        {group.leaders.length}
+      <span className="shrink-0 text-slate-500">
+        {group.leaders.length === 1
+          ? "1 leader"
+          : `${group.leaders.length} leaders`}
       </span>
     </div>
   );
