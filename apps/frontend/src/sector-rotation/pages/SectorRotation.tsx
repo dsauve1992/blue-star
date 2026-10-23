@@ -184,7 +184,7 @@ export default function SectorRotation() {
           <select
             value={activeUniverseId ?? ""}
             onChange={(e) => setSelectedUniverseId(e.target.value)}
-            className="h-9 w-full sm:w-auto rounded-md border border-input bg-background px-3 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="h-9 w-full sm:w-auto rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm text-slate-900 dark:text-slate-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500"
             aria-label="Select rotation universe"
           >
             {universesData.universes.map((u) => (
