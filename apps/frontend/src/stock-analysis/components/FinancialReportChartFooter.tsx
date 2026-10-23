@@ -1,4 +1,11 @@
-import { useState, type ReactNode } from "react";
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+  type ReactNode,
+} from "react";
 import { ChevronRight } from "lucide-react";
 import { LoadingSpinner } from "src/global/design-system";
 import { Alert, AlertDescription } from "src/global/design-system";
@@ -59,6 +66,53 @@ function formatQuarterLabel(quarter: string, year: string): string {
   return `${quarter} '${shortYear}`;
 }
 
+const SCROLL_FADE_WIDTH_PX = 32;
+
+function HorizontalScrollFade({ children }: { children: ReactNode }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const [fade, setFade] = useState({ start: false, end: false });
+
+  const update = useCallback(() => {
+    const element = ref.current;
+    if (!element) return;
+    const maxScroll = element.scrollWidth - element.clientWidth;
+    const start = element.scrollLeft > 1;
+    const end = element.scrollLeft < maxScroll - 1;
+    setFade((previous) =>
+      previous.start === start && previous.end === end
+        ? previous
+        : { start, end },
+    );
+  }, []);
+
+  useEffect(() => {
+    const element = ref.current;
+    if (!element) return;
+    update();
+    const observer = new ResizeObserver(update);
+    observer.observe(element);
+    Array.from(element.children).forEach((child) => observer.observe(child));
+    return () => observer.disconnect();
+  }, [update]);
+
+  const maskImage = `linear-gradient(to right, transparent, #000 ${fade.start ? SCROLL_FADE_WIDTH_PX : 0}px, #000 calc(100% - ${fade.end ? SCROLL_FADE_WIDTH_PX : 0}px), transparent)`;
+  const style: CSSProperties = {
+    maskImage,
+    WebkitMaskImage: maskImage,
+  };
+
+  return (
+    <div
+      ref={ref}
+      onScroll={update}
+      style={style}
+      className="flex-shrink-0 border-t border-slate-700/50 pt-3 mt-3 flex flex-wrap items-start gap-x-10 gap-y-3 overflow-x-auto"
+    >
+      {children}
+    </div>
+  );
+}
+
 export function FinancialReportChartFooter({
   report,
   isLoading,
@@ -92,7 +146,7 @@ export function FinancialReportChartFooter({
   }
 
   return (
-    <div className="flex-shrink-0 border-t border-slate-700/50 pt-3 mt-3 flex flex-wrap items-start gap-x-10 gap-y-3 overflow-x-auto">
+    <HorizontalScrollFade>
       {report.quarterlyGrowths.length ? (
         <QuarterlyGrowthTable quarters={report.quarterlyGrowths} />
       ) : (
@@ -103,7 +157,7 @@ export function FinancialReportChartFooter({
       {report.annualGrowths.length > 0 && (
         <AnnualGrowthTable years={report.annualGrowths} />
       )}
-    </div>
+    </HorizontalScrollFade>
   );
 }
 
