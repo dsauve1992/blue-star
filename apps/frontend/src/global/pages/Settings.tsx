@@ -15,7 +15,7 @@ export default function Settings() {
       </p>
       <Card className="mt-6 max-w-xl p-6">
         <h2 className="text-lg font-semibold">Appearance</h2>
-        <div className="mt-4 flex items-center justify-between gap-4">
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
           <div className="text-sm">
             <p>Theme</p>
             <p className="text-slate-500 dark:text-slate-400">
