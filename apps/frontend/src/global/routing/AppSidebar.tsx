@@ -171,7 +171,14 @@ export default function AppSidebar() {
             <Link
               to="/profile"
               aria-label={user?.givenName || "Profile"}
-              className="group relative flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              aria-current={
+                isActive("/profile", location.pathname) ? "page" : undefined
+              }
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
+                isActive("/profile", location.pathname)
+                  ? "bg-slate-200 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400"
+                  : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200"
+              }`}
             >
               <User className="w-5 h-5" />
               <SidebarLabel>{user?.givenName || "Profile"}</SidebarLabel>
