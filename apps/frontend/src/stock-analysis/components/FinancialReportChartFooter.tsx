@@ -30,16 +30,22 @@ function formatNumber(num: number | null): string {
   return `$${num.toFixed(2)}`;
 }
 
+function roundToTenth(value: number): number {
+  return Math.round(value * 10) / 10 || 0;
+}
+
 function formatPercent(value: number | null): string {
   if (value === null) return "N/A";
-  const sign = value >= 0 ? "+" : "";
-  return `${sign}${Math.round(value * 10) / 10}%`;
+  const rounded = roundToTenth(value);
+  const sign = rounded >= 0 ? "+" : "";
+  return `${sign}${rounded}%`;
 }
 
 function getGrowthColor(value: number | null): string {
   if (value === null) return "text-slate-400";
-  if (value > 0) return "text-green-400";
-  if (value < 0) return "text-red-400";
+  const rounded = roundToTenth(value);
+  if (rounded > 0) return "text-green-400";
+  if (rounded < 0) return "text-red-400";
   return "text-slate-400";
 }
 
@@ -59,7 +65,7 @@ function formatEps(eps: number): string {
 
 function formatRatio(value: number | null): string {
   if (value === null) return "N/A";
-  return `${Math.round(value * 10) / 10}%`;
+  return `${roundToTenth(value)}%`;
 }
 
 function formatQuarterLabel(quarter: string, year: string): string {
