@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState, useCallback } from "react";
 import type { Time } from "lightweight-charts";
 import { BarChart3, ChevronDown } from "lucide-react";
-import { ChevronUp, Layers } from "lucide-react";
+import { ChevronUp, Layers, RefreshCw } from "lucide-react";
 import { PageContainer } from "src/global/design-system/page-container";
 import {
   LoadingSpinner,
   Alert,
   AlertDescription,
+  Button,
 } from "src/global/design-system";
 import { useIndustryGroups } from "../hooks/use-industry-groups";
 import { useIndustryGroupRatings } from "../hooks/use-industry-group-ratings";
@@ -68,6 +69,7 @@ export default function IndustryGroupExplorer() {
     data: ratingsData,
     isLoading: ratingsLoading,
     error: ratingsError,
+    refetch: refetchRatings,
   } = useIndustryGroupRatings(selectedGroup);
 
   // Auto-select first ticker when group changes / data loads.
@@ -286,11 +288,11 @@ export default function IndustryGroupExplorer() {
                 )}
 
                 {selectedGroup && ratingsLoading && (
-                  <div className="flex flex-col items-center justify-center h-full gap-3">
-                    <LoadingSpinner />
-                    <span className="text-sm text-slate-400">
-                      Loading ratings...
-                    </span>
+                  <div className="flex items-center justify-center h-full">
+                    <LoadingSpinner
+                      label="Loading ratings..."
+                      className="[&>span]:text-slate-400"
+                    />
                   </div>
                 )}
 
@@ -300,6 +302,15 @@ export default function IndustryGroupExplorer() {
                       <AlertDescription>
                         Failed to load ratings for this group.
                       </AlertDescription>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        className="mt-3"
+                        onClick={() => refetchRatings()}
+                      >
+                        <RefreshCw className="w-4 h-4 mr-2" />
+                        Retry
+                      </Button>
                     </Alert>
                   </div>
                 )}
@@ -324,18 +335,22 @@ export default function IndustryGroupExplorer() {
                   <div className="flex items-center justify-between gap-1">
                     <button
                       onClick={() => navigate("up")}
+                      aria-label="Previous ticker"
+                      title="Previous ticker"
                       disabled={currentIndex <= 0}
-                      className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronUp className="w-3.5 h-3.5" />
                     </button>
-                    <span className="text-[10px] text-slate-500 tabular-nums">
-                      {currentIndex + 1}/{ratings.length}
+                    <span className="text-xs text-slate-400 tabular-nums">
+                      {currentIndex + 1} of {ratings.length}
                     </span>
                     <button
                       onClick={() => navigate("down")}
+                      aria-label="Next ticker"
+                      title="Next ticker"
                       disabled={currentIndex >= ratings.length - 1}
-                      className="p-1.5 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                      className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                     >
                       <ChevronDown className="w-3.5 h-3.5" />
                     </button>
