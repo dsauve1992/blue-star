@@ -320,8 +320,11 @@ export default function SectorRotation() {
                   input[type="range"]:focus {
                     outline: none;
                   }
-                  input[type="range"]:focus::-webkit-slider-thumb {
-                    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.3);
+                  input[type="range"]:focus-visible::-webkit-slider-thumb {
+                    box-shadow: 0 0 0 2px white, 0 0 0 5px #1d4ed8;
+                  }
+                  input[type="range"]:focus-visible::-moz-range-thumb {
+                    box-shadow: 0 0 0 2px white, 0 0 0 5px #1d4ed8;
                   }
                 `}</style>
               </div>
