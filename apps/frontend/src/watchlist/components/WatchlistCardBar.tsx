@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   Bookmark,
   ChevronLeft,
@@ -45,22 +45,34 @@ export function WatchlistCardBar({
   onRenameWatchlist,
   onDropTicker,
 }: WatchlistCardBarProps) {
-  const [scrollOffset, setScrollOffset] = useState(0);
+  const [scrollEdges, setScrollEdges] = useState({ start: true, end: true });
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const watchlistScrollRef = useRef<HTMLDivElement>(null);
 
+  const updateScrollEdges = useCallback(() => {
+    const el = watchlistScrollRef.current;
+    if (!el) return;
+    setScrollEdges({
+      start: el.scrollLeft <= 0,
+      end: el.scrollLeft + el.clientWidth >= el.scrollWidth - 1,
+    });
+  }, []);
+
+  useEffect(() => {
+    const el = watchlistScrollRef.current;
+    if (!el) return;
+    updateScrollEdges();
+    const observer = new ResizeObserver(updateScrollEdges);
+    observer.observe(el);
+    if (el.firstElementChild) observer.observe(el.firstElementChild);
+    return () => observer.disconnect();
+  }, [updateScrollEdges]);
+
   const scrollWatchlists = (direction: "left" | "right") => {
-    if (!watchlistScrollRef.current) return;
-    const scrollAmount = 200;
-    const newOffset =
-      direction === "left"
-        ? Math.max(0, scrollOffset - scrollAmount)
-        : scrollOffset + scrollAmount;
-    setScrollOffset(newOffset);
-    watchlistScrollRef.current.scrollTo({
-      left: newOffset,
+    watchlistScrollRef.current?.scrollBy({
+      left: direction === "left" ? -200 : 200,
       behavior: "smooth",
     });
   };
@@ -86,13 +98,15 @@ export function WatchlistCardBar({
         <button
           onClick={() => scrollWatchlists("left")}
           aria-label="Scroll watchlists left"
-          className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors flex-shrink-0"
+          disabled={scrollEdges.start}
+          className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors flex-shrink-0 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
         </button>
 
         <div
           ref={watchlistScrollRef}
+          onScroll={updateScrollEdges}
           className="flex-1 overflow-x-auto scrollbar-none"
           style={{ scrollbarWidth: "none" }}
         >
@@ -165,7 +179,8 @@ export function WatchlistCardBar({
         <button
           onClick={() => scrollWatchlists("right")}
           aria-label="Scroll watchlists right"
-          className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors flex-shrink-0"
+          disabled={scrollEdges.end}
+          className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors flex-shrink-0 disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-slate-400"
         >
           <ChevronRight className="w-3.5 h-3.5" />
         </button>
