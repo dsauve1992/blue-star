@@ -170,16 +170,6 @@ export default function SectorRotation() {
     setSelectedEndDate(fullRange.weeks[endIndex]);
   };
 
-  if (isLoadingUniverses || isLoading) {
-    return (
-      <PageContainer>
-        <div className="flex items-center justify-center min-h-[400px]">
-          <LoadingSpinner />
-        </div>
-      </PageContainer>
-    );
-  }
-
   const header = (
     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
       <div>
@@ -222,6 +212,19 @@ export default function SectorRotation() {
       </div>
     </div>
   );
+
+  if (isLoadingUniverses || isLoading) {
+    return (
+      <PageContainer>
+        <div className="space-y-6">
+          {header}
+          <div className="flex items-center justify-center min-h-[400px]">
+            <LoadingSpinner />
+          </div>
+        </div>
+      </PageContainer>
+    );
+  }
 
   if (error) {
     return (
