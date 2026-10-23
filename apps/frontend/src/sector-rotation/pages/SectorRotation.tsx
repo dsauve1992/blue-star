@@ -267,7 +267,7 @@ export default function SectorRotation() {
         {fullRange.weeks.length > 0 && (
           <Card className="p-6">
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-4">
                 <div>
                   <h3 className="text-sm font-medium mb-1">Time Window</h3>
                   <p className="text-xs text-muted-foreground">
@@ -276,7 +276,7 @@ export default function SectorRotation() {
                       : "Select a time window"}
                   </p>
                 </div>
-                <div className="text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground whitespace-nowrap shrink-0">
                   Week {sliderPosition + 1} -{" "}
                   {Math.min(sliderPosition + 5, fullRange.weeks.length)} of{" "}
                   {fullRange.weeks.length}
@@ -288,6 +288,7 @@ export default function SectorRotation() {
                   min="0"
                   max={Math.max(0, fullRange.weeks.length - 5)}
                   value={sliderPosition}
+                  aria-label="Time window start week"
                   onChange={(e) =>
                     handleSliderChange(parseInt(e.target.value, 10))
                   }
