@@ -251,7 +251,7 @@ export function ChartPanel({
           <div className="flex-shrink-0">
             <button
               onClick={() => setShowFinancialFooter(!showFinancialFooter)}
-              className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-500 hover:text-slate-300 transition-colors duration-150 group"
+              className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors duration-150"
               aria-expanded={showFinancialFooter}
               aria-label={
                 showFinancialFooter
@@ -259,7 +259,7 @@ export function ChartPanel({
                   : "Show financial data"
               }
             >
-              <span className="opacity-70 group-hover:opacity-100 transition-opacity">
+              <span>
                 {showFinancialFooter ? "Hide" : "Show"} Financials
               </span>
               <ChevronDown
