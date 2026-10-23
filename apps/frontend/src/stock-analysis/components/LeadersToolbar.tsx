@@ -13,6 +13,8 @@ import { SELECT_CHEVRON_STYLE } from "./select-chevron-style";
 const SELECT_CLASS =
   "appearance-none rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1 pr-8 text-xs text-slate-200 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer";
 
+const SELECT_FIELD_CLASS = "flex items-center gap-1.5 text-xs text-slate-500";
+
 function formatScanDate(scanDate: string): string {
   return new Date(`${scanDate}T00:00:00Z`).toLocaleDateString("en-US", {
     month: "short",
@@ -78,32 +80,36 @@ export function LeadersToolbar({
       )}
 
       <div className="ml-auto flex flex-wrap items-center gap-2">
-        <select
-          value={groupBy}
-          onChange={(e) => onGroupByChange(e.target.value as LeaderGroupBy)}
-          aria-label="Group by"
-          className={SELECT_CLASS}
-          style={SELECT_CHEVRON_STYLE}
-        >
-          {LEADER_GROUP_BY_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
-        <select
-          value={sortKey}
-          onChange={(e) => onSortChange(e.target.value as LeaderSortKey)}
-          aria-label="Sort by"
-          className={SELECT_CLASS}
-          style={SELECT_CHEVRON_STYLE}
-        >
-          {LEADER_SORT_OPTIONS.map((option) => (
-            <option key={option.value} value={option.value}>
-              {option.label}
-            </option>
-          ))}
-        </select>
+        <label className={SELECT_FIELD_CLASS}>
+          Group by
+          <select
+            value={groupBy}
+            onChange={(e) => onGroupByChange(e.target.value as LeaderGroupBy)}
+            className={SELECT_CLASS}
+            style={SELECT_CHEVRON_STYLE}
+          >
+            {LEADER_GROUP_BY_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label className={SELECT_FIELD_CLASS}>
+          Sort by
+          <select
+            value={sortKey}
+            onChange={(e) => onSortChange(e.target.value as LeaderSortKey)}
+            className={SELECT_CLASS}
+            style={SELECT_CHEVRON_STYLE}
+          >
+            {LEADER_SORT_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
+            ))}
+          </select>
+        </label>
 
         <button
           onClick={onRefresh}
