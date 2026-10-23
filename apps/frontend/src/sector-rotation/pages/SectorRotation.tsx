@@ -45,7 +45,7 @@ export default function SectorRotation() {
 
   const [showComparison, setShowComparison] = useState(false);
 
-  const { data, isLoading, error, refetch } = useSectorRotation(
+  const { data, isLoading, isFetching, error, refetch } = useSectorRotation(
     {
       sectors: activeUniverse?.members,
       startDate: startDate.toISOString().split("T")[0],
@@ -203,8 +203,15 @@ export default function SectorRotation() {
             >
               {showComparison ? "Hide" : "Show"} Comparison
             </Button>
-            <Button variant="outline" size="sm" onClick={() => refetch()}>
-              <RefreshCw className="w-4 h-4 mr-2" />
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => refetch()}
+              disabled={isFetching}
+            >
+              <RefreshCw
+                className={`w-4 h-4 mr-2 ${isFetching ? "animate-spin" : ""}`}
+              />
               Refresh
             </Button>
           </>
