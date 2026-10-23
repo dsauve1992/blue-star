@@ -6,6 +6,7 @@ import "src/App.css";
 import AppSidebar from "src/global/routing/AppSidebar";
 import { generateRoutes } from "src/global/routing/routeGenerator";
 import { AnimatedLayout } from "src/global/design-system/animated-layout";
+import NotFound from "src/global/pages/NotFound";
 import { MarketHealthBar } from "src/market-health/components/MarketHealthBar";
 
 function Layout() {
@@ -32,6 +33,7 @@ function App() {
           <Routes>
             <Route path="/" element={<Layout />}>
               {generateRoutes()}
+              <Route path="*" element={<NotFound />} />
             </Route>
           </Routes>
         </TokenProviderSetup>
