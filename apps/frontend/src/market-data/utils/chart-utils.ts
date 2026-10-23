@@ -239,6 +239,18 @@ export function fmt(n: number): string {
   return n.toFixed(2);
 }
 
+const RATIO_SIGNIFICANT_DIGITS = 3;
+
+export function ratioPrecision(sample: number | null | undefined): number {
+  if (!sample || !Number.isFinite(sample)) return 2;
+  const magnitude = Math.floor(Math.log10(Math.abs(sample)));
+  return Math.min(8, Math.max(2, RATIO_SIGNIFICANT_DIGITS - 1 - magnitude));
+}
+
+export function fmtRatio(n: number): string {
+  return n.toFixed(ratioPrecision(n));
+}
+
 export function fmtVol(n: number): string {
   if (n >= 1e9) return (n / 1e9).toFixed(2) + "B";
   if (n >= 1e6) return (n / 1e6).toFixed(2) + "M";

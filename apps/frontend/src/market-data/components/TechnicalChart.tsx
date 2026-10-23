@@ -34,7 +34,9 @@ import {
   toLineData,
   toMarkerData,
   fmt,
+  fmtRatio,
   fmtVol,
+  ratioPrecision,
 } from "../utils/chart-utils";
 import {
   getChartColors,
@@ -805,12 +807,22 @@ function TechnicalChartInner({
           lookback,
         );
 
+        const ratioDecimals = ratioPrecision(
+          rsResult.rsLine.filter((v): v is number => v !== null).pop(),
+        );
+        const ratioPriceFormat = {
+          type: "price" as const,
+          precision: ratioDecimals,
+          minMove: 10 ** -ratioDecimals,
+        };
+
         // RS line
         const rsLineSeries = chart.addSeries(
           LineSeries,
           {
             color: lineColor,
             lineWidth: 2,
+            priceFormat: ratioPriceFormat,
             priceLineVisible: false,
             lastValueVisible: true,
             crosshairMarkerVisible: true,
@@ -829,6 +841,7 @@ function TechnicalChartInner({
           {
             color: smaColor,
             lineWidth: 1,
+            priceFormat: ratioPriceFormat,
             priceLineVisible: false,
             lastValueVisible: true,
             crosshairMarkerVisible: false,
@@ -1223,12 +1236,12 @@ function ChartLegend({
               <span style={{ color: r.color, opacity: 0.7 }}>
                 RS vs {r.label}
               </span>{" "}
-              <span style={{ color: r.color }}>{fmt(r.rs)}</span>
+              <span style={{ color: r.color }}>{fmtRatio(r.rs)}</span>
             </span>
             {r.rsSma != null && (
               <span>
                 <span style={{ color: r.smaColor, opacity: 0.7 }}>SMA</span>{" "}
-                <span style={{ color: r.smaColor }}>{fmt(r.rsSma)}</span>
+                <span style={{ color: r.smaColor }}>{fmtRatio(r.rsSma)}</span>
               </span>
             )}
           </div>
@@ -1346,7 +1359,7 @@ function ChartTooltip({
                 <span style={{ color: r.color, opacity: 0.7 }}>
                   RS vs {r.label}
                 </span>
-                <span style={{ color: r.color }}>{fmt(r.rs)}</span>
+                <span style={{ color: r.color }}>{fmtRatio(r.rs)}</span>
               </div>
             ) : null,
           )}
