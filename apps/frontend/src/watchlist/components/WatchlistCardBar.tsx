@@ -84,6 +84,7 @@ export function WatchlistCardBar({
       <div className="flex items-center gap-1.5 px-3 py-1.5">
         <button
           onClick={() => scrollWatchlists("left")}
+          aria-label="Scroll watchlists left"
           className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors flex-shrink-0"
         >
           <ChevronLeft className="w-3.5 h-3.5" />
@@ -162,6 +163,7 @@ export function WatchlistCardBar({
 
         <button
           onClick={() => scrollWatchlists("right")}
+          aria-label="Scroll watchlists right"
           className="p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-white transition-colors flex-shrink-0"
         >
           <ChevronRight className="w-3.5 h-3.5" />
@@ -351,7 +353,8 @@ function WatchlistCard({
               <button
                 onClick={startEdit}
                 title="Rename watchlist"
-                className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-700/50 text-slate-500 hover:text-blue-400 transition-all flex-shrink-0"
+                aria-label="Rename watchlist"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-0.5 rounded hover:bg-slate-700/50 text-slate-500 hover:text-blue-400 transition-all flex-shrink-0"
               >
                 <Pencil className="w-2.5 h-2.5" />
               </button>
@@ -393,7 +396,9 @@ function WatchlistCard({
             e.stopPropagation();
             onDelete();
           }}
-          className="opacity-0 group-hover:opacity-100 p-0.5 rounded hover:bg-slate-700/50 text-slate-500 hover:text-red-400 transition-all flex-shrink-0"
+          title="Delete watchlist"
+          aria-label="Delete watchlist"
+          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-0.5 rounded hover:bg-slate-700/50 text-slate-500 hover:text-red-400 transition-all flex-shrink-0"
         >
           <Trash2 className="w-2.5 h-2.5" />
         </button>
