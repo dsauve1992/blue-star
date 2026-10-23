@@ -64,9 +64,6 @@ export default function Home() {
             <Button size="lg" className="text-lg px-8 py-4" asChild>
               <Link to="/login">Get Started Free</Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4 border-slate-600 text-slate-50 hover:bg-slate-700 hover:text-slate-50 dark:hover:text-slate-50">
-              View Demo
-            </Button>
           </div>
           
           {/* Stats */}
@@ -129,9 +126,6 @@ export default function Home() {
             <Button size="lg" className="text-lg px-8 py-4" asChild>
               <Link to="/login">Start Trading Now</Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4 border-slate-600 text-slate-50 hover:bg-slate-700 hover:text-slate-50 dark:hover:text-slate-50">
-              Learn More
-            </Button>
           </div>
         </div>
       </section>
@@ -149,12 +143,6 @@ export default function Home() {
             
             <div className="flex items-center space-x-6 text-sm text-slate-300">
               <span>© 2024 Blue Star. All rights reserved.</span>
-              <Link to="/settings" className="hover:text-slate-50 transition-colors">
-                Privacy Policy
-              </Link>
-              <Link to="/settings" className="hover:text-slate-50 transition-colors">
-                Terms of Service
-              </Link>
             </div>
           </div>
         </div>
