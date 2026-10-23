@@ -68,7 +68,7 @@ function getHref(item: { path: string; navigationPath?: string }): string {
 
 export default function AppSidebar() {
   const location = useLocation();
-  const { isAuthenticated, logout, user } = useKindeAuth();
+  const { isAuthenticated, logout } = useKindeAuth();
   const { theme } = useTheme();
   const navItems = getNavigationRoutes(isAuthenticated);
 
@@ -102,7 +102,8 @@ export default function AppSidebar() {
         <Link
           to="/"
           aria-label="Home"
-          className="group relative flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors"
+          aria-current={location.pathname === "/" ? "page" : undefined}
+          className="group relative flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 aria-[current=page]:ring-2 aria-[current=page]:ring-blue-500 dark:aria-[current=page]:ring-blue-400 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors"
         >
           <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
             <TrendingUp className="w-4 h-4 text-white" />
@@ -147,7 +148,7 @@ export default function AppSidebar() {
             }
             className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
               isActive(settingsItem.path, location.pathname)
-                ? "bg-slate-200 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400"
+                ? "bg-slate-200 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 border-l-2 border-l-blue-500 dark:border-l-blue-400"
                 : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50"
             }`}
           >
@@ -170,18 +171,18 @@ export default function AppSidebar() {
           <>
             <Link
               to="/profile"
-              aria-label={user?.givenName || "Profile"}
+              aria-label="Profile"
               aria-current={
                 isActive("/profile", location.pathname) ? "page" : undefined
               }
               className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                 isActive("/profile", location.pathname)
-                  ? "bg-slate-200 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400"
+                  ? "bg-slate-200 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 border-l-2 border-l-blue-500 dark:border-l-blue-400"
                   : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200"
               }`}
             >
               <User className="w-5 h-5" />
-              <SidebarLabel>{user?.givenName || "Profile"}</SidebarLabel>
+              <SidebarLabel>Profile</SidebarLabel>
             </Link>
             <button
               onClick={() => logout()}
