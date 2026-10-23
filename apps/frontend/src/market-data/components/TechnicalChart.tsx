@@ -1,4 +1,12 @@
-import { useEffect, useRef, useCallback, useState, useMemo, memo } from "react";
+import {
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useCallback,
+  useState,
+  useMemo,
+  memo,
+} from "react";
 import {
   createChart,
   createTextWatermark,
@@ -1251,6 +1259,8 @@ function ChartLegend({
   );
 }
 
+const TOOLTIP_EDGE_GAP = 4;
+
 function ChartTooltip({
   tooltip,
   colors: C,
@@ -1260,12 +1270,21 @@ function ChartTooltip({
 }) {
   const d = tooltip.data;
   const isUp = d.c >= d.o;
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    const el = ref.current;
+    const container = el?.parentElement;
+    if (!el || !container) return;
+    const maxLeft = container.clientWidth - el.offsetWidth - TOOLTIP_EDGE_GAP;
+    el.style.left = `${Math.max(TOOLTIP_EDGE_GAP, Math.min(tooltip.x, maxLeft))}px`;
+  }, [tooltip]);
   return (
     <div
+      ref={ref}
       style={{
         position: "absolute",
-        left: tooltip.x,
         top: tooltip.y,
+        maxWidth: `calc(100% - ${2 * TOOLTIP_EDGE_GAP}px)`,
         zIndex: 20,
         pointerEvents: "none",
         background: "rgba(15, 23, 42, 0.92)",
