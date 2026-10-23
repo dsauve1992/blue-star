@@ -91,7 +91,7 @@ export function IndustryGroupSelector({
         disabled={isLoading || groups.length === 0}
         className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
       >
-        <span className="truncate text-sm text-slate-200">
+        <span className="text-sm leading-snug text-slate-200">
           {selectedGroup ??
             (isLoading
               ? "Loading industry groups..."
@@ -138,7 +138,7 @@ export function IndustryGroupSelector({
                 aria-selected={selectedGroup === g.industryGroup}
                 onClick={() => select(g.industryGroup)}
                 onMouseEnter={() => setActiveIndex(index)}
-                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs transition-colors ${
+                className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs leading-snug transition-colors ${
                   index === activeIndex
                     ? "bg-slate-700/60 text-white"
                     : selectedGroup === g.industryGroup
@@ -146,7 +146,7 @@ export function IndustryGroupSelector({
                       : "text-slate-300"
                 }`}
               >
-                <span className="truncate">{g.industryGroup}</span>
+                <span>{g.industryGroup}</span>
                 <span className="tabular-nums text-[10px] text-slate-500 flex-shrink-0">
                   {g.memberCount}
                 </span>
