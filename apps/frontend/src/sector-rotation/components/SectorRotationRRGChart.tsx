@@ -161,9 +161,9 @@ export function SectorRotationRRGChart({
       animation: false,
       grid: {
         left: 56,
-        right: "10%",
-        top: "10%",
-        bottom: "10%",
+        right: 48,
+        top: 16,
+        bottom: 64,
         containLabel: false,
       },
       xAxis: {
