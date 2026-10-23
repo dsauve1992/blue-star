@@ -64,7 +64,7 @@ export default function Home() {
             <Button size="lg" className="text-lg px-8 py-4" asChild>
               <Link to="/login">Get Started Free</Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+            <Button variant="outline" size="lg" className="text-lg px-8 py-4 border-slate-600 text-slate-50 hover:bg-slate-700 hover:text-slate-50 dark:hover:text-slate-50">
               View Demo
             </Button>
           </div>
@@ -102,10 +102,10 @@ export default function Home() {
                       {feature.icon}
                     </div>
                   </div>
-                  <h3 className="text-xl font-semibold text-slate-50 mb-4">
+                  <h3 className="text-xl font-semibold text-slate-900 dark:text-slate-50 mb-4">
                     {feature.title}
                   </h3>
-                  <p className="text-slate-300">
+                  <p className="text-slate-600 dark:text-slate-300">
                     {feature.description}
                   </p>
                 </CardContent>
@@ -129,7 +129,7 @@ export default function Home() {
             <Button size="lg" className="text-lg px-8 py-4" asChild>
               <Link to="/login">Start Trading Now</Link>
             </Button>
-            <Button variant="outline" size="lg" className="text-lg px-8 py-4">
+            <Button variant="outline" size="lg" className="text-lg px-8 py-4 border-slate-600 text-slate-50 hover:bg-slate-700 hover:text-slate-50 dark:hover:text-slate-50">
               Learn More
             </Button>
           </div>
