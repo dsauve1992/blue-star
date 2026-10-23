@@ -2,6 +2,7 @@ import { Link, useLocation } from "react-router";
 import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
 import { getNavigationRoutes } from "./routes.config";
 import { ThemeToggle } from "../design-system/theme-toggle";
+import { useTheme } from "../design-system/use-theme";
 import {
   Home,
   LayoutDashboard,
@@ -50,6 +51,17 @@ function isActive(itemPath: string, pathname: string): boolean {
   return pathname === base || pathname.startsWith(base + "/");
 }
 
+function SidebarLabel({ children }: { children: string }) {
+  return (
+    <span
+      aria-hidden="true"
+      className="pointer-events-none absolute left-full top-1/2 z-50 ml-2 -translate-y-1/2 whitespace-nowrap rounded-md bg-slate-900 px-2 py-1 text-xs font-medium text-slate-50 opacity-0 shadow-lg transition-opacity group-hover:opacity-100 group-focus-visible:opacity-100 group-has-[:focus-visible]:opacity-100 dark:bg-slate-100 dark:text-slate-900"
+    >
+      {children}
+    </span>
+  );
+}
+
 function getHref(item: { path: string; navigationPath?: string }): string {
   return item.navigationPath ?? item.path;
 }
@@ -57,6 +69,7 @@ function getHref(item: { path: string; navigationPath?: string }): string {
 export default function AppSidebar() {
   const location = useLocation();
   const { isAuthenticated, logout, user } = useKindeAuth();
+  const { theme } = useTheme();
   const navItems = getNavigationRoutes(isAuthenticated);
 
   const mainNav = navItems.filter(
@@ -88,12 +101,13 @@ export default function AppSidebar() {
       <div className="flex flex-col items-center py-3 gap-1">
         <Link
           to="/"
-          className="flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors"
-          title="Home"
+          aria-label="Home"
+          className="group relative flex items-center justify-center w-10 h-10 rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-900 dark:hover:text-slate-50 transition-colors"
         >
           <div className="w-8 h-8 rounded-md bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center">
             <TrendingUp className="w-4 h-4 text-white" />
           </div>
+          <SidebarLabel>Home</SidebarLabel>
         </Link>
       </div>
 
@@ -106,14 +120,16 @@ export default function AppSidebar() {
             <Link
               key={item.path}
               to={getHref(item)}
-              title={item.label}
-              className={`flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
+              aria-label={item.label}
+              aria-current={active ? "page" : undefined}
+              className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
                 active
                   ? "bg-slate-200 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400 border-l-2 border-l-blue-500 dark:border-l-blue-400"
                   : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200"
               }`}
             >
               <Icon className="w-5 h-5" />
+              <SidebarLabel>{item.label}</SidebarLabel>
             </Link>
           );
         })}
@@ -123,14 +139,20 @@ export default function AppSidebar() {
         <div className="flex flex-col items-center pt-2 border-t border-slate-200 dark:border-slate-700/80">
           <Link
             to={getHref(settingsItem)}
-            title={settingsItem.label}
-            className={`flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
+            aria-label={settingsItem.label}
+            aria-current={
+              isActive(settingsItem.path, location.pathname)
+                ? "page"
+                : undefined
+            }
+            className={`group relative flex items-center justify-center w-10 h-10 rounded-lg transition-colors ${
               isActive(settingsItem.path, location.pathname)
                 ? "bg-slate-200 dark:bg-slate-700/80 text-blue-600 dark:text-blue-400"
                 : "text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50"
             }`}
           >
             <Settings className="w-5 h-5" />
+            <SidebarLabel>{settingsItem.label}</SidebarLabel>
           </Link>
         </div>
       )}
@@ -138,33 +160,39 @@ export default function AppSidebar() {
       <div className="flex-1 min-h-4" />
 
       <div className="flex flex-col items-center py-2 gap-0.5 border-t border-slate-200 dark:border-slate-700/80">
-        <span className="flex items-center justify-center w-10 h-10 [&_button]:!w-10 [&_button]:!h-10 [&_button]:!p-0 [&_button]:!min-w-0 [&_button]:rounded-lg">
+        <span className="group relative flex items-center justify-center w-10 h-10 [&_button]:!w-10 [&_button]:!h-10 [&_button]:!p-0 [&_button]:!min-w-0 [&_button]:rounded-lg">
           <ThemeToggle />
+          <SidebarLabel>
+            {theme === "light" ? "Dark mode" : "Light mode"}
+          </SidebarLabel>
         </span>
         {isAuthenticated ? (
           <>
             <Link
               to="/profile"
-              title={user?.givenName || "Profile"}
-              className="flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+              aria-label={user?.givenName || "Profile"}
+              className="group relative flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
             >
               <User className="w-5 h-5" />
+              <SidebarLabel>{user?.givenName || "Profile"}</SidebarLabel>
             </Link>
             <button
               onClick={() => logout()}
-              title="Log out"
-              className="flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+              aria-label="Log out"
+              className="group relative flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-red-600 dark:hover:text-red-400 transition-colors"
             >
               <LogOut className="w-5 h-5" />
+              <SidebarLabel>Log out</SidebarLabel>
             </button>
           </>
         ) : (
           <Link
             to="/login"
-            title="Log in"
-            className="flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
+            aria-label="Log in"
+            className="group relative flex items-center justify-center w-10 h-10 rounded-lg text-slate-500 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700/50 hover:text-slate-700 dark:hover:text-slate-200 transition-colors"
           >
             <LogIn className="w-5 h-5" />
+            <SidebarLabel>Log in</SidebarLabel>
           </Link>
         )}
       </div>
