@@ -226,7 +226,7 @@ function QuarterlyGrowthTable({
             }
             className="inline-flex items-center gap-0.5 rounded px-1.5 -my-0.5 text-[10px] font-semibold text-slate-400 hover:text-slate-200 hover:bg-slate-700/50 transition-colors duration-150 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-blue-400"
           >
-            {showAll ? "Less" : `+${hiddenCount}`}
+            {showAll ? "Less" : `+${hiddenCount} older`}
             <ChevronRight
               className={`w-3 h-3 transition-transform duration-200 ease-out ${showAll ? "rotate-180" : ""}`}
             />
