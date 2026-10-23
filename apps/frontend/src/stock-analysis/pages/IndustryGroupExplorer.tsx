@@ -465,7 +465,7 @@ export default function IndustryGroupExplorer() {
                       </h3>
                       <p className="text-slate-500 text-center max-w-md">
                         {selectedGroup
-                          ? "Select a ticker from the list on the left."
+                          ? "Select a ticker from the list."
                           : "Select an industry group to begin."}
                       </p>
                     </div>

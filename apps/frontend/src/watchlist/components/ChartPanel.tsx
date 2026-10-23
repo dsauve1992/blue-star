@@ -47,12 +47,12 @@ function getEmptyStateCopy(
   if (selectedWatchlist.tickers.length === 0) {
     return {
       title: "This watchlist is empty",
-      description: "Add a ticker with the search box on the left.",
+      description: "Add a ticker with the search box above the list.",
     };
   }
   return {
     title: "No Ticker Selected",
-    description: "Select a ticker from the list on the left.",
+    description: "Select a ticker from the list.",
   };
 }
 
