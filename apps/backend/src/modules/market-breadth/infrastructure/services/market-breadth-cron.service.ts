@@ -27,19 +27,22 @@ export class MarketBreadthCronService {
 
     try {
       const result = await this.analysisService.runDaily();
+      if (result.sessionsRecomputed.length === 0) {
+        throw new Error(
+          'Market breadth saved no session: every recomputed session failed the coverage gate',
+        );
+      }
       const latest = result.aggregates[result.aggregates.length - 1];
 
       this.logger.log(
-        `${jobName} completed: ${result.sessionsRecomputed.length} sessions recomputed, latest ${latest?.date.toISOString()} NH=${latest?.newHighs} NL=${latest?.newLows}`,
+        `${jobName} completed: ${result.sessionsRecomputed.length} sessions recomputed, latest ${latest.date.toISOString()} NH=${latest.newHighs} NL=${latest.newLows}`,
       );
 
       await this.cronJobNotificationService.notifyJobSuccess({
         jobName,
         jobType: 'market-breadth',
         frequency: 'daily',
-        additionalData: latest
-          ? `NH=${latest.newHighs} NL=${latest.newLows} universe=${latest.universeSize}`
-          : 'no sessions recomputed',
+        additionalData: `latest=${latest.date.toISOString()} NH=${latest.newHighs} NL=${latest.newLows} universe=${latest.universeSize}`,
       });
     } catch (error) {
       const msg = error instanceof Error ? error.message : 'Unknown error';
