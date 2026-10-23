@@ -8,6 +8,7 @@ import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { LoadingSpinner } from "src/global/design-system";
+import { ChartLoadError } from "./ChartLoadError";
 
 const GRID_CHART_BARS = 200;
 const GRID_VISIBLE_BARS = 130;
@@ -33,7 +34,7 @@ function LeaderChartCardInner({
   const tickerFullName = leaderTickerFullName(leader);
   const cardRef = useRef<HTMLDivElement>(null);
   const inView = useInViewOnce(cardRef, scrollRootRef);
-  const { candles, error } = useChartData(
+  const { candles, error, refetch } = useChartData(
     inView ? leader.symbol : null,
     inView ? leader.exchange : null,
     "D",
@@ -70,9 +71,7 @@ function LeaderChartCardInner({
       </div>
       <div className="relative flex-1 min-h-0">
         {error ? (
-          <div className="h-full flex items-center justify-center text-red-400 text-sm">
-            Failed to load chart data
-          </div>
+          <ChartLoadError symbol={leader.symbol} onRetry={() => refetch()} />
         ) : candles ? (
           <TechnicalChart
             candles={candles}
