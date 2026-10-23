@@ -87,10 +87,21 @@ export function TickerListItem({
       draggable
       onDragStart={handleDragStart}
       onDragEnd={handleDragEnd}
+      role="button"
+      tabIndex={0}
+      aria-current={isSelected}
       onClick={() => onSelect(ticker)}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(ticker);
+        }
+      }}
       className={`
         group relative flex items-center gap-2 px-2 py-1.5 cursor-pointer
         transition-colors duration-150
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400/70
         ${isDragging ? "opacity-50" : ""}
         ${
           isSelected
@@ -165,7 +176,9 @@ export function TickerListItem({
             setIsMenuOpen((open) => !open);
           }}
           className={`p-0.5 rounded hover:bg-slate-600/50 text-slate-500 hover:text-slate-200 transition-all ${
-            isMenuOpen ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+            isMenuOpen
+              ? "opacity-100"
+              : "opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100"
           }`}
           aria-label={`More actions for ${ticker}`}
         >
@@ -187,7 +200,7 @@ export function TickerListItem({
           e.stopPropagation();
           onRemove(ticker);
         }}
-        className="p-0.5 rounded opacity-0 group-hover:opacity-100 hover:bg-slate-600/50 text-slate-500 hover:text-red-400 transition-all flex-shrink-0"
+        className="p-0.5 rounded opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 [@media(hover:none)]:opacity-100 hover:bg-slate-600/50 text-slate-500 hover:text-red-400 transition-all flex-shrink-0"
         aria-label={`Remove ${ticker}`}
       >
         <X className="w-3 h-3" />
