@@ -1,5 +1,5 @@
 import type { LeaderGroup } from "../hooks/use-leader-groups";
-import { getQuadrantColor } from "../utils/sector-utils";
+import { getQuadrantColor } from "src/sector-rotation/utils/sector-utils";
 
 interface LeaderGroupHeaderProps {
   group: LeaderGroup;

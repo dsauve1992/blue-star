@@ -1,6 +1,5 @@
 import { useRotationUniverses } from "./use-rotation-universes";
-
-const GICS_INDUSTRY_GROUP_UNIVERSE_ID = "gics-industry-group";
+import { INDUSTRY_GROUP_UNIVERSE_ID } from "../utils/industry-group-utils";
 
 /**
  * Resolve a GICS industry-group name (e.g. "Semiconductors & Semiconductor
@@ -15,8 +14,6 @@ export function useIndustryGroupSymbol(
 ): string | null {
   const { data } = useRotationUniverses();
   if (!industryGroup || !data) return null;
-  const gics = data.universes.find(
-    (u) => u.id === GICS_INDUSTRY_GROUP_UNIVERSE_ID,
-  );
+  const gics = data.universes.find((u) => u.id === INDUSTRY_GROUP_UNIVERSE_ID);
   return gics?.members.find((m) => m.name === industryGroup)?.symbol ?? null;
 }

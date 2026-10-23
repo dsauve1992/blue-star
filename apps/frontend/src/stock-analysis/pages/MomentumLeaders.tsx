@@ -17,7 +17,7 @@ import {
 import { leaderTickerFullName } from "../api/momentum-leaders.client";
 import { useConsolidationKeyboardNavigation } from "../hooks/use-consolidation-keyboard-navigation";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
-import { INDUSTRY_GROUP_UNIVERSE_ID } from "../utils/industry-group-utils";
+import { INDUSTRY_GROUP_UNIVERSE_ID } from "src/sector-rotation/utils/industry-group-utils";
 import { LeadersToolbar } from "../components/LeadersToolbar";
 import { LeadersWorkspace } from "../components/LeadersWorkspace";
 

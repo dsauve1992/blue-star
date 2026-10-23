@@ -25,15 +25,15 @@ import {
 import {
   getIndustryGroupQuadrant,
   INDUSTRY_GROUP_UNIVERSE_ID,
-} from "src/stock-analysis/utils/industry-group-utils";
-import { getQuadrantColor } from "src/stock-analysis/utils/sector-utils";
+} from "src/sector-rotation/utils/industry-group-utils";
+import { getQuadrantColor } from "src/sector-rotation/utils/sector-utils";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import {
   MAIN_CHART_TIMEFRAME_OPTIONS,
   type ChartInterval,
 } from "src/market-data/api/chart-data.client";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
-import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
+import { FinancialReportChartFooter } from "src/fundamental/components/FinancialReportChartFooter";
 import { AddToWatchlistButton } from "src/watchlist/components/AddToWatchlistButton";
 import {
   useWatchlists,

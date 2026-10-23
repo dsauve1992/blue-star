@@ -5,8 +5,7 @@ import {
 } from "../api/sector-rotation.client";
 import { SECTOR_ROTATION_QUERY_KEYS } from "../constants/query-keys";
 import { useIndustryGroupSymbol } from "./use-industry-group-symbol";
-
-const INDUSTRY_GROUP_UNIVERSE_ID = "gics-industry-group";
+import { INDUSTRY_GROUP_UNIVERSE_ID } from "../utils/industry-group-utils";
 
 const sectorRotationClient = new SectorRotationClient();
 
