@@ -87,4 +87,22 @@ describe('LeaderScanAnalysisServiceImpl', () => {
     expect(savedRun?.errorMessage).toBe('TV timeout');
     expect(mockRepo.saveResults).not.toHaveBeenCalled();
   });
+
+  it('should mark run failed and rethrow when the universe is empty', async () => {
+    mockScreener.runScan.mockResolvedValue({
+      scan_date: '2026-04-24',
+      universe_size: 0,
+      leader_count: 0,
+      results: [],
+    });
+
+    await expect(
+      service.runAnalysis(ScanDate.of(new Date('2026-04-24'))),
+    ).rejects.toThrow('empty universe');
+
+    const savedRun = mockRepo.saveRun.mock.calls.at(-1)?.[0];
+    expect(savedRun?.status).toBe(LeaderScanRunStatus.FAILED);
+    expect(savedRun?.errorMessage).toContain('empty universe');
+    expect(mockRepo.saveResults).not.toHaveBeenCalled();
+  });
 });
