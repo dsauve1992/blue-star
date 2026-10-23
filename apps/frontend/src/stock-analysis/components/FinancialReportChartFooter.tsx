@@ -6,9 +6,9 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
-import { ChevronRight } from "lucide-react";
+import { ChevronRight, RefreshCw } from "lucide-react";
 import { LoadingSpinner } from "src/global/design-system";
-import { Alert, AlertDescription } from "src/global/design-system";
+import { Alert, AlertDescription, Button } from "src/global/design-system";
 import type {
   AnnualGrowthApiDto,
   FinancialReportApiDto,
@@ -19,6 +19,7 @@ interface FinancialReportChartFooterProps {
   report: FinancialReportApiDto | null;
   isLoading: boolean;
   error: Error | null;
+  onRetry?: () => void;
 }
 
 function formatNumber(num: number | null): string {
@@ -117,6 +118,7 @@ export function FinancialReportChartFooter({
   report,
   isLoading,
   error,
+  onRetry,
 }: FinancialReportChartFooterProps) {
   if (isLoading) {
     return (
@@ -133,8 +135,14 @@ export function FinancialReportChartFooter({
     return (
       <div className="flex-shrink-0 border-t border-slate-700/50 p-4">
         <Alert variant="danger">
-          <AlertDescription>
-            Failed to load financial report. Please try again.
+          <AlertDescription className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+            <span>Failed to load financial report.</span>
+            {onRetry && (
+              <Button variant="outline" size="sm" onClick={onRetry}>
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+            )}
           </AlertDescription>
         </Alert>
       </div>

@@ -71,6 +71,7 @@ export default function Watchlist() {
     data: financialData,
     isLoading: financialLoading,
     error: financialError,
+    refetch: refetchFinancials,
   } = useFinancialReport(symbolToFetch);
 
   const movingAverages = useMemo(
@@ -305,6 +306,7 @@ export default function Watchlist() {
               financialData={financialData}
               financialLoading={financialLoading}
               financialError={financialError}
+              onFinancialRetry={() => refetchFinancials()}
               spyCandles={spyCandles}
               interval={interval}
               onIntervalChange={setInterval}
