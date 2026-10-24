@@ -2,7 +2,7 @@ import { useState, useCallback } from "react";
 import { ChevronDown, BarChart3, AlertTriangle } from "lucide-react";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
-import { FinancialReportChartFooter } from "src/stock-analysis/components/FinancialReportChartFooter";
+import { FinancialReportChartFooter } from "src/fundamental/components/FinancialReportChartFooter";
 import type { FinancialReportApiDto } from "src/fundamental/api/fundamental.client";
 import {
   MAIN_CHART_TIMEFRAME_OPTIONS,
@@ -18,11 +18,11 @@ import {
   buildRsBenchmarks,
   GROUP_BENCHMARK_EXCHANGE,
 } from "src/market-data/utils/rs-benchmarks";
-import { getQuadrantColor } from "src/stock-analysis/utils/sector-utils";
+import { getQuadrantColor } from "src/sector-rotation/utils/sector-utils";
 import {
   getIndustryGroupQuadrant,
   INDUSTRY_GROUP_UNIVERSE_ID,
-} from "src/stock-analysis/utils/industry-group-utils";
+} from "src/sector-rotation/utils/industry-group-utils";
 import { LoadingSpinner } from "src/global/design-system";
 
 const BENCHMARK_SYMBOL = "SPY";

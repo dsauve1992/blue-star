@@ -7,7 +7,7 @@ import type {
   QuadrantType,
   SectorStatus,
 } from "src/sector-rotation/api/sector-rotation.client";
-import { getIndustryGroupQuadrant } from "../utils/industry-group-utils";
+import { getIndustryGroupQuadrant } from "src/sector-rotation/utils/industry-group-utils";
 import type { LeaderRsRatings } from "./use-sorted-leaders";
 
 export type LeaderGroupBy = "none" | "industryGroup" | "theme";
