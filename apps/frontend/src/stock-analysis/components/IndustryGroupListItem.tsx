@@ -38,10 +38,21 @@ export function IndustryGroupListItem({
   return (
     <div
       ref={rowRef}
+      role="button"
+      tabIndex={0}
+      aria-current={isSelected}
       onClick={() => onSelect(symbol)}
+      onKeyDown={(e) => {
+        if (e.target !== e.currentTarget) return;
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect(symbol);
+        }
+      }}
       className={`
         group relative flex items-center gap-2 px-2 py-1.5 cursor-pointer
         transition-colors duration-150
+        focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400/70
         ${
           isSelected
             ? "bg-slate-700/50 border-l-2 border-l-blue-500"
