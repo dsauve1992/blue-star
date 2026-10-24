@@ -104,10 +104,7 @@ function MenuSection({ label, icon, options, onSelect }: MenuSectionProps) {
         <button
           key={option.id}
           type="button"
-          onMouseDown={(e) => {
-            e.preventDefault();
-            onSelect(option.id);
-          }}
+          onClick={() => onSelect(option.id)}
           className="w-full text-left px-2 py-1.5 text-xs text-slate-200 hover:bg-slate-700/50 transition-colors truncate"
         >
           {option.name}
