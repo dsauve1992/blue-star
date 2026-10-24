@@ -141,6 +141,7 @@ export function SectorRotationTimeline({
             <tbody>
               {sectorSymbols.map((symbol) => {
                 const isEnabled = enabledSectors.has(symbol);
+                const isLastEnabled = isEnabled && enabledSectors.size === 1;
                 return (
                   <tr key={symbol} className={!isEnabled ? "opacity-40" : ""}>
                     <td
@@ -151,7 +152,13 @@ export function SectorRotationTimeline({
                           type="checkbox"
                           checked={isEnabled}
                           onChange={() => onToggleSector(symbol)}
-                          className="w-4 h-4 cursor-pointer"
+                          disabled={isLastEnabled}
+                          title={
+                            isLastEnabled
+                              ? "At least one sector must stay plotted"
+                              : undefined
+                          }
+                          className="w-4 h-4 cursor-pointer disabled:cursor-not-allowed"
                           aria-label={`Toggle ${symbol} sector`}
                         />
                         <span>
