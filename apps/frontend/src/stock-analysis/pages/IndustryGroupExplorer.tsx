@@ -43,6 +43,7 @@ import {
 } from "src/watchlist/hooks/use-watchlists";
 import { IndustryGroupSelector } from "../components/IndustryGroupSelector";
 import { IndustryGroupListItem } from "../components/IndustryGroupListItem";
+import { formatScanDate } from "../utils/format-scan-date";
 
 const BENCHMARK_SYMBOL = "SPY";
 const BENCHMARK_EXCHANGE = "AMEX";
@@ -278,7 +279,7 @@ export default function IndustryGroupExplorer() {
                 {selectedGroup && ratingsData && (
                   <div className="text-[10px] text-slate-500 px-1">
                     {ratingsData.ratings.length} members · ranked as of{" "}
-                    {ratingsData.computedAt}
+                    {formatScanDate(ratingsData.computedAt)}
                   </div>
                 )}
               </div>
