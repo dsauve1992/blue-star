@@ -34,6 +34,9 @@ jobs:
       - name: Lint code
         run: npm run lint
 
+      - name: Fail if lint auto-fixed anything
+        run: git diff --exit-code
+
       - name: Type check
         run: npm run check-types
 
