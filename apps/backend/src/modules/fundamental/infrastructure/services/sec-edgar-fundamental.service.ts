@@ -90,6 +90,7 @@ const YEAR_MIN_DAYS = 350;
 const YEAR_MAX_DAYS = 380;
 const CONSECUTIVE_YEAR_MAX_GAP_DAYS = 7;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
+const SEC_TIMEOUT_MS = 15_000;
 
 @Injectable()
 export class SecEdgarFundamentalService implements FundamentalService {
@@ -319,7 +320,10 @@ export class SecEdgarFundamentalService implements FundamentalService {
   }
 
   private secFetch(url: string): Promise<Response> {
-    return fetch(url, { headers: { 'User-Agent': this.userAgent } });
+    return fetch(url, {
+      headers: { 'User-Agent': this.userAgent },
+      signal: AbortSignal.timeout(SEC_TIMEOUT_MS),
+    });
   }
 
   private periodValues(
