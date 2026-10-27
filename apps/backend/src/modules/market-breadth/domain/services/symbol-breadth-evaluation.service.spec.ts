@@ -42,27 +42,40 @@ function result(overrides: Partial<SymbolDayResult>): SymbolDayResult {
 }
 
 describe('evaluateSymbolOnDate', () => {
-  it('excludes symbols with fewer than 252 prior sessions', () => {
-    const candles = buildCandles(REQUIRED_TRAILING_SESSIONS);
+  it('does not flag 52-week highs or lows for symbols with fewer than 252 prior sessions', () => {
+    const candles = buildCandles(REQUIRED_TRAILING_SESSIONS, {
+      [REQUIRED_TRAILING_SESSIONS - 1]: { high: 1000, low: 1 },
+    });
     const result = evaluateSymbolOnDate(
       candles,
       REQUIRED_TRAILING_SESSIONS - 1,
     );
+    expect(result.evaluable).toBe(true);
+    expect(result.newHigh).toBe(false);
+    expect(result.newLow).toBe(false);
+    expect(result.newHigh20).toBe(true);
+    expect(result.newLow20).toBe(true);
+  });
+
+  it('evaluates stacked and 20-day highs for a young symbol on a rising series', () => {
+    const rising = buildCandles(100, {}, (i) => 100 + i);
+    const result = evaluateSymbolOnDate(rising, 99);
     expect(result).toEqual({
-      evaluable: false,
+      evaluable: true,
       newHigh: false,
       newLow: false,
-      newHigh20: false,
-      newLow20: false,
-      stacked: false,
+      newHigh20: true,
+      newLow20: true,
+      stacked: true,
     });
   });
 
-  it('is not evaluable for stacked either when below 252 prior sessions, even on a rising series', () => {
-    const rising = buildCandles(REQUIRED_TRAILING_SESSIONS, {}, (i) => 100 + i);
-    const result = evaluateSymbolOnDate(rising, REQUIRED_TRAILING_SESSIONS - 1);
-    expect(result.evaluable).toBe(false);
-    expect(result.stacked).toBe(false);
+  it('is not evaluable below a full 50-bar trend window', () => {
+    expect(evaluateSymbolOnDate(buildCandles(49), 48).evaluable).toBe(false);
+  });
+
+  it('is evaluable with exactly 50 bars', () => {
+    expect(evaluateSymbolOnDate(buildCandles(50), 49).evaluable).toBe(true);
   });
 
   it('is evaluable with exactly 252 prior sessions', () => {
@@ -173,13 +186,6 @@ describe('evaluateSymbolOnDate', () => {
       (i) => 100 + i,
     );
     const result = evaluateSymbolOnDate(rolledOver, REQUIRED_TRAILING_SESSIONS);
-    expect(result.stacked).toBe(false);
-  });
-
-  it('is evaluable but not stacked when a short window leaves fewer than 50 closes', () => {
-    const rising = buildCandles(20, {}, (i) => 100 + i);
-    const result = evaluateSymbolOnDate(rising, 19, 10);
-    expect(result.evaluable).toBe(true);
     expect(result.stacked).toBe(false);
   });
 

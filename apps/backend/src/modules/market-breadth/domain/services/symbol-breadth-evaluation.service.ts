@@ -42,12 +42,15 @@ export function evaluateSymbolOnDate(
   indexOfD: number,
   window: number = REQUIRED_TRAILING_SESSIONS,
 ): Readonly<SymbolDayResult> {
-  if (indexOfD < window || indexOfD >= candles.length) {
+  if (indexOfD < TREND_SMA_PERIOD - 1 || indexOfD >= candles.length) {
     return NOT_EVALUABLE;
   }
 
   const today = candles[indexOfD];
-  const { newHigh, newLow } = evaluateNewHighNewLow(candles, indexOfD, window);
+  const { newHigh, newLow } =
+    indexOfD >= window
+      ? evaluateNewHighNewLow(candles, indexOfD, window)
+      : { newHigh: false, newLow: false };
   const shortTerm = evaluateNewHighNewLow(
     candles,
     indexOfD,

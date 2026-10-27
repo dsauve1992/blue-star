@@ -137,6 +137,30 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
     expect(savedAggregates.every((a) => a.universeSize === 2)).toBe(true);
   });
 
+  it('counts a young symbol in the universe and its stacked state', async () => {
+    universeService.fetchUniverse.mockResolvedValue({
+      scan_date: '2026-08-31',
+      universe_size: 3,
+      symbols: ['AAPL', 'MSFT', 'NEWCO'],
+    });
+    marketDataService.getHistoricalData.mockImplementation((symbol) =>
+      Promise.resolve({
+        symbol,
+        dateRange: FAKE_DATE_RANGE,
+        pricePoints:
+          symbol.value === 'NEWCO' ? risingCandles.slice(-120) : candles,
+      }),
+    );
+
+    await service.runDaily();
+
+    const savedAggregates = repository.saveAggregate.mock.calls.map(
+      (call) => call[0],
+    );
+    expect(savedAggregates.every((a) => a.universeSize === 3)).toBe(true);
+    expect(savedAggregates.every((a) => a.stackedCount === 1)).toBe(true);
+  });
+
   it('marks missing symbols and flags the run partial above the 5% threshold', async () => {
     universeService.fetchUniverse.mockResolvedValue({
       scan_date: '2026-08-31',
