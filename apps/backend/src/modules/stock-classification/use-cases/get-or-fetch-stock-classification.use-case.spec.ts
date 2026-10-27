@@ -83,13 +83,25 @@ describe('GetOrFetchStockClassificationUseCase', () => {
     expect(classifier.classify).not.toHaveBeenCalled();
   });
 
-  it('keeps the cached row when the classifier returns an empty industryKey', async () => {
+  it('re-stamps the cached row when the classifier returns an empty industryKey so the next retry waits another window', async () => {
     const cached = cachedRow({ ageMs: 25 * HOUR_MS });
     repository.findByTicker.mockResolvedValue(cached);
     classifierReturns({});
 
-    await expect(useCase.execute('AAPL')).resolves.toBe(cached);
-    expect(repository.save).not.toHaveBeenCalled();
+    await useCase.execute('AAPL');
+
+    expect(repository.save).toHaveBeenCalledTimes(1);
+    const saved = repository.save.mock.calls[0][0];
+    expect(saved.sector).toBe(cached.sector);
+    expect(saved.industry).toBe(cached.industry);
+    expect(Date.now() - saved.classifiedAt.getTime()).toBeLessThan(1000);
+
+    repository.findByTicker.mockResolvedValue(saved);
+    classifier.classify.mockClear();
+
+    await useCase.execute('AAPL');
+
+    expect(classifier.classify).not.toHaveBeenCalled();
   });
 
   it('saves an empty classification when nothing is cached', async () => {

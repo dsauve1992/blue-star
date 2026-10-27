@@ -70,7 +70,15 @@ export class GetOrFetchStockClassificationUseCase {
   ): Promise<StockClassification> {
     const raw = await this.classifier.classify(normalized);
     if (cached && !raw.industryKey) {
-      return cached;
+      const retried = StockClassification.create({
+        ticker: normalized,
+        sector: cached.sector,
+        industry: cached.industry,
+        industryKey: cached.industryKey,
+        industryGroup: cached.industryGroup,
+      });
+      await this.repository.save(retried);
+      return retried;
     }
     const industryGroup = mapIndustryKeyToGroup(raw.industryKey);
     if (raw.industryKey && !industryGroup) {
