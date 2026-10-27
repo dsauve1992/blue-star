@@ -2,9 +2,11 @@ import { Inject, Injectable } from '@nestjs/common';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
-import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
-import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
-import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
+import {
+  MARKET_DATA_SERVICE,
+  PricePoint,
+  type MarketDataService,
+} from '../../../market-data/market-data.module';
 import { EMACalculator } from '../../../../shared/utils/ema-calculator';
 import {
   BreakoutDetectionResult,

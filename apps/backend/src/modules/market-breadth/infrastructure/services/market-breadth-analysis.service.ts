@@ -19,10 +19,12 @@ import {
   MARKET_BREADTH_MARKET_DATA_SERVICE,
   MARKET_BREADTH_UNIVERSE_SERVICE,
 } from '../../constants/tokens';
-import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
+import {
+  PricePoint,
+  type MarketDataService,
+} from '../../../market-data/market-data.module';
 import { DateRange } from '../../../../shared/value-objects/date-range';
 import { Symbol } from '../../../../shared/value-objects/symbol';
-import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
 
 export const RECOMPUTE_SESSIONS = 5;
 export const DAILY_CANDLE_LOOKBACK_DAYS = 400;

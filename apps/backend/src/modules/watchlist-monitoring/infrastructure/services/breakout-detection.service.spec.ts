@@ -3,12 +3,12 @@ import { BreakoutDetectionServiceImpl } from './breakout-detection.service';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
-import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
-import type {
-  HistoricalData,
-  MarketDataService,
-} from '../../../market-data/domain/services/market-data.service';
-import { MARKET_DATA_SERVICE } from '../../../market-data/constants/tokens';
+import {
+  MARKET_DATA_SERVICE,
+  PricePoint,
+  type HistoricalData,
+  type MarketDataService,
+} from '../../../market-data/market-data.module';
 
 describe('BreakoutDetectionServiceImpl', () => {
   let service: BreakoutDetectionServiceImpl;

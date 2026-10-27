@@ -22,7 +22,7 @@ import {
   SECTOR_ROTATION_PERSISTENCE_SERVICE,
 } from './constants/tokens';
 import { MarketDataModule } from '../market-data/market-data.module';
-import { CACHED_MARKET_DATA_SERVICE } from '../market-data/constants/tokens';
+import { CACHED_MARKET_DATA_SERVICE } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
 
 export {

@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import type { MarketDataService } from '../../market-data/domain/services/market-data.service';
+import type { MarketDataService } from '../../market-data/market-data.module';
 import { Symbol } from '../../../shared/value-objects/symbol';
 import { DateRange } from '../../../shared/value-objects/date-range';
 import type { MarketHealthRepository } from '../domain/repositories/market-health.repository.interface';

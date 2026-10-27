@@ -1,9 +1,11 @@
 import { ComputeMarketHealthUseCase } from './compute-market-health.use-case';
-import type { MarketDataService } from '../../market-data/domain/services/market-data.service';
+import {
+  PricePoint,
+  type MarketDataService,
+} from '../../market-data/market-data.module';
 import type { MarketHealthRepository } from '../domain/repositories/market-health.repository.interface';
 import type { MarketHealth } from '../domain/entities/market-health.entity';
 import { MarketHealthStatusValue } from '../domain/value-objects/market-health-status';
-import { PricePoint } from '../../market-data/domain/value-objects/price-point';
 
 describe('ComputeMarketHealthUseCase', () => {
   let useCase: ComputeMarketHealthUseCase;

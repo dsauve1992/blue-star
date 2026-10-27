@@ -25,6 +25,11 @@ export {
   MARKET_DATA_CACHE_REPOSITORY,
   CACHED_MARKET_DATA_SERVICE,
 };
+export type {
+  MarketDataService,
+  HistoricalData,
+} from './domain/services/market-data.service';
+export { PricePoint } from './domain/value-objects/price-point';
 
 @Module({
   imports: [DatabaseModule, StockClassificationModule],
