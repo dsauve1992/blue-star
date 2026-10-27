@@ -1,10 +1,10 @@
 import { DateRange } from '../../../../shared/value-objects/date-range';
-import { PricePoint } from '../../../market-data/domain/value-objects/price-point';
 import { Symbol } from '../../../../shared/value-objects/symbol';
-import type {
-  HistoricalData,
-  MarketDataService,
-} from '../../../market-data/domain/services/market-data.service';
+import {
+  PricePoint,
+  type HistoricalData,
+  type MarketDataService,
+} from '../../../market-data/market-data.module';
 import { RotationMember } from '../../domain/value-objects/rotation-member';
 import { RotationUniverse } from '../../domain/value-objects/rotation-universe';
 import { ZScoreNormalizer } from './z-score-normalizer.service';

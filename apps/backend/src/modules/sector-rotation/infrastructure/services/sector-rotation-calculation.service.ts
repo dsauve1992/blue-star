@@ -1,7 +1,7 @@
 import { Injectable, Inject, Logger } from '@nestjs/common';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
-import type { MarketDataService } from '../../../market-data/domain/services/market-data.service';
+import type { MarketDataService } from '../../../market-data/market-data.module';
 import {
   SectorRotationCalculationService,
   SectorRotationCalculationParams,
