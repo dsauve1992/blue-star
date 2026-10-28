@@ -21,6 +21,11 @@ export class MomentumLeadersComputationServiceImpl
 
   async computeMomentumLeaders(): Promise<void> {
     const scan = await this.screenerService.fetchMomentumLeaders();
+    if (scan.leaders.length === 0) {
+      throw new Error(
+        `Momentum leaders scan returned no leaders (universe size ${scan.universeSize})`,
+      );
+    }
     const scanDate = new Date(scan.scanDate);
 
     const leaders = scan.leaders.map((result) =>
