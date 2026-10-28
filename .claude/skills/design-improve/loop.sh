@@ -10,7 +10,7 @@ ALLOWED_TOOLS=(
   "Read" "Edit" "Write" "Glob" "Grep" "Skill"
   "Bash(gh issue:*)" "Bash(gh project:*)" "Bash(gh label:*)"
   "Bash(git:*)" "Bash(npm:*)" "Bash(npx:*)" "Bash(node:*)"
-  "Bash(ffmpeg:*)" "Bash(lsof:*)" "Bash(kill:*)" "Bash(docker ps:*)"
+  "Bash(ffmpeg:*)" "Bash(lsof:*)" "Bash(kill:*)" "Bash(docker ps:*)" "Bash(docker exec:*)"
   "Bash(cp:*)" "Bash(mkdir:*)" "Bash(ls:*)" "Bash(cat:*)" "Bash(grep:*)"
 )
 

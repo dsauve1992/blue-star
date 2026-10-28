@@ -74,7 +74,7 @@ Not applicable, no video and no placeholder: `architecture`, `devops`, `refactor
 
 Recording:
 
-1. Reproduce through the `run` skill's app with Playwright and the saved session. Write the script under the scratchpad, never in the repo, with `recordVideo: { dir, size: { width: 1440, height: 900 } }` (use 390x844 for a mobile problem) and `slowMo: 400`. Walk the exact flow: navigate, pause 1-2 s on the area, perform the interaction, pause on the wrong result. Keep it 10-30 s.
+1. Reproduce through the `run` skill's app (your row of "Local app ports") with Playwright and the saved session. Write the script under the scratchpad, never in the repo, with `recordVideo: { dir, size: { width: 1440, height: 900 } }` (use 390x844 for a mobile problem) and `slowMo: 400`. Walk the exact flow: navigate, pause 1-2 s on the area, perform the interaction, pause on the wrong result. Keep it 10-30 s.
 2. Convert it:
 
    ```bash
@@ -85,6 +85,19 @@ Recording:
    Keep the GIF under ~8 MB (lower fps or width if needed).
 3. Commit `problem.gif` and `problem.mp4` to branch `qa-media/proposals` under `docs/qa/proposals/<slug>/` from a temporary worktree of that branch (push that branch, never `main`). Embed the GIF inline in the Problem section through its `https://raw.githubusercontent.com/dsauve1992/blue-star/qa-media/proposals/docs/qa/proposals/<slug>/problem.gif` URL and link the mp4.
 4. In Verification, name the flow to replay and what it must show once fixed.
+
+## Local app ports
+
+Kinde allows only explicit frontend callback and logout URLs (no port wildcard), so every skill that starts the app owns one fixed row below and never uses another. `5173` / `3000` / `blue_star_db` stay the user's own dev session. The `run` skill's "Stage environments" section has the commands.
+
+| Skill | Frontend | Backend | Database |
+|---|---|---|---|
+| `design-improve` | 5174 | 6174 | `blue_star_design_improve` |
+| `fix-one-thing` | 5175 | 6175 | `blue_star_fix_one_thing` |
+| `implement-next` | 5176 | 6176 | `blue_star_implement` |
+| `pr-review` | 5177 | 6177 | `blue_star_review` |
+
+`triage-ticket`, `architect-review` and `devops-review` never start the app. If a port in your row is already taken, stop and report; never kill the owner and never move to another port.
 
 ## Agent workflow contract
 

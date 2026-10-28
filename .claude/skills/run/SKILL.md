@@ -82,9 +82,10 @@ interfaces and Vite binds `[::1]`. Consequences:
   `lsof -nP -iTCP:3000 -iTCP:5173 -sTCP:LISTEN` before launching, and note
   which process owns what.
 - Don't kill the other project's dev servers.
-- **The backend can use any free port. The frontend must stay on 5173.** Kinde's
-  callback/logout URLs allow only `http://localhost:5173` (no port wildcard), so
-  login fails on any other frontend port.
+- **The backend can use any free port. The frontend must stay on an allowed
+  port:** 5173 for the user, or the stage's row in `kanban-board` "Local app
+  ports" for an agent. Kinde's callback/logout URLs list those ports explicitly
+  (no port wildcard), so login fails on any other frontend port.
 - Run the backend on a free port, point the frontend at it via **`127.0.0.1`,
   not `localhost`** (browsers and curl resolve `localhost` to `::1` first and
   would hit the other app), and set `FRONTEND_URL` so CORS allows the frontend
@@ -120,6 +121,26 @@ with `docker exec` as usual (it uses the container's internal 5432).
 - Probe the backend at `http://127.0.0.1:<port>`, the frontend at
   `http://localhost:5173` (Vite listens on `[::1]` only, so `127.0.0.1:5173`
   refuses connections).
+
+## Stage environments
+
+A skill started by a stage runs the app on its own row of `kanban-board` "Local app ports" (`FE`, `BE`, `DB` below), never on 5173, 3000 or `blue_star_db`, so stages and the user's own session can run side by side without sharing ports or data. Skip the standard launch above and use this instead, from the worktree:
+
+```bash
+FE=5174 BE=6174 DB=blue_star_design_improve   # your row
+lsof -nP -iTCP:$FE -iTCP:$BE -sTCP:LISTEN     # both must print nothing, else stop and report
+docker exec blue-star-postgres psql -U blue_star_user -d postgres \
+  -c "DROP DATABASE IF EXISTS $DB WITH (FORCE)" -c "CREATE DATABASE $DB"
+docker exec blue-star-postgres sh -c \
+  "pg_dump -U blue_star_user blue_star_db | psql -q -U blue_star_user -d $DB"
+export DB_DATABASE=$DB                        # every shell that touches the DB
+npm run migrate:up --workspace=backend        # applies this branch's migrations to the copy only
+PORT=$BE FRONTEND_URL=http://localhost:$FE npm run dev --workspace=backend
+VITE_API_URL=http://127.0.0.1:$BE/api npm run dev --workspace=frontend -- --port $FE --strictPort
+APP_URL=http://localhost:$FE node .claude/skills/run/login.mjs
+```
+
+The database is a fresh copy of the user's `blue_star_db` on every run, so a migration or a test write in one stage never reaches the user's data or another stage. Drop it with `DROP DATABASE ... WITH (FORCE)` when you clean up. The `DB_HOST=localhost` and container checks above still apply. The ntfy startup push fires on every backend boot, so boot once per run.
 
 ## Smoke tests (drive it, don't just launch it)
 
