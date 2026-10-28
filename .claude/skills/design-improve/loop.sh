@@ -4,11 +4,11 @@ set -uo pipefail
 ITERATIONS="${1:-3}"
 REPO="$(cd "$(dirname "$0")/../../.." && pwd)"
 LOG_DIR="${LOG_DIR:-$REPO/../blue-star-worktrees/designer-logs}"
-MAX_OPEN_PRS=10
+MAX_BACKLOG=20
 
 ALLOWED_TOOLS=(
   "Read" "Edit" "Write" "Glob" "Grep" "Skill"
-  "Bash(gh pr list:*)" "Bash(gh pr create:*)" "Bash(gh pr view:*)"
+  "Bash(gh issue:*)" "Bash(gh project:*)" "Bash(gh label:*)"
   "Bash(git:*)" "Bash(npm:*)" "Bash(npx:*)" "Bash(node:*)"
   "Bash(ffmpeg:*)" "Bash(lsof:*)" "Bash(kill:*)" "Bash(docker ps:*)"
   "Bash(cp:*)" "Bash(mkdir:*)" "Bash(ls:*)" "Bash(cat:*)" "Bash(grep:*)"
@@ -17,18 +17,18 @@ ALLOWED_TOOLS=(
 mkdir -p "$LOG_DIR"
 cd "$REPO"
 
-open_designer_prs() {
-  gh pr list --repo dsauve1992/blue-star --state open --search "head:designer/" \
-    --json number --jq length
+backlog_size() {
+  gh project item-list 3 --owner dsauve1992 --limit 200 --format json \
+    --jq '[.items[] | select(.status=="Backlog")] | length'
 }
 
 for i in $(seq 1 "$ITERATIONS"); do
-  if ! open=$(open_designer_prs); then
-    echo "Stopping: gh could not list PRs (run 'gh auth login')."
+  if ! backlog=$(backlog_size); then
+    echo "Stopping: gh could not read the board (run 'gh auth login' and check the project scope)."
     exit 1
   fi
-  if [ "$open" -ge "$MAX_OPEN_PRS" ]; then
-    echo "Stopping: $open designer PRs open (limit $MAX_OPEN_PRS). Merge or close some first."
+  if [ "$backlog" -ge "$MAX_BACKLOG" ]; then
+    echo "Stopping: $backlog tickets in Backlog (limit $MAX_BACKLOG). Triage or close some first."
     exit 0
   fi
 

@@ -9,6 +9,8 @@ Executes exactly one approved ticket per run. Load `kanban-board` first.
 
 ## Steps
 
+If you were given an issue number, that ticket is already claimed and `In progress`: skip steps 1 and 2 and the board move in step 3, keep the worktree, and work on that issue only.
+
 1. **Check for work in flight.** If any ticket is already `In progress`, stop and report it; do not start another.
 2. **Pick the ticket.** Items with Status `Ready`, ordered by Priority (P0 first), then oldest. If none, report "nothing ready" and stop.
 3. **Claim it.** Move it to `In progress`, then work in a dedicated worktree so the main checkout, which the user may be using, is never touched (no `git switch`/`checkout` there):
