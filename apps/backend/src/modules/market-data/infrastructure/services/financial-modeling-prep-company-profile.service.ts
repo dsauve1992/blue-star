@@ -6,6 +6,8 @@ import {
 } from '../../domain/services/company-profile.service';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 
+const FMP_TIMEOUT_MS = 10_000;
+
 interface FmpProfileResponse {
   symbol: string;
   sector: string;
@@ -40,7 +42,9 @@ export class FinancialModelingPrepCompanyProfileService
     const url = `${this.baseUrl}/profile?symbol=${tickerOnly}&apikey=${this.apiKey}`;
 
     try {
-      const response = await fetch(url);
+      const response = await fetch(url, {
+        signal: AbortSignal.timeout(FMP_TIMEOUT_MS),
+      });
 
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -63,7 +67,10 @@ export class FinancialModelingPrepCompanyProfileService
         industry: profile.industry,
       };
     } catch (error) {
-      throw new Error(`Failed to fetch company profile: ${error}`);
+      const message = error instanceof Error ? error.message : String(error);
+      throw new Error(`Failed to fetch company profile: ${message}`, {
+        cause: error,
+      });
     }
   }
 }
