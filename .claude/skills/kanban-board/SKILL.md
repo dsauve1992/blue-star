@@ -10,6 +10,8 @@ Status options: `Backlog`, `Ready`, `In progress`, `In review`, `Done`. Other fi
 
 Who moves what: proposers create tickets in `Backlog`; the user drags to `Ready`; `implement-next` moves `Ready` -> `In progress` -> `In review`; the user merges and moves to `Done`. Never move a ticket out of a column you do not own.
 
+Backlog cap: **60**. A proposer that counts 60 or more items in `Backlog` reports the count and files nothing.
+
 Look IDs up at runtime, never hardcode them:
 
 ```bash
@@ -31,12 +33,12 @@ set_field(){ local item=$1 field=$2 opt=$3
 Create a ticket in Backlog (new items already land in Backlog; setting it explicitly is harmless). Write the body with a heredoc into a file first, never an unfed `cat >`:
 
 ```bash
-URL=$(gh issue create --repo dsauve1992/blue-star --title "$TITLE" --body-file "$BODY_FILE" --label agent-proposed --label "$CATEGORY_LABEL")
+URL=$(gh issue create --repo dsauve1992/blue-star --title "$TITLE" --body-file "$BODY_FILE" --label agent-proposed --label "proposer:$ROLE" --label "$CATEGORY_LABEL")
 ITEM_ID=$(gh project item-add 3 --owner dsauve1992 --url "$URL" --format json --jq .id)
 set_field "$ITEM_ID" Status Backlog; set_field "$ITEM_ID" Priority P2; set_field "$ITEM_ID" Size S
 ```
 
-Create the `agent-proposed` label once if missing: `gh label create agent-proposed --color 5319e7 2>/dev/null || true`.
+`ROLE` is the proposer's role, which tells later runs who filed a ticket: `designer` (`design-improve`), `bug-finder` (`fix-one-thing`), `architect` (`architect-review`) or `devops` (`devops-review`). Create the labels once if missing: `gh label create agent-proposed --color 5319e7 2>/dev/null || true`, and `gh label create "proposer:$ROLE" --color c5def5 2>/dev/null || true`.
 
 List items by status:
 

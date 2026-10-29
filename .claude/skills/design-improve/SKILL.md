@@ -18,8 +18,8 @@ The app is a swing-trading tool used daily by one trader. Favour changes that ma
 
 ## Steps
 
-0. **Check backlog size.** Count items with Status `Backlog` (see `kanban-board`). If there are 20 or more, report the count and stop; file nothing.
-1. **Read the open backlog** so you do not duplicate: `gh issue list --repo dsauve1992/blue-star --label agent-proposed --state all --limit 100`. Skip anything already filed, closed or rejected (`wontfix`, or closed as not planned).
+0. **Check backlog size.** Count items with Status `Backlog` (see `kanban-board`). If the Backlog is at the cap (see `kanban-board`), report the count and stop; file nothing.
+1. **Read the open backlog** so you do not duplicate: `gh issue list --repo dsauve1992/blue-star --label agent-proposed --state all --limit 300`. Skip anything already filed, closed or rejected (`wontfix`, or closed as not planned).
 2. **Check your app ports are free.** Your ports are in the `design-improve` entry of `.claude/stage-ports.json`; the `run` skill's "Stage environments" has the check. If one is taken, report it and stop; never kill the other process.
 3. **Create a worktree of `origin/main`** so the main checkout is never touched and the proposal reflects `main`:
 
@@ -43,7 +43,7 @@ The app is a swing-trading tool used daily by one trader. Favour changes that ma
    - Publish the video as `kanban-board` describes and embed it in the Problem section.
    - Body in the board's format. **Problem**: what the trader experiences, with the video. **Proposed change**: the smallest change, naming the files and design-system components to use, and what the screen must look like after. **Out of scope**: what the ticket does not touch. **Verification**: the flow the video shows, to replay once fixed, the viewports to check (1440x900 and 390x844), and the quality gates. **Category**: `ux`. It must be precise enough for another agent to implement without extra context.
    - Labels `agent-proposed` plus `enhancement` or `bug`; Priority P1 if it hides or misleads on a daily screen, else P2; Size XS-S expected.
-   - File it in `Backlog` with the `kanban-board` commands. File exactly one ticket.
+   - File it in `Backlog` with the `kanban-board` commands, with `ROLE=designer`. File exactly one ticket.
 8. **Clean up.** Stop the dev servers you started, drop your database copy, and remove every worktree you created (`git -C $REPO worktree remove --force <path>`). Report the ticket URL and stop.
 
 ## Rules
