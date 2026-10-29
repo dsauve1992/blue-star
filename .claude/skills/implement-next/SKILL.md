@@ -35,6 +35,7 @@ If you were given an issue number, that ticket is already claimed and `In progre
 
 - One ticket per run, one PR per ticket.
 - If the quality gates cannot be made to pass, leave the branch pushed, comment the failure on the issue, move the ticket back to `Ready`, and stop.
+- Before you stop, however the run ends, stop every builder or critic subagent still running (`TaskStop`). Friday closes your pane only once your session is idle, and a lingering subagent keeps it busy.
 - Never push to `main` and never force-push.
 - Never run `git switch`, `checkout`, `reset` or `stash` in the main checkout (`$REPO`). If a stage fails, still remove the worktree, unless the branch has unpushed commits: push the branch first.
 - Start the app only through the `run` skill's "Stage environments", with the ports and database in the `implement-next` entry of `.claude/stage-ports.json`. If the app still cannot start, treat it as a failed QA step, not a reason to stop the other process.
