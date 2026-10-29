@@ -1,20 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { join, resolve } from 'path';
-import { existsSync } from 'node:fs';
 import {
   RawStockClassification,
   StockClassifierService,
 } from '../../domain/services/stock-classifier.service';
-
-const execAsync = promisify(exec);
-
-interface ExecException extends Error {
-  code?: number;
-  stdout?: string;
-  stderr?: string;
-}
+import {
+  PythonScriptError,
+  PythonScriptRunner,
+} from '../../../../shared/services/python-script-runner';
 
 interface ClassifierJsonResponse {
   ticker: string;
@@ -26,41 +18,7 @@ interface ClassifierJsonResponse {
 @Injectable()
 export class PythonStockClassifierService implements StockClassifierService {
   private readonly logger = new Logger(PythonStockClassifierService.name);
-  private readonly classifierPath: string;
-  private readonly classifierDir: string;
-  private readonly pythonExecutable: string;
-
-  constructor() {
-    const backendDir = process.cwd();
-    const workspaceRoot = resolve(backendDir, '..');
-    this.classifierDir = resolve(workspaceRoot, 'screener');
-    this.classifierPath = join(this.classifierDir, 'classifier.py');
-
-    if (!existsSync(this.classifierPath)) {
-      throw new Error(
-        `Python classifier script not found at ${this.classifierPath}. Please ensure the screener venv is set up.`,
-      );
-    }
-
-    const venvPython = join(this.classifierDir, 'venv', 'bin', 'python3');
-    const venvPythonWindows = join(
-      this.classifierDir,
-      'venv',
-      'Scripts',
-      'python.exe',
-    );
-
-    if (existsSync(venvPython)) {
-      this.pythonExecutable = venvPython;
-    } else if (existsSync(venvPythonWindows)) {
-      this.pythonExecutable = venvPythonWindows;
-    } else {
-      this.pythonExecutable = 'python3';
-      this.logger.warn(
-        `Python venv not found at ${venvPython}. Using system python3.`,
-      );
-    }
-  }
+  private readonly runner = new PythonScriptRunner('screener', 'classifier.py');
 
   async classify(ticker: string): Promise<RawStockClassification> {
     const safeTicker = ticker.trim().toUpperCase();
@@ -68,24 +26,20 @@ export class PythonStockClassifierService implements StockClassifierService {
       throw new Error(`Invalid ticker for classifier: ${ticker}`);
     }
 
-    const command = `${this.pythonExecutable} ${this.classifierPath} ${safeTicker}`;
-
     let stdout: string;
     try {
-      const result = await execAsync(command, {
-        cwd: this.classifierDir,
-        maxBuffer: 1 * 1024 * 1024,
-        timeout: 30000,
-        env: { ...process.env, PYTHONUNBUFFERED: '1' },
+      const result = await this.runner.run([safeTicker], {
+        timeoutMs: 30000,
+        maxBufferBytes: 1024 * 1024,
       });
       stdout = result.stdout;
     } catch (execError: unknown) {
-      const error = execError as ExecException;
+      if (!(execError instanceof PythonScriptError)) throw execError;
       this.logger.error(
-        `Classifier exec failed for ${safeTicker}: ${error.message}; stderr=${error.stderr ?? ''}`,
+        `Classifier exec failed for ${safeTicker}: ${execError.message}; stderr=${execError.stderr}`,
       );
       throw new Error(
-        `Python classifier failed for ${safeTicker}: ${error.message}`,
+        `Python classifier failed for ${safeTicker}: ${execError.message}`,
       );
     }
 
