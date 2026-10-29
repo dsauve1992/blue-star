@@ -38,6 +38,6 @@ Challengers read the code and the diff, never edit anything, and must back each 
 - The moderator never edits code and never overrules a role. If a role returns something malformed (no stance line), rerun that role once; if it fails again treat it as `OBJECT` and let the cap handle it.
 - The defender may refuse; a refusal stands when the challenger replies `STANCE: APPROVE` to it. A challenger may not approve "to be done" with an objection it still believes: that is `needs-human` material.
 - Deferred work always becomes a real ticket before the defender's `DEFER-TO-TICKET` stance is accepted; a promise to do it later is `OBJECT`.
-- A role that needs to run the PR's app does so only through the `run` skill's "Stage environments" with the `pr-review` row of `kanban-board` "Local app ports", from the review worktree, and the moderator stops those servers and drops that database copy before merging or stopping.
+- A role that needs to run the PR's app does so only through the `run` skill's "Stage environments" as stage `pr-review`, from the review worktree, and the moderator stops those servers and drops that database copy before merging or stopping.
 - Never touch deployment. Merging to `main` is the end of this skill; `deploy` stays a manual user decision.
 - If `gh` fails with a missing-scope error, stop and report instead of working around it.

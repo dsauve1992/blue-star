@@ -20,7 +20,7 @@ The app is a swing-trading tool used daily by one trader. Favour changes that ma
 
 0. **Check backlog size.** Count items with Status `Backlog` (see `kanban-board`). If there are 20 or more, report the count and stop; file nothing.
 1. **Read the open backlog** so you do not duplicate: `gh issue list --repo dsauve1992/blue-star --label agent-proposed --state all --limit 100`. Skip anything already filed, closed or rejected (`wontfix`, or closed as not planned).
-2. **Check your app ports are free.** Use the `design-improve` row of `kanban-board` "Local app ports". If its frontend or backend port is taken, report it and stop; never kill the other process.
+2. **Check your app ports are free.** The `run` skill's "Stage environments", as stage `design-improve`, tells you which ports and how. If one is taken, report it and stop; never kill the other process.
 3. **Create a worktree of `origin/main`** so the main checkout is never touched and the proposal reflects `main`:
 
    ```bash
@@ -36,7 +36,7 @@ The app is a swing-trading tool used daily by one trader. Favour changes that ma
 
    Run every later command from `$WT`.
 
-4. **Start the app once** from `$WT` following the `run` skill's "Stage environments" with your row (verify `DB_HOST=localhost` and the Postgres container first). Every backend boot sends a push notification to the user's phone, so boot once per run and leave it up until the end. Log in with the `login.mjs` command from that section.
+4. **Start the app once** from `$WT` following the `run` skill's "Stage environments" as stage `design-improve` (verify `DB_HOST=localhost` and the Postgres container first). Boot once per run and leave it up until the end. Log in with the `login.mjs` command from that section.
 5. **Explore and choose.** With Playwright and the saved session, walk the main pages (dashboard, positions, watchlists, momentum leaders, sector rotation, market breadth) at 1440x900 and at 390x844. Take screenshots, look at real data states, try the main interactions. Load the `impeccable` skill for critique heuristics, but propose only one local fix. Pick the single change with the best value for its size, and write the problem down in one sentence. If nothing worth doing is found, report that, clean up (step 8) and stop.
 6. **Record the evidence video** of the problem happening, following `kanban-board` "Evidence video" (always a video here, never a bare screenshot; a still is only an addition). If you cannot reproduce the problem on screen, do not file it.
 7. **Write and file the ticket.**

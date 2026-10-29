@@ -83,9 +83,10 @@ interfaces and Vite binds `[::1]`. Consequences:
   which process owns what.
 - Don't kill the other project's dev servers.
 - **The backend can use any free port. The frontend must stay on an allowed
-  port:** 5173 for the user, or the stage's row in `kanban-board` "Local app
-  ports" for an agent. Kinde's callback/logout URLs list those ports explicitly
-  (no port wildcard), so login fails on any other frontend port.
+  port:** 5173 for the user, or the stage's frontend port in
+  `.claude/stage-ports.json` for an agent. Kinde's callback/logout URLs list
+  those ports explicitly (no port wildcard), so login fails on any other
+  frontend port.
 - Run the backend on a free port, point the frontend at it via **`127.0.0.1`,
   not `localhost`** (browsers and curl resolve `localhost` to `::1` first and
   would hit the other app), and set `FRONTEND_URL` so CORS allows the frontend
@@ -124,10 +125,13 @@ with `docker exec` as usual (it uses the container's internal 5432).
 
 ## Stage environments
 
-A skill started by a stage runs the app on its own row of `kanban-board` "Local app ports" (`FE`, `BE`, `DB` below), never on 5173, 3000 or `blue_star_db`, so stages and the user's own session can run side by side without sharing ports or data. Skip the standard launch above and use this instead, from the worktree:
+A skill that starts the app on behalf of a stage (`design-improve`, `fix-one-thing`, `implement-next`, `pr-review`) uses that stage's entry in `.claude/stage-ports.json`: a frontend port, a backend port and a database name. It never uses 5173, 3000 or `blue_star_db`, so stages and the user's own session run side by side without sharing ports or data. Skip the standard launch above and use this instead, from the worktree:
 
 ```bash
-FE=5174 BE=6174 DB=blue_star_design_improve   # your row
+STAGE=design-improve                          # the skill you are running as
+FE=$(jq -r --arg s $STAGE '.[$s].frontend' .claude/stage-ports.json)
+BE=$(jq -r --arg s $STAGE '.[$s].backend' .claude/stage-ports.json)
+DB=$(jq -r --arg s $STAGE '.[$s].database' .claude/stage-ports.json)
 lsof -nP -iTCP:$FE -iTCP:$BE -sTCP:LISTEN     # both must print nothing, else stop and report
 docker exec blue-star-postgres psql -U blue_star_user -d postgres \
   -c "DROP DATABASE IF EXISTS $DB WITH (FORCE)" -c "CREATE DATABASE $DB"
@@ -140,7 +144,7 @@ VITE_API_URL=http://127.0.0.1:$BE/api npm run dev --workspace=frontend -- --port
 APP_URL=http://localhost:$FE node .claude/skills/run/login.mjs
 ```
 
-The database is a fresh copy of the user's `blue_star_db` on every run, so a migration or a test write in one stage never reaches the user's data or another stage. Drop it with `DROP DATABASE ... WITH (FORCE)` when you clean up. The `DB_HOST=localhost` and container checks above still apply. `NOTIFICATIONS_ENABLED=false` keeps a stage backend from pushing to the user's phone, and `CRON_ENABLED=false` keeps it from running the scheduled jobs (market-data analyses and the 5-minute watchlist monitor), which would otherwise hit external APIs and write to the copy. The user's own dev session sets neither and behaves as before.
+If a value prints `null`, the stage has no entry: stop and report. If a port is taken, stop and report; never kill the owner and never use another port. One stage runs one app at a time, so compare "before" and "after" one after the other, not side by side. The database is a fresh copy of the user's `blue_star_db` on every run, so a migration or a test write in one stage never reaches the user's data or another stage. Drop it with `DROP DATABASE ... WITH (FORCE)` when you clean up. The `DB_HOST=localhost` and container checks above still apply. `NOTIFICATIONS_ENABLED=false` keeps a stage backend from pushing to the user's phone, and `CRON_ENABLED=false` keeps it from running the scheduled jobs (market-data analyses and the 5-minute watchlist monitor), which would otherwise hit external APIs and write to the copy. The user's own dev session sets neither and behaves as before.
 
 ## Smoke tests (drive it, don't just launch it)
 
