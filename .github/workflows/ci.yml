@@ -135,6 +135,18 @@ jobs:
           retention-days: 7
           compression-level: 6
 
+  frontend-image-build:
+    name: Frontend Image Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Build frontend image
+        run: docker build -f apps/frontend/Dockerfile -t blue-star-frontend:ci .
+
   backend-image-smoke:
     name: Backend Image Smoke
     runs-on: ubuntu-latest
