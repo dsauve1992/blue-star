@@ -12,21 +12,21 @@ Who moves what: proposers create tickets in `Backlog`; the user drags to `Ready`
 
 Backlog cap: **60**. A proposer that counts 60 or more items in `Backlog` reports the count and files nothing.
 
-Look IDs up at runtime, never hardcode them:
+GitHub allows 5,000 GraphQL points an hour, shared by every agent and the user. Listing the whole board costs about 80 points, so never list it to find one ticket. Look IDs up at runtime, never hardcode them, and fetch the field metadata once per session:
 
 ```bash
 PROJECT_ID=$(gh project view 3 --owner dsauve1992 --format json --jq .id)
-gh project field-list 3 --owner dsauve1992 --format json \
-  --jq '.fields[] | select(.name=="Status" or .name=="Priority" or .name=="Size") | {name, id, options: [.options[] | {name, id}]}'
+FIELDS=$(gh project field-list 3 --owner dsauve1992 --format json)
 ```
 
-Helper (works in bash and zsh) to set a single-select field by names:
+Helpers (work in bash and zsh). `item_of` finds a ticket's project item with one cheap query; `set_field` sets a single-select field by names from the cached `$FIELDS`:
 
 ```bash
-PROJECT_ID=$(gh project view 3 --owner dsauve1992 --format json --jq .id)
+item_of(){ gh api graphql -F n="$1" -f query='query($n:Int!){repository(owner:"dsauve1992",name:"blue-star"){issue(number:$n){projectItems(first:10){nodes{id project{number}}}}}}' \
+  --jq '.data.repository.issue.projectItems.nodes[]|select(.project.number==3)|.id'; }
 set_field(){ local item=$1 field=$2 opt=$3
-  local fid=$(gh project field-list 3 --owner dsauve1992 --format json --jq ".fields[]|select(.name==\"$field\")|.id")
-  local oid=$(gh project field-list 3 --owner dsauve1992 --format json --jq ".fields[]|select(.name==\"$field\")|.options[]|select(.name==\"$opt\")|.id")
+  local fid=$(echo "$FIELDS" | jq -r ".fields[]|select(.name==\"$field\")|.id")
+  local oid=$(echo "$FIELDS" | jq -r ".fields[]|select(.name==\"$field\")|.options[]|select(.name==\"$opt\")|.id")
   gh project item-edit --project-id "$PROJECT_ID" --id "$item" --field-id "$fid" --single-select-option-id "$oid" >/dev/null; }
 ```
 
@@ -49,7 +49,9 @@ gh project item-list 3 --owner dsauve1992 --limit 200 --format json \
 
 Count the Backlog: pipe the list above with `select(.status=="Backlog")` into `jq -s length`.
 
-Move a ticket: `gh project item-edit` with the Status field ID and the target option ID (same call as above).
+Move a ticket: `set_field "$(item_of <number>)" Status "<column>"`. Check that the item ID is not empty before editing.
+
+Rate limits: if a `gh` call fails with "API rate limit exceeded", stop. Do not retry in a loop and do not poll the board; report the situation, leave the ticket as it is, and end the session. The stage is re-run after the limit resets.
 
 Ticket body format (proposers write it, `implement-next` consumes it - it must be self-contained):
 
