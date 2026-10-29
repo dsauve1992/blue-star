@@ -28,7 +28,7 @@ import { DomainErrorFilter } from './common/filters/domain-error.filter';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    ScheduleModule.forRoot(),
+    ...(process.env.CRON_ENABLED === 'false' ? [] : [ScheduleModule.forRoot()]),
     EventEmitterModule.forRoot(),
     DatabaseModule,
     MarketDataModule,
