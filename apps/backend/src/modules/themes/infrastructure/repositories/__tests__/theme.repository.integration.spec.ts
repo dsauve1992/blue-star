@@ -87,4 +87,33 @@ describe('ThemeRepository Integration', () => {
     const tickers = await repository.findTickersByThemeId(themeId);
     expect(tickers.map((t) => t.ticker)).toEqual(['OLD']);
   });
+
+  it('deletes only the themes not updated since the cutoff, with their tickers', async () => {
+    const staleId = randomUUID();
+    const longAgo = new Date('2020-01-01');
+    await repository.saveTheme(
+      ThemeEntity.of({
+        id: staleId,
+        name: 'Retired',
+        createdAt: longAgo,
+        updatedAt: longAgo,
+      }),
+    );
+    await repository.replaceThemeTickers(staleId, [makeTicker(staleId, 'OLD')]);
+    await repository.replaceThemeTickers(themeId, [
+      makeTicker(themeId, 'NVDA'),
+    ]);
+
+    const deleted = await repository.deleteThemesNotUpdatedSince(
+      new Date('2025-01-01'),
+    );
+
+    expect(deleted).toBe(1);
+    expect(await repository.findThemeByName('Retired')).toBeNull();
+    expect(await repository.findTickersByThemeId(staleId)).toEqual([]);
+    expect(await repository.findTickersByThemeId(themeId)).toHaveLength(1);
+    const byTicker = await repository.findThemesByTickers(['OLD', 'NVDA']);
+    expect(byTicker.has('OLD')).toBe(false);
+    expect(byTicker.has('NVDA')).toBe(true);
+  });
 });

@@ -18,6 +18,7 @@ describe('ThemeServiceImpl', () => {
       replaceThemeTickers: jest.fn().mockResolvedValue(undefined),
       findTickersByThemeId: jest.fn(),
       findThemesByTickers: jest.fn(),
+      deleteThemesNotUpdatedSince: jest.fn().mockResolvedValue(0),
     };
     extractor = { extractThemes: jest.fn() };
     service = new ThemeServiceImpl(
@@ -139,6 +140,7 @@ describe('ThemeServiceImpl', () => {
       /No themes refreshed/,
     );
     expect(repository.replaceThemeTickers).not.toHaveBeenCalled();
+    expect(repository.deleteThemesNotUpdatedSince).not.toHaveBeenCalled();
   });
 
   it('rethrows when the extractor fails', async () => {
@@ -148,5 +150,31 @@ describe('ThemeServiceImpl', () => {
       'python failed',
     );
     expect(repository.replaceThemeTickers).not.toHaveBeenCalled();
+  });
+
+  it('prunes themes not refreshed in the last 21 days', async () => {
+    jest.useFakeTimers().setSystemTime(new Date('2026-03-22T00:00:00Z'));
+    extractor.extractThemes.mockResolvedValue([
+      { theme: 'AI', tickers: ['nvda'] },
+    ] as never);
+
+    try {
+      await service.extractAndSaveThemes();
+    } finally {
+      jest.useRealTimers();
+    }
+
+    expect(repository.deleteThemesNotUpdatedSince).toHaveBeenCalledTimes(1);
+    expect(repository.deleteThemesNotUpdatedSince).toHaveBeenCalledWith(
+      new Date('2026-03-01T00:00:00Z'),
+    );
+  });
+
+  it('does not prune when the extractor fails', async () => {
+    extractor.extractThemes.mockRejectedValue(new Error('python failed'));
+
+    await expect(service.extractAndSaveThemes()).rejects.toThrow();
+
+    expect(repository.deleteThemesNotUpdatedSince).not.toHaveBeenCalled();
   });
 });

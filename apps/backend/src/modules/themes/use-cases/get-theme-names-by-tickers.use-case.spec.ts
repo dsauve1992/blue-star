@@ -14,6 +14,7 @@ describe('GetThemeNamesByTickersUseCase', () => {
       findTickersByThemeId: jest.fn(),
       findThemesByTickers: jest.fn(),
       findAllThemes: jest.fn(),
+      deleteThemesNotUpdatedSince: jest.fn(),
     };
     useCase = new GetThemeNamesByTickersUseCase(repository);
   });
