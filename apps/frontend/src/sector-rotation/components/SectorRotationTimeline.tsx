@@ -114,11 +114,11 @@ export function SectorRotationTimeline({
         }
       >
         <div className="inline-block min-w-full">
-          <table className="w-full border-collapse">
+          <table className="w-full border-separate border-spacing-0">
             <thead>
               <tr>
                 <th
-                  className={`sticky left-0 z-10 bg-white dark:bg-slate-800 border border-border p-2 text-left text-sm font-medium ${stickyColumnShadow}`}
+                  className={`sticky left-0 z-10 bg-white dark:bg-slate-800 border-t border-b border-l border-r border-border p-2 text-left text-sm font-medium ${stickyColumnShadow}`}
                 >
                   Sector
                 </th>
@@ -126,7 +126,7 @@ export function SectorRotationTimeline({
                   <th
                     key={date}
                     data-in-window={isInWindow(date) || undefined}
-                    className={`border border-border p-1 text-center text-xs font-medium min-w-[24px] ${
+                    className={`border-t border-b border-r border-border p-1 text-center text-xs font-medium min-w-[24px] ${
                       isInWindow(date) ? "bg-blue-600 text-white" : ""
                     }`}
                   >
@@ -145,7 +145,7 @@ export function SectorRotationTimeline({
                 return (
                   <tr key={symbol} className={!isEnabled ? "opacity-40" : ""}>
                     <td
-                      className={`sticky left-0 z-10 bg-white dark:bg-slate-800 border border-border p-2 text-sm font-medium ${stickyColumnShadow}`}
+                      className={`sticky left-0 z-10 bg-white dark:bg-slate-800 border-b border-l border-r border-border p-2 text-sm font-medium ${stickyColumnShadow}`}
                     >
                       <div className="flex items-center gap-2">
                         <input
@@ -177,7 +177,7 @@ export function SectorRotationTimeline({
                       return (
                         <td
                           key={`${symbol}-${date}`}
-                          className={`border border-border p-1 text-center text-xs ${style.color} ${isDarkMode ? "opacity-80" : "opacity-70"}`}
+                          className={`border-b border-r border-border p-1 text-center text-xs ${style.color} ${isDarkMode ? "opacity-80" : "opacity-70"}`}
                           title={`${sectorNames[symbol] ? `${sectorNames[symbol]} (${symbol})` : symbol} - ${parseLocalDate(
                             date,
                           ).toLocaleDateString()}: ${quadrant}`}
