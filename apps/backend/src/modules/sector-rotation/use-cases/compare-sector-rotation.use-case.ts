@@ -243,6 +243,8 @@ export class CompareSectorRotationUseCase {
         maxDiffX = Math.max(maxDiffX, absX);
         maxDiffY = Math.max(maxDiffY, absY);
         maxDiffRS = Math.max(maxDiffRS, absRS);
+      } else {
+        differentDataPoints++;
       }
     }
 

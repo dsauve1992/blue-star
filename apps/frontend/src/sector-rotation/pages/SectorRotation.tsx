@@ -491,7 +491,7 @@ export default function SectorRotation() {
                         </div>
                       </div>
                     </div>
-                  ) : (
+                  ) : comparisonData.summary.differentDataPoints === 0 ? (
                     <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
                       <div className="flex items-center gap-2">
                         <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
@@ -500,7 +500,7 @@ export default function SectorRotation() {
                         </h3>
                       </div>
                     </div>
-                  )}
+                  ) : null}
 
                   {comparisonData.summary.differentDataPoints > 0 && (
                     <div className="space-y-2">
@@ -520,6 +520,8 @@ export default function SectorRotation() {
                             {comparisonData.differences
                               .filter(
                                 (diff) =>
+                                  !diff.persisted ||
+                                  !diff.live ||
                                   Math.abs(diff.differences.x) > 0.0001 ||
                                   Math.abs(diff.differences.y) > 0.0001 ||
                                   Math.abs(diff.differences.relativeStrength) >
@@ -536,17 +538,30 @@ export default function SectorRotation() {
                                     ).toLocaleDateString()}
                                   </td>
                                   <td className="p-2">{diff.sectorSymbol}</td>
-                                  <td className="p-2 text-right font-mono">
-                                    {diff.differences.x.toFixed(6)}
-                                  </td>
-                                  <td className="p-2 text-right font-mono">
-                                    {diff.differences.y.toFixed(6)}
-                                  </td>
-                                  <td className="p-2 text-right font-mono">
-                                    {diff.differences.relativeStrength.toFixed(
-                                      6,
-                                    )}
-                                  </td>
+                                  {diff.persisted && diff.live ? (
+                                    <>
+                                      <td className="p-2 text-right font-mono">
+                                        {diff.differences.x.toFixed(6)}
+                                      </td>
+                                      <td className="p-2 text-right font-mono">
+                                        {diff.differences.y.toFixed(6)}
+                                      </td>
+                                      <td className="p-2 text-right font-mono">
+                                        {diff.differences.relativeStrength.toFixed(
+                                          6,
+                                        )}
+                                      </td>
+                                    </>
+                                  ) : (
+                                    <td
+                                      colSpan={3}
+                                      className="p-2 text-right text-amber-600 dark:text-amber-400"
+                                    >
+                                      {diff.persisted
+                                        ? "missing in live"
+                                        : "missing in persisted"}
+                                    </td>
+                                  )}
                                 </tr>
                               ))}
                           </tbody>
