@@ -18,12 +18,12 @@ The fix must be implementable as a small diff (target: one module, a handful of 
 
 ## Steps
 
-0. **Check backlog size.** Count items with Status `Backlog` (see `kanban-board`). If there are 20 or more, report the count and stop; file nothing.
+0. **Check backlog size.** Count items with Status `Backlog` (see `kanban-board`). If the Backlog is at the cap (see `kanban-board`), report the count and stop; file nothing.
 1. **Pick a module** under `apps/backend/src/` or `apps/frontend/src/`. Prefer one with the fewest recent commits and the weakest tests (`git log --since=60.days --name-only`, compare against `*.spec.ts`/`*.test.tsx` presence). Vary the choice between runs.
-2. **Read the open backlog** so you do not duplicate: `gh issue list --repo dsauve1992/blue-star --label agent-proposed --state all --limit 100`. Skip anything already filed, closed or rejected (`wontfix`).
+2. **Read the open backlog** so you do not duplicate: `gh issue list --repo dsauve1992/blue-star --label agent-proposed --state all --limit 300`. Skip anything already filed, closed or rejected (`wontfix`).
 3. **Find one candidate** by reading the module. Follow `apps/backend/CLAUDE.md` / `apps/frontend/CLAUDE.md` conventions; use `backend-patterns`, `backend-testing` and `backend-security` for backend judgement. Verify the problem is real (read the callers, run the code or the existing tests) before proposing. Do not file speculative findings.
 4. **Record the evidence video** for a `bug` or `ux` finding, following `kanban-board` "Evidence video" (a UI-visible problem gets a video; a backend-only bug gets a failing test or `curl` reproduction instead; `test` and `refactor` findings need neither).
 5. **Write the ticket** in the board's body format. The plan must be precise enough for another agent to implement without extra context. Choose label from `bug`, `enhancement`, `documentation`, plus a category line in the body. Set Priority (P0 real bug or security, P1 likely user-visible, P2 hygiene) and Size (XS-S expected).
-6. **File it in Backlog** using the `kanban-board` commands. File exactly one ticket, then stop and report its URL.
+6. **File it in Backlog** using the `kanban-board` commands, with `ROLE=bug-finder`. File exactly one ticket, then stop and report its URL.
 
 If nothing real is found in the chosen module after a fair read, say so and file nothing.

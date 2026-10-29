@@ -38,11 +38,11 @@ The fix must be a small diff (a handful of files, under ~150 changed lines). If 
 
 ## Steps
 
-0. **Check backlog size.** Count items with Status `Backlog` (see `kanban-board`). If there are 20 or more, report the count and stop; file nothing.
+0. **Check backlog size.** Count items with Status `Backlog` (see `kanban-board`). If the Backlog is at the cap (see `kanban-board`), report the count and stop; file nothing.
 1. **Pick one area** from the scope list (CI config counts as an area). Vary the choice between runs: check the open and closed `devops` tickets and prefer an area with none.
-2. **Read the existing tickets** so you do not duplicate: `gh issue list --repo dsauve1992/blue-star --label agent-proposed --state all --limit 100`. Skip anything already filed, closed or rejected (`wontfix`).
+2. **Read the existing tickets** so you do not duplicate: `gh issue list --repo dsauve1992/blue-star --label agent-proposed --state all --limit 300`. Skip anything already filed, closed or rejected (`wontfix`).
 3. **Find one candidate** by reading the files. Verify the problem is real before proposing: run the check (`docker build` for image size or cache misses, `actionlint` or `gh workflow view` for workflow errors, compare env vars via `rg "process.env|configService.get"` against the example file, inspect recent CI runs with `gh run list --repo dsauve1992/blue-star --limit 20` for flakiness or slow steps). Do not file speculative findings or generic best-practice lists.
 4. **Write the ticket** in the board's body format (no evidence video: `devops` tickets are exempt in `kanban-board`). The plan names the exact files and the change, and the Verification section states a command that proves it (for example a build that succeeds, an image size before and after, a workflow run). Use label `enhancement` or `bug`, category `devops`. Set Priority (P0 broken or leaking secrets, P1 slows or endangers deploys or CI, P2 hygiene) and Size (XS-S expected).
-5. **File it in Backlog** using the `kanban-board` commands. File exactly one ticket, then stop and report its URL.
+5. **File it in Backlog** using the `kanban-board` commands, with `ROLE=devops`. File exactly one ticket, then stop and report its URL.
 
 If nothing real is found in the chosen area after a fair read, say so and file nothing.
