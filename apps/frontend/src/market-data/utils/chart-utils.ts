@@ -20,7 +20,7 @@ export function getDefaultMovingAverages(
     { type: "EMA", length: 21 },
   ];
   if (interval === "D")
-    base.push({ type: "SMA", length: 30, color: "#e8ff00" }); // yellow
+    base.push({ type: "SMA", length: 50, color: "#e8ff00" }); // yellow
   if (interval === "W")
     base.push({ type: "SMA", length: 30, color: "#22c55e" }); // green
   return base;
