@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import type { MomentumLeader } from "../api/momentum-leaders.client";
-import { useRsRatings } from "./use-rs-ratings";
+import { useRsRatings } from "src/rs-rating/hooks/use-rs-ratings";
 
 export type LeaderSortKey = "rs" | "ig" | "perf1M" | "perf3M" | "perf6M";
 
