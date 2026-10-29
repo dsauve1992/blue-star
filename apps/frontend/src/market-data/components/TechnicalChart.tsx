@@ -1201,6 +1201,11 @@ function ChartLegend({
         display: "flex",
         flexDirection: "column",
         gap: 2,
+        background: "rgba(0, 0, 0, 0.55)",
+        padding: "4px 8px",
+        borderRadius: 6,
+        border: `1px solid ${C.border}`,
+        maxWidth: "calc(100% - 72px)",
       }}
     >
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
