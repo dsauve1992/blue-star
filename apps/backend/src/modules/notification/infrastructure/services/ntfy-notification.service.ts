@@ -19,14 +19,18 @@ interface NtfyRequest {
 export class NtfyNotificationService implements NotificationService {
   private readonly baseUrl: string;
   private readonly apiKey?: string;
+  private readonly disabled: boolean;
 
   constructor(private readonly configService: ConfigService) {
     this.baseUrl =
       this.configService.get<string>('NTFY_BASE_URL') || 'https://ntfy.sh';
     this.apiKey = this.configService.get<string>('NTFY_API_KEY');
+    this.disabled = this.configService.get<string>('NTFY_DISABLED') === 'true';
   }
 
   async send(request: SendNotificationRequest): Promise<void> {
+    if (this.disabled) return;
+
     const payload: NtfyRequest = {
       topic: request.topic.value,
       message: request.message.value,

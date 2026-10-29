@@ -133,14 +133,14 @@ docker exec blue-star-postgres psql -U blue_star_user -d postgres \
   -c "DROP DATABASE IF EXISTS $DB WITH (FORCE)" -c "CREATE DATABASE $DB"
 docker exec blue-star-postgres sh -c \
   "pg_dump -U blue_star_user blue_star_db | psql -q -U blue_star_user -d $DB"
-export DB_DATABASE=$DB                        # every shell that touches the DB
+export DB_DATABASE=$DB NTFY_DISABLED=true     # every shell that touches the DB; no phone push from stage backends
 npm run migrate:up --workspace=backend        # applies this branch's migrations to the copy only
 PORT=$BE FRONTEND_URL=http://localhost:$FE npm run dev --workspace=backend
 VITE_API_URL=http://127.0.0.1:$BE/api npm run dev --workspace=frontend -- --port $FE --strictPort
 APP_URL=http://localhost:$FE node .claude/skills/run/login.mjs
 ```
 
-The database is a fresh copy of the user's `blue_star_db` on every run, so a migration or a test write in one stage never reaches the user's data or another stage. Drop it with `DROP DATABASE ... WITH (FORCE)` when you clean up. The `DB_HOST=localhost` and container checks above still apply. The ntfy startup push fires on every backend boot, so boot once per run.
+The database is a fresh copy of the user's `blue_star_db` on every run, so a migration or a test write in one stage never reaches the user's data or another stage. Drop it with `DROP DATABASE ... WITH (FORCE)` when you clean up. The `DB_HOST=localhost` and container checks above still apply. `NTFY_DISABLED=true` keeps the stage backend from pushing to the user's phone (startup and cron alerts); the user's own dev session still does.
 
 ## Smoke tests (drive it, don't just launch it)
 
