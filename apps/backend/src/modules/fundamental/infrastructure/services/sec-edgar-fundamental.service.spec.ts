@@ -151,7 +151,10 @@ describe('SecEdgarFundamentalService', () => {
 
     expect(fetchMock).toHaveBeenCalledWith(
       'https://data.sec.gov/api/xbrl/companyfacts/CIK0001425205.json',
-      { headers: { 'User-Agent': 'BlueStar test@example.com' } },
+      expect.objectContaining({
+        headers: { 'User-Agent': 'BlueStar test@example.com' },
+        signal: expect.any(AbortSignal) as AbortSignal,
+      }),
     );
   });
 
@@ -478,6 +481,24 @@ describe('SecEdgarFundamentalService', () => {
       );
       expect(companyFactsCalls).toHaveLength(1);
     });
+  });
+
+  it('should re-request company_tickers.json after a timeout instead of caching the failure', async () => {
+    mockSec(companyFacts(calendarYear2024));
+    const succeed = fetchMock.getMockImplementation() as typeof fetch;
+    const timeout = Object.assign(new Error('timed out'), {
+      name: 'TimeoutError',
+    });
+    fetchMock.mockRejectedValueOnce(timeout);
+
+    await expect(fetchQuarters()).rejects.toThrow('timed out');
+    fetchMock.mockImplementation(succeed);
+
+    await expect(fetchQuarters()).resolves.not.toHaveLength(0);
+    const tickerCalls = fetchMock.mock.calls.filter(([url]) =>
+      (url as string).endsWith('company_tickers.json'),
+    );
+    expect(tickerCalls).toHaveLength(2);
   });
 
   it('should throw when SEC responds with an error', async () => {
