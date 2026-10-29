@@ -157,6 +157,7 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
     const savedAggregates = repository.saveAggregate.mock.calls.map(
       (call) => call[0],
     );
+    expect(savedAggregates).toHaveLength(5);
     expect(savedAggregates.every((a) => a.universeSize === 3)).toBe(true);
     expect(savedAggregates.every((a) => a.stackedCount === 1)).toBe(true);
   });

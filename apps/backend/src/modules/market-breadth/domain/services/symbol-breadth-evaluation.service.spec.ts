@@ -189,6 +189,16 @@ describe('evaluateSymbolOnDate', () => {
     expect(result.stacked).toBe(false);
   });
 
+  it('caps the 20-day window at a smaller custom window', () => {
+    const candles = buildCandles(100, {
+      85: { high: 200 },
+      99: { high: 101 },
+    });
+    const result = evaluateSymbolOnDate(candles, 99, 10);
+    expect(result.newHigh20).toBe(true);
+    expect(evaluateSymbolOnDate(candles, 99, 30).newHigh20).toBe(false);
+  });
+
   it('computes new high/low and stacked from the same candles in one call', () => {
     const risingBreakout = buildCandles(
       REQUIRED_TRAILING_SESSIONS + 1,
