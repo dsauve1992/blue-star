@@ -97,7 +97,7 @@ Names only; see `apps/backend/.env.example`, `apps/frontend/.env.example` and `.
 | Backend auth and serving | `KINDE_DOMAIN`, `KINDE_CLIENT_ID`, `PORT`, `FRONTEND_URL`, `CRON_ENABLED`          |
 | Frontend                 | `VITE_API_URL`, `VITE_KINDE_CLIENT_ID`, `VITE_KINDE_DOMAIN`, `VITE_KINDE_AUDIENCE` |
 
-The app needs a Kinde tenant to sign in: the frontend callback and logout URLs must list the frontend origin (`http://localhost:5173` in dev). `DB_HOST` must stay `localhost` in dev because migrations run on every backend boot.
+The app needs a Kinde tenant to sign in: the frontend callback and logout URLs must list the frontend origin (`http://localhost:5173` in dev). Set the backend `KINDE_DOMAIN` and `KINDE_CLIENT_ID` to the same tenant as the frontend, otherwise every API call returns 401: the backend takes a bare domain (`your_domain.kinde.com`), the frontend a full URL (`https://your_domain.kinde.com`). `DB_HOST` must stay `localhost` in dev because migrations run on every backend boot.
 
 ## Development
 
