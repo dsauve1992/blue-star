@@ -8,6 +8,7 @@
     "build": "tsc -b && vite build",
     "test": "echo \"No tests specified\" && exit 0",
     "lint": "eslint . --fix",
+    "check-types": "tsc -b",
     "preview": "vite preview"
   },
   "dependencies": {
