@@ -28,13 +28,17 @@ export class ThemeCronService {
     });
 
     try {
-      await this.themeService.extractAndSaveThemes();
+      const { refreshed, skipped } =
+        await this.themeService.extractAndSaveThemes();
       this.logger.log('Weekly theme extraction completed successfully');
 
       await this.cronJobNotificationService.notifyJobSuccess({
         jobName,
         jobType: 'themes',
         frequency: 'weekly',
+        additionalData:
+          `${refreshed} themes refreshed, ${skipped.length} skipped` +
+          (skipped.length > 0 ? `: ${skipped.join(', ')}` : ''),
       });
     } catch (error) {
       const errorMessage =

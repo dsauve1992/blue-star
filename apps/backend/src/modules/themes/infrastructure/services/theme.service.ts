@@ -1,6 +1,9 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { ThemeRepository } from '../../domain/repositories/theme.repository.interface';
-import { ThemeService } from '../../domain/services/theme.service';
+import {
+  ThemeExtractionSummary,
+  ThemeService,
+} from '../../domain/services/theme.service';
 import { ThemeEntity } from '../../domain/entities/theme.entity';
 import { ThemeTickerEntity } from '../../domain/entities/theme-ticker.entity';
 import { PythonThemeExtractorService } from './python-theme-extractor.service';
@@ -21,15 +24,19 @@ export class ThemeServiceImpl implements ThemeService {
     private readonly pythonExtractor: PythonThemeExtractorService,
   ) {}
 
-  async extractAndSaveThemes(): Promise<void> {
+  async extractAndSaveThemes(): Promise<ThemeExtractionSummary> {
     this.logger.log('Starting theme extraction...');
 
     try {
       const themesData = await this.pythonExtractor.extractThemes();
       this.logger.log(`Extracted ${themesData.length} themes`);
 
+      let refreshed = 0;
+      const skipped: string[] = [];
+
       for (const themeData of themesData) {
         if (themeData.tickers.length === 0) {
+          skipped.push(themeData.theme);
           this.logger.warn(
             `Skipping theme with no tickers: ${themeData.theme}`,
           );
@@ -72,12 +79,20 @@ export class ThemeServiceImpl implements ThemeService {
           theme.id,
           tickerEntities,
         );
+        refreshed++;
         this.logger.log(
           `Saved ${tickerEntities.length} tickers for theme: ${themeData.theme}`,
         );
       }
 
+      if (refreshed === 0) {
+        throw new Error(
+          `No themes refreshed: all ${themesData.length} came back with no tickers`,
+        );
+      }
+
       this.logger.log('Theme extraction completed successfully');
+      return { refreshed, skipped };
     } catch (error) {
       this.logger.error(
         `Theme extraction failed: ${error instanceof Error ? error.message : 'Unknown error'}`,
