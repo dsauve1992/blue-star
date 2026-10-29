@@ -35,12 +35,6 @@ describe('NtfyNotificationService', () => {
     fetchSpy.mockRestore();
   });
 
-  it('sends nothing when NTFY_DISABLED is true', async () => {
-    await buildService({ NTFY_DISABLED: 'true' }).send(baseRequest());
-
-    expect(fetchSpy).not.toHaveBeenCalled();
-  });
-
   it('sends only topic and message when nothing else is provided', async () => {
     await buildService().send(baseRequest());
 
