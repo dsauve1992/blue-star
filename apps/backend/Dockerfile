@@ -74,6 +74,8 @@ COPY apps/backend/migrations ./apps/backend/migrations
 # Set working directory to backend
 WORKDIR /app/apps/backend
 
+USER node
+
 # Expose port
 EXPOSE 3000
 
