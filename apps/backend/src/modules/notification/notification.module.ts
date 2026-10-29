@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { NtfyNotificationService } from './infrastructure/services/ntfy-notification.service';
+import { NoopNotificationService } from './infrastructure/services/noop-notification.service';
 import { SendNotificationUseCase } from './use-cases/send-notification.use-case';
 import { CronJobNotificationService } from './infrastructure/services/cron-job-notification.service';
 import { NOTIFICATION_SERVICE } from './constants/tokens';
@@ -20,9 +21,16 @@ export type { CronJobNotificationOptions } from './infrastructure/services/cron-
 @Module({
   imports: [ConfigModule],
   providers: [
+    NtfyNotificationService,
+    NoopNotificationService,
     {
       provide: NOTIFICATION_SERVICE,
-      useClass: NtfyNotificationService,
+      inject: [ConfigService, NtfyNotificationService, NoopNotificationService],
+      useFactory: (
+        config: ConfigService,
+        ntfy: NtfyNotificationService,
+        noop: NoopNotificationService,
+      ) => (config.get('NOTIFICATIONS_ENABLED') === 'false' ? noop : ntfy),
     },
     SendNotificationUseCase,
     CronJobNotificationService,
