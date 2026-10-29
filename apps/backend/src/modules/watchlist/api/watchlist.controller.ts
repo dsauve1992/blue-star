@@ -12,8 +12,7 @@ import {
 import { WatchlistId } from '../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../domain/value-objects/watchlist-name';
 import { WatchlistTicker } from '../domain/value-objects/watchlist-ticker';
-import type { AuthContext } from '../../auth/auth-context.interface';
-import type { AuthenticatedRequest } from '../../auth/types/request.interface';
+import type { AuthContext, AuthenticatedRequest } from '../../auth/auth.module';
 import { WatchlistApiMapper } from './watchlist-api.mapper';
 import {
   AddTickerToWatchlistApiResponseDto,

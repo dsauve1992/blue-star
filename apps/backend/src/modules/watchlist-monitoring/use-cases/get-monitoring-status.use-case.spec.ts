@@ -14,7 +14,7 @@ import { WatchlistName } from '../../watchlist/domain/value-objects/watchlist-na
 import { WatchlistId } from '../../watchlist/domain/value-objects/watchlist-id';
 import { UserId } from '../../../shared/value-objects/user-id';
 import { AuthorizationError, NotFoundError } from '../domain/domain-errors';
-import type { AuthContext } from '../../auth/auth-context.interface';
+import type { AuthContext } from '../../auth/auth.module';
 
 describe('GetMonitoringStatusUseCase', () => {
   let useCase: GetMonitoringStatusUseCase;

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment  */
 /* eslint-disable @typescript-eslint/no-unsafe-member-access  */
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
-import { Public } from '../../auth/public.decorator';
+import { Public } from '../../auth/auth.module';
 import { CalculateSectorRotationUseCase } from '../use-cases/calculate-sector-rotation.use-case';
 import { GetSectorRotationUseCase } from '../use-cases/get-sector-rotation.use-case';
 import { CompareSectorRotationUseCase } from '../use-cases/compare-sector-rotation.use-case';

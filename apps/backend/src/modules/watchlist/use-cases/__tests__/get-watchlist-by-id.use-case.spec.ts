@@ -7,7 +7,7 @@ import { WatchlistId } from '../../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../domain/value-objects/watchlist-name';
 import { UserId } from '../../../../shared/value-objects/user-id';
 import { AuthorizationError, NotFoundError } from '../../domain/domain-errors';
-import type { AuthContext } from '../../../auth/auth-context.interface';
+import type { AuthContext } from '../../../auth/auth.module';
 
 describe('GetWatchlistByIdUseCase', () => {
   let useCase: GetWatchlistByIdUseCase;

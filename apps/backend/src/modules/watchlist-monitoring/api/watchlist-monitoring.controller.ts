@@ -5,8 +5,7 @@ import {
   isValidMonitoringType,
 } from '../domain/value-objects/monitoring-type';
 import { InvariantError } from '../domain/domain-errors';
-import type { AuthContext } from '../../auth/auth-context.interface';
-import type { AuthenticatedRequest } from '../../auth/types/request.interface';
+import type { AuthContext, AuthenticatedRequest } from '../../auth/auth.module';
 import { WatchlistMonitoringApiMapper } from './watchlist-monitoring-api.mapper';
 import {
   ActivateMonitoringApiResponseDto,

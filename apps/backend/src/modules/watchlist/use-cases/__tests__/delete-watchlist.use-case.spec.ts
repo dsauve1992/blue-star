@@ -10,7 +10,7 @@ import { WatchlistId } from '../../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../domain/value-objects/watchlist-name';
 import { AuthorizationError } from '../../domain/domain-errors';
 import { UserId } from '../../../../shared/value-objects/user-id';
-import type { AuthContext } from '../../../auth/auth-context.interface';
+import type { AuthContext } from '../../../auth/auth.module';
 
 describe('DeleteWatchlistUseCase', () => {
   let useCase: DeleteWatchlistUseCase;

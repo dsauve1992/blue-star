@@ -9,7 +9,7 @@ import { Watchlist } from '../../domain/entities/watchlist';
 import { WatchlistId } from '../../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../domain/value-objects/watchlist-name';
 import { UserId } from '../../../../shared/value-objects/user-id';
-import type { AuthContext } from '../../../auth/auth-context.interface';
+import type { AuthContext } from '../../../auth/auth.module';
 
 describe('RenameWatchlistUseCase', () => {
   let useCase: RenameWatchlistUseCase;
