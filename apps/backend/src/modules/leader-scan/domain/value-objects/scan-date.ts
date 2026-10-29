@@ -7,8 +7,16 @@ export class ScanDate {
     );
   }
 
-  static today(): ScanDate {
-    return ScanDate.of(new Date());
+  static today(now: Date = new Date()): ScanDate {
+    const parts = new Intl.DateTimeFormat('en-CA', {
+      timeZone: 'America/Toronto',
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).formatToParts(now);
+    const part = (type: string) =>
+      Number(parts.find((p) => p.type === type)?.value);
+    return ScanDate.of(new Date(part('year'), part('month') - 1, part('day')));
   }
 
   toISOString(): string {
