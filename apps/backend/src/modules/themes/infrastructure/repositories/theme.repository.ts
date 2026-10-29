@@ -80,6 +80,14 @@ export class ThemeRepositoryImpl implements ThemeRepository {
     });
   }
 
+  async deleteThemesNotUpdatedSince(cutoff: Date): Promise<number> {
+    const result = await this.databaseService.query(
+      `DELETE FROM themes WHERE updated_at < $1 RETURNING id`,
+      [cutoff],
+    );
+    return result.rows.length;
+  }
+
   async findTickersByThemeId(themeId: string): Promise<ThemeTickerEntity[]> {
     const result = (await this.databaseService.query(
       `SELECT id, theme_id, ticker, created_at

@@ -13,6 +13,9 @@ import {
 } from '../../constants/tokens';
 import { randomUUID } from 'crypto';
 
+const STALE_THEME_RETENTION_DAYS = 21;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
 @Injectable()
 export class ThemeServiceImpl implements ThemeService {
   private readonly logger = new Logger(ThemeServiceImpl.name);
@@ -90,6 +93,13 @@ export class ThemeServiceImpl implements ThemeService {
           `No themes refreshed: all ${themesData.length} came back with no tickers`,
         );
       }
+
+      const cutoff = new Date(
+        Date.now() - STALE_THEME_RETENTION_DAYS * MS_PER_DAY,
+      );
+      const pruned =
+        await this.themeRepository.deleteThemesNotUpdatedSince(cutoff);
+      this.logger.log(`Pruned ${pruned} stale themes`);
 
       this.logger.log('Theme extraction completed successfully');
       return { refreshed, skipped };
