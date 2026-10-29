@@ -77,22 +77,25 @@ describe('ThemeServiceImpl', () => {
   });
 
   it('leaves an existing theme untouched when it returns no tickers', async () => {
-    repository.findThemeByName.mockResolvedValue(
-      ThemeEntity.of({
-        id: 'theme-1',
-        name: 'AI',
-        createdAt: new Date('2025-01-01'),
-        updatedAt: new Date('2025-01-01'),
-      }),
+    const existing = ThemeEntity.of({
+      id: 'theme-1',
+      name: 'AI',
+      createdAt: new Date('2025-01-01'),
+      updatedAt: new Date('2025-01-01'),
+    });
+    repository.findThemeByName.mockImplementation((name) =>
+      Promise.resolve(name === 'AI' ? existing : null),
     );
     extractor.extractThemes.mockResolvedValue([
       { theme: 'AI', tickers: [] },
+      { theme: 'Energy', tickers: ['xom'] },
     ] as never);
 
     await service.extractAndSaveThemes();
 
-    expect(repository.saveTheme).not.toHaveBeenCalled();
-    expect(repository.replaceThemeTickers).not.toHaveBeenCalled();
+    expect(repository.saveTheme).toHaveBeenCalledTimes(1);
+    expect(repository.saveTheme.mock.calls[0][0].name).toBe('Energy');
+    expect(repository.replaceThemeTickers).toHaveBeenCalledTimes(1);
   });
 
   it('skips only the empty theme in a mixed batch', async () => {
@@ -101,8 +104,9 @@ describe('ThemeServiceImpl', () => {
       { theme: 'Energy', tickers: ['xom'] },
     ] as never);
 
-    await service.extractAndSaveThemes();
+    const summary = await service.extractAndSaveThemes();
 
+    expect(summary).toEqual({ refreshed: 1, skipped: ['AI'] });
     expect(repository.replaceThemeTickers).toHaveBeenCalledTimes(1);
     const [themeId, tickers] = repository.replaceThemeTickers.mock.calls[0];
     expect(repository.saveTheme).toHaveBeenCalledTimes(1);
@@ -116,11 +120,25 @@ describe('ThemeServiceImpl', () => {
     repository.findThemeByName.mockResolvedValue(null);
     extractor.extractThemes.mockResolvedValue([
       { theme: 'Quantum', tickers: [] },
+      { theme: 'Energy', tickers: ['xom'] },
     ] as never);
 
     await service.extractAndSaveThemes();
 
-    expect(repository.saveTheme).not.toHaveBeenCalled();
+    expect(repository.saveTheme).toHaveBeenCalledTimes(1);
+    expect(repository.saveTheme.mock.calls[0][0].name).toBe('Energy');
+  });
+
+  it('rejects without writing when every theme returns no tickers', async () => {
+    extractor.extractThemes.mockResolvedValue([
+      { theme: 'AI', tickers: [] },
+      { theme: 'Energy', tickers: [] },
+    ] as never);
+
+    await expect(service.extractAndSaveThemes()).rejects.toThrow(
+      /No themes refreshed/,
+    );
+    expect(repository.replaceThemeTickers).not.toHaveBeenCalled();
   });
 
   it('rethrows when the extractor fails', async () => {
