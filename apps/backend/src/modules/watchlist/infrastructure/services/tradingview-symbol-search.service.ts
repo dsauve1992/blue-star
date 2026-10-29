@@ -17,6 +17,8 @@ export interface SymbolSearchResult {
   fullSymbol: string;
 }
 
+const SYMBOL_SEARCH_TIMEOUT_MS = 5_000;
+
 @Injectable()
 export class TradingViewSymbolSearchService {
   private readonly logger = new Logger(TradingViewSymbolSearchService.name);
@@ -49,6 +51,7 @@ export class TradingViewSymbolSearchService {
         Origin: 'https://www.tradingview.com',
         Referer: 'https://www.tradingview.com/',
       },
+      signal: AbortSignal.timeout(SYMBOL_SEARCH_TIMEOUT_MS),
     });
 
     if (!response.ok) {
