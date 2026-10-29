@@ -1,0 +1,6 @@
+{
+  "design-improve": { "frontend": 5174, "backend": 6174, "database": "blue_star_design_improve" },
+  "fix-one-thing": { "frontend": 5175, "backend": 6175, "database": "blue_star_fix_one_thing" },
+  "implement-next": { "frontend": 5176, "backend": 6176, "database": "blue_star_implement" },
+  "pr-review": { "frontend": 5177, "backend": 6177, "database": "blue_star_review" }
+}

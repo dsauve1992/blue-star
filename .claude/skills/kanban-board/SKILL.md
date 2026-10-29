@@ -74,7 +74,7 @@ Not applicable, no video and no placeholder: `architecture`, `devops`, `refactor
 
 Recording:
 
-1. Reproduce through the `run` skill's app with Playwright and the saved session. Write the script under the scratchpad, never in the repo, with `recordVideo: { dir, size: { width: 1440, height: 900 } }` (use 390x844 for a mobile problem) and `slowMo: 400`. Walk the exact flow: navigate, pause 1-2 s on the area, perform the interaction, pause on the wrong result. Keep it 10-30 s.
+1. Reproduce through the `run` skill's stage environment (ports from your stage's entry in `.claude/stage-ports.json`) with Playwright and the saved session. Write the script under the scratchpad, never in the repo, with `recordVideo: { dir, size: { width: 1440, height: 900 } }` (use 390x844 for a mobile problem) and `slowMo: 400`. Walk the exact flow: navigate, pause 1-2 s on the area, perform the interaction, pause on the wrong result. Keep it 10-30 s.
 2. Convert it:
 
    ```bash

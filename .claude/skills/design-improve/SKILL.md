@@ -20,7 +20,7 @@ The app is a swing-trading tool used daily by one trader. Favour changes that ma
 
 0. **Check backlog size.** Count items with Status `Backlog` (see `kanban-board`). If there are 20 or more, report the count and stop; file nothing.
 1. **Read the open backlog** so you do not duplicate: `gh issue list --repo dsauve1992/blue-star --label agent-proposed --state all --limit 100`. Skip anything already filed, closed or rejected (`wontfix`, or closed as not planned).
-2. **Check the app ports are free.** `lsof -nP -iTCP:3000 -iTCP:5173 -sTCP:LISTEN`. If 5173 is taken (the user or `implement-next` is running the app), report it and stop; never kill the other process. If only 3000 is taken, use the `run` skill's free-backend-port recipe.
+2. **Check your app ports are free.** Your ports are in the `design-improve` entry of `.claude/stage-ports.json`; the `run` skill's "Stage environments" has the check. If one is taken, report it and stop; never kill the other process.
 3. **Create a worktree of `origin/main`** so the main checkout is never touched and the proposal reflects `main`:
 
    ```bash
@@ -36,7 +36,7 @@ The app is a swing-trading tool used daily by one trader. Favour changes that ma
 
    Run every later command from `$WT`.
 
-4. **Start the app once** from `$WT` following the `run` skill (verify `DB_HOST=localhost` and the Postgres container first; `npm run dev`). Every backend boot sends a push notification to the user's phone, so boot once per run and leave it up until the end. Log in with `node .claude/skills/run/login.mjs`.
+4. **Start the app once** from `$WT` following the `run` skill's "Stage environments" with the `design-improve` entry of `.claude/stage-ports.json` (verify `DB_HOST=localhost` and the Postgres container first). Boot once per run and leave it up until the end. Log in with the `login.mjs` command from that section.
 5. **Explore and choose.** With Playwright and the saved session, walk the main pages (dashboard, positions, watchlists, momentum leaders, sector rotation, market breadth) at 1440x900 and at 390x844. Take screenshots, look at real data states, try the main interactions. Load the `impeccable` skill for critique heuristics, but propose only one local fix. Pick the single change with the best value for its size, and write the problem down in one sentence. If nothing worth doing is found, report that, clean up (step 8) and stop.
 6. **Record the evidence video** of the problem happening, following `kanban-board` "Evidence video" (always a video here, never a bare screenshot; a still is only an addition). If you cannot reproduce the problem on screen, do not file it.
 7. **Write and file the ticket.**
@@ -44,7 +44,7 @@ The app is a swing-trading tool used daily by one trader. Favour changes that ma
    - Body in the board's format. **Problem**: what the trader experiences, with the video. **Proposed change**: the smallest change, naming the files and design-system components to use, and what the screen must look like after. **Out of scope**: what the ticket does not touch. **Verification**: the flow the video shows, to replay once fixed, the viewports to check (1440x900 and 390x844), and the quality gates. **Category**: `ux`. It must be precise enough for another agent to implement without extra context.
    - Labels `agent-proposed` plus `enhancement` or `bug`; Priority P1 if it hides or misleads on a daily screen, else P2; Size XS-S expected.
    - File it in `Backlog` with the `kanban-board` commands. File exactly one ticket.
-8. **Clean up.** Stop the dev servers you started and remove every worktree you created (`git -C $REPO worktree remove --force <path>`). Report the ticket URL and stop.
+8. **Clean up.** Stop the dev servers you started, drop your database copy, and remove every worktree you created (`git -C $REPO worktree remove --force <path>`). Report the ticket URL and stop.
 
 ## Rules
 

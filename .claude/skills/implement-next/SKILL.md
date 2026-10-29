@@ -29,7 +29,7 @@ If you were given an issue number, that ticket is already claimed and `In progre
 5. **If the plan does not match reality** (code moved, problem already fixed, the change is much larger than described): do not improvise. Comment on the issue with what you found, move the ticket back to `Backlog`, and stop.
 6. **QA in the running app** when the change is user-visible, or when a refactor needs proof that behaviour is unchanged. Use the `run` skill to start the app, drive it with Playwright, and take screenshots before and after (for the "before", add a second detached worktree of `origin/main` next to `$WT`, or stash in `$WT`). Backend-only changes: exercise the affected endpoint before and after instead. Video is optional and best-effort; screenshots are the baseline. Skip QA for pure test additions and say so in the PR.
 7. **Open a PR** against `main`, one ticket per PR, body linking `Closes #<issue>`, summarising the change, listing verification run, and embedding QA screenshots. GitHub cannot attach binaries via CLI: commit them under `docs/qa/<issue-number>/` on a separate branch `qa-media/<issue-number>` (from a temporary worktree, not `$WT`) and reference them by raw URL, keeping them out of the PR diff.
-8. **Move the ticket to `In review`**, then remove the worktrees you created (`git -C $REPO worktree remove --force $WT`, same for any "before" or media worktree; the branches stay) and stop. Never merge, never move to `Done`.
+8. **Move the ticket to `In review`**, then stop the dev servers you started, drop your database copy (`DROP DATABASE ... WITH (FORCE)`), and remove the worktrees you created (`git -C $REPO worktree remove --force $WT`, same for any "before" or media worktree; the branches stay) and stop. Never merge, never move to `Done`.
 
 ## Rules
 
@@ -37,4 +37,4 @@ If you were given an issue number, that ticket is already claimed and `In progre
 - If the quality gates cannot be made to pass, leave the branch pushed, comment the failure on the issue, move the ticket back to `Ready`, and stop.
 - Never push to `main` and never force-push.
 - Never run `git switch`, `checkout`, `reset` or `stash` in the main checkout (`$REPO`). If a stage fails, still remove the worktree, unless the branch has unpushed commits: push the branch first.
-- Ports and the local Postgres are shared with the main checkout; follow the `run` skill's port-conflict rules (a busy backend port is worked around, the frontend stays on 5173). If the app still cannot start, treat it as a failed QA step, not a reason to stop the other process.
+- Start the app only through the `run` skill's "Stage environments", with the ports and database in the `implement-next` entry of `.claude/stage-ports.json`. If the app still cannot start, treat it as a failed QA step, not a reason to stop the other process.

@@ -82,9 +82,10 @@ interfaces and Vite binds `[::1]`. Consequences:
   `lsof -nP -iTCP:3000 -iTCP:5173 -sTCP:LISTEN` before launching, and note
   which process owns what.
 - Don't kill the other project's dev servers.
-- **The backend can use any free port. The frontend must stay on 5173.** Kinde's
-  callback/logout URLs allow only `http://localhost:5173` (no port wildcard), so
-  login fails on any other frontend port.
+- **The backend can use any free port. The frontend must stay in 5173-5177.**
+  Kinde's callback/logout URLs list those five ports explicitly (no port
+  wildcard), so login fails on any other frontend port. 5173 is the user's own
+  session; an agent uses one of 5174-5177, given by its caller.
 - Run the backend on a free port, point the frontend at it via **`127.0.0.1`,
   not `localhost`** (browsers and curl resolve `localhost` to `::1` first and
   would hit the other app), and set `FRONTEND_URL` so CORS allows the frontend
@@ -120,6 +121,27 @@ with `docker exec` as usual (it uses the container's internal 5432).
 - Probe the backend at `http://127.0.0.1:<port>`, the frontend at
   `http://localhost:5173` (Vite listens on `[::1]` only, so `127.0.0.1:5173`
   refuses connections).
+
+## Stage environments
+
+A skill that starts the app for an agent stage is given three values by its caller: a frontend port `FE`, a backend port `BE` and a database name `DB`. They are never 5173, 3000 or `blue_star_db`, so stages and the user's own session run side by side without sharing ports or data. Skip the standard launch above and use this instead, from the worktree:
+
+```bash
+FE=5174 BE=6174 DB=blue_star_design_improve   # as given by your caller
+[ "$FE" -ge 5174 ] && [ "$FE" -le 5177 ] || echo "FE outside 5174-5177: stop and report"
+lsof -nP -iTCP:$FE -iTCP:$BE -sTCP:LISTEN     # both must print nothing, else stop and report
+docker exec blue-star-postgres psql -U blue_star_user -d postgres \
+  -c "DROP DATABASE IF EXISTS $DB WITH (FORCE)" -c "CREATE DATABASE $DB"
+docker exec blue-star-postgres sh -c \
+  "pg_dump -U blue_star_user blue_star_db | psql -q -U blue_star_user -d $DB"
+export DB_DATABASE=$DB NOTIFICATIONS_ENABLED=false CRON_ENABLED=false  # every shell that touches the DB or boots the backend
+npm run migrate:up --workspace=backend        # applies this branch's migrations to the copy only
+PORT=$BE FRONTEND_URL=http://localhost:$FE npm run dev --workspace=backend
+VITE_API_URL=http://127.0.0.1:$BE/api npm run dev --workspace=frontend -- --port $FE --strictPort
+APP_URL=http://localhost:$FE node .claude/skills/run/login.mjs
+```
+
+If `FE` is outside 5174-5177, or a port is taken, stop and report; never kill the owner and never use another port. One stage runs one app at a time, so compare "before" and "after" one after the other, not side by side. The database is a fresh copy of the user's `blue_star_db` on every run, so a migration or a test write in one stage never reaches the user's data or another stage. Drop it with `DROP DATABASE ... WITH (FORCE)` when you clean up. The `DB_HOST=localhost` and container checks above still apply. `NOTIFICATIONS_ENABLED=false` keeps a stage backend from pushing to the user's phone, and `CRON_ENABLED=false` keeps it from running the scheduled jobs (market-data analyses and the 5-minute watchlist monitor), which would otherwise hit external APIs and write to the copy. The user's own dev session sets neither and behaves as before.
 
 ## Smoke tests (drive it, don't just launch it)
 
