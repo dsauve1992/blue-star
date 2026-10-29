@@ -6,11 +6,13 @@ import {
 } from './constants/tokens';
 import { StockClassificationRepositoryImpl } from './infrastructure/repositories/stock-classification.repository';
 import { PythonStockClassifierService } from './infrastructure/services/python-stock-classifier.service';
+import { StockClassificationController } from './api/stock-classification.controller';
 import { GetIndustryGroupsForTickersUseCase } from './use-cases/get-industry-groups-for-tickers.use-case';
 import { GetOrFetchStockClassificationUseCase } from './use-cases/get-or-fetch-stock-classification.use-case';
 
 @Module({
   imports: [DatabaseModule],
+  controllers: [StockClassificationController],
   providers: [
     {
       provide: STOCK_CLASSIFICATION_REPOSITORY,

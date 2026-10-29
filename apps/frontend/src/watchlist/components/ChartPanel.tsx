@@ -13,6 +13,7 @@ import type { MovingAverageConfig } from "src/market-data/utils/chart-utils";
 import type { Watchlist } from "../api/watchlist.client";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
+import { useStockClassification } from "src/stock-analysis/hooks/use-stock-classification";
 import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
 import {
   buildRsBenchmarks,
@@ -111,7 +112,8 @@ export function ChartPanel({
   );
 
   const sectorName = profileData?.profile?.sector ?? null;
-  const industryGroup = profileData?.profile?.industryGroup ?? null;
+  const { data: classificationData } = useStockClassification(symbol);
+  const industryGroup = classificationData?.industryGroup ?? null;
 
   const {
     candles,
