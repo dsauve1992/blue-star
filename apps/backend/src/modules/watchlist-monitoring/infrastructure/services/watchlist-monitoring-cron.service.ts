@@ -14,6 +14,7 @@ import {
   NotificationTopic,
   type NotificationService,
 } from '../../../notification/notification.module';
+import { CronJobNotificationService } from '../../../notification/infrastructure/services/cron-job-notification.service';
 import type { WatchlistMonitoringReadRepository } from '../../domain/repositories/watchlist-monitoring-read.repository.interface';
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
@@ -33,6 +34,11 @@ export class WatchlistMonitoringCronService {
   private readonly logger = new Logger(WatchlistMonitoringCronService.name);
   private readonly breakoutTopic = NotificationTopic.of('blue-star-breakout');
   private readonly gapTopic = NotificationTopic.of('blue-star-gap');
+  private readonly gapJobOptions = {
+    jobName: 'Watchlist Gap Monitoring',
+    jobType: 'gap',
+    frequency: 'daily',
+  } as const;
 
   constructor(
     @Inject(WATCHLIST_MONITORING_READ_REPOSITORY)
@@ -47,6 +53,7 @@ export class WatchlistMonitoringCronService {
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationService: NotificationService,
     private readonly eventEmitter: EventEmitter2,
+    private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
   @Cron('*/5 * * * 1-5', { timeZone: 'America/Toronto' })
@@ -150,26 +157,51 @@ export class WatchlistMonitoringCronService {
         `Found ${activeMonitorings.length} active gap monitorings`,
       );
 
+      let checked = 0;
+      let failed = 0;
+      let firstError: unknown;
       for (const monitoring of activeMonitorings) {
-        await this.processGapMonitoring(monitoring.watchlistId);
+        const result = await this.processGapMonitoring(monitoring.watchlistId);
+        checked += result.checked;
+        failed += result.failed;
+        firstError ??= result.firstError;
+      }
+
+      if (failed > 0) {
+        const firstMessage =
+          firstError instanceof Error ? firstError.message : 'Unknown error';
+        await this.cronJobNotificationService.notifyJobError(
+          this.gapJobOptions,
+          new Error(
+            `${failed} of ${checked} tickers could not be checked: ${firstMessage}`,
+          ),
+        );
       }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`${jobName} failed: ${errorMessage}`);
+      await this.cronJobNotificationService.notifyJobError(
+        this.gapJobOptions,
+        error,
+      );
     }
   }
 
-  private async processGapMonitoring(watchlistId: WatchlistId): Promise<void> {
+  private async processGapMonitoring(
+    watchlistId: WatchlistId,
+  ): Promise<{ checked: number; failed: number; firstError?: unknown }> {
     const watchlist = await this.findWatchlistTickers.execute(watchlistId);
 
     if (!watchlist) {
       this.logger.warn(
         `Watchlist ${watchlistId.value} not found, skipping gap monitoring`,
       );
-      return;
+      return { checked: 0, failed: 0 };
     }
 
+    let failed = 0;
+    let firstError: unknown;
     for (const ticker of watchlist.tickers) {
       try {
         const result = await this.gapDetectionService.detect(ticker);
@@ -212,6 +244,8 @@ export class WatchlistMonitoringCronService {
           );
         }
       } catch (error) {
+        failed++;
+        firstError ??= error;
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
         this.logger.warn(
@@ -219,6 +253,8 @@ export class WatchlistMonitoringCronService {
         );
       }
     }
+
+    return { checked: watchlist.tickers.length, failed, firstError };
   }
 
   private async sendGapAlert(
