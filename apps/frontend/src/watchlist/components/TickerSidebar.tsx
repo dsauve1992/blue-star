@@ -4,7 +4,7 @@ import { LoadingSpinner } from "src/global/design-system";
 import { Alert, AlertDescription } from "src/global/design-system";
 import { TickerListItem } from "./TickerListItem";
 import { TickerSearchCombobox } from "./TickerSearchCombobox";
-import { useRsRatings } from "src/stock-analysis/hooks/use-rs-ratings";
+import { useRsRatings } from "src/rs-rating/hooks/use-rs-ratings";
 
 interface WatchlistOption {
   id: string;
