@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { MarketBreadthAnalysisService } from '../../domain/services/market-breadth-analysis.service';
 import { MARKET_BREADTH_ANALYSIS_SERVICE } from '../../constants/tokens';
 import { CronJobNotificationService } from '../../../notification/notification.module';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class MarketBreadthCronService {
@@ -14,7 +15,7 @@ export class MarketBreadthCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('0 23 * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('0 23 * * 1-5', { timeZone: MARKET_TIMEZONE })
   async runDailyBreadth(): Promise<void> {
     const jobName = 'Market Breadth NH/NL';
     this.logger.log(`Starting ${jobName}`);

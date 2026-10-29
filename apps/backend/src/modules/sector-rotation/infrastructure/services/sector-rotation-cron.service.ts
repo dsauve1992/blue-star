@@ -4,6 +4,7 @@ import { SectorRotationPersistenceService } from '../../domain/services/sector-r
 import { SECTOR_ROTATION_PERSISTENCE_SERVICE } from '../../constants/tokens';
 import { RotationUniverseRegistry } from '../universes/rotation-universe.registry';
 import { CronJobNotificationService } from '../../../notification/notification.module';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class SectorRotationCronService {
@@ -16,7 +17,7 @@ export class SectorRotationCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('30 16 * * 5', { timeZone: 'America/Toronto' })
+  @Cron('30 16 * * 5', { timeZone: MARKET_TIMEZONE })
   async runWeeklyCalculation() {
     const jobName = 'Weekly Sector Rotation';
     const universes = this.universeRegistry.listUniverses();

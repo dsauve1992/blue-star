@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { MomentumLeadersComputationService } from '../../domain/services/momentum-leaders-computation.service';
 import { MOMENTUM_LEADERS_COMPUTATION_SERVICE } from '../../constants/tokens';
 import { CronJobNotificationService } from '../../../notification/notification.module';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class MomentumLeadersCronService {
@@ -14,7 +15,7 @@ export class MomentumLeadersCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('45 17 * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('45 17 * * 1-5', { timeZone: MARKET_TIMEZONE })
   async runDailyScan() {
     const jobName = 'Daily Momentum Leaders Scan';
     this.logger.log(`Starting ${jobName}...`);

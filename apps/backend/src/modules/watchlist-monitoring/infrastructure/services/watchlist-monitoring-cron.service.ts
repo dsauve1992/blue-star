@@ -27,6 +27,7 @@ import {
   isWithinMarketHours,
   marketToday,
 } from './market-time.util';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class WatchlistMonitoringCronService {
@@ -49,7 +50,7 @@ export class WatchlistMonitoringCronService {
     private readonly eventEmitter: EventEmitter2,
   ) {}
 
-  @Cron('*/5 * * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('*/5 * * * 1-5', { timeZone: MARKET_TIMEZONE })
   async monitorBreakouts(): Promise<void> {
     if (!isWithinMarketHours()) {
       return;
@@ -135,7 +136,7 @@ export class WatchlistMonitoringCronService {
     this.logger.log(`Breakout alert sent for ${ticker}`);
   }
 
-  @Cron('45 9 * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('45 9 * * 1-5', { timeZone: MARKET_TIMEZONE })
   async monitorGaps(): Promise<void> {
     const jobName = 'Watchlist Gap Monitoring';
     this.logger.log(`Starting ${jobName}...`);

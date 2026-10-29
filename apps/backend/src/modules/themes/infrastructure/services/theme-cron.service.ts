@@ -3,6 +3,7 @@ import { Cron } from '@nestjs/schedule';
 import { ThemeService } from '../../domain/services/theme.service';
 import { THEME_SERVICE } from '../../constants/tokens';
 import { CronJobNotificationService } from '../../../notification/notification.module';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class ThemeCronService {
@@ -15,7 +16,7 @@ export class ThemeCronService {
   ) {}
 
   @Cron('0 17 * * 5', {
-    timeZone: 'America/Toronto',
+    timeZone: MARKET_TIMEZONE,
   })
   async runWeeklyThemeExtraction() {
     const jobName = 'Weekly Theme Extraction';

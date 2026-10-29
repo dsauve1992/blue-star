@@ -4,6 +4,7 @@ import { ConsolidationAnalysisService } from '../../domain/services/consolidatio
 import { AnalysisDate } from '../../domain/value-objects/analysis-date';
 import { CONSOLIDATION_ANALYSIS_SERVICE } from '../../constants/tokens';
 import { CronJobNotificationService } from '../../../notification/notification.module';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class ConsolidationCronService {
@@ -15,7 +16,7 @@ export class ConsolidationCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('30 17 * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('30 17 * * 1-5', { timeZone: MARKET_TIMEZONE })
   async runDailyAnalysis() {
     const jobName = 'Daily Consolidation Analysis';
     this.logger.log(`Starting ${jobName}...`);
@@ -55,7 +56,7 @@ export class ConsolidationCronService {
     }
   }
 
-  @Cron('30 17 * * 5', { timeZone: 'America/Toronto' })
+  @Cron('30 17 * * 5', { timeZone: MARKET_TIMEZONE })
   async runWeeklyAnalysis() {
     const jobName = 'Weekly Consolidation Analysis';
     this.logger.log(`Starting ${jobName}...`);
