@@ -7,6 +7,7 @@ import {
   RS_RATING_COMPUTATION_SERVICE,
 } from '../../constants/tokens';
 import { CronJobNotificationService } from '../../../notification/notification.module';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class RsRatingCronService {
@@ -20,7 +21,7 @@ export class RsRatingCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('0 18 * * 5', { timeZone: 'America/Toronto' })
+  @Cron('0 18 * * 5', { timeZone: MARKET_TIMEZONE })
   async runWeeklyRsRatings() {
     const jobName = 'Weekly RS Rating Computation';
     this.logger.log(`Starting ${jobName}...`);

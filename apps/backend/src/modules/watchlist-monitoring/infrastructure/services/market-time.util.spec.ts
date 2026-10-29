@@ -1,5 +1,4 @@
 import {
-  getMarketDateKey,
   getMarketOpenDateUtc,
   isDuringMarketHours,
   isWithinMarketHours,
@@ -17,11 +16,6 @@ describe('market-time.util', () => {
     const now = new Date('2025-06-16T14:00:00.000Z');
     const marketOpen = getMarketOpenDateUtc(now);
     expect(marketOpen.toISOString()).toBe('2025-06-16T13:30:00.000Z');
-  });
-
-  it('should compute market date key in Toronto timezone', () => {
-    const date = new Date('2025-02-15T03:00:00.000Z');
-    expect(getMarketDateKey(date)).toBe('2025-02-14');
   });
 
   it('should map a late-evening ET instant to the Toronto calendar day', () => {

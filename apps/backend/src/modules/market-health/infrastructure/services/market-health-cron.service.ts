@@ -14,6 +14,7 @@ import {
   MarketHealthStatusValue,
 } from '../../domain/value-objects/market-health-status';
 import { ComputeMarketHealthUseCase } from '../../use-cases/compute-market-health.use-case';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class MarketHealthCronService {
@@ -34,7 +35,7 @@ export class MarketHealthCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('0 8 * * 1-5', { timeZone: 'America/Toronto' })
+  @Cron('0 8 * * 1-5', { timeZone: MARKET_TIMEZONE })
   async computeMarketHealth(): Promise<void> {
     this.logger.log('Starting market health computation...');
 

@@ -4,6 +4,7 @@ import { LeaderScanAnalysisService } from '../../domain/services/leader-scan-ana
 import { ScanDate } from '../../domain/value-objects/scan-date';
 import { LEADER_SCAN_ANALYSIS_SERVICE } from '../../constants/tokens';
 import { CronJobNotificationService } from '../../../notification/notification.module';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
 @Injectable()
 export class LeaderScanCronService {
@@ -15,7 +16,7 @@ export class LeaderScanCronService {
     private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
-  @Cron('30 19 * * 5', { timeZone: 'America/Toronto' })
+  @Cron('30 19 * * 5', { timeZone: MARKET_TIMEZONE })
   async runWeeklyScan(): Promise<void> {
     const jobName = 'Weekly Leader Scan';
     this.logger.log(`Starting ${jobName}`);
