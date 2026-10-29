@@ -1,18 +1,25 @@
 export class WeekUtils {
   static getWeekKey(date: Date): string {
-    const year = date.getFullYear();
-    const week = WeekUtils.getWeekNumber(date);
-    return `${year}-W${week.toString().padStart(2, '0')}`;
+    const { isoYear, week } = WeekUtils.getIsoWeek(date);
+    return `${isoYear}-W${week.toString().padStart(2, '0')}`;
   }
 
   static getWeekNumber(date: Date): number {
+    return WeekUtils.getIsoWeek(date).week;
+  }
+
+  private static getIsoWeek(date: Date): { isoYear: number; week: number } {
     const d = new Date(
       Date.UTC(date.getFullYear(), date.getMonth(), date.getDate()),
     );
     const dayNum = d.getUTCDay() || 7;
     d.setUTCDate(d.getUTCDate() + 4 - dayNum);
-    const yearStart = new Date(Date.UTC(d.getUTCFullYear(), 0, 1));
-    return Math.ceil(((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7);
+    const isoYear = d.getUTCFullYear();
+    const yearStart = new Date(Date.UTC(isoYear, 0, 1));
+    const week = Math.ceil(
+      ((d.getTime() - yearStart.getTime()) / 86400000 + 1) / 7,
+    );
+    return { isoYear, week };
   }
 
   static getMondayOfWeek(date: Date): Date {
