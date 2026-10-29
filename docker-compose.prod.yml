@@ -2,6 +2,12 @@
 # Used for deployment to Raspberry Pi
 # Note: PostgreSQL is managed separately by Ansible (postgres role)
 
+x-logging: &default-logging
+  driver: json-file
+  options:
+    max-size: "10m"
+    max-file: "3"
+
 services:
   backend:
     build:
@@ -9,6 +15,7 @@ services:
       dockerfile: apps/backend/Dockerfile
     container_name: blue-star-backend
     restart: unless-stopped
+    logging: *default-logging
     init: true
     ports:
       - "3000:3000"
@@ -45,6 +52,7 @@ services:
         - VITE_KINDE_AUDIENCE=${VITE_KINDE_AUDIENCE}
     container_name: blue-star-frontend
     restart: unless-stopped
+    logging: *default-logging
     ports:
       - "5173:80"
     healthcheck:
