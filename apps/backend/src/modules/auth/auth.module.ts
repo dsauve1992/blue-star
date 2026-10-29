@@ -10,3 +10,7 @@ import { AuthGuard } from './auth.guard';
   exports: [AuthGuard],
 })
 export class AuthModule {}
+
+export type { AuthContext } from './auth-context.interface';
+export type { AuthenticatedRequest } from './types/request.interface';
+export { Public } from './public.decorator';

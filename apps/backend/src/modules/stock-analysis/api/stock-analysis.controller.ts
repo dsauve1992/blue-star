@@ -7,7 +7,7 @@ import {
   Post,
   Query,
 } from '@nestjs/common';
-import { Public } from '../../auth/public.decorator';
+import { Public } from '../../auth/auth.module';
 import {
   QueryConsolidationAnalysisAnalyzeUseCase,
   QueryConsolidationAnalysisRequestDto,

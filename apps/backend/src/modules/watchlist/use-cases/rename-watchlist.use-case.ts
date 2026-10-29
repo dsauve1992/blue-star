@@ -3,7 +3,7 @@ import { Watchlist } from '../domain/entities/watchlist';
 import { WatchlistId } from '../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../domain/value-objects/watchlist-name';
 import type { WatchlistWriteRepository } from '../domain/repositories/watchlist-write.repository.interface';
-import type { AuthContext } from '../../auth/auth-context.interface';
+import type { AuthContext } from '../../auth/auth.module';
 import { WATCHLIST_WRITE_REPOSITORY } from '../constants/tokens';
 import { AuthorizationError } from '../domain/domain-errors';
 
