@@ -10,7 +10,6 @@ import { YahooChartDataService } from './infrastructure/services/yahoo-chart-dat
 import { CachedMarketDataService } from './infrastructure/services/cached-market-data.service';
 import { MarketDataCacheRepositoryImpl } from './infrastructure/repositories/market-data-cache.repository';
 import { DatabaseModule } from '../../config/database.module';
-import { StockClassificationModule } from '../stock-classification/stock-classification.module';
 import {
   MARKET_DATA_SERVICE,
   MARKET_DATA_CACHE_REPOSITORY,
@@ -32,7 +31,7 @@ export type {
 export { PricePoint } from './domain/value-objects/price-point';
 
 @Module({
-  imports: [DatabaseModule, StockClassificationModule],
+  imports: [DatabaseModule],
   controllers: [MarketDataController],
   providers: [
     {

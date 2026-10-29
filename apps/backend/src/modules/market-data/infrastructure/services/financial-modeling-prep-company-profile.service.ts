@@ -61,7 +61,6 @@ export class FinancialModelingPrepCompanyProfileService
         symbol: profile.symbol,
         sector: profile.sector,
         industry: profile.industry,
-        industryGroup: null,
       };
     } catch (error) {
       throw new Error(`Failed to fetch company profile: ${error}`);

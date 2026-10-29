@@ -4,7 +4,6 @@ export interface CompanyProfileDto {
   symbol: string;
   sector: string;
   industry: string;
-  industryGroup: string | null;
 }
 
 export interface GetCompanyProfileResponse {
