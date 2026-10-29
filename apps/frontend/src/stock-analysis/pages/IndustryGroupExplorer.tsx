@@ -153,6 +153,7 @@ export default function IndustryGroupExplorer() {
     data: financialData,
     isLoading: financialLoading,
     error: financialError,
+    refetch: refetchFinancials,
   } = useFinancialReport(selectedSymbol);
 
   const { data: watchlistsData } = useWatchlists();
@@ -526,6 +527,7 @@ export default function IndustryGroupExplorer() {
                         report={financialData?.report ?? null}
                         isLoading={financialLoading}
                         error={financialError}
+                        onRetry={() => refetchFinancials()}
                       />
                     </div>
                   </div>
