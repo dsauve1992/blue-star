@@ -32,6 +32,8 @@ services:
       - KINDE_DOMAIN=${KINDE_DOMAIN:-}
       - KINDE_CLIENT_ID=${KINDE_CLIENT_ID:-}
       - FRONTEND_URL=${FRONTEND_URL:-}
+      - NTFY_BASE_URL=${NTFY_BASE_URL:-}
+      - NTFY_API_KEY=${NTFY_API_KEY:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
