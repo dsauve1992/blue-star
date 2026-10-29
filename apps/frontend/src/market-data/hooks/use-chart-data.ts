@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback, useEffect, useRef } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChartDataClient,
@@ -19,10 +19,14 @@ export function useChartData(
   includeExtendedHours = true,
 ) {
   const [bars, setBars] = useState(initialBars);
+  const [hasMoreHistory, setHasMoreHistory] = useState(true);
+  const candleCountBeforeLoadMoreRef = useRef<number | null>(null);
 
   // Reset bars when symbol/interval changes
   useEffect(() => {
     setBars(initialBars);
+    setHasMoreHistory(true);
+    candleCountBeforeLoadMoreRef.current = null;
   }, [symbol, exchange, interval, initialBars, includeExtendedHours]);
 
   const query = useQuery({
@@ -54,9 +58,20 @@ export function useChartData(
     },
   });
 
+  const candleCount = query.data?.chartData?.candles.length ?? 0;
+
+  useEffect(() => {
+    const countBefore = candleCountBeforeLoadMoreRef.current;
+    if (countBefore === null || !query.data || query.isPlaceholderData) return;
+    candleCountBeforeLoadMoreRef.current = null;
+    if (candleCount <= countBefore) setHasMoreHistory(false);
+  }, [query.data, query.isPlaceholderData, candleCount]);
+
   const loadMore = useCallback(() => {
+    if (!hasMoreHistory) return;
+    candleCountBeforeLoadMoreRef.current = candleCount;
     setBars((prev) => prev + LOAD_MORE_INCREMENT);
-  }, []);
+  }, [hasMoreHistory, candleCount]);
 
   const isLoadingMore = query.isPlaceholderData && bars > initialBars;
 
@@ -64,6 +79,7 @@ export function useChartData(
     ...query,
     candles: query.data?.chartData?.candles as ChartCandleDto[] | undefined,
     loadMore,
+    hasMoreHistory,
     isLoadingMore,
   };
 }
