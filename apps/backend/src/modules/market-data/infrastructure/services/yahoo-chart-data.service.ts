@@ -34,6 +34,14 @@ const BARS_TO_DAYS: Record<ChartInterval, (bars: number) => number> = {
   M: (bars) => bars * 31,
 };
 
+const MAX_DAYS_BACK: Partial<Record<ChartInterval, number>> = {
+  '1': 7,
+  '5': 59,
+  '15': 59,
+  '30': 59,
+  '60': 729,
+};
+
 @Injectable()
 export class YahooChartDataService implements ChartDataService {
   constructor(
@@ -49,7 +57,10 @@ export class YahooChartDataService implements ChartDataService {
     includeExtendedHours = true,
   ): Promise<ChartData> {
     const yahooInterval = CHART_TO_YAHOO_INTERVAL[interval];
-    const daysBack = BARS_TO_DAYS[interval](bars);
+    const daysBack = Math.min(
+      BARS_TO_DAYS[interval](bars),
+      MAX_DAYS_BACK[interval] ?? Infinity,
+    );
 
     const endDate = new Date();
     const startDate = new Date();
