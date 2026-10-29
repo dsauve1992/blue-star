@@ -1,16 +1,14 @@
 import { Injectable } from '@nestjs/common';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { join, resolve } from 'path';
-import { existsSync } from 'node:fs';
 import {
   ChartDataService,
   ChartData,
   ChartInterval,
 } from '../../domain/services/chart-data.service';
 import { PricePoint } from '../../domain/value-objects/price-point';
-
-const execAsync = promisify(exec);
+import {
+  PythonScriptError,
+  PythonScriptRunner,
+} from '../../../../shared/services/python-script-runner';
 
 interface PythonCandle {
   time: string | number;
@@ -31,41 +29,10 @@ interface PythonChartResponse {
 
 @Injectable()
 export class TradingViewChartDataService implements ChartDataService {
-  private readonly scriptPath: string;
-  private readonly pythonExecutable: string;
-  private readonly screenerDir: string;
-
-  constructor() {
-    const backendDir = process.cwd();
-    const workspaceRoot = resolve(backendDir, '..');
-    this.screenerDir = resolve(workspaceRoot, 'screener');
-    this.scriptPath = join(this.screenerDir, 'tradingview_chart_service.py');
-
-    if (!existsSync(this.scriptPath)) {
-      throw new Error(
-        `TradingView chart script not found at ${this.scriptPath}`,
-      );
-    }
-
-    const venvPython = join(this.screenerDir, 'venv', 'bin', 'python3');
-    const venvPythonWindows = join(
-      this.screenerDir,
-      'venv',
-      'Scripts',
-      'python.exe',
-    );
-
-    if (existsSync(venvPython)) {
-      this.pythonExecutable = venvPython;
-    } else if (existsSync(venvPythonWindows)) {
-      this.pythonExecutable = venvPythonWindows;
-    } else {
-      this.pythonExecutable = 'python3';
-      console.warn(
-        `Python venv not found at ${venvPython}. Using system python3.`,
-      );
-    }
-  }
+  private readonly runner = new PythonScriptRunner(
+    'screener',
+    'tradingview_chart_service.py',
+  );
 
   async getChartData(
     symbol: string,
@@ -75,23 +42,24 @@ export class TradingViewChartDataService implements ChartDataService {
     _includeExtendedHours = true,
   ): Promise<ChartData> {
     void _includeExtendedHours;
-    const command = `${this.pythonExecutable} ${this.scriptPath} --symbol=${symbol} --exchange=${exchange} --interval=${interval} --bars=${bars}`;
-
     let stdout: string;
     try {
-      const result = await execAsync(command, {
-        cwd: this.screenerDir,
-        maxBuffer: 10 * 1024 * 1024,
-        timeout: 30000,
-        env: { ...process.env, PYTHONUNBUFFERED: '1' },
-      });
+      const result = await this.runner.run(
+        [
+          `--symbol=${symbol}`,
+          `--exchange=${exchange}`,
+          `--interval=${interval}`,
+          `--bars=${bars}`,
+        ],
+        { timeoutMs: 30000, maxBufferBytes: 10 * 1024 * 1024 },
+      );
       stdout = result.stdout;
     } catch (error: unknown) {
-      const execError = error as { stdout?: string; stderr?: string };
-      stdout = execError.stdout || '';
+      if (!(error instanceof PythonScriptError)) throw error;
+      stdout = error.stdout;
       if (!stdout.trim()) {
         throw new Error(
-          `TradingView chart data fetch failed: ${execError.stderr || 'unknown error'}`,
+          `TradingView chart data fetch failed: ${error.stderr || 'unknown error'}`,
         );
       }
     }
