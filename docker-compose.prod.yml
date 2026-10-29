@@ -22,6 +22,9 @@ services:
       - DB_SSL=${DB_SSL:-false}
       - FINANCIAL_MODELING_PREP_API_KEY=${FINANCIAL_MODELING_PREP_API_KEY:-}
       - SEC_EDGAR_CONTACT_EMAIL=${SEC_EDGAR_CONTACT_EMAIL:-}
+      - KINDE_DOMAIN=${KINDE_DOMAIN:-}
+      - KINDE_CLIENT_ID=${KINDE_CLIENT_ID:-}
+      - FRONTEND_URL=${FRONTEND_URL:-}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
