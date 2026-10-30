@@ -1,19 +1,10 @@
-import { Injectable } from '@nestjs/common';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { join, resolve } from 'path';
-import { existsSync } from 'node:fs';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConsolidationScreenerService } from '../../domain/services/consolidation-screener.service';
 import { ConsolidationResult } from '../../domain/value-objects/consolidation-result';
-
-const execAsync = promisify(exec);
-
-interface ExecException extends Error {
-  code?: number;
-  stdout?: string;
-  stderr?: string;
-  signal?: string;
-}
+import {
+  PythonScriptError,
+  PythonScriptRunner,
+} from '../../../../shared/services/python-script-runner';
 
 interface PythonConsolidationItem {
   symbol: string;
@@ -35,45 +26,8 @@ interface PythonResponse {
 export class PythonConsolidationScreenerService
   implements ConsolidationScreenerService
 {
-  private readonly screenerPath: string;
-  private readonly pythonExecutable: string;
-  private readonly screenerDir: string;
-
-  constructor() {
-    const backendDir = process.cwd();
-    const workspaceRoot = resolve(backendDir, '..');
-    this.screenerDir = resolve(workspaceRoot, 'screener');
-    this.screenerPath = join(this.screenerDir, 'main.py');
-
-    if (!existsSync(this.screenerPath)) {
-      throw new Error(
-        `Python screener script not found at ${this.screenerPath}. Please ensure the screener is set up.`,
-      );
-    }
-
-    const venvPython = join(this.screenerDir, 'venv', 'bin', 'python3');
-    const venvPythonWindows = join(
-      this.screenerDir,
-      'venv',
-      'Scripts',
-      'python.exe',
-    );
-
-    if (existsSync(venvPython)) {
-      this.pythonExecutable = venvPython;
-    } else if (existsSync(venvPythonWindows)) {
-      this.pythonExecutable = venvPythonWindows;
-    } else {
-      this.pythonExecutable = 'python3';
-      console.warn(
-        `Python virtual environment not found at ${venvPython}. Using system python3. Make sure dependencies are installed.`,
-      );
-    }
-
-    console.log(
-      `Python screener configured: ${this.pythonExecutable} ${this.screenerPath}`,
-    );
-  }
+  private readonly logger = new Logger(PythonConsolidationScreenerService.name);
+  private readonly runner = new PythonScriptRunner('screener', 'main.py');
 
   async analyzeConsolidations(options: { type: 'daily' | 'weekly' }): Promise<{
     daily: ConsolidationResult[];
@@ -82,56 +36,30 @@ export class PythonConsolidationScreenerService
     const type = options.type;
 
     try {
-      const command = `${this.pythonExecutable} ${this.screenerPath} --format=json --type=${type} --quiet`;
-
       let stdout: string;
-      let stderr: string;
 
       try {
-        const result = await execAsync(command, {
-          cwd: this.screenerDir,
-          maxBuffer: 10 * 1024 * 1024,
-          timeout: 600000,
-          env: { ...process.env, PYTHONUNBUFFERED: '1' },
-        });
-        stdout = result.stdout;
-        stderr = result.stderr;
-      } catch (execError: unknown) {
-        const error = execError as ExecException;
+        ({ stdout } = await this.runner.run(
+          ['--format=json', `--type=${type}`, '--quiet'],
+          { timeoutMs: 600000, maxBufferBytes: 10 * 1024 * 1024 },
+        ));
+      } catch (error: unknown) {
+        if (!(error instanceof PythonScriptError) || error.timedOut) {
+          throw error;
+        }
+        stdout = error.stdout;
 
-        stdout = error.stdout || '';
-        stderr = error.stderr || '';
-
-        const errorCode = error.code;
-        const errorSignal = error.signal;
-
-        const errorInfo = {
-          command,
-          cwd: this.screenerDir,
-          pythonExecutable: this.pythonExecutable,
-          screenerPath: this.screenerPath,
-          errorCode,
-          errorSignal,
-          stdout: stdout.substring(0, 1000),
-          stderr: stderr.substring(0, 1000),
+        this.logger.error('Python screener execution failed', {
+          errorCode: error.exitCode,
+          stderr: error.stderr.substring(0, 1000),
           message: error.message,
-          fullError: JSON.stringify(error),
-        };
+        });
 
-        console.error(
-          'Python screener execution failed:',
-          JSON.stringify(errorInfo, null, 2),
-        );
-
-        if (!stdout || !stdout.trim()) {
+        if (!stdout.trim()) {
           const errorDetails = [
-            `Command: ${command}`,
-            `Working directory: ${this.screenerDir}`,
-            `Python executable: ${this.pythonExecutable}`,
-            `Exit code: ${errorCode || 'unknown'}`,
-            `Signal: ${errorSignal || 'none'}`,
+            `Exit code: ${error.exitCode ?? 'unknown'}`,
             `Stdout: ${stdout || '(empty)'}`,
-            `Stderr: ${stderr || '(empty)'}`,
+            `Stderr: ${error.stderr || '(empty)'}`,
             `Error message: ${error.message || 'No message'}`,
           ].join('\n');
 
@@ -139,10 +67,6 @@ export class PythonConsolidationScreenerService
             `Python screener failed to execute.\n${errorDetails}`,
           );
         }
-      }
-
-      if (stderr && !stderr.includes('Found')) {
-        console.warn('Python screener stderr:', stderr);
       }
 
       const stdoutLines = stdout.trim().split('\n');
@@ -196,7 +120,7 @@ export class PythonConsolidationScreenerService
         ),
       };
     } catch (error) {
-      if (error instanceof Error && error.message.includes('timeout')) {
+      if (error instanceof PythonScriptError && error.timedOut) {
         throw new Error('Python screener execution timed out');
       }
 

@@ -1,20 +1,12 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { join, resolve } from 'path';
-import { existsSync } from 'node:fs';
 import {
   MomentumLeadersScan,
   MomentumLeadersScreenerService,
 } from '../../domain/services/momentum-leaders-screener.service';
-
-const execAsync = promisify(exec);
-
-interface ExecException extends Error {
-  code?: number;
-  stdout?: string;
-  stderr?: string;
-}
+import {
+  PythonScriptError,
+  PythonScriptRunner,
+} from '../../../../shared/services/python-script-runner';
 
 interface PythonLeader {
   symbol: string;
@@ -48,78 +40,37 @@ export class PythonMomentumLeadersScreenerService
   private readonly logger = new Logger(
     PythonMomentumLeadersScreenerService.name,
   );
-  private readonly scriptPath: string;
-  private readonly screenerDir: string;
-  private readonly pythonExecutable: string;
-
-  constructor() {
-    const workspaceRoot = resolve(process.cwd(), '..');
-    this.screenerDir = resolve(workspaceRoot, 'screener');
-    this.scriptPath = join(this.screenerDir, 'momentum_leaders_service.py');
-
-    if (!existsSync(this.scriptPath)) {
-      throw new Error(
-        `Momentum leaders script not found at ${this.scriptPath}. Please ensure the screener is set up.`,
-      );
-    }
-
-    const venvPython = join(this.screenerDir, 'venv', 'bin', 'python3');
-    const venvPythonWindows = join(
-      this.screenerDir,
-      'venv',
-      'Scripts',
-      'python.exe',
-    );
-
-    if (existsSync(venvPython)) {
-      this.pythonExecutable = venvPython;
-    } else if (existsSync(venvPythonWindows)) {
-      this.pythonExecutable = venvPythonWindows;
-    } else {
-      this.pythonExecutable = 'python3';
-      this.logger.warn(
-        `Python virtual environment not found at ${venvPython}. Using system python3.`,
-      );
-    }
-  }
+  private readonly runner = new PythonScriptRunner(
+    'screener',
+    'momentum_leaders_service.py',
+  );
 
   async fetchMomentumLeaders(): Promise<MomentumLeadersScan> {
-    const command = `${this.pythonExecutable} ${this.scriptPath} --format=json --quiet`;
-
     let stdout: string;
-    let stderr: string;
 
     try {
-      const result = await execAsync(command, {
-        cwd: this.screenerDir,
-        maxBuffer: 10 * 1024 * 1024,
-        timeout: 600000,
-        env: { ...process.env, PYTHONUNBUFFERED: '1' },
-      });
-      stdout = result.stdout;
-      stderr = result.stderr;
-    } catch (execError: unknown) {
-      const error = execError as ExecException;
-      stdout = error.stdout ?? '';
-      stderr = error.stderr ?? '';
+      ({ stdout } = await this.runner.run(['--format=json', '--quiet'], {
+        timeoutMs: 600000,
+        maxBufferBytes: 10 * 1024 * 1024,
+      }));
+    } catch (error: unknown) {
+      if (!(error instanceof PythonScriptError)) throw error;
+      if (error.timedOut) {
+        throw new Error('Momentum leaders screener execution timed out');
+      }
+      stdout = error.stdout;
 
       this.logger.error('Momentum leaders screener execution failed', {
-        errorCode: error.code,
-        stderr: stderr.substring(0, 1000),
+        errorCode: error.exitCode,
+        stderr: error.stderr.substring(0, 1000),
         message: error.message,
       });
 
       if (!stdout.trim()) {
         throw new Error(
-          `Momentum leaders screener failed. Exit code: ${error.code ?? 'unknown'}. Stderr: ${stderr || '(empty)'}`,
+          `Momentum leaders screener failed. Exit code: ${error.exitCode ?? 'unknown'}. Stderr: ${error.stderr || '(empty)'}`,
         );
       }
-    }
-
-    if (stderr) {
-      this.logger.debug(
-        `Momentum leaders screener stderr: ${stderr.substring(0, 500)}`,
-      );
     }
 
     const jsonLine = stdout
