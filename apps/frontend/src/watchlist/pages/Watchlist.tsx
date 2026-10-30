@@ -72,6 +72,14 @@ export default function Watchlist() {
     setRemovedTicker(null);
   }, []);
 
+  const armUndoTimer = useCallback(() => {
+    clearTimeout(undoTimerRef.current);
+    undoTimerRef.current = setTimeout(
+      () => setRemovedTicker(null),
+      UNDO_NOTICE_MS,
+    );
+  }, []);
+
   useEffect(() => () => clearTimeout(undoTimerRef.current), []);
 
   const removedTickerRef = useRef(removedTicker);
@@ -189,16 +197,12 @@ export default function Watchlist() {
           watchlistId: selectedWatchlistId,
           ticker,
         });
-        clearTimeout(undoTimerRef.current);
         setRemovedTicker({
           ticker,
           watchlistId: selectedWatchlistId,
           watchlistName: selectedWatchlist?.name ?? "",
         });
-        undoTimerRef.current = setTimeout(
-          () => setRemovedTicker(null),
-          UNDO_NOTICE_MS,
-        );
+        armUndoTimer();
         if (selectedTicker === ticker) {
           const remaining = tickers.filter((t) => t !== ticker);
           setSelectedTicker(remaining.length > 0 ? remaining[0] : null);
@@ -217,6 +221,7 @@ export default function Watchlist() {
       removeTickerFromWatchlist,
       setSelectedTicker,
       dismissRemovedTicker,
+      armUndoTimer,
     ],
   );
 
@@ -232,9 +237,10 @@ export default function Watchlist() {
       if (removedTickerRef.current === removedTicker) dismissRemovedTicker();
     } catch (err) {
       console.error("Failed to undo ticker removal:", err);
+      if (removedTickerRef.current === removedTicker) armUndoTimer();
       setActionError("Could not restore the ticker. Please try again.");
     }
-  }, [removedTicker, addTickerToWatchlist, dismissRemovedTicker]);
+  }, [removedTicker, addTickerToWatchlist, dismissRemovedTicker, armUndoTimer]);
 
   const handleAddTicker = useCallback(
     async (ticker: string) => {
