@@ -34,6 +34,10 @@ describe('PythonRsRatingScreenerService', () => {
     service = new PythonRsRatingScreenerService();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('runs the rs_rating_service.py script', () => {
     expect(PythonScriptRunner).toHaveBeenCalledWith(
       'screener',

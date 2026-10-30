@@ -43,6 +43,10 @@ describe('PythonConsolidationScreenerService', () => {
     service = new PythonConsolidationScreenerService();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('runs the main.py script', () => {
     expect(PythonScriptRunner).toHaveBeenCalledWith('screener', 'main.py');
   });

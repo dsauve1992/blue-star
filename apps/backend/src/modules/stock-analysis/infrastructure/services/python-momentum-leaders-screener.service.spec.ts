@@ -52,6 +52,10 @@ describe('PythonMomentumLeadersScreenerService', () => {
     service = new PythonMomentumLeadersScreenerService();
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('runs the momentum_leaders_service.py script', () => {
     expect(PythonScriptRunner).toHaveBeenCalledWith(
       'screener',
