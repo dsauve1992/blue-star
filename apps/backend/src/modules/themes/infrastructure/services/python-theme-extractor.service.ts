@@ -1,18 +1,8 @@
-import { Injectable } from '@nestjs/common';
-import { exec } from 'child_process';
-import { promisify } from 'util';
-import { join, resolve } from 'path';
-import { existsSync } from 'node:fs';
-
-const execAsync = promisify(exec);
-
-interface ExecException extends Error {
-  code?: number;
-  stdout?: string;
-  stderr?: string;
-  signal?: string;
-  killed?: boolean;
-}
+import { Injectable, Logger } from '@nestjs/common';
+import {
+  PythonScriptError,
+  PythonScriptRunner,
+} from '../../../../shared/services/python-script-runner';
 
 interface ThemeExtractorResponse {
   theme: string;
@@ -21,115 +11,49 @@ interface ThemeExtractorResponse {
 
 @Injectable()
 export class PythonThemeExtractorService {
-  private readonly pythonExecutable: string;
-  private readonly extractorPath: string;
-  private readonly extractorDir: string;
+  private readonly logger = new Logger(PythonThemeExtractorService.name);
+  private readonly runner = new PythonScriptRunner(
+    'theme_extractor',
+    'main.py',
+  );
   private readonly timeoutMs = 600_000;
 
-  constructor() {
-    const backendDir = process.cwd();
-    const workspaceRoot = resolve(backendDir, '..');
-    this.extractorDir = resolve(workspaceRoot, 'theme_extractor');
-    this.extractorPath = join(this.extractorDir, 'main.py');
-
-    if (!existsSync(this.extractorPath)) {
-      throw new Error(
-        `Python theme extractor script not found at ${this.extractorPath}. Please ensure the theme_extractor is set up.`,
-      );
-    }
-
-    const venvPython = join(this.extractorDir, 'venv', 'bin', 'python3');
-    const venvPythonWindows = join(
-      this.extractorDir,
-      'venv',
-      'Scripts',
-      'python.exe',
-    );
-
-    if (existsSync(venvPython)) {
-      this.pythonExecutable = venvPython;
-    } else if (existsSync(venvPythonWindows)) {
-      this.pythonExecutable = venvPythonWindows;
-    } else {
-      this.pythonExecutable = 'python3';
-      console.warn(
-        `Python virtual environment not found at ${venvPython}. Using system python3. Make sure dependencies are installed.`,
-      );
-    }
-
-    console.log(
-      `Python theme extractor configured: ${this.pythonExecutable} ${this.extractorPath}`,
-    );
-  }
-
   async extractThemes(): Promise<ThemeExtractorResponse[]> {
-    const command = `${this.pythonExecutable} ${this.extractorPath}`;
-
     let stdout: string;
     let stderr: string;
 
     try {
-      const result = await execAsync(command, {
-        cwd: this.extractorDir,
-        maxBuffer: 10 * 1024 * 1024,
-        timeout: this.timeoutMs,
-        env: { ...process.env, PYTHONUNBUFFERED: '1' },
+      const result = await this.runner.run([], {
+        timeoutMs: this.timeoutMs,
+        maxBufferBytes: 10 * 1024 * 1024,
       });
       stdout = result.stdout;
       stderr = result.stderr;
     } catch (execError: unknown) {
-      const error = execError as ExecException;
+      if (!(execError instanceof PythonScriptError)) throw execError;
 
-      if (error.killed) {
+      if (execError.timedOut) {
         throw new Error(
           `Python theme extractor timed out after ${this.timeoutMs / 1000}s`,
         );
       }
 
-      stdout = error.stdout || '';
-      stderr = error.stderr || '';
+      stdout = execError.stdout;
+      stderr = execError.stderr;
 
-      const errorCode = error.code;
-      const errorSignal = error.signal;
-
-      const errorInfo = {
-        command,
-        cwd: this.extractorDir,
-        pythonExecutable: this.pythonExecutable,
-        extractorPath: this.extractorPath,
-        errorCode,
-        errorSignal,
-        stdout: stdout.substring(0, 1000),
-        stderr: stderr.substring(0, 1000),
-        message: error.message,
-        fullError: JSON.stringify(error),
-      };
-
-      console.error(
-        'Python theme extractor execution failed:',
-        JSON.stringify(errorInfo, null, 2),
+      this.logger.error(
+        `Theme extractor exec failed: ${execError.message}; stderr=${stderr.substring(0, 1000)}`,
       );
 
-      if (!stdout || !stdout.trim()) {
-        const errorDetails = [
-          `Command: ${command}`,
-          `Working directory: ${this.extractorDir}`,
-          `Python executable: ${this.pythonExecutable}`,
-          `Exit code: ${errorCode || 'unknown'}`,
-          `Signal: ${errorSignal || 'none'}`,
-          `Stdout: ${stdout || '(empty)'}`,
-          `Stderr: ${stderr || '(empty)'}`,
-          `Error message: ${error.message || 'No message'}`,
-        ].join('\n');
-
+      if (!stdout.trim()) {
         throw new Error(
-          `Python theme extractor failed to execute.\n${errorDetails}`,
+          `Python theme extractor failed: ${execError.message}; stderr=${stderr.substring(0, 1000)}`,
         );
       }
     }
 
     if (stderr && !stderr.includes('Found') && !stderr.includes('Processing')) {
-      console.warn('Python theme extractor stderr:', stderr);
+      this.logger.warn(`Python theme extractor stderr: ${stderr}`);
     }
 
     const stdoutTrimmed = stdout.trim();

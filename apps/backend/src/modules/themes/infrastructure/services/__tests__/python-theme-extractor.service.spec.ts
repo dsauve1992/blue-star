@@ -1,46 +1,56 @@
-import { exec } from 'child_process';
-import { existsSync } from 'node:fs';
+import { Logger } from '@nestjs/common';
+import {
+  PythonScriptError,
+  PythonScriptRunner,
+} from '../../../../../shared/services/python-script-runner';
 import { PythonThemeExtractorService } from '../python-theme-extractor.service';
 
-jest.mock('child_process', () => ({ exec: jest.fn() }));
-jest.mock('node:fs', () => ({ existsSync: jest.fn() }));
+const mockRun = jest.fn();
 
-type ExecCallback = (
-  error: Error | null,
-  result?: { stdout: string; stderr: string },
-) => void;
-
-const execMock = exec as unknown as jest.Mock;
+jest.mock('../../../../../shared/services/python-script-runner', () => {
+  const actual = jest.requireActual<
+    typeof import('../../../../../shared/services/python-script-runner')
+  >('../../../../../shared/services/python-script-runner');
+  return {
+    ...actual,
+    PythonScriptRunner: jest.fn().mockImplementation(() => ({ run: mockRun })),
+  };
+});
 
 const succeedWith = (stdout: string, stderr = '') =>
-  execMock.mockImplementation(
-    (_command: string, _options: unknown, callback: ExecCallback) =>
-      callback(null, { stdout, stderr }),
-  );
+  mockRun.mockResolvedValue({ stdout, stderr });
 
-const failWith = (error: Record<string, unknown>) =>
-  execMock.mockImplementation(
-    (_command: string, _options: unknown, callback: ExecCallback) =>
-      callback(Object.assign(new Error('Command failed'), error)),
+const failWith = (
+  stdout: string,
+  stderr: string,
+  options: { exitCode?: number | null; timedOut?: boolean } = {},
+) =>
+  mockRun.mockRejectedValue(
+    new PythonScriptError(
+      'Command failed',
+      options.exitCode === undefined ? 1 : options.exitCode,
+      options.timedOut ?? false,
+      stdout,
+      stderr,
+    ),
   );
 
 describe('PythonThemeExtractorService', () => {
   let service: PythonThemeExtractorService;
+  let warn: jest.SpyInstance;
 
   beforeEach(() => {
-    jest.spyOn(console, 'log').mockImplementation();
-    jest.spyOn(console, 'warn').mockImplementation();
-    jest.spyOn(console, 'error').mockImplementation();
-    (existsSync as jest.Mock).mockReturnValue(true);
+    jest.spyOn(Logger.prototype, 'error').mockImplementation();
+    warn = jest.spyOn(Logger.prototype, 'warn').mockImplementation();
     service = new PythonThemeExtractorService();
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
-    execMock.mockReset();
+    mockRun.mockReset();
   });
 
-  it('parses the JSON on stdout and ignores stderr progress lines', async () => {
+  it('parses the JSON on stdout and does not warn on stderr progress lines', async () => {
     succeedWith(
       '[{"theme":"AI","tickers":["NVDA","AMD"]}]',
       'Found 12 candidates\nProcessing AI',
@@ -49,6 +59,23 @@ describe('PythonThemeExtractorService', () => {
     await expect(service.extractThemes()).resolves.toEqual([
       { theme: 'AI', tickers: ['NVDA', 'AMD'] },
     ]);
+    expect(PythonScriptRunner).toHaveBeenCalledWith(
+      'theme_extractor',
+      'main.py',
+    );
+    expect(mockRun).toHaveBeenCalledWith([], {
+      timeoutMs: 600_000,
+      maxBufferBytes: 10 * 1024 * 1024,
+    });
+    expect(warn).not.toHaveBeenCalled();
+  });
+
+  it('warns on other stderr output', async () => {
+    succeedWith('[{"theme":"AI","tickers":["NVDA"]}]', 'rate limited');
+
+    await service.extractThemes();
+
+    expect(warn).toHaveBeenCalledWith(expect.stringContaining('rate limited'));
   });
 
   it('extracts the JSON array from surrounding stdout text', async () => {
@@ -59,23 +86,28 @@ describe('PythonThemeExtractorService', () => {
     ]);
   });
 
-  it('reports a timeout when the child is killed', async () => {
-    failWith({ code: null, signal: 'SIGTERM', killed: true, stdout: '' });
+  it('reports a timeout', async () => {
+    failWith('', '', { exitCode: null, timedOut: true });
 
     await expect(service.extractThemes()).rejects.toThrow(
       'Python theme extractor timed out after 600s',
     );
   });
 
-  it('fails without a double prefix when the script exits non-zero with no output', async () => {
-    failWith({ code: 1, stdout: '', stderr: 'boom' });
+  it('fails with stderr when the script exits non-zero with no output', async () => {
+    failWith('', 'boom');
 
-    const error = await service.extractThemes().catch((e: Error) => e);
-
-    expect((error as Error).message).toContain(
-      'Python theme extractor failed to execute',
+    await expect(service.extractThemes()).rejects.toThrow(
+      'Python theme extractor failed: Command failed; stderr=boom',
     );
-    expect((error as Error).message).not.toContain('Error: ');
+  });
+
+  it('still parses usable stdout when the script exits non-zero', async () => {
+    failWith('[{"theme":"AI","tickers":["NVDA"]}]', 'late failure');
+
+    await expect(service.extractThemes()).resolves.toEqual([
+      { theme: 'AI', tickers: ['NVDA'] },
+    ]);
   });
 
   it('fails when stdout contains no JSON array', async () => {
