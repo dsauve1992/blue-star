@@ -45,7 +45,7 @@ const shortTermDescription: Record<BreadthState, string> = {
 };
 
 function formatRatio(value: number): string {
-  return value.toFixed(2);
+  return value.toFixed(3);
 }
 
 function formatSigned(value: number, digits: number): string {
