@@ -190,6 +190,9 @@ jobs:
           docker logs backend
           exit 1
 
+      - name: Assert Python dependencies import
+        run: docker exec backend python3 -c "import yfinance, bs4, requests, pandas, numpy"
+
       - name: Assert migrations ran
         run: |
           count=$(PGPASSWORD=postgres psql -h localhost -U postgres -d blue_star_smoke -tAc "select count(*) from migrations")
