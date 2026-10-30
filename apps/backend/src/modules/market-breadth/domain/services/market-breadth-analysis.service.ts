@@ -9,5 +9,5 @@ export interface MarketBreadthRunResult {
 
 export interface MarketBreadthAnalysisService {
   runDaily(): Promise<MarketBreadthRunResult>;
-  runBackfill(sessions: number): Promise<MarketBreadthRunResult>;
+  runBackfill(sessions?: number): Promise<MarketBreadthRunResult>;
 }

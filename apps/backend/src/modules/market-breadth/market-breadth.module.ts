@@ -10,6 +10,7 @@ import { MomentumLeadersBreadthUniverseService } from './infrastructure/services
 import { MarketBreadthAnalysisServiceImpl } from './infrastructure/services/market-breadth-analysis.service';
 import { MarketBreadthCronService } from './infrastructure/services/market-breadth-cron.service';
 import { RunMarketBreadthUseCase } from './use-cases/run-market-breadth.use-case';
+import { BackfillMarketBreadthUseCase } from './use-cases/backfill-market-breadth.use-case';
 import { QueryMarketBreadthUseCase } from './use-cases/query-market-breadth.use-case';
 import {
   MARKET_BREADTH_ANALYSIS_SERVICE,
@@ -17,13 +18,6 @@ import {
   MARKET_BREADTH_REPOSITORY,
   MARKET_BREADTH_UNIVERSE_SERVICE,
 } from './constants/tokens';
-
-export {
-  MARKET_BREADTH_ANALYSIS_SERVICE,
-  MARKET_BREADTH_MARKET_DATA_SERVICE,
-  MARKET_BREADTH_REPOSITORY,
-  MARKET_BREADTH_UNIVERSE_SERVICE,
-};
 
 @Module({
   imports: [
@@ -52,8 +46,8 @@ export {
     },
     MarketBreadthCronService,
     RunMarketBreadthUseCase,
+    BackfillMarketBreadthUseCase,
     QueryMarketBreadthUseCase,
   ],
-  exports: [MARKET_BREADTH_REPOSITORY],
 })
 export class MarketBreadthModule {}
