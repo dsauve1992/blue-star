@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { StockClassificationClient } from "../api/stock-classification.client";
-import { STOCK_CLASSIFICATION_QUERY_KEYS } from "../constants";
+import { STOCK_CLASSIFICATION_QUERY_KEYS } from "../constants/query-keys";
 
 const client = new StockClassificationClient();
 
