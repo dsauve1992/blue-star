@@ -50,6 +50,8 @@ export function WatchlistCardBar({
   const [newWatchlistName, setNewWatchlistName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const watchlistScrollRef = useRef<HTMLDivElement>(null);
+  const cardRefs = useRef<Map<string, HTMLElement>>(new Map());
+  const lastScrolledId = useRef<string | null>(null);
 
   const updateScrollEdges = useCallback(() => {
     const el = watchlistScrollRef.current;
@@ -69,6 +71,26 @@ export function WatchlistCardBar({
     if (el.firstElementChild) observer.observe(el.firstElementChild);
     return () => observer.disconnect();
   }, [updateScrollEdges]);
+
+  useEffect(() => {
+    if (!selectedWatchlistId || isLoading) return;
+    if (lastScrolledId.current === selectedWatchlistId) return;
+    const strip = watchlistScrollRef.current;
+    const card = cardRefs.current.get(selectedWatchlistId);
+    if (!strip || !card) return;
+    lastScrolledId.current = selectedWatchlistId;
+    const stripRect = strip.getBoundingClientRect();
+    const cardRect = card.getBoundingClientRect();
+    if (cardRect.left >= stripRect.left && cardRect.right <= stripRect.right)
+      return;
+    strip.scrollTo({
+      left:
+        strip.scrollLeft +
+        (cardRect.left - stripRect.left) -
+        (stripRect.width - cardRect.width) / 2,
+      behavior: "smooth",
+    });
+  }, [selectedWatchlistId, watchlists, isLoading]);
 
   const scrollWatchlists = (direction: "left" | "right") => {
     watchlistScrollRef.current?.scrollBy({
@@ -118,6 +140,10 @@ export function WatchlistCardBar({
                 <WatchlistCard
                   key={watchlist.id}
                   watchlist={watchlist}
+                  registerElement={(el) => {
+                    if (el) cardRefs.current.set(watchlist.id, el);
+                    else cardRefs.current.delete(watchlist.id);
+                  }}
                   isSelected={selectedWatchlistId === watchlist.id}
                   onSelect={() => onSelectWatchlist(watchlist.id)}
                   onDelete={() => onDeleteWatchlist(watchlist.id)}
@@ -191,6 +217,7 @@ export function WatchlistCardBar({
 
 interface WatchlistCardProps {
   watchlist: Watchlist;
+  registerElement: (el: HTMLElement | null) => void;
   isSelected: boolean;
   onSelect: () => void;
   onDelete: () => void;
@@ -204,6 +231,7 @@ interface WatchlistCardProps {
 
 function WatchlistCard({
   watchlist,
+  registerElement,
   isSelected,
   onSelect,
   onDelete,
@@ -318,6 +346,7 @@ function WatchlistCard({
 
   return (
     <div
+      ref={registerElement}
       onClick={onSelect}
       onDragEnter={handleDragEnter}
       onDragOver={handleDragOver}
