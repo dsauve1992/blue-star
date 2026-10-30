@@ -8,6 +8,8 @@ import { parseLocalDate } from "../utils/parse-local-date";
 import { createRrgLabelLayout } from "../utils/rrg-label-layout";
 
 const COMPACT_LABEL_WIDTH = 640;
+const COMPACT_CHART_HEIGHT = 420;
+const CHART_HEIGHT = 600;
 
 interface SectorRotationRRGChartProps {
   dataPoints: SectorRotationDataPoint[];
@@ -155,13 +157,15 @@ export function SectorRotationRRGChart({
       .filter((d): d is NonNullable<typeof d> => d !== null);
   }, [sectorSymbols, filteredDataPoints, trailWeeks]);
 
+  const isCompact = chartWidth < COMPACT_LABEL_WIDTH;
+
   const option = useMemo(
     () => ({
       backgroundColor: "transparent",
       animation: false,
       grid: {
-        left: 56,
-        right: 48,
+        left: isCompact ? 40 : 56,
+        right: isCompact ? 24 : 48,
         top: 16,
         bottom: 64,
         containLabel: false,
@@ -192,7 +196,7 @@ export function SectorRotationRRGChart({
         type: "value",
         name: "RS-Momentum",
         nameLocation: "middle",
-        nameGap: 30,
+        nameGap: isCompact ? 24 : 30,
         min: axisRanges.yMin,
         max: axisRanges.yMax,
         axisLabel: {
@@ -398,7 +402,14 @@ export function SectorRotationRRGChart({
         },
       },
     }),
-    [seriesData, axisRanges, isDarkMode, filteredDataPoints, chartWidth],
+    [
+      seriesData,
+      axisRanges,
+      isDarkMode,
+      filteredDataPoints,
+      chartWidth,
+      isCompact,
+    ],
   );
 
   if (!dataPoints || dataPoints.length === 0) {
@@ -431,7 +442,10 @@ export function SectorRotationRRGChart({
       </div>
       <ReactECharts
         option={option}
-        style={{ height: "600px", width: "100%" }}
+        style={{
+          height: `${isCompact ? COMPACT_CHART_HEIGHT : CHART_HEIGHT}px`,
+          width: "100%",
+        }}
         opts={{ renderer: "svg" }}
         onEvents={chartEvents}
         onChartReady={(chart: ECharts) => setChartWidth(chart.getWidth())}
