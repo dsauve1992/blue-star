@@ -297,6 +297,17 @@ function TechnicalChartInner({
 
   const [legend, setLegend] = useState<LegendData | null>(null);
   const [tooltip, setTooltip] = useState<TooltipState | null>(null);
+  const [compactLegend, setCompactLegend] = useState(false);
+
+  useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+    const observer = new ResizeObserver(([entry]) =>
+      setCompactLegend(entry.contentRect.width < COMPACT_LEGEND_MAX_WIDTH),
+    );
+    observer.observe(container);
+    return () => observer.disconnect();
+  }, []);
 
   // ── Crosshair handler ────────────────────────────────────────────
 
@@ -1110,7 +1121,12 @@ function TechnicalChartInner({
       >
         <div ref={containerRef} style={{ width: "100%", height: "100%" }} />
         {showLegend && legend && (
-          <ChartLegend legend={legend} clr={clr} colors={C} />
+          <ChartLegend
+            legend={legend}
+            clr={clr}
+            colors={C}
+            compact={compactLegend}
+          />
         )}
         {showTooltip && tooltip && (
           <ChartTooltip tooltip={tooltip} colors={C} />
@@ -1178,14 +1194,18 @@ function QuadrantLegend() {
   );
 }
 
+const COMPACT_LEGEND_MAX_WIDTH = 480;
+
 function ChartLegend({
   legend,
   clr,
   colors: C,
+  compact,
 }: {
   legend: LegendData;
   clr: string;
   colors: ChartColorPalette;
+  compact: boolean;
 }) {
   return (
     <div
@@ -1209,12 +1229,16 @@ function ChartLegend({
       }}
     >
       <div style={{ display: "flex", flexWrap: "wrap", gap: "6px" }}>
-        <span style={{ color: C.textMuted }}>O</span>
-        <span style={{ color: clr }}>{fmt(legend.o)}</span>
-        <span style={{ color: C.textMuted }}>H</span>
-        <span style={{ color: clr }}>{fmt(legend.h)}</span>
-        <span style={{ color: C.textMuted }}>L</span>
-        <span style={{ color: clr }}>{fmt(legend.l)}</span>
+        {!compact && (
+          <>
+            <span style={{ color: C.textMuted }}>O</span>
+            <span style={{ color: clr }}>{fmt(legend.o)}</span>
+            <span style={{ color: C.textMuted }}>H</span>
+            <span style={{ color: clr }}>{fmt(legend.h)}</span>
+            <span style={{ color: C.textMuted }}>L</span>
+            <span style={{ color: clr }}>{fmt(legend.l)}</span>
+          </>
+        )}
         <span style={{ color: C.textMuted }}>C</span>
         <span style={{ color: clr }}>{fmt(legend.c)}</span>
         <span style={{ color: clr }}>
@@ -1223,7 +1247,7 @@ function ChartLegend({
           {legend.chgPct.toFixed(2)}%)
         </span>
       </div>
-      {legend.vol > 0 && (
+      {!compact && legend.vol > 0 && (
         <div style={{ display: "flex", gap: "6px" }}>
           <span style={{ color: C.textMuted }}>Vol</span>
           <span style={{ color: C.text }}>{fmtVol(legend.vol)}</span>
