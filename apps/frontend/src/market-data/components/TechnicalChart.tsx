@@ -1156,7 +1156,7 @@ function QuadrantLegend() {
       style={{
         position: "absolute",
         bottom: 34,
-        left: 8,
+        left: 48,
         zIndex: 10,
         pointerEvents: "none",
         display: "flex",
