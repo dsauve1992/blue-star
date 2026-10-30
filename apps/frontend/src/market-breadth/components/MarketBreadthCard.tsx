@@ -11,7 +11,11 @@ import { useMarketBreadth } from "../hooks/use-market-breadth";
 import type { BreadthGauge, BreadthState } from "../api/market-breadth.types";
 import { formatPercent } from "../utils/format-percent";
 import { formatSessionDate } from "../utils/format-session-date";
-import { MarketBreadthChart } from "./MarketBreadthChart";
+import {
+  EMA10_COLOR,
+  EMA20_COLOR,
+  MarketBreadthChart,
+} from "./MarketBreadthChart";
 
 const SESSIONS_TO_SHOW = 150;
 
@@ -87,16 +91,22 @@ function GaugeSummary({
         <>
           <div className="flex flex-wrap gap-x-4 text-sm">
             <span className="text-slate-600 dark:text-slate-300">
+              <span
+                aria-hidden
+                className="mr-1 inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: EMA10_COLOR }}
+              />
               EMA10:{" "}
-              <span className="font-semibold text-red-500">
-                {format(gauge.ema10)}
-              </span>
+              <span className="font-semibold">{format(gauge.ema10)}</span>
             </span>
             <span className="text-slate-600 dark:text-slate-300">
+              <span
+                aria-hidden
+                className="mr-1 inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: EMA20_COLOR }}
+              />
               EMA20:{" "}
-              <span className="font-semibold text-blue-500">
-                {format(gauge.ema20)}
-              </span>
+              <span className="font-semibold">{format(gauge.ema20)}</span>
             </span>
             <span className="text-slate-600 dark:text-slate-300">
               Gap:{" "}
