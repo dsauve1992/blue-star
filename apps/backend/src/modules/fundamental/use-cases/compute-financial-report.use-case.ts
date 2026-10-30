@@ -156,7 +156,7 @@ export class ComputeFinancialReportUseCase {
 
   private calculateGrowthPercent(current: number, previous: number): number {
     if (previous === 0) {
-      return current > 0 ? 100 : 0;
+      return Math.sign(current) * 100;
     }
     return ((current - previous) / Math.abs(previous)) * 100;
   }

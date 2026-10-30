@@ -101,7 +101,7 @@ describe('ComputeFinancialReportUseCase', () => {
         .filter((g) => g.year === '2024')
         .map((g) => [g.quarter, g.epsGrowthPercent]),
     );
-    expect(byQuarter).toEqual({ Q1: 100, Q2: 0, Q3: 0 });
+    expect(byQuarter).toEqual({ Q1: 100, Q2: -100, Q3: 0 });
   });
 
   it('returns null growth when the prior-year quarter is missing', async () => {
