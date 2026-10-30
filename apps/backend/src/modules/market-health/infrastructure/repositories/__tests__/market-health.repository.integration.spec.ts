@@ -74,7 +74,7 @@ describe('MarketHealthRepository Integration', () => {
 
     expect(found).not.toBeNull();
     expect(found!.id).toBe(saved.id);
-    expect(found!.status.value).toBe('WARNING');
+    expect(found!.status).toEqual(saved.status);
     expect(found!.ema9).toBe(101.5);
     expect(found!.ema21).toBe(100.25);
     expect(found!.computedAt).toEqual(new Date('2026-03-10T21:00:00.000Z'));
@@ -104,11 +104,11 @@ describe('MarketHealthRepository Integration', () => {
     ['GOOD', MarketHealthStatus.good()],
     ['WARNING', MarketHealthStatus.warning()],
     ['BAD', MarketHealthStatus.bad()],
-  ])('round-trips the %s status', async (value, status) => {
+  ])('round-trips the %s status', async (_label, status) => {
     await repository.save(makeMarketHealth({ status }));
 
     const found = await repository.findLatest();
 
-    expect(found!.status.value).toBe(value);
+    expect(found!.status).toEqual(status);
   });
 });
