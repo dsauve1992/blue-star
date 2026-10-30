@@ -482,7 +482,9 @@ export default function IndustryGroupExplorer() {
                         <BarChart3 className="w-16 h-16 text-slate-500" />
                       </div>
                       <h3 className="text-xl font-semibold text-slate-300 mb-2">
-                        No Ticker Selected
+                        {selectedGroup
+                          ? "No ticker selected"
+                          : "No industry group selected"}
                       </h3>
                       <p className="text-slate-500 text-center max-w-md">
                         {selectedGroup
