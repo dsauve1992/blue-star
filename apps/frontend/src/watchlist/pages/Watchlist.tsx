@@ -1,4 +1,4 @@
-import { useRef, useMemo, useCallback, useState } from "react";
+import { useRef, useMemo, useCallback, useEffect, useState } from "react";
 import {
   useWatchlists,
   useAddTickerToWatchlist,
@@ -24,6 +24,13 @@ import { ChartPanel } from "../components/ChartPanel";
 
 const BENCHMARK_SYMBOL = "SPY";
 const BENCHMARK_EXCHANGE = "AMEX";
+const UNDO_NOTICE_MS = 8000;
+
+interface RemovedTicker {
+  ticker: string;
+  watchlistId: string;
+  watchlistName: string;
+}
 
 function extractSymbol(ticker: string): string {
   const parts = ticker.split(":");
@@ -55,6 +62,22 @@ export default function Watchlist() {
   } = useWatchlistSelection({ data });
 
   const [actionError, setActionError] = useState<string | null>(null);
+  const [removedTicker, setRemovedTicker] = useState<RemovedTicker | null>(
+    null,
+  );
+  const undoTimerRef = useRef<ReturnType<typeof setTimeout>>(undefined);
+
+  const dismissRemovedTicker = useCallback(() => {
+    clearTimeout(undoTimerRef.current);
+    setRemovedTicker(null);
+  }, []);
+
+  useEffect(() => () => clearTimeout(undoTimerRef.current), []);
+
+  const removedTickerRef = useRef(removedTicker);
+  useEffect(() => {
+    removedTickerRef.current = removedTicker;
+  }, [removedTicker]);
 
   const listContainerRef = useRef<HTMLDivElement>(null);
   const tickerRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -166,23 +189,52 @@ export default function Watchlist() {
           watchlistId: selectedWatchlistId,
           ticker,
         });
+        clearTimeout(undoTimerRef.current);
+        setRemovedTicker({
+          ticker,
+          watchlistId: selectedWatchlistId,
+          watchlistName: selectedWatchlist?.name ?? "",
+        });
+        undoTimerRef.current = setTimeout(
+          () => setRemovedTicker(null),
+          UNDO_NOTICE_MS,
+        );
         if (selectedTicker === ticker) {
           const remaining = tickers.filter((t) => t !== ticker);
           setSelectedTicker(remaining.length > 0 ? remaining[0] : null);
         }
       } catch (err) {
         console.error("Failed to remove ticker:", err);
+        dismissRemovedTicker();
         setActionError("Could not remove the ticker. Please try again.");
       }
     },
     [
       selectedWatchlistId,
+      selectedWatchlist,
       selectedTicker,
       tickers,
       removeTickerFromWatchlist,
       setSelectedTicker,
+      dismissRemovedTicker,
     ],
   );
+
+  const handleUndoRemove = useCallback(async () => {
+    if (!removedTicker || addTickerToWatchlist.isPending) return;
+    clearTimeout(undoTimerRef.current);
+    try {
+      setActionError(null);
+      await addTickerToWatchlist.mutateAsync({
+        watchlistId: removedTicker.watchlistId,
+        request: { ticker: removedTicker.ticker },
+      });
+      if (removedTickerRef.current === removedTicker) dismissRemovedTicker();
+    } catch (err) {
+      console.error("Failed to undo ticker removal:", err);
+      setActionError("Could not restore the ticker. Please try again.");
+    }
+  }, [removedTicker, addTickerToWatchlist, dismissRemovedTicker]);
 
   const handleAddTicker = useCallback(
     async (ticker: string) => {
@@ -239,11 +291,7 @@ export default function Watchlist() {
   );
 
   const handleDropTickerOnWatchlist = useCallback(
-    (
-      targetWatchlistId: string,
-      ticker: string,
-      sourceWatchlistId: string,
-    ) => {
+    (targetWatchlistId: string, ticker: string, sourceWatchlistId: string) => {
       void moveTickerBetween(sourceWatchlistId, targetWatchlistId, ticker);
     },
     [moveTickerBetween],
@@ -299,6 +347,36 @@ export default function Watchlist() {
                   aria-label="Dismiss error"
                   onClick={() => setActionError(null)}
                   className="shrink-0 rounded p-1 hover:bg-danger-100 dark:hover:bg-danger-900/40"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </Alert>
+            </div>
+          )}
+
+          {removedTicker && (
+            <div className="px-4 pt-3">
+              <Alert
+                variant="info"
+                className="flex items-center justify-between gap-3 py-3"
+              >
+                <AlertDescription>
+                  Removed {extractSymbol(removedTicker.ticker)} from{" "}
+                  {removedTicker.watchlistName}.{" "}
+                  <button
+                    type="button"
+                    onClick={handleUndoRemove}
+                    disabled={addTickerToWatchlist.isPending}
+                    className="font-medium underline"
+                  >
+                    Undo
+                  </button>
+                </AlertDescription>
+                <button
+                  type="button"
+                  aria-label="Dismiss notice"
+                  onClick={dismissRemovedTicker}
+                  className="shrink-0 rounded p-1 hover:bg-primary-100 dark:hover:bg-primary-900/40"
                 >
                   <X className="h-4 w-4" />
                 </button>
