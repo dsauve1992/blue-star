@@ -301,6 +301,11 @@ function GrowthTable({
           <tr className="border-b border-slate-700">
             <th className="pr-3 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
               {caption}
+              {headerAction && (
+                <div className="mt-1 normal-case tracking-normal">
+                  {headerAction}
+                </div>
+              )}
             </th>
             {columns.map((column) => (
               <th
@@ -310,7 +315,6 @@ function GrowthTable({
                 {column.label}
               </th>
             ))}
-            {headerAction && <th className="pl-1 py-1">{headerAction}</th>}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-700/70">
@@ -339,7 +343,6 @@ function GrowthTable({
                   )}
                 </td>
               ))}
-              {headerAction && <td />}
             </tr>
           ))}
         </tbody>
