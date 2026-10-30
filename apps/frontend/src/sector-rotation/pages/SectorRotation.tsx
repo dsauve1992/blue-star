@@ -9,6 +9,8 @@ import { SectorRotationRRGChart } from "../components/SectorRotationRRGChart";
 import { SectorRotationTimeline } from "../components/SectorRotationTimeline";
 import { RefreshCw, AlertTriangle, CheckCircle2 } from "lucide-react";
 
+const WINDOW_WEEKS = 5;
+
 export default function SectorRotation() {
   const [selectedStartDate, setSelectedStartDate] = useState<Date | null>(null);
   const [selectedEndDate, setSelectedEndDate] = useState<Date | null>(null);
@@ -124,7 +126,7 @@ export default function SectorRotation() {
     if (!fullRange.weeks.length)
       return { start: null, end: null, sliderPosition: 0 };
 
-    const startIndex = Math.max(0, fullRange.weeks.length - 5);
+    const startIndex = Math.max(0, fullRange.weeks.length - WINDOW_WEEKS);
 
     return {
       start: fullRange.weeks[startIndex],
@@ -159,9 +161,8 @@ export default function SectorRotation() {
     if (!fullRange.weeks.length) return;
 
     setSliderPosition(position);
-    const windowSize = 5;
     const endIndex = Math.min(
-      position + windowSize - 1,
+      position + WINDOW_WEEKS - 1,
       fullRange.weeks.length - 1,
     );
 
@@ -264,6 +265,9 @@ export default function SectorRotation() {
 
   const displayStartDate = selectedStartDate || initialTimeWindow.start;
   const displayEndDate = selectedEndDate || initialTimeWindow.end;
+  const totalWeeks = fullRange.weeks.length;
+  const windowWeeks = Math.min(WINDOW_WEEKS, totalWeeks);
+  const windowEndWeek = sliderPosition + windowWeeks;
 
   return (
     <PageContainer>
@@ -278,30 +282,34 @@ export default function SectorRotation() {
                   <h3 className="text-sm font-medium mb-1">Time Window</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {displayStartDate && displayEndDate
-                      ? `${displayStartDate.toLocaleDateString()} - ${displayEndDate.toLocaleDateString()}`
+                      ? `${windowWeeks} weeks · ${displayStartDate.toLocaleDateString()} - ${displayEndDate.toLocaleDateString()}`
                       : "Select a time window"}
                   </p>
                 </div>
                 <div className="text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap shrink-0">
-                  Week {sliderPosition + 1} -{" "}
-                  {Math.min(sliderPosition + 5, fullRange.weeks.length)} of{" "}
-                  {fullRange.weeks.length}
+                  Weeks {sliderPosition + 1}-{windowEndWeek} of {totalWeeks}
                 </div>
               </div>
               <div className="relative">
+                <div className="absolute inset-x-0 top-0 h-2 overflow-hidden rounded-lg bg-slate-200 dark:bg-slate-700">
+                  <div
+                    className="absolute inset-y-0 bg-blue-500"
+                    style={{
+                      left: `${(sliderPosition / totalWeeks) * 100}%`,
+                      width: `${(windowWeeks / totalWeeks) * 100}%`,
+                    }}
+                  />
+                </div>
                 <input
                   type="range"
                   min="0"
-                  max={Math.max(0, fullRange.weeks.length - 5)}
+                  max={Math.max(0, totalWeeks - WINDOW_WEEKS)}
                   value={sliderPosition}
                   aria-label="Time window start week"
                   onChange={(e) =>
                     handleSliderChange(parseInt(e.target.value, 10))
                   }
-                  className="w-full h-2 bg-slate-200 dark:bg-slate-700 rounded-lg appearance-none cursor-pointer"
-                  style={{
-                    background: `linear-gradient(to right, #3b82f6 0%, #3b82f6 ${(sliderPosition / Math.max(1, fullRange.weeks.length - 5)) * 100}%, #e5e7eb ${(sliderPosition / Math.max(1, fullRange.weeks.length - 5)) * 100}%, #e5e7eb 100%)`,
-                  }}
+                  className="relative block w-full h-2 bg-transparent rounded-lg appearance-none cursor-pointer"
                 />
                 <style>{`
                   input[type="range"]::-webkit-slider-thumb {
