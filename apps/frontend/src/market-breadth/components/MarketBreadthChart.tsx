@@ -18,8 +18,8 @@ import { formatSessionDate } from "../utils/format-session-date";
 
 const HIGHS_COLOR = "#3b82f6";
 const LOWS_COLOR = "#ef4444";
-const EMA10_COLOR = "#ef4444";
-const EMA20_COLOR = "#3b82f6";
+export const EMA10_COLOR = "#ef4444";
+export const EMA20_COLOR = "#3b82f6";
 const PERCENT_PRICE_FORMAT = {
   type: "custom",
   minMove: 0.1,
