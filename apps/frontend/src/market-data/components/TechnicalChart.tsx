@@ -782,6 +782,8 @@ function TechnicalChartInner({
       const vs = chart.addSeries(HistogramSeries, {
         priceFormat: { type: "volume" },
         priceScaleId: "vol",
+        lastValueVisible: false,
+        priceLineVisible: false,
       });
       chart
         .priceScale("vol")
