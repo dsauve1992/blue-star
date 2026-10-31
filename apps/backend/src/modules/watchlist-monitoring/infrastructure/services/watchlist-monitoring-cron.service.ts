@@ -75,7 +75,7 @@ export class WatchlistMonitoringCronService {
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : 'Unknown error';
-          this.logger.warn(
+          this.logger.error(
             `Failed to process watchlist ${monitoring.watchlistId.value}: ${errorMessage}`,
           );
         }
@@ -165,7 +165,7 @@ export class WatchlistMonitoringCronService {
         } catch (error) {
           const errorMessage =
             error instanceof Error ? error.message : 'Unknown error';
-          this.logger.warn(
+          this.logger.error(
             `Failed to process watchlist ${monitoring.watchlistId.value}: ${errorMessage}`,
           );
         }

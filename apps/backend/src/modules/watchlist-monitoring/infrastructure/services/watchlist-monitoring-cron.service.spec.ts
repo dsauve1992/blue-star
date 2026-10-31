@@ -1,4 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
+import { Logger } from '@nestjs/common';
 import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WatchlistMonitoringCronService } from './watchlist-monitoring-cron.service';
 import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
@@ -97,6 +98,10 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
     emitSpy = jest.spyOn(eventEmitter, 'emit');
   });
 
+  afterEach(() => {
+    jest.restoreAllMocks();
+  });
+
   it('emits a GapDetectedEvent on first detection, with the full payload', async () => {
     let emittedName: string | undefined;
     let emittedEvent: GapDetectedEvent | undefined;
@@ -192,8 +197,11 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
         tickers: [msft],
       } as never);
 
+    const errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
     await service.monitorGaps();
 
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('wl-123'));
     expect(gapDetectionService.detect).toHaveBeenCalledTimes(1);
     expect(gapDetectionService.detect).toHaveBeenCalledWith(msft);
     expect(notificationService.send).toHaveBeenCalledTimes(1);
@@ -320,8 +328,11 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
         tickers: [nvda],
       } as never);
 
+    const errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
     await service.monitorBreakouts();
 
+    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('wl-123'));
     expect(breakoutDetectionService.detect).toHaveBeenCalledTimes(1);
     expect(breakoutDetectionService.detect).toHaveBeenCalledWith(nvda);
     expect(notificationService.send).toHaveBeenCalledTimes(1);
