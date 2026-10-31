@@ -176,6 +176,33 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
       expect.objectContaining({ ticker: ticker2 }),
     );
   });
+
+  it('continues with the next watchlist when loading one fails', async () => {
+    const secondWatchlistId = WatchlistId.of('wl-456');
+    const msft = WatchlistTicker.of('MSFT');
+    monitoringReadRepository.findAllActiveByType.mockResolvedValue([
+      { watchlistId } as never,
+      { watchlistId: secondWatchlistId } as never,
+    ]);
+    findWatchlistTickers.execute
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockResolvedValueOnce({
+        id: secondWatchlistId,
+        name: 'Growth',
+        tickers: [msft],
+      } as never);
+
+    await service.monitorGaps();
+
+    expect(gapDetectionService.detect).toHaveBeenCalledTimes(1);
+    expect(gapDetectionService.detect).toHaveBeenCalledWith(msft);
+    expect(notificationService.send).toHaveBeenCalledTimes(1);
+    expect(alertLogRepository.recordAlert).toHaveBeenCalledWith(
+      'MSFT',
+      getMarketDateKey(),
+      MonitoringType.GAP,
+    );
+  });
 });
 
 describe('WatchlistMonitoringCronService — breakout alerting', () => {
@@ -183,6 +210,11 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
   let alertLogRepository: jest.Mocked<MonitoringAlertLogRepository>;
   let breakoutDetectionService: jest.Mocked<BreakoutDetectionService>;
   let notificationService: jest.Mocked<NotificationService>;
+  let monitoringReadRepository: Pick<
+    jest.Mocked<WatchlistMonitoringReadRepository>,
+    'findAllActiveByType'
+  >;
+  let findWatchlistTickers: jest.Mocked<FindWatchlistTickersUseCase>;
 
   const watchlistId = WatchlistId.of('wl-123');
   const aapl = WatchlistTicker.of('AAPL');
@@ -202,6 +234,18 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
         ),
     } as unknown as jest.Mocked<BreakoutDetectionService>;
     notificationService = { send: jest.fn().mockResolvedValue(undefined) };
+    monitoringReadRepository = {
+      findAllActiveByType: jest
+        .fn()
+        .mockResolvedValue([{ watchlistId } as never]),
+    };
+    findWatchlistTickers = {
+      execute: jest.fn().mockResolvedValue({
+        id: watchlistId,
+        name: 'Momentum',
+        tickers: [aapl, msft],
+      }),
+    } as unknown as jest.Mocked<FindWatchlistTickersUseCase>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -209,11 +253,7 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
         EventEmitter2,
         {
           provide: WATCHLIST_MONITORING_READ_REPOSITORY,
-          useValue: {
-            findAllActiveByType: jest
-              .fn()
-              .mockResolvedValue([{ watchlistId } as never]),
-          } as Partial<WatchlistMonitoringReadRepository>,
+          useValue: monitoringReadRepository,
         },
         {
           provide: MONITORING_ALERT_LOG_REPOSITORY,
@@ -221,13 +261,7 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
         },
         {
           provide: FindWatchlistTickersUseCase,
-          useValue: {
-            execute: jest.fn().mockResolvedValue({
-              id: watchlistId,
-              name: 'Momentum',
-              tickers: [aapl, msft],
-            }),
-          },
+          useValue: findWatchlistTickers,
         },
         {
           provide: BREAKOUT_DETECTION_SERVICE,
@@ -266,6 +300,33 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
     expect(alertLogRepository.recordAlert).toHaveBeenCalledTimes(1);
     expect(alertLogRepository.recordAlert).toHaveBeenCalledWith(
       'MSFT',
+      getMarketDateKey(),
+      MonitoringType.BREAKOUT,
+    );
+  });
+
+  it('continues with the next watchlist when loading one fails', async () => {
+    const secondWatchlistId = WatchlistId.of('wl-456');
+    const nvda = WatchlistTicker.of('NVDA');
+    monitoringReadRepository.findAllActiveByType.mockResolvedValue([
+      { watchlistId } as never,
+      { watchlistId: secondWatchlistId } as never,
+    ]);
+    findWatchlistTickers.execute
+      .mockRejectedValueOnce(new Error('db down'))
+      .mockResolvedValueOnce({
+        id: secondWatchlistId,
+        name: 'Growth',
+        tickers: [nvda],
+      } as never);
+
+    await service.monitorBreakouts();
+
+    expect(breakoutDetectionService.detect).toHaveBeenCalledTimes(1);
+    expect(breakoutDetectionService.detect).toHaveBeenCalledWith(nvda);
+    expect(notificationService.send).toHaveBeenCalledTimes(1);
+    expect(alertLogRepository.recordAlert).toHaveBeenCalledWith(
+      'NVDA',
       getMarketDateKey(),
       MonitoringType.BREAKOUT,
     );

@@ -70,7 +70,15 @@ export class WatchlistMonitoringCronService {
       );
 
       for (const monitoring of activeMonitorings) {
-        await this.processMonitoring(monitoring.watchlistId);
+        try {
+          await this.processMonitoring(monitoring.watchlistId);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          this.logger.warn(
+            `Failed to process watchlist ${monitoring.watchlistId.value}: ${errorMessage}`,
+          );
+        }
       }
     } catch (error) {
       const errorMessage =
@@ -152,7 +160,15 @@ export class WatchlistMonitoringCronService {
       );
 
       for (const monitoring of activeMonitorings) {
-        await this.processGapMonitoring(monitoring.watchlistId);
+        try {
+          await this.processGapMonitoring(monitoring.watchlistId);
+        } catch (error) {
+          const errorMessage =
+            error instanceof Error ? error.message : 'Unknown error';
+          this.logger.warn(
+            `Failed to process watchlist ${monitoring.watchlistId.value}: ${errorMessage}`,
+          );
+        }
       }
     } catch (error) {
       const errorMessage =
