@@ -95,7 +95,7 @@ export default function AppSidebar() {
 
   return (
     <aside
-      className="sticky top-0 h-screen self-start w-14 flex-shrink-0 flex flex-col border-r border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/95"
+      className="sticky top-0 z-40 h-screen self-start w-14 flex-shrink-0 flex flex-col border-r border-slate-200 dark:border-slate-700/80 bg-white dark:bg-slate-800/95"
       aria-label="Main navigation"
     >
       <div className="flex flex-col items-center py-3 gap-1">
