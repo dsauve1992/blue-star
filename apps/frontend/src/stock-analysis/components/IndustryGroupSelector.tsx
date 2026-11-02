@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState, useEffect } from "react";
-import { ChevronDown, Search } from "lucide-react";
+import { Check, ChevronDown, Search } from "lucide-react";
 import type { IndustryGroupSummaryDto } from "../api/industry-group.client";
 
 interface IndustryGroupSelectorProps {
@@ -50,13 +50,23 @@ export function IndustryGroupSelector({
 
   useEffect(() => {
     setActiveIndex(0);
-  }, [search, isOpen]);
+  }, [search]);
 
   useEffect(() => {
     listRef.current
       ?.querySelector<HTMLElement>(`[data-index="${activeIndex}"]`)
       ?.scrollIntoView({ block: "nearest" });
-  }, [activeIndex]);
+  }, [activeIndex, isOpen]);
+
+  function toggleOpen() {
+    if (!isOpen) {
+      const selectedIndex = groups.findIndex(
+        (g) => g.industryGroup === selectedGroup,
+      );
+      setActiveIndex(Math.max(selectedIndex, 0));
+    }
+    setIsOpen(!isOpen);
+  }
 
   function select(group: string) {
     onSelect(group);
@@ -85,7 +95,7 @@ export function IndustryGroupSelector({
     <div ref={rootRef} className="relative">
       <button
         ref={triggerRef}
-        onClick={() => setIsOpen((v) => !v)}
+        onClick={toggleOpen}
         aria-haspopup="listbox"
         aria-expanded={isOpen}
         disabled={isLoading || groups.length === 0}
@@ -137,7 +147,7 @@ export function IndustryGroupSelector({
                 role="option"
                 aria-selected={selectedGroup === g.industryGroup}
                 onClick={() => select(g.industryGroup)}
-                onMouseEnter={() => setActiveIndex(index)}
+                onMouseMove={() => setActiveIndex(index)}
                 className={`w-full flex items-center justify-between gap-2 px-3 py-2 text-left text-xs leading-snug transition-colors ${
                   index === activeIndex
                     ? "bg-slate-700/60 text-white"
@@ -147,8 +157,13 @@ export function IndustryGroupSelector({
                 }`}
               >
                 <span>{g.industryGroup}</span>
-                <span className="tabular-nums text-[10px] text-slate-500 flex-shrink-0">
-                  {g.memberCount} {g.memberCount === 1 ? "stock" : "stocks"}
+                <span className="flex items-center gap-1.5 flex-shrink-0">
+                  {selectedGroup === g.industryGroup && (
+                    <Check className="w-3 h-3 text-slate-300" />
+                  )}
+                  <span className="tabular-nums text-[10px] text-slate-500">
+                    {g.memberCount} {g.memberCount === 1 ? "stock" : "stocks"}
+                  </span>
                 </span>
               </button>
             ))}
