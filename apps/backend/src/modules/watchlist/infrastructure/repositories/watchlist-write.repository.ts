@@ -5,7 +5,7 @@ import { WatchlistId } from '../../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../domain/value-objects/watchlist-name';
 import { WatchlistTicker } from '../../domain/value-objects/watchlist-ticker';
 import { WatchlistWriteRepository as IWatchlistWriteRepository } from '../../domain/repositories/watchlist-write.repository.interface';
-import { InvariantError } from '../../domain/domain-errors';
+import { NotFoundError } from '../../domain/domain-errors';
 import { UserId } from '../../../../shared/value-objects/user-id';
 
 interface DatabaseRow {
@@ -75,7 +75,7 @@ export class WatchlistWriteRepository implements IWatchlistWriteRepository {
     const result = await this.databaseService.query(query, [watchlistId.value]);
 
     if (result.rows.length === 0) {
-      throw new InvariantError(
+      throw new NotFoundError(
         `Watchlist with ID ${watchlistId.value} not found`,
       );
     }

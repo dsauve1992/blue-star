@@ -85,7 +85,7 @@ CQRS split — separate read and write interfaces:
 // Write: throws if not found
 export interface PositionWriteRepository {
   save(position: Position): Promise<void>;
-  getById(positionId: PositionId): Promise<Position>;  // throws InvariantError
+  getById(positionId: PositionId): Promise<Position>;  // throws NotFoundError
 }
 
 // Read: returns null if not found
