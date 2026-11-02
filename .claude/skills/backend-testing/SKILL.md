@@ -63,7 +63,7 @@ it('should create and save a position with the correct data', async () => {
 - `beforeAll` for module/DB setup, `afterAll` to close module
 - `beforeEach`: `DELETE FROM` dependent tables first (e.g. `position_events` before `positions`)
 - Compare value objects with `toEqual(Ticker.of('AAPL'))` — never unwrap `.value` in assertions
-- `findById` returns `null` when not found; `getById` throws `InvariantError`
+- `findById` returns `null` when not found; `getById` throws `NotFoundError`
 - Type-assert raw DB rows: `const row = result.rows[0] as MyRowType`
 - Use fixed UUID strings for predictable test data
 
