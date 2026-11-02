@@ -38,10 +38,4 @@ export default tseslint.config(
       '@typescript-eslint/unbound-method': 'off'
     },
   },
-  {
-    files: ['**/*.e2e-spec.ts'],
-    rules: {
-      '@typescript-eslint/no-unsafe-argument': 'off',
-    },
-  },
 );
