@@ -32,7 +32,6 @@ Risk rules used alongside it: size so a stop-out costs a fixed 0.5% of the portf
 Behind the pages, the backend also provides:
 
 - **Market health.** A computed GOOD/WARNING/BAD status shown as a bar across the app.
-- **Leader scan.** A weekly scan of the universe for RS leaders (`/api/leader-scan/latest`).
 - **Themes.** Investment themes extracted from stocktitan.net by the Python `theme_extractor` and mapped to tickers.
 - **Stock classification.** Sector and industry-group classification per symbol, fetched on demand.
 - **Fundamentals.** Quarterly and annual EPS, revenue and ROE from SEC EDGAR; Financial Modeling Prep supplies company profiles.
@@ -52,7 +51,7 @@ flowchart LR
 ```
 
 - **Monorepo.** Turborepo and npm workspaces: `apps/backend`, `apps/frontend`, `apps/screener`, `apps/theme_extractor`.
-- **Backend.** NestJS with DDD and CQRS under `apps/backend/src/modules`. Each module is a bounded context with its own domain model, persistence and public barrel (`index.ts`). Modules talk to each other only through use cases or queries, never through another module's repositories or tables. Domain code throws `DomainError` subclasses, mapped to HTTP once at the exception filter. Modules: `auth`, `fundamental`, `leader-scan`, `market-breadth`, `market-data`, `market-health`, `notification`, `sector-rotation`, `stock-analysis`, `stock-classification`, `themes`, `watchlist`, `watchlist-monitoring`.
+- **Backend.** NestJS with DDD and CQRS under `apps/backend/src/modules`. Each module is a bounded context with its own domain model, persistence and public barrel (`index.ts`). Modules talk to each other only through use cases or queries, never through another module's repositories or tables. Domain code throws `DomainError` subclasses, mapped to HTTP once at the exception filter. Modules: `auth`, `fundamental`, `market-breadth`, `market-data`, `market-health`, `notification`, `sector-rotation`, `stock-analysis`, `stock-classification`, `themes`, `watchlist`, `watchlist-monitoring`.
 - **Frontend.** React 19, Vite, Tailwind CSS, React Query. `src/global/` holds auth, routing and the design system; each domain folder (`watchlist`, `sector-rotation`, `stock-analysis`, ...) has `api/`, `components/`, `hooks/`, `pages/`. Domain folders do not import each other.
 - **Python.** `apps/screener` (consolidation, momentum leaders, RS ratings, Yahoo Finance data) and `apps/theme_extractor` are CLIs spawned by the backend. Virtualenvs are created by `npm run setup:python --workspace=backend`, which `dev`, `build` and `start` run automatically.
 - **Database.** PostgreSQL with `db-migrate`; SQL migrations live in `apps/backend/migrations/sqls/`, UUID primary keys.
