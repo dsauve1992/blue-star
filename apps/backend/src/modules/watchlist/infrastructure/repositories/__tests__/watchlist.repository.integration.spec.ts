@@ -6,6 +6,7 @@ import { WatchlistId } from '../../../domain/value-objects/watchlist-id';
 import { WatchlistName } from '../../../domain/value-objects/watchlist-name';
 import { WatchlistTicker } from '../../../domain/value-objects/watchlist-ticker';
 import { UserId } from '../../../../../shared/value-objects/user-id';
+import { NotFoundError } from '../../../domain/domain-errors';
 import { WatchlistReadRepository as IWatchlistReadRepository } from '../../../domain/repositories/watchlist-read.repository.interface';
 import { WatchlistWriteRepository as IWatchlistWriteRepository } from '../../../domain/repositories/watchlist-write.repository.interface';
 import {
@@ -76,5 +77,13 @@ describe('Watchlist Repositories Integration', () => {
       ['AAPL', 'MSFT', 'NVDA'].map((t) => WatchlistTicker.of(t)),
     );
     expect(read?.tickers).toEqual(written.tickers);
+  });
+
+  it('getById rejects with NotFoundError for an unknown id', async () => {
+    await expect(
+      writeRepository.getById(
+        WatchlistId.of('22222222-2222-4222-8222-222222222222'),
+      ),
+    ).rejects.toBeInstanceOf(NotFoundError);
   });
 });
