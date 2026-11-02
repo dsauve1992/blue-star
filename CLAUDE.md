@@ -41,9 +41,6 @@ cd apps/backend && npx jest src/position/use-cases/open-position.use-case.spec.t
 # Run backend tests in watch mode
 cd apps/backend && npx jest --watch
 
-# Run backend e2e tests
-cd apps/backend && npx jest --config ./test/jest-e2e.json
-
 # Run backend integration tests (requires Docker for TestContainers)
 cd apps/backend && npx jest --testPathPattern integration
 

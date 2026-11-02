@@ -109,7 +109,6 @@ npm run build
 
 cd apps/backend
 npx jest src/path/to/file.spec.ts            # single test file
-npx jest --config ./test/jest-e2e.json       # e2e
 npx jest --testPathPattern integration       # needs Docker (TestContainers)
 npm run migrate:create -- my-migration --sql-file
 npm run migrate:up
