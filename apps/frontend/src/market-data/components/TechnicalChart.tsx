@@ -1670,56 +1670,65 @@ function ChartToolbar({
       {timeframe && (showExport || (showTradingView && ticker)) && (
         <div
           style={{
-            width: 1,
-            height: 16,
-            background: "rgba(51,65,85,0.5)",
-            margin: "0 4px",
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            flexShrink: 0,
           }}
-        />
-      )}
-      {showTradingView && ticker && (
-        <button
-          type="button"
-          onClick={() => {
-            const symbol = tradingViewChartSymbol(ticker, exchange);
-            window.open(
-              `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`,
-              "_blank",
-              "noopener,noreferrer",
-            );
-          }}
-          style={{
-            padding: "3px 8px",
-            fontSize: 10,
-            fontFamily: "'JetBrains Mono', monospace",
-            borderRadius: 4,
-            border: "1px solid rgba(51,65,85,0.5)",
-            background: "rgba(15,23,42,0.7)",
-            color: C.text,
-            cursor: "pointer",
-          }}
-          title={`Open ${tradingViewChartSymbol(ticker, exchange)} on TradingView`}
         >
-          TV
-        </button>
-      )}
-      {showExport && (
-        <button
-          onClick={onScreenshot}
-          style={{
-            padding: "3px 8px",
-            fontSize: 10,
-            fontFamily: "'JetBrains Mono', monospace",
-            borderRadius: 4,
-            border: "1px solid rgba(51,65,85,0.5)",
-            background: "rgba(15,23,42,0.7)",
-            color: C.text,
-            cursor: "pointer",
-          }}
-          title="Download chart as PNG"
-        >
-          PNG
-        </button>
+          <div
+            style={{
+              width: 1,
+              height: 16,
+              background: "rgba(51,65,85,0.5)",
+              margin: "0 4px",
+            }}
+          />
+          {showTradingView && ticker && (
+            <button
+              type="button"
+              onClick={() => {
+                const symbol = tradingViewChartSymbol(ticker, exchange);
+                window.open(
+                  `https://www.tradingview.com/chart/?symbol=${encodeURIComponent(symbol)}`,
+                  "_blank",
+                  "noopener,noreferrer",
+                );
+              }}
+              style={{
+                padding: "3px 8px",
+                fontSize: 10,
+                fontFamily: "'JetBrains Mono', monospace",
+                borderRadius: 4,
+                border: "1px solid rgba(51,65,85,0.5)",
+                background: "rgba(15,23,42,0.7)",
+                color: C.text,
+                cursor: "pointer",
+              }}
+              title={`Open ${tradingViewChartSymbol(ticker, exchange)} on TradingView`}
+            >
+              TV
+            </button>
+          )}
+          {showExport && (
+            <button
+              onClick={onScreenshot}
+              style={{
+                padding: "3px 8px",
+                fontSize: 10,
+                fontFamily: "'JetBrains Mono', monospace",
+                borderRadius: 4,
+                border: "1px solid rgba(51,65,85,0.5)",
+                background: "rgba(15,23,42,0.7)",
+                color: C.text,
+                cursor: "pointer",
+              }}
+              title="Download chart as PNG"
+            >
+              PNG
+            </button>
+          )}
+        </div>
       )}
     </div>
   );
