@@ -4,7 +4,10 @@ export class WatchlistName {
   private constructor(public readonly value: string) {}
 
   static of(name: string): WatchlistName {
-    if (!name || typeof name !== 'string' || name.trim().length === 0) {
+    if (typeof name !== 'string') {
+      throw new InvariantError('WatchlistName must be a string');
+    }
+    if (!name || name.trim().length === 0) {
       throw new InvariantError(`WatchlistName cannot be empty: ${name}`);
     }
     const trimmed = name.trim();
