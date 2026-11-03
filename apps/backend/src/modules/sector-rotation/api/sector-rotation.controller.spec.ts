@@ -136,16 +136,123 @@ describe('SectorRotationController', () => {
       expect(calculateUseCase.execute).not.toHaveBeenCalled();
     });
 
-    it('wraps use case errors in BadRequestException', async () => {
-      calculateUseCase.execute.mockRejectedValue(new Error('boom'));
+    it('propagates use case errors unchanged', async () => {
+      const error = new Error('boom');
+      calculateUseCase.execute.mockRejectedValue(error);
+
+      const call = controller.calculateSectorRotation(
+        'XLK',
+        '2024-01-01',
+        '2024-02-01',
+      );
+
+      await expect(call).rejects.toBe(error);
+      await expect(call).rejects.not.toBeInstanceOf(BadRequestException);
+    });
+
+    it.each([
+      [
+        'an unparsable startDate',
+        ['XLK', 'abc', '2024-02-01'],
+        /startDate must be a valid date/,
+      ],
+      [
+        'an unparsable endDate',
+        ['XLK', '2024-01-01', 'abc'],
+        /endDate must be a valid date/,
+      ],
+      [
+        'a startDate after endDate',
+        ['XLK', '2024-03-01', '2024-02-01'],
+        /Start date must be before end date/,
+      ],
+      [
+        'a future endDate',
+        ['XLK', '2024-01-01', '2999-01-01'],
+        /End date cannot be in the future/,
+      ],
+      [
+        'an unknown universe',
+        ['XLK', '2024-01-01', '2024-02-01', undefined, 'nope'],
+        /Unknown rotation universe: nope/,
+      ],
+    ] as const)(
+      'rejects %s with BadRequestException',
+      async (_, args, message) => {
+        const call = controller.calculateSectorRotation(...args);
+
+        await expect(call).rejects.toBeInstanceOf(BadRequestException);
+        await expect(call).rejects.toThrow(message);
+        expect(calculateUseCase.execute).not.toHaveBeenCalled();
+        expect(getUseCase.execute).not.toHaveBeenCalled();
+      },
+    );
+  });
+
+  describe('GET /compare', () => {
+    it('propagates use case errors unchanged', async () => {
+      const error = new Error('boom');
+      compareUseCase.execute.mockRejectedValue(error);
 
       await expect(
-        controller.calculateSectorRotation('XLK', '2024-01-01', '2024-02-01'),
-      ).rejects.toThrow(BadRequestException);
+        controller.compareSectorRotation('XLK', '2024-01-01', '2024-02-01'),
+      ).rejects.toBe(error);
     });
+
+    it.each([
+      [
+        'an unparsable startDate',
+        ['XLK', 'abc', '2024-02-01'],
+        /startDate must be a valid date/,
+      ],
+      [
+        'an unparsable endDate',
+        ['XLK', '2024-01-01', 'abc'],
+        /endDate must be a valid date/,
+      ],
+      [
+        'a startDate after endDate',
+        ['XLK', '2024-03-01', '2024-02-01'],
+        /Start date must be before end date/,
+      ],
+      [
+        'a future endDate',
+        ['XLK', '2024-01-01', '2999-01-01'],
+        /End date cannot be in the future/,
+      ],
+      [
+        'an unknown universe',
+        ['XLK', '2024-01-01', '2024-02-01', 'nope'],
+        /Unknown rotation universe: nope/,
+      ],
+    ] as const)(
+      'rejects %s with BadRequestException',
+      async (_, args, message) => {
+        const call = controller.compareSectorRotation(...args);
+
+        await expect(call).rejects.toBeInstanceOf(BadRequestException);
+        await expect(call).rejects.toThrow(message);
+        expect(compareUseCase.execute).not.toHaveBeenCalled();
+      },
+    );
   });
 
   describe('GET /latest-status', () => {
+    it('propagates use case errors unchanged', async () => {
+      const error = new Error('boom');
+      getUseCase.execute.mockRejectedValue(error);
+
+      await expect(controller.getLatestSectorStatus()).rejects.toBe(error);
+    });
+
+    it('rejects an unknown universe with BadRequestException', async () => {
+      const call = controller.getLatestSectorStatus('nope');
+
+      await expect(call).rejects.toBeInstanceOf(BadRequestException);
+      await expect(call).rejects.toThrow(/Unknown rotation universe: nope/);
+      expect(getUseCase.execute).not.toHaveBeenCalled();
+    });
+
     it('returns sectors with their quadrant + (x,y) for the most recent date only', async () => {
       const latestDate = new Date('2024-02-01T00:00:00.000Z');
       getUseCase.execute.mockResolvedValue({
