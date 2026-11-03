@@ -69,7 +69,7 @@ export class TradingViewSymbolSearchService {
     const cleanSymbol = this.stripHtmlTags(s.symbol);
     return {
       symbol: cleanSymbol,
-      description: s.description ?? '',
+      description: this.stripHtmlTags(s.description ?? ''),
       exchange: s.exchange ?? '',
       fullSymbol: s.exchange ? `${s.exchange}:${cleanSymbol}` : cleanSymbol,
     };
