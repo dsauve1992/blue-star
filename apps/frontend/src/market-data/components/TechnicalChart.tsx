@@ -35,6 +35,10 @@ import {
 } from "../api/chart-data.client";
 import type { MovingAverageConfig } from "../utils/chart-utils";
 import {
+  formatIntradayCrosshair,
+  formatIntradayTick,
+} from "../utils/intraday-time-format";
+import {
   computeEMA,
   computeSMA,
   computeRS,
@@ -599,6 +603,20 @@ function TechnicalChartInner({
     handleCrosshairMoveForTools,
     handleChartClick,
   ]);
+
+  const intradayTimeframe = timeframe
+    ? isIntradayChartInterval(timeframe.value)
+    : false;
+
+  useEffect(() => {
+    chartRef.current?.applyOptions({
+      localization: { timeFormatter: formatIntradayCrosshair },
+      timeScale: {
+        timeVisible: intradayTimeframe,
+        tickMarkFormatter: formatIntradayTick,
+      },
+    });
+  }, [intradayTimeframe, C]);
 
   // ── Watermark ────────────────────────────────────────────────────
 
