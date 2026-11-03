@@ -14,7 +14,7 @@ import { formatScanDate } from "../utils/format-scan-date";
 const SELECT_CLASS =
   "appearance-none rounded-lg border border-slate-700/50 bg-slate-900/50 px-3 py-1 pr-8 text-xs text-slate-200 focus:border-blue-500/50 focus:outline-none focus:ring-1 focus:ring-blue-500/50 cursor-pointer";
 
-const SELECT_FIELD_CLASS = "flex items-center gap-1.5 text-xs text-slate-500";
+const SELECT_FIELD_CLASS = "flex items-center gap-1.5 text-xs text-slate-400";
 
 interface LeadersToolbarProps {
   data: MomentumLeadersResponse | undefined;
@@ -47,22 +47,22 @@ export function LeadersToolbar({
       {data && data.count > 0 && (
         <dl className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs font-mono tabular-nums">
           <div className="flex gap-1">
-            <dt className="text-slate-500">Leaders</dt>
+            <dt className="text-slate-400">Leaders</dt>
             <dd className="text-white">
               {data.count}
-              <span className="text-slate-500">
+              <span className="text-slate-400">
                 {" "}
                 of {data.universeSize.toLocaleString("en-US")}
               </span>
             </dd>
           </div>
           <div className="flex gap-1">
-            <dt className="text-slate-500">Consolidating</dt>
+            <dt className="text-slate-400">Consolidating</dt>
             <dd className="text-purple-300">{data.consolidatingCount}</dd>
           </div>
           {data.scanDate && (
             <div className="flex gap-1">
-              <dt className="text-slate-500">Scan</dt>
+              <dt className="text-slate-400">Scan</dt>
               <dd className="whitespace-nowrap text-slate-300">
                 {formatScanDate(data.scanDate)}
               </dd>
