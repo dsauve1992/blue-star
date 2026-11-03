@@ -1618,7 +1618,7 @@ function ChartToolbar({
                 timeframe.value === tf
                   ? "rgba(59,130,246,0.2)"
                   : "rgba(15,23,42,0.7)",
-              color: timeframe.value === tf ? C.up : C.textMuted,
+              color: timeframe.value === tf ? C.up : C.text,
               transition: "all 150ms",
             }}
           >
@@ -1659,9 +1659,7 @@ function ChartToolbar({
                 background: extendedHours.includeExtendedHours
                   ? "rgba(59,130,246,0.15)"
                   : "rgba(15,23,42,0.7)",
-                color: extendedHours.includeExtendedHours
-                  ? "#93c5fd"
-                  : C.textMuted,
+                color: extendedHours.includeExtendedHours ? "#93c5fd" : C.text,
                 transition: "all 150ms",
               }}
             >
