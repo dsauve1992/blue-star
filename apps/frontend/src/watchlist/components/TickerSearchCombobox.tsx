@@ -241,7 +241,7 @@ function SearchResultRow({
             {result.displaySymbol}
           </span>
           {result.exchange && (
-            <span className="text-[9px] text-slate-500 uppercase tracking-wide">
+            <span className="px-1 rounded bg-slate-700/60 text-[10px] text-slate-300 uppercase tracking-wide">
               {result.exchange}
             </span>
           )}
