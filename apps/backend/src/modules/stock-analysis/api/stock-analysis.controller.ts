@@ -100,7 +100,7 @@ export class StockAnalysisController {
   async getRsRatings(
     @Query('symbols') symbols: string,
   ): Promise<QueryRsRatingsResponseDto> {
-    if (!symbols || !symbols.trim()) {
+    if (typeof symbols !== 'string' || !symbols.trim()) {
       throw new BadRequestException(
         'symbols query parameter is required (comma-separated)',
       );

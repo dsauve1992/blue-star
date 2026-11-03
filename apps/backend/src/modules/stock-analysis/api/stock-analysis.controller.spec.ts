@@ -117,6 +117,16 @@ describe('StockAnalysisController', () => {
     );
   });
 
+  it('returns 400 when rs-ratings symbols is repeated', async () => {
+    const response = await request(server)
+      .get('/stock-analysis/rs-ratings?symbols=AAPL&symbols=MSFT')
+      .expect(400);
+
+    expect((response.body as { message: string }).message).toContain(
+      'symbols query parameter is required',
+    );
+  });
+
   it('keeps the 404 when the industry group is not found', async () => {
     queryIndustryGroupRatings.execute.mockRejectedValue(
       new NotFoundException('Industry group Foo not found'),
