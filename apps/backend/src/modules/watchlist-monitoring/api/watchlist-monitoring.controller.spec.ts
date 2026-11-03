@@ -9,12 +9,12 @@ import { WatchlistMonitoringCronService } from '../infrastructure/services/watch
 describe('WatchlistMonitoringController', () => {
   let controller: WatchlistMonitoringController;
   let cronService: jest.Mocked<
-    Pick<WatchlistMonitoringCronService, 'monitorGaps'>
+    Pick<WatchlistMonitoringCronService, 'scanGaps'>
   >;
 
   beforeEach(async () => {
     cronService = {
-      monitorGaps: jest.fn().mockResolvedValue(undefined),
+      scanGaps: jest.fn().mockResolvedValue(undefined),
     };
 
     const module: TestingModule = await Test.createTestingModule({
@@ -32,11 +32,17 @@ describe('WatchlistMonitoringController', () => {
   });
 
   describe('runGapScan', () => {
-    it('delegates to the cron gap-monitoring job and reports completion', async () => {
+    it('runs the gap scan and reports completion', async () => {
       const result = await controller.runGapScan();
 
-      expect(cronService.monitorGaps).toHaveBeenCalledTimes(1);
+      expect(cronService.scanGaps).toHaveBeenCalledTimes(1);
       expect(result).toEqual({ status: 'completed' });
+    });
+
+    it('propagates a gap scan failure', async () => {
+      cronService.scanGaps.mockRejectedValue(new Error('db down'));
+
+      await expect(controller.runGapScan()).rejects.toThrow('db down');
     });
   });
 });

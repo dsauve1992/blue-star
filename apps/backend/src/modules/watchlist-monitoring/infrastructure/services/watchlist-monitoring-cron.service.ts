@@ -146,34 +146,35 @@ export class WatchlistMonitoringCronService {
 
   @Cron('45 9 * * 1-5', { timeZone: MARKET_TIMEZONE })
   async monitorGaps(): Promise<void> {
-    const jobName = 'Watchlist Gap Monitoring';
-    this.logger.log(`Starting ${jobName}...`);
-
     try {
-      const activeMonitorings =
-        await this.monitoringReadRepository.findAllActiveByType(
-          MonitoringType.GAP,
-        );
-
-      this.logger.log(
-        `Found ${activeMonitorings.length} active gap monitorings`,
-      );
-
-      for (const monitoring of activeMonitorings) {
-        try {
-          await this.processGapMonitoring(monitoring.watchlistId);
-        } catch (error) {
-          const errorMessage =
-            error instanceof Error ? error.message : 'Unknown error';
-          this.logger.error(
-            `Failed to process watchlist ${monitoring.watchlistId.value}: ${errorMessage}`,
-          );
-        }
-      }
+      await this.scanGaps();
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
-      this.logger.error(`${jobName} failed: ${errorMessage}`);
+      this.logger.error(`Watchlist Gap Monitoring failed: ${errorMessage}`);
+    }
+  }
+
+  async scanGaps(): Promise<void> {
+    this.logger.log('Starting Watchlist Gap Monitoring...');
+
+    const activeMonitorings =
+      await this.monitoringReadRepository.findAllActiveByType(
+        MonitoringType.GAP,
+      );
+
+    this.logger.log(`Found ${activeMonitorings.length} active gap monitorings`);
+
+    for (const monitoring of activeMonitorings) {
+      try {
+        await this.processGapMonitoring(monitoring.watchlistId);
+      } catch (error) {
+        const errorMessage =
+          error instanceof Error ? error.message : 'Unknown error';
+        this.logger.error(
+          `Failed to process watchlist ${monitoring.watchlistId.value}: ${errorMessage}`,
+        );
+      }
     }
   }
 
