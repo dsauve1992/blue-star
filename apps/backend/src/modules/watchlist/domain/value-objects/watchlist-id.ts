@@ -5,6 +5,9 @@ export class WatchlistId {
   private constructor(public readonly value: string) {}
 
   static of(id: string): WatchlistId {
+    if (typeof id !== 'string') {
+      throw new InvariantError('WatchlistId must be a string');
+    }
     if (!id || id.trim().length === 0) {
       throw new InvariantError(`WatchlistId cannot be empty: ${id}`);
     }
