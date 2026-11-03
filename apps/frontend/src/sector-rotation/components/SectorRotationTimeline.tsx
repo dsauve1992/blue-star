@@ -122,20 +122,32 @@ export function SectorRotationTimeline({
                 >
                   Sector
                 </th>
-                {uniqueDates.map((date) => (
-                  <th
-                    key={date}
-                    data-in-window={isInWindow(date) || undefined}
-                    className={`border-t border-b border-r border-border p-1 text-center text-xs font-medium min-w-[24px] ${
-                      isInWindow(date) ? "bg-blue-600 text-white" : ""
-                    }`}
-                  >
-                    {parseLocalDate(date).toLocaleDateString("en-US", {
-                      month: "short",
-                      day: "numeric",
-                    })}
-                  </th>
-                ))}
+                {uniqueDates.map((date, index) => {
+                  const year = parseLocalDate(date).getFullYear();
+                  const isYearStart =
+                    index === 0 ||
+                    year !==
+                      parseLocalDate(uniqueDates[index - 1]).getFullYear();
+                  return (
+                    <th
+                      key={date}
+                      data-in-window={isInWindow(date) || undefined}
+                      className={`border-t border-b border-r border-border p-1 text-center align-top text-xs font-medium min-w-[24px] ${
+                        isYearStart ? "border-l-2" : ""
+                      } ${isInWindow(date) ? "bg-blue-600 text-white" : ""}`}
+                    >
+                      {parseLocalDate(date).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                      })}
+                      {isYearStart && (
+                        <div className={isInWindow(date) ? "" : "opacity-70"}>
+                          {`'${String(year).slice(-2)}`}
+                        </div>
+                      )}
+                    </th>
+                  );
+                })}
               </tr>
             </thead>
             <tbody>
