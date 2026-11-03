@@ -1,5 +1,4 @@
 import { BadRequestException, Controller, Get, Query } from '@nestjs/common';
-import { Public } from '../../auth/auth.module';
 import { Symbol } from '../../../shared/value-objects/symbol';
 import { ComputeFinancialReportUseCase } from '../use-cases/compute-financial-report.use-case';
 import { FundamentalApiMapper } from './fundamental-api.mapper';
@@ -13,7 +12,6 @@ export class FundamentalController {
   ) {}
 
   @Get('financial-report')
-  @Public()
   async computeFinancialReport(
     @Query('symbol') symbol: string,
   ): Promise<ComputeFinancialReportApiResponseDto> {
