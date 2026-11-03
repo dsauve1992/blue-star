@@ -7,15 +7,16 @@ import type {
   SeriesType,
   IChartApiBase,
 } from "lightweight-charts";
-import type { QuadrantType } from "src/sector-rotation/api/sector-rotation.client";
+
+export type ChartQuadrant = "Leading" | "Weakening" | "Lagging" | "Improving";
 
 export interface QuadrantSegment {
   startTime: Time;
   endTime: Time;
-  quadrant: QuadrantType;
+  quadrant: ChartQuadrant;
 }
 
-const QUADRANT_FILL: Record<QuadrantType, string> = {
+const QUADRANT_FILL: Record<ChartQuadrant, string> = {
   Leading: "rgba(16, 185, 129, 0.09)",
   Improving: "rgba(59, 130, 246, 0.09)",
   Weakening: "rgba(245, 158, 11, 0.09)",
