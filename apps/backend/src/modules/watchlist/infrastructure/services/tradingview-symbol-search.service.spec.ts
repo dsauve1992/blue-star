@@ -46,6 +46,22 @@ describe('TradingViewSymbolSearchService', () => {
     ]);
   });
 
+  it('strips HTML tags from the description', async () => {
+    respondWith({
+      symbols: [
+        {
+          symbol: 'PAYS',
+          description: '<em>Paysign</em>, Inc.',
+          exchange: 'NASDAQ',
+        },
+      ],
+    });
+
+    const [result] = await new TradingViewSymbolSearchService().search('pays');
+
+    expect(result.description).toBe('Paysign, Inc.');
+  });
+
   it('yields the bare symbol when the exchange is missing', async () => {
     respondWith({ symbols: [{ symbol: 'AAPL', description: 'Apple' }] });
 
