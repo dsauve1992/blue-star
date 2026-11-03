@@ -58,7 +58,6 @@ export class StockAnalysisController {
   }
 
   @Post('momentum-leaders/run')
-  @Public()
   async runMomentumLeaders(): Promise<{ message: string }> {
     await this.runMomentumLeadersUseCase.execute();
     return { message: 'Momentum leaders scan completed' };
@@ -83,7 +82,6 @@ export class StockAnalysisController {
   }
 
   @Post('consolidations/run')
-  @Public()
   async runConsolidationAnalysis(
     @Body() body: RunConsolidationAnalysisRequestDto,
   ): Promise<{ message: string }> {
@@ -138,7 +136,6 @@ export class StockAnalysisController {
   }
 
   @Post('rs-ratings/run')
-  @Public()
   async runRsRatings(): Promise<{ message: string }> {
     await this.runRsRatingsUseCase.execute();
     // Intra-group is best-effort: market-wide ratings are already persisted,

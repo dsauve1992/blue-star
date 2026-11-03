@@ -1,8 +1,16 @@
 import type { Server } from 'http';
-import { INestApplication, NotFoundException } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import {
+  INestApplication,
+  Injectable,
+  NotFoundException,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { PassportStrategy } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
+import { Strategy } from 'passport-custom';
 import request from 'supertest';
+import { AuthGuard } from '../../auth/auth.guard';
 import { DomainErrorFilter } from '../../../common/filters/domain-error.filter';
 import { QueryConsolidationAnalysisAnalyzeUseCase } from '../use-cases/query-consolidation-analysis-analyze-use.case';
 import { QueryIndustryGroupRatingsUseCase } from '../use-cases/query-industry-group-ratings.use-case';
@@ -136,5 +144,56 @@ describe('StockAnalysisController', () => {
     expect((response.body as { message: string }).message).toContain(
       'industry-group RS ratings failed',
     );
+  });
+});
+
+describe('StockAnalysisController authentication', () => {
+  let app: INestApplication;
+
+  @Injectable()
+  class RejectingJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+    validate(): never {
+      throw new UnauthorizedException();
+    }
+  }
+
+  beforeEach(async () => {
+    const execute = { execute: jest.fn() };
+    const moduleRef = await Test.createTestingModule({
+      controllers: [StockAnalysisController],
+      providers: [
+        RejectingJwtStrategy,
+        { provide: APP_GUARD, useClass: AuthGuard },
+        {
+          provide: QueryConsolidationAnalysisAnalyzeUseCase,
+          useValue: execute,
+        },
+        { provide: RunConsolidationAnalysisUseCase, useValue: execute },
+        { provide: QueryRsRatingsUseCase, useValue: execute },
+        { provide: RunRsRatingsUseCase, useValue: execute },
+        { provide: RunIndustryGroupRsRatingsUseCase, useValue: execute },
+        { provide: QueryIndustryGroupsUseCase, useValue: execute },
+        { provide: QueryIndustryGroupRatingsUseCase, useValue: execute },
+        { provide: QueryMomentumLeadersUseCase, useValue: execute },
+        { provide: RunMomentumLeadersUseCase, useValue: execute },
+      ],
+    }).compile();
+
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it.each([
+    '/stock-analysis/momentum-leaders/run',
+    '/stock-analysis/consolidations/run',
+    '/stock-analysis/rs-ratings/run',
+  ])('returns 401 for an unauthenticated POST to %s', async (path) => {
+    await request(app.getHttpServer() as Server)
+      .post(path)
+      .expect(401);
   });
 });
