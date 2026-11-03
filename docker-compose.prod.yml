@@ -34,6 +34,8 @@ services:
       - FRONTEND_URL=${FRONTEND_URL:-}
       - NTFY_BASE_URL=${NTFY_BASE_URL:-}
       - NTFY_API_KEY=${NTFY_API_KEY:-}
+      - CRON_ENABLED=${CRON_ENABLED:-true}
+      - NOTIFICATIONS_ENABLED=${NOTIFICATIONS_ENABLED:-true}
     extra_hosts:
       - "host.docker.internal:host-gateway"
     healthcheck:
