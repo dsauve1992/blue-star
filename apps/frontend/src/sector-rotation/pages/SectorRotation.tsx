@@ -74,7 +74,7 @@ export default function SectorRotation() {
   );
 
   useEffect(() => {
-    if (!showComparison || isComparing) return;
+    if (!showComparison) return;
     const prefersReducedMotion = window.matchMedia(
       "(prefers-reduced-motion: reduce)",
     ).matches;
@@ -82,7 +82,7 @@ export default function SectorRotation() {
       behavior: prefersReducedMotion ? "auto" : "smooth",
       block: "start",
     });
-  }, [showComparison, isComparing]);
+  }, [showComparison]);
 
   const uniqueDates = useMemo(() => {
     if (!data?.result?.dataPoints) return [];
