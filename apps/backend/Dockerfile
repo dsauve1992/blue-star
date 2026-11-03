@@ -3,9 +3,6 @@ FROM node:24.22.1-alpine AS builder
 
 WORKDIR /app
 
-# Install Python for screener functionality
-RUN apk add --no-cache python3 py3-pip bash
-
 # Copy root package files for workspaces
 COPY package*.json ./
 COPY turbo.json ./
@@ -19,17 +16,8 @@ RUN npm ci --workspace=backend
 # Copy backend source
 COPY apps/backend ./apps/backend
 
-# Copy screener (Python dependency)
-COPY apps/screener ./apps/screener
-
-# Copy theme_extractor (Python dependency)
-COPY apps/theme_extractor ./apps/theme_extractor
-
-# Copy leader-scan (Python dependency)
-COPY apps/leader-scan ./apps/leader-scan
-
 # Build the application
-RUN npm run build --workspace=backend
+RUN npm exec --workspace=backend -- nest build
 
 # Production stage
 FROM node:24.22.1-alpine AS production
