@@ -192,7 +192,8 @@ export function WatchlistCardBar({
                       setShowCreateForm(false);
                       setNewWatchlistName("");
                     }}
-                    className="text-[10px] py-0.5 px-1.5 h-auto"
+                    aria-label="Cancel"
+                    className="text-[10px] py-0.5 px-1.5 h-auto text-slate-400 hover:text-white dark:hover:text-white border-slate-600/50 dark:border-slate-600/50 hover:bg-slate-700/50 dark:hover:bg-slate-700/50"
                   >
                     <X className="w-2.5 h-2.5" />
                   </Button>
