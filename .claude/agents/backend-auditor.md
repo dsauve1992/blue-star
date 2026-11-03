@@ -131,8 +131,7 @@ most a Tier-2 advisory, not a Tier-1 violation.
   `req.user` / never passes `authContext` to the use-case — **Blocking** (the use-case
   cannot check ownership without it).
 - A new `@Public()` endpoint that touches user-owned data — **Blocking**. A `@Public()`
-  endpoint that merely kicks off an expensive job (no user data) — Warning / note (the
-  two `stock-analysis` run endpoints are the known, accepted baseline).
+  endpoint that merely kicks off an expensive job (no user data) — Warning / note.
 
 **DI / module wiring**
 
