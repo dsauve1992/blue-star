@@ -211,6 +211,27 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
       MonitoringType.GAP,
     );
   });
+
+  it('scanGaps rejects when loading the active monitorings fails', async () => {
+    monitoringReadRepository.findAllActiveByType.mockRejectedValue(
+      new Error('db down'),
+    );
+
+    await expect(service.scanGaps()).rejects.toThrow('db down');
+  });
+
+  it('monitorGaps resolves and logs the error when loading the active monitorings fails', async () => {
+    monitoringReadRepository.findAllActiveByType.mockRejectedValue(
+      new Error('db down'),
+    );
+    const errorLog = jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+    await expect(service.monitorGaps()).resolves.toBeUndefined();
+
+    expect(errorLog).toHaveBeenCalledWith(
+      'Watchlist Gap Monitoring failed: db down',
+    );
+  });
 });
 
 describe('WatchlistMonitoringCronService — breakout alerting', () => {

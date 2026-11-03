@@ -38,7 +38,7 @@ export class WatchlistMonitoringController {
 
   @Post('run-gap-scan')
   async runGapScan(): Promise<{ status: string }> {
-    await this.cronService.monitorGaps();
+    await this.cronService.scanGaps();
     return { status: 'completed' };
   }
 
