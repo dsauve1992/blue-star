@@ -141,7 +141,7 @@ export function SectorRotationTimeline({
                         day: "numeric",
                       })}
                       {isYearStart && (
-                        <div className="opacity-70">
+                        <div className={isInWindow(date) ? "" : "opacity-70"}>
                           {`'${String(year).slice(-2)}`}
                         </div>
                       )}
