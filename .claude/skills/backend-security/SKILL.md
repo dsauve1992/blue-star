@@ -53,10 +53,8 @@ any watchlist by guessing an id. That's the bug this skill exists to prevent.
 
 6. **`@Public()` endpoints need a deliberate justification.** Anything marked `@Public()`
    bypasses `AuthGuard` entirely. It must touch no user-owned data and, ideally, no
-   expensive/abusable operation. The `stock-analysis` `consolidations/run` and
-   `rs-ratings/run` POST endpoints are public and kick off expensive Python jobs — that's
-   a known, accepted trade-off, but new public endpoints must clear the same bar
-   explicitly, not by omission.
+   expensive/abusable operation. New public endpoints must clear that bar explicitly,
+   not by omission.
 
 7. **Order the guards: not-found before ownership.** Load → null check (`NotFoundError`)
    → ownership check (`AuthorizationError`) → do the work. Never mutate, then check.
