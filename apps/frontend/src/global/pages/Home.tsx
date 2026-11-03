@@ -33,13 +33,6 @@ export default function Home() {
     }
   ];
 
-  const stats = [
-    { label: "Active Users", value: "10K+" },
-    { label: "Portfolios Managed", value: "25K+" },
-    { label: "Total Volume", value: "$2.5B+" },
-    { label: "Success Rate", value: "99.9%" }
-  ];
-
   return (
     <div className="min-h-screen">
       {/* Hero Section */}
@@ -60,20 +53,10 @@ export default function Home() {
             Track, analyze, and optimize your investments with professional-grade tools.
           </p>
           
-          <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
             <Button size="lg" className="text-lg px-8 py-4" asChild>
               <Link to="/login">Get Started Free</Link>
             </Button>
-          </div>
-          
-          {/* Stats */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8 max-w-4xl mx-auto">
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center">
-                <div className="text-3xl font-bold text-slate-50 mb-2">{stat.value}</div>
-                <div className="text-slate-300">{stat.label}</div>
-              </div>
-            ))}
           </div>
         </div>
       </section>
@@ -119,7 +102,7 @@ export default function Home() {
             Ready to elevate your trading?
           </h2>
           <p className="text-xl text-slate-300 mb-8">
-            Join thousands of traders who trust Blue Star for their portfolio management needs.
+            Sign in to see today's market breadth, sector rotation and your watchlists.
           </p>
           
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
@@ -142,7 +125,7 @@ export default function Home() {
             </div>
             
             <div className="flex items-center space-x-6 text-sm text-slate-300">
-              <span>© 2024 Blue Star. All rights reserved.</span>
+              <span>© {new Date().getFullYear()} Blue Star. All rights reserved.</span>
             </div>
           </div>
         </div>
