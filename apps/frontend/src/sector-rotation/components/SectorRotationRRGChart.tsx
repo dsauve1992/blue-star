@@ -5,6 +5,7 @@ import type { SectorRotationDataPoint } from "../api/sector-rotation.client";
 import { useMemo, useState } from "react";
 import type { ECharts } from "echarts";
 import { parseLocalDate } from "../utils/parse-local-date";
+import { formatDisplayDate } from "../utils/format-display-date";
 import { createRrgLabelLayout } from "../utils/rrg-label-layout";
 
 const COMPACT_LABEL_WIDTH = 640;
@@ -436,8 +437,8 @@ export function SectorRotationRRGChart({
         <h3 className="text-lg font-semibold">Sector Rotation (RRG Chart)</h3>
         <p className="text-sm text-slate-500 dark:text-slate-400">
           {startDate && endDate
-            ? `${startDate.toLocaleDateString()} - ${endDate.toLocaleDateString()}`
-            : `Latest data: ${latestDate.toLocaleDateString()}`}
+            ? `${formatDisplayDate(startDate)} - ${formatDisplayDate(endDate)}`
+            : `Latest data: ${formatDisplayDate(latestDate)}`}
         </p>
       </div>
       <ReactECharts
