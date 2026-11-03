@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { parseLocalDate } from "../utils/parse-local-date";
 import { PageContainer } from "src/global/design-system";
 import { Card, Button, LoadingSpinner, Alert } from "src/global/design-system";
@@ -46,6 +46,7 @@ export default function SectorRotation() {
   startDate.setDate(startDate.getDate() - 52 * 7);
 
   const [showComparison, setShowComparison] = useState(false);
+  const comparisonRef = useRef<HTMLDivElement>(null);
 
   const { data, isLoading, isFetching, error, refetch } = useSectorRotation(
     {
@@ -71,6 +72,17 @@ export default function SectorRotation() {
     },
     showComparison && Boolean(activeUniverse),
   );
+
+  useEffect(() => {
+    if (!showComparison || isComparing) return;
+    const prefersReducedMotion = window.matchMedia(
+      "(prefers-reduced-motion: reduce)",
+    ).matches;
+    comparisonRef.current?.scrollIntoView({
+      behavior: prefersReducedMotion ? "auto" : "smooth",
+      block: "start",
+    });
+  }, [showComparison, isComparing]);
 
   const uniqueDates = useMemo(() => {
     if (!data?.result?.dataPoints) return [];
@@ -373,7 +385,7 @@ export default function SectorRotation() {
         />
 
         {showComparison && (
-          <Card className="p-6">
+          <Card ref={comparisonRef} className="p-6">
             <div className="space-y-4">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
