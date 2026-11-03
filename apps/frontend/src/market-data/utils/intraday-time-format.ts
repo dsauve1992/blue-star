@@ -1,4 +1,4 @@
-import { TickMarkType, type Time } from "lightweight-charts";
+import type { Time } from "lightweight-charts";
 
 const MARKET_TIME_ZONE = "America/New_York";
 
@@ -9,19 +9,14 @@ const clockFormat = new Intl.DateTimeFormat("en-GB", {
   hourCycle: "h23",
 });
 
-const dayFormat = new Intl.DateTimeFormat("en-US", {
+const sessionDateFormat = new Intl.DateTimeFormat("en-US", {
   timeZone: MARKET_TIME_ZONE,
+  month: "short",
   day: "numeric",
 });
 
-const monthFormat = new Intl.DateTimeFormat("en-US", {
+const sessionKeyFormat = new Intl.DateTimeFormat("en-CA", {
   timeZone: MARKET_TIME_ZONE,
-  month: "short",
-});
-
-const yearFormat = new Intl.DateTimeFormat("en-US", {
-  timeZone: MARKET_TIME_ZONE,
-  year: "numeric",
 });
 
 const crosshairParts = new Intl.DateTimeFormat("en-US", {
@@ -33,7 +28,7 @@ const crosshairParts = new Intl.DateTimeFormat("en-US", {
   hourCycle: "h23",
 });
 
-const dailyParts = new Intl.DateTimeFormat("en-US", {
+const dailyParts = new Intl.DateTimeFormat(undefined, {
   timeZone: "UTC",
   day: "2-digit",
   month: "short",
@@ -52,41 +47,39 @@ function toDate(time: Time): Date | null {
   return typeof time === "number" ? new Date(time * 1000) : null;
 }
 
-function formatDailyCrosshair(time: Time): string {
-  const date =
-    typeof time === "string"
-      ? new Date(`${time}T00:00:00Z`)
-      : typeof time === "object"
-        ? new Date(Date.UTC(time.year, time.month - 1, time.day))
-        : null;
-  if (!date || Number.isNaN(date.getTime())) return String(time);
-  const part = (type: Intl.DateTimeFormatPartTypes) =>
-    partValue(dailyParts, date, type);
-  return `${part("day")} ${part("month")} '${part("year")}`;
+function sessionOpenTimes(times: ReadonlyArray<string | number>): Set<number> {
+  const opens = new Set<number>();
+  let previousSession = "";
+  for (const time of times) {
+    if (typeof time !== "number") continue;
+    const session = sessionKeyFormat.format(new Date(time * 1000));
+    if (session !== previousSession) opens.add(time);
+    previousSession = session;
+  }
+  return opens;
 }
 
-export function formatIntradayTick(
-  time: Time,
-  tickMarkType: TickMarkType,
-): string | null {
-  const date = toDate(time);
-  if (!date) return null;
-  switch (tickMarkType) {
-    case TickMarkType.Year:
-      return yearFormat.format(date);
-    case TickMarkType.Month:
-      return monthFormat.format(date);
-    case TickMarkType.DayOfMonth:
-      return dayFormat.format(date);
-    default:
-      return clockFormat.format(date);
-  }
+export function createIntradayTickFormatter(
+  times: ReadonlyArray<string | number>,
+) {
+  const opens = sessionOpenTimes(times);
+  return (time: Time): string | null => {
+    const date = toDate(time);
+    if (!date) return null;
+    if (opens.has(time as number)) return sessionDateFormat.format(date);
+    return clockFormat.format(date);
+  };
 }
 
 export function formatIntradayCrosshair(time: Time): string {
   const date = toDate(time);
-  if (!date) return formatDailyCrosshair(time);
+  if (date) {
+    const part = (type: Intl.DateTimeFormatPartTypes) =>
+      partValue(crosshairParts, date, type);
+    return `${part("day")} ${part("month")} ${part("hour")}:${part("minute")}`;
+  }
+  const day = new Date(`${time as string}T00:00:00Z`);
   const part = (type: Intl.DateTimeFormatPartTypes) =>
-    partValue(crosshairParts, date, type);
-  return `${part("day")} ${part("month")} ${part("hour")}:${part("minute")}`;
+    partValue(dailyParts, day, type);
+  return `${part("day")} ${part("month")} '${part("year")}`;
 }

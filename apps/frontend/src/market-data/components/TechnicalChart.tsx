@@ -35,8 +35,8 @@ import {
 } from "../api/chart-data.client";
 import type { MovingAverageConfig } from "../utils/chart-utils";
 import {
+  createIntradayTickFormatter,
   formatIntradayCrosshair,
-  formatIntradayTick,
 } from "../utils/intraday-time-format";
 import {
   computeEMA,
@@ -613,10 +613,12 @@ function TechnicalChartInner({
       localization: { timeFormatter: formatIntradayCrosshair },
       timeScale: {
         timeVisible: intradayTimeframe,
-        tickMarkFormatter: formatIntradayTick,
+        tickMarkFormatter: createIntradayTickFormatter(
+          candles.map((c) => c.time),
+        ),
       },
     });
-  }, [intradayTimeframe, C]);
+  }, [intradayTimeframe, candles, C]);
 
   // ── Watermark ────────────────────────────────────────────────────
 
