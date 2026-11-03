@@ -59,9 +59,9 @@ import { MeasureTool } from "./chart-primitives/MeasureTool";
 import { LongPositionTool } from "./chart-primitives/LongPositionTool";
 import {
   QuadrantBackground,
+  type ChartQuadrant,
   type QuadrantSegment,
 } from "./chart-primitives/QuadrantBackground";
-import type { QuadrantType } from "src/sector-rotation/api/sector-rotation.client";
 
 export type ChartDrawingTool = "none" | "measure" | "long-position";
 
@@ -1165,7 +1165,7 @@ export const TechnicalChart = memo(TechnicalChartInner);
 
 // ── Sub-components ────────────────────────────────────────────────────
 
-const QUADRANT_LEGEND_ITEMS: { label: QuadrantType; color: string }[] = [
+const QUADRANT_LEGEND_ITEMS: { label: ChartQuadrant; color: string }[] = [
   { label: "Leading", color: "#10b981" },
   { label: "Improving", color: "#3b82f6" },
   { label: "Weakening", color: "#f59e0b" },
