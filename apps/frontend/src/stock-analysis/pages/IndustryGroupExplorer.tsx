@@ -249,7 +249,7 @@ export default function IndustryGroupExplorer() {
 
         <div className="relative flex flex-col md:h-screen">
           <div className="flex-1 flex flex-col md:flex-row min-h-0">
-            <aside className="w-full max-h-[40vh] md:w-72 md:max-h-none flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
+            <aside className="relative z-10 w-full max-h-[40vh] md:w-72 md:max-h-none flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
               <div className="px-3 py-2 border-b border-slate-700/50 space-y-2">
                 <div className="flex items-center gap-2 text-xs text-slate-400">
                   <Layers className="w-3.5 h-3.5" />
