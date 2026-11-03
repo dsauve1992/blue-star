@@ -1677,22 +1677,8 @@ function ChartToolbar({
             borderRadius: 4,
             border: "1px solid rgba(51,65,85,0.5)",
             background: "rgba(15,23,42,0.7)",
-            color: C.textMuted,
+            color: C.text,
             cursor: "pointer",
-            opacity: 0.6,
-            transition: "opacity 150ms",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "0.6";
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.opacity = "0.6";
           }}
           title={`Open ${tradingViewChartSymbol(ticker, exchange)} on TradingView`}
         >
@@ -1709,22 +1695,8 @@ function ChartToolbar({
             borderRadius: 4,
             border: "1px solid rgba(51,65,85,0.5)",
             background: "rgba(15,23,42,0.7)",
-            color: C.textMuted,
+            color: C.text,
             cursor: "pointer",
-            opacity: 0.6,
-            transition: "opacity 150ms",
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.opacity = "0.6";
-          }}
-          onFocus={(e) => {
-            e.currentTarget.style.opacity = "1";
-          }}
-          onBlur={(e) => {
-            e.currentTarget.style.opacity = "0.6";
           }}
           title="Download chart as PNG"
         >
