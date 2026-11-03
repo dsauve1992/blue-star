@@ -190,12 +190,22 @@ function addCountPane(
 ): SeriesUpdater {
   const highs = chart.addSeries(
     HistogramSeries,
-    { base: 0, priceFormat: COUNT_PRICE_FORMAT },
+    {
+      base: 0,
+      priceFormat: COUNT_PRICE_FORMAT,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    },
     paneIndex,
   );
   const lows = chart.addSeries(
     HistogramSeries,
-    { base: 0, priceFormat: COUNT_PRICE_FORMAT },
+    {
+      base: 0,
+      priceFormat: COUNT_PRICE_FORMAT,
+      lastValueVisible: false,
+      priceLineVisible: false,
+    },
     paneIndex,
   );
   chart
@@ -339,15 +349,31 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
         role="img"
         aria-label="Five stacked panes sharing one date axis: the 10-day and 20-day EMAs of the stacked-MA ratio, of the new-high/new-low ratio, and of the 20-day high/low ratio, each shaded blue when EMA10 is above EMA20 and red otherwise, with mirrored histograms of daily 52-week and 20-day highs and lows"
       />
-      {paneTops.map((top, paneIndex) => (
-        <div
-          key={PANES[paneIndex].label}
-          className="pointer-events-none absolute left-2 right-14 z-10 font-mono text-[10px] text-slate-400"
-          style={{ top: top + 4 }}
-        >
-          {PANES[paneIndex].label}
-        </div>
-      ))}
+      {paneTops.map((top, paneIndex) => {
+        const pane = PANES[paneIndex];
+        const latest = sessions.at(-1);
+        return (
+          <div
+            key={pane.label}
+            className="pointer-events-none absolute left-2 right-14 z-10 font-mono text-[10px] text-slate-400"
+            style={{ top: top + 4 }}
+          >
+            {pane.label}
+            {pane.kind === "count" && (
+              <>
+                {"  "}
+                <span style={{ color: HIGHS_COLOR }}>
+                  {(latest && pane.highs(latest)) ?? "—"}
+                </span>
+                {" / "}
+                <span style={{ color: LOWS_COLOR }}>
+                  {(latest && pane.lows(latest)) ?? "—"}
+                </span>
+              </>
+            )}
+          </div>
+        );
+      })}
       {hover && (
         <div
           className="pointer-events-none absolute top-2 z-20 rounded-lg border border-slate-700 bg-slate-900/90 px-3 py-2 font-mono text-[10px] leading-4 text-slate-300 shadow-lg backdrop-blur"
