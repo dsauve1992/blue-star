@@ -44,5 +44,22 @@ describe('AppController', () => {
         ServiceUnavailableException,
       );
     });
+
+    it('should throw ServiceUnavailableException when the query never settles', async () => {
+      jest.useFakeTimers();
+      try {
+        databaseService.query.mockReturnValue(new Promise(() => undefined));
+
+        const result = appController.getHealth();
+        const assertion = expect(result).rejects.toThrow(
+          ServiceUnavailableException,
+        );
+        await jest.advanceTimersByTimeAsync(3000);
+
+        await assertion;
+      } finally {
+        jest.useRealTimers();
+      }
+    });
   });
 });
