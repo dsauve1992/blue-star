@@ -1,8 +1,15 @@
 import type { Server } from 'http';
-import { INestApplication } from '@nestjs/common';
-import { APP_FILTER } from '@nestjs/core';
+import {
+  INestApplication,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { APP_FILTER, APP_GUARD } from '@nestjs/core';
+import { PassportStrategy } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
+import { Strategy } from 'passport-custom';
 import request from 'supertest';
+import { AuthGuard } from '../../auth/auth.guard';
 import { DomainErrorFilter } from '../../../common/filters/domain-error.filter';
 import { Symbol } from '../../../shared/value-objects/symbol';
 import { FinancialReport } from '../domain/value-objects/financial-report';
@@ -84,5 +91,44 @@ describe('FundamentalController', () => {
     expect(execute).toHaveBeenCalledWith({
       symbol: Symbol.of('AAPL'),
     });
+  });
+});
+
+describe('FundamentalController authentication', () => {
+  let app: INestApplication;
+  const execute = jest.fn();
+
+  @Injectable()
+  class RejectingJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+    validate(): never {
+      throw new UnauthorizedException();
+    }
+  }
+
+  beforeEach(async () => {
+    execute.mockReset();
+    const moduleRef = await Test.createTestingModule({
+      controllers: [FundamentalController],
+      providers: [
+        FundamentalApiMapper,
+        RejectingJwtStrategy,
+        { provide: APP_GUARD, useClass: AuthGuard },
+        { provide: ComputeFinancialReportUseCase, useValue: { execute } },
+      ],
+    }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it('returns 401 for an unauthenticated GET and does not run the use case', async () => {
+    await request(app.getHttpServer() as Server)
+      .get('/fundamental/financial-report?symbol=AAPL')
+      .expect(401);
+
+    expect(execute).not.toHaveBeenCalled();
   });
 });
