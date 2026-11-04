@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from "react";
 import { parseLocalDate } from "../utils/parse-local-date";
+import { formatDisplayDate } from "../utils/format-display-date";
 import { PageContainer } from "src/global/design-system";
 import { Card, Button, LoadingSpinner, Alert } from "src/global/design-system";
 import { useSectorRotation } from "../hooks/use-sector-rotation";
@@ -282,7 +283,7 @@ export default function SectorRotation() {
                   <h3 className="text-sm font-medium mb-1">Time Window</h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400">
                     {displayStartDate && displayEndDate
-                      ? `${windowWeeks} weeks · ${displayStartDate.toLocaleDateString()} - ${displayEndDate.toLocaleDateString()}`
+                      ? `${windowWeeks} weeks · ${formatDisplayDate(displayStartDate)} - ${formatDisplayDate(displayEndDate)}`
                       : "Select a time window"}
                   </p>
                 </div>
@@ -344,10 +345,10 @@ export default function SectorRotation() {
               </div>
               <div className="flex justify-between text-xs text-slate-500 dark:text-slate-400">
                 <span>
-                  {fullRange.start ? fullRange.start.toLocaleDateString() : ""}
+                  {fullRange.start ? formatDisplayDate(fullRange.start) : ""}
                 </span>
                 <span>
-                  {fullRange.end ? fullRange.end.toLocaleDateString() : ""}
+                  {fullRange.end ? formatDisplayDate(fullRange.end) : ""}
                 </span>
               </div>
             </div>
@@ -541,9 +542,9 @@ export default function SectorRotation() {
                                   className="border-t border-slate-200 dark:border-slate-700"
                                 >
                                   <td className="p-2">
-                                    {parseLocalDate(
-                                      diff.date,
-                                    ).toLocaleDateString()}
+                                    {formatDisplayDate(
+                                      parseLocalDate(diff.date),
+                                    )}
                                   </td>
                                   <td className="p-2">{diff.sectorSymbol}</td>
                                   {diff.persisted && diff.live ? (

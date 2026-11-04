@@ -3,6 +3,7 @@ import { Card } from "src/global/design-system";
 import { useTheme } from "src/global/design-system";
 import type { SectorRotationDataPoint } from "../api/sector-rotation.client";
 import { parseLocalDate } from "../utils/parse-local-date";
+import { formatDisplayDate } from "../utils/format-display-date";
 
 const QUADRANT_STYLES = [
   { quadrant: "Leading", code: "Ld", color: "bg-green-500" },
@@ -190,9 +191,7 @@ export function SectorRotationTimeline({
                         <td
                           key={`${symbol}-${date}`}
                           className={`border-b border-r border-border p-1 text-center text-xs ${style.color} ${isDarkMode ? "opacity-80" : "opacity-70"}`}
-                          title={`${sectorNames[symbol] ? `${sectorNames[symbol]} (${symbol})` : symbol} - ${parseLocalDate(
-                            date,
-                          ).toLocaleDateString()}: ${quadrant}`}
+                          title={`${sectorNames[symbol] ? `${sectorNames[symbol]} (${symbol})` : symbol} - ${formatDisplayDate(parseLocalDate(date))}: ${quadrant}`}
                         >
                           <span className="text-white font-bold">
                             {style.code}
