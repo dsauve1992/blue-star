@@ -17,18 +17,12 @@ import { formatPercent } from "../utils/format-percent";
 import { formatSessionDate } from "../utils/format-session-date";
 
 const HIGHS_COLOR = "#3b82f6";
-const LOWS_COLOR = "#ef4444";
 export const EMA10_COLOR = "#ef4444";
 export const EMA20_COLOR = "#3b82f6";
 const PERCENT_PRICE_FORMAT = {
   type: "custom",
   minMove: 0.1,
   formatter: (value: number) => `${value.toFixed(1)}%`,
-} as const;
-const RATIO_PRICE_FORMAT = {
-  type: "price",
-  precision: 2,
-  minMove: 0.01,
 } as const;
 const COUNT_PRICE_FORMAT = { type: "price", precision: 0, minMove: 1 } as const;
 const BAND_PANE_STRETCH = 2;
@@ -44,14 +38,13 @@ interface BandPane {
   fast: Accessor;
   slow: Accessor;
   scale: number;
-  priceFormat: typeof PERCENT_PRICE_FORMAT | typeof RATIO_PRICE_FORMAT;
+  priceFormat: typeof PERCENT_PRICE_FORMAT;
 }
 
 interface CountPane {
   kind: "count";
   label: string;
   highs: Accessor;
-  lows: Accessor;
 }
 
 type Pane = BandPane | CountPane;
@@ -67,31 +60,29 @@ const PANES: Pane[] = [
   },
   {
     kind: "band",
-    label: "NH / NL ratio EMA10 / EMA20",
-    fast: (s) => s.ratioEma10,
-    slow: (s) => s.ratioEma20,
-    scale: 1,
-    priceFormat: RATIO_PRICE_FORMAT,
+    label: "New-high share EMA10 / EMA20",
+    fast: (s) => s.newHighsShareEma10,
+    slow: (s) => s.newHighsShareEma20,
+    scale: 100,
+    priceFormat: PERCENT_PRICE_FORMAT,
   },
   {
     kind: "count",
-    label: "52-week new highs / new lows",
+    label: "52-week new highs",
     highs: (s) => s.newHighs,
-    lows: (s) => s.newLows,
   },
   {
     kind: "band",
-    label: "20-day high / low ratio EMA10 / EMA20",
-    fast: (s) => s.ratio20Ema10,
-    slow: (s) => s.ratio20Ema20,
-    scale: 1,
-    priceFormat: RATIO_PRICE_FORMAT,
+    label: "20-day new-high share EMA10 / EMA20",
+    fast: (s) => s.newHighs20ShareEma10,
+    slow: (s) => s.newHighs20ShareEma20,
+    scale: 100,
+    priceFormat: PERCENT_PRICE_FORMAT,
   },
   {
     kind: "count",
-    label: "20-day highs / lows",
+    label: "20-day new highs",
     highs: (s) => s.newHighs20,
-    lows: (s) => s.newLows20,
   },
 ];
 
@@ -123,14 +114,9 @@ function toBandPoint(
     : { time, fast: fast * scale, slow: slow * scale };
 }
 
-function toCountPoint(
-  date: string,
-  count: number | null,
-  sign: 1 | -1,
-  color: string,
-) {
+function toCountPoint(date: string, count: number | null, color: string) {
   const time = date as Time;
-  return count === null ? { time } : { time, value: sign * count, color };
+  return count === null ? { time } : { time, value: count, color };
 }
 
 function addBandPane(
@@ -198,26 +184,13 @@ function addCountPane(
     },
     paneIndex,
   );
-  const lows = chart.addSeries(
-    HistogramSeries,
-    {
-      base: 0,
-      priceFormat: COUNT_PRICE_FORMAT,
-      lastValueVisible: false,
-      priceLineVisible: false,
-    },
-    paneIndex,
-  );
   chart
     .priceScale("right", paneIndex)
     .applyOptions({ scaleMargins: { top: 0.2, bottom: 0.05 } });
 
   return (sessions) => {
     highs.setData(
-      sessions.map((s) => toCountPoint(s.date, pane.highs(s), 1, HIGHS_COLOR)),
-    );
-    lows.setData(
-      sessions.map((s) => toCountPoint(s.date, pane.lows(s), -1, LOWS_COLOR)),
+      sessions.map((s) => toCountPoint(s.date, pane.highs(s), HIGHS_COLOR)),
     );
   };
 }
@@ -231,10 +204,6 @@ function measurePaneTops(chart: IChartApi, container: HTMLElement): number[] {
         (pane.getHTMLElement()?.getBoundingClientRect().top ?? containerTop) -
         containerTop,
     );
-}
-
-function formatRatio(ratio: number | null): string {
-  return ratio === null ? "—" : ratio.toFixed(2);
 }
 
 interface MarketBreadthChartProps {
@@ -347,7 +316,7 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
         ref={containerRef}
         className="h-[760px] w-full"
         role="img"
-        aria-label="Five stacked panes sharing one date axis: the 10-day and 20-day EMAs of the stacked-MA ratio, of the new-high/new-low ratio, and of the 20-day high/low ratio, each shaded blue when EMA10 is above EMA20 and red otherwise, with mirrored histograms of daily 52-week and 20-day highs and lows"
+        aria-label="Five stacked panes sharing one date axis: the 10-day and 20-day EMAs of the stacked-MA ratio, of the new-high share, and of the 20-day new-high share, each shaded blue when EMA10 is above EMA20 and red otherwise, with histograms of daily 52-week and 20-day new highs"
       />
       {paneTops.map((top, paneIndex) => {
         const pane = PANES[paneIndex];
@@ -364,10 +333,6 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
                 {"  "}
                 <span style={{ color: HIGHS_COLOR }}>
                   {(latest && pane.highs(latest)) ?? "—"}
-                </span>
-                {" / "}
-                <span style={{ color: LOWS_COLOR }}>
-                  {(latest && pane.lows(latest)) ?? "—"}
                 </span>
               </>
             )}
@@ -406,44 +371,41 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
               value={formatPercent(hover.session.stackedRatioEma20)}
             />
           </TooltipSection>
-          <TooltipSection title="52-week highs / lows">
+          <TooltipSection title="52-week new highs">
+            <TooltipRow label="Highs" value={`${hover.session.newHighs}`} />
             <TooltipRow
-              label="Highs / lows"
-              value={`${hover.session.newHighs} / ${hover.session.newLows}`}
-            />
-            <TooltipRow
-              label="Ratio"
-              value={formatRatio(hover.session.ratio)}
+              label="Share"
+              value={formatPercent(hover.session.newHighsShare)}
             />
             <TooltipRow
               label="EMA10"
               color={EMA10_COLOR}
-              value={formatRatio(hover.session.ratioEma10)}
+              value={formatPercent(hover.session.newHighsShareEma10)}
             />
             <TooltipRow
               label="EMA20"
               color={EMA20_COLOR}
-              value={formatRatio(hover.session.ratioEma20)}
+              value={formatPercent(hover.session.newHighsShareEma20)}
             />
           </TooltipSection>
-          <TooltipSection title="20-day highs / lows">
+          <TooltipSection title="20-day new highs">
             <TooltipRow
-              label="Highs / lows"
-              value={`${hover.session.newHighs20 ?? "—"} / ${hover.session.newLows20 ?? "—"}`}
+              label="Highs"
+              value={`${hover.session.newHighs20 ?? "—"}`}
             />
             <TooltipRow
-              label="Ratio"
-              value={formatRatio(hover.session.ratio20)}
+              label="Share"
+              value={formatPercent(hover.session.newHighs20Share)}
             />
             <TooltipRow
               label="EMA10"
               color={EMA10_COLOR}
-              value={formatRatio(hover.session.ratio20Ema10)}
+              value={formatPercent(hover.session.newHighs20ShareEma10)}
             />
             <TooltipRow
               label="EMA20"
               color={EMA20_COLOR}
-              value={formatRatio(hover.session.ratio20Ema20)}
+              value={formatPercent(hover.session.newHighs20ShareEma20)}
             />
           </TooltipSection>
         </div>

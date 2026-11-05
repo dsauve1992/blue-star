@@ -35,25 +35,17 @@ const trendDescription: Record<BreadthState, string> = {
 };
 
 const newHighLowDescription: Record<BreadthState, string> = {
-  GOOD: "EMA10 of NH/(NH+NL) is at or above its EMA20 — buyers are gaining control of the extremes; breakouts have a tailwind.",
-  BAD: "EMA10 of NH/(NH+NL) is below its EMA20 — new lows are gaining ground; stay out regardless of index trend.",
+  GOOD: "EMA10 of the new-high share is at or above its EMA20 — more leaders are making 52-week highs; breakouts have a tailwind.",
+  BAD: "EMA10 of the new-high share is below its EMA20 — fewer leaders are making 52-week highs; be selective with new entries.",
 };
 
 const shortTermDescription: Record<BreadthState, string> = {
-  GOOD: "EMA10 of the 20-day high/low ratio is at or above its EMA20 — the short-term extremes are tilting up; pullbacks are being bought.",
-  BAD: "EMA10 of the 20-day high/low ratio is below its EMA20 — more names are breaking one-month lows than highs; expect breakouts to fail.",
+  GOOD: "EMA10 of the 20-day new-high share is at or above its EMA20 — more leaders are making one-month highs; pullbacks are being bought.",
+  BAD: "EMA10 of the 20-day new-high share is below its EMA20 — fewer leaders are making one-month highs; expect breakouts to struggle.",
 };
-
-function formatRatio(value: number): string {
-  return value.toFixed(3);
-}
 
 function formatSigned(value: number, digits: number): string {
   return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(digits)}`;
-}
-
-function formatRatioGap(gap: number): string {
-  return formatSigned(gap, 3);
 }
 
 function formatPercentGap(gap: number): string {
@@ -149,6 +141,12 @@ export function MarketBreadthCard() {
             </div>
           )}
         </div>
+        {latest && (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Universe: {latest.universeSize} momentum leaders (uptrend-filtered),
+            not the whole market
+          </p>
+        )}
       </CardHeader>
       <CardContent>
         {isLoading ? (
@@ -182,18 +180,18 @@ export function MarketBreadthCard() {
                 formatGap={formatPercentGap}
               />
               <GaugeSummary
-                title="New Highs / New Lows"
+                title="New Highs"
                 gauge={data?.newHighLow ?? null}
                 descriptions={newHighLowDescription}
-                format={formatRatio}
-                formatGap={formatRatioGap}
+                format={formatPercent}
+                formatGap={formatPercentGap}
               />
               <GaugeSummary
-                title="20-Day Highs / Lows"
+                title="20-Day New Highs"
                 gauge={data?.newHighLow20 ?? null}
                 descriptions={shortTermDescription}
-                format={formatRatio}
-                formatGap={formatRatioGap}
+                format={formatPercent}
+                formatGap={formatPercentGap}
               />
             </div>
             <MarketBreadthChart sessions={sessions} />

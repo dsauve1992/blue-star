@@ -54,7 +54,7 @@ describe('QueryMarketBreadthUseCase', () => {
     useCase = new QueryMarketBreadthUseCase(repository);
   });
 
-  it('returns sessions oldest-to-newest with the derived ratio', async () => {
+  it('returns sessions oldest-to-newest with the new-high share of the universe', async () => {
     repository.getRecentAggregates.mockResolvedValue([
       makeAggregate('2026-08-31', 120, 40),
       makeAggregate('2026-08-28', 100, 50),
@@ -66,10 +66,16 @@ describe('QueryMarketBreadthUseCase', () => {
       '2026-08-28',
       '2026-08-31',
     ]);
-    expect(response.sessions[1].ratio).toBeCloseTo(120 / 160, 5);
+    expect(response.sessions[1].newHighsShare).toBeCloseTo(
+      120 / UNIVERSE_SIZE,
+      5,
+    );
+    expect(response.sessions[1]).not.toHaveProperty('ratio');
+    expect(response.sessions[1]).not.toHaveProperty('ratio20');
+    expect(response.sessions[1]).not.toHaveProperty('newLows');
   });
 
-  it('derives the 20-day ratio, averages and gauge from the short-term counts', async () => {
+  it('derives the 20-day new-high share, averages and gauge from the short-term counts', async () => {
     repository.getRecentAggregates.mockResolvedValue([
       makeAggregate('2026-08-31', 120, 40, null, 900, 100),
       makeAggregate('2026-08-28', 100, 50, null, 500, 500),
@@ -79,14 +85,16 @@ describe('QueryMarketBreadthUseCase', () => {
 
     expect(response.sessions[0]).toMatchObject({
       newHighs20: 500,
-      newLows20: 500,
-      ratio20: 0.5,
-      ratio20Ema10: 0.5,
-      ratio20Ema20: 0.5,
-      ratio20State: null,
+      newHighs20Share: 500 / UNIVERSE_SIZE,
+      newHighs20ShareEma10: 500 / UNIVERSE_SIZE,
+      newHighs20ShareEma20: 500 / UNIVERSE_SIZE,
+      newHighs20State: null,
     });
-    expect(response.sessions[1].ratio20).toBeCloseTo(0.9, 5);
-    expect(response.sessions[1].ratio20State).toBe('GOOD');
+    expect(response.sessions[1].newHighs20Share).toBeCloseTo(
+      900 / UNIVERSE_SIZE,
+      5,
+    );
+    expect(response.sessions[1].newHighs20State).toBe('GOOD');
     expect(response.newHighLow20?.state).toBe('GOOD');
   });
 
@@ -98,8 +106,8 @@ describe('QueryMarketBreadthUseCase', () => {
 
     const response = await useCase.execute();
 
-    expect(response.sessions[1].ratio20).toBeNull();
-    expect(response.sessions[1].ratio20Ema10).toBeNull();
+    expect(response.sessions[1].newHighs20Share).toBeNull();
+    expect(response.sessions[1].newHighs20ShareEma10).toBeNull();
     expect(response.newHighLow20).toBeNull();
     expect(response.newHighLow).not.toBeNull();
   });
@@ -206,7 +214,7 @@ describe('QueryMarketBreadthUseCase', () => {
     expect(response.trend).toBeNull();
   });
 
-  it('smooths the NH/NL ratio with a fast and a slow average and classifies the crossover', async () => {
+  it('smooths the new-high share with a fast and a slow average and classifies the crossover', async () => {
     repository.getRecentAggregates.mockResolvedValue([
       makeAggregate('2026-09-03', 69, 22),
       makeAggregate('2026-09-02', 62, 29),
@@ -218,23 +226,17 @@ describe('QueryMarketBreadthUseCase', () => {
 
     const response = await useCase.execute();
 
-    expect(response.sessions.map((s) => s.ratioEma10?.toFixed(2))).toEqual([
-      '0.00',
-      '0.14',
-      '0.17',
-      '0.21',
-      '0.29',
-      '0.38',
+    const scaled = (value: number | null) =>
+      ((value ?? 0) * UNIVERSE_SIZE).toFixed(1);
+    expect(response.sessions.map((s) => scaled(s.newHighsShareEma10))).toEqual([
+      '0.0',
+      '8.7',
+      '10.8',
+      '15.4',
+      '23.8',
+      '32.1',
     ]);
-    expect(response.sessions.map((s) => s.ratioEma20?.toFixed(2))).toEqual([
-      '0.00',
-      '0.07',
-      '0.10',
-      '0.12',
-      '0.18',
-      '0.23',
-    ]);
-    expect(response.sessions.map((s) => s.ratioState)).toEqual([
+    expect(response.sessions.map((s) => s.newHighsState)).toEqual([
       null,
       'GOOD',
       'GOOD',
@@ -245,13 +247,13 @@ describe('QueryMarketBreadthUseCase', () => {
     const latest = response.sessions.at(-1)!;
     expect(response.newHighLow).toEqual({
       state: 'GOOD',
-      ema10: latest.ratioEma10,
-      ema20: latest.ratioEma20,
+      ema10: latest.newHighsShareEma10,
+      ema20: latest.newHighsShareEma20,
       sampleSize: 6,
     });
   });
 
-  it('is BAD for NH/NL when the fast average drops below the slow average', async () => {
+  it('is BAD when the fast average of the new-high share drops below the slow average', async () => {
     repository.getRecentAggregates.mockResolvedValue([
       makeAggregate(sessionDate(0), 10, 90),
       ...Array.from({ length: 6 }, (_, index) =>
@@ -261,11 +263,11 @@ describe('QueryMarketBreadthUseCase', () => {
 
     const response = await useCase.execute();
 
-    expect(response.sessions.at(-1)?.ratioState).toBe('BAD');
+    expect(response.sessions.at(-1)?.newHighsState).toBe('BAD');
     expect(response.newHighLow?.state).toBe('BAD');
   });
 
-  it('warms up the NH/NL averages with sessions before the returned window', async () => {
+  it('warms up the new-high averages with sessions before the returned window', async () => {
     repository.getRecentAggregates.mockResolvedValue(
       Array.from({ length: 21 }, (_, index) =>
         makeAggregate(sessionDate(index), index === 0 ? 100 : 0, 100),
@@ -274,11 +276,18 @@ describe('QueryMarketBreadthUseCase', () => {
 
     const response = await useCase.execute(2);
 
-    expect(response.sessions[0].ratioEma10).toBe(0);
-    expect(response.sessions[0].ratioEma20).toBe(0);
-    expect(response.sessions[1].ratioEma10).toBeCloseTo(1 / 11, 5);
-    expect(response.sessions[1].ratioEma20).toBeCloseTo(1 / 21, 5);
-    expect(response.sessions[1].ratioState).toBe('GOOD');
+    const share = 100 / UNIVERSE_SIZE;
+    expect(response.sessions[0].newHighsShareEma10).toBe(0);
+    expect(response.sessions[0].newHighsShareEma20).toBe(0);
+    expect(response.sessions[1].newHighsShareEma10).toBeCloseTo(
+      (2 * share) / 11,
+      5,
+    );
+    expect(response.sessions[1].newHighsShareEma20).toBeCloseTo(
+      (2 * share) / 21,
+      5,
+    );
+    expect(response.sessions[1].newHighsState).toBe('GOOD');
   });
 
   it('returns null gauges when there are no sessions', async () => {
@@ -290,13 +299,25 @@ describe('QueryMarketBreadthUseCase', () => {
     expect(response.trend).toBeNull();
   });
 
-  it('returns a null ratio when both counts are zero', async () => {
+  it('returns a null share when the universe is empty', async () => {
     repository.getRecentAggregates.mockResolvedValue([
-      makeAggregate('2026-08-31', 0, 0),
+      MarketBreadthAggregate.create({
+        date: BreadthDate.fromISOString('2026-08-31'),
+        universeSize: 0,
+        newHighs: 0,
+        newLows: 0,
+        newHighs20: 0,
+        newLows20: 0,
+        stackedCount: null,
+        missingSymbols: [],
+        partial: false,
+        backfilled: false,
+      }),
     ]);
 
     const response = await useCase.execute();
 
-    expect(response.sessions[0].ratio).toBeNull();
+    expect(response.sessions[0].newHighsShare).toBeNull();
+    expect(response.sessions[0].newHighs20Share).toBeNull();
   });
 });
