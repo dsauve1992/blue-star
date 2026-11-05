@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -81,8 +82,11 @@ export class WatchlistController {
 
   @Get('symbol-search')
   async searchSymbols(
-    @Query('q') q: string,
+    @Query('q') q: unknown,
   ): Promise<SymbolSearchApiResponseDto> {
+    if (q !== undefined && typeof q !== 'string') {
+      throw new BadRequestException('q must be a single string');
+    }
     const query = (q ?? '').trim();
     if (query.length < 2) {
       return { results: [] };
