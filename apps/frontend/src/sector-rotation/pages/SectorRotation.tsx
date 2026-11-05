@@ -223,7 +223,7 @@ export default function SectorRotation() {
 
   if (isLoadingUniverses || isLoading) {
     return (
-      <PageContainer>
+      <PageContainer fullWidth>
         <div className="space-y-6">
           {header}
           <div className="flex items-center justify-center min-h-[400px]">
@@ -236,7 +236,7 @@ export default function SectorRotation() {
 
   if (error) {
     return (
-      <PageContainer>
+      <PageContainer fullWidth>
         <div className="space-y-6">
           {header}
           <Alert variant="danger">
@@ -258,7 +258,7 @@ export default function SectorRotation() {
 
   if (!data?.result) {
     return (
-      <PageContainer>
+      <PageContainer fullWidth>
         <Alert variant="warning">No data available</Alert>
       </PageContainer>
     );
@@ -271,7 +271,7 @@ export default function SectorRotation() {
   const windowEndWeek = sliderPosition + windowWeeks;
 
   return (
-    <PageContainer>
+    <PageContainer fullWidth>
       <div className="space-y-6">
         {header}
 
