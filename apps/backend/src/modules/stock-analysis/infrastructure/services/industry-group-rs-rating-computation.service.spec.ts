@@ -11,8 +11,10 @@ import {
   INDUSTRY_GROUP_RS_RATING_REPOSITORY,
   RS_RATING_REPOSITORY,
 } from '../../constants/tokens';
-import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/use-cases/get-industry-groups-for-tickers.use-case';
-import { GetOrFetchStockClassificationUseCase } from '../../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
+import {
+  GetIndustryGroupsForTickersUseCase,
+  GetOrFetchStockClassificationUseCase,
+} from '../../../stock-classification/stock-classification.module';
 
 describe('percentileRank', () => {
   it('returns 50 for the median of a uniform distribution (0.5 ties handling)', () => {

@@ -5,7 +5,7 @@ import {
   IndustryGroupQuadrant,
 } from '../../domain/value-objects/gap-context';
 import { GapContextService as IGapContextService } from '../../domain/services/gap-context.service';
-import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/use-cases/get-industry-groups-for-tickers.use-case';
+import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/stock-classification.module';
 import { GetLatestRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-rs-rating.use-case';
 import { GetLatestIndustryGroupRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-industry-group-rs-rating.use-case';
 import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/use-cases/get-industry-group-quadrant.use-case';

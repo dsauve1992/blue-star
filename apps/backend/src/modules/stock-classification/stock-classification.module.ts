@@ -31,3 +31,6 @@ import { GetOrFetchStockClassificationUseCase } from './use-cases/get-or-fetch-s
   ],
 })
 export class StockClassificationModule {}
+
+export { GetOrFetchStockClassificationUseCase } from './use-cases/get-or-fetch-stock-classification.use-case';
+export { GetIndustryGroupsForTickersUseCase } from './use-cases/get-industry-groups-for-tickers.use-case';
