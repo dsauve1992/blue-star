@@ -153,7 +153,9 @@ export default function Watchlist() {
 
   const handleDeleteWatchlist = useCallback(
     async (watchlistId: string) => {
-      if (window.confirm("Are you sure you want to delete this watchlist?")) {
+      const watchlist = data?.watchlists.find((w) => w.id === watchlistId);
+      if (!watchlist) return;
+      if (window.confirm(`Delete the watchlist "${watchlist.name}"?`)) {
         try {
           setActionError(null);
           await deleteWatchlist.mutateAsync(watchlistId);
