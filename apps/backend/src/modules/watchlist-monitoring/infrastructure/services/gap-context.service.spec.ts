@@ -2,9 +2,11 @@ import { Test, TestingModule } from '@nestjs/testing';
 import { GapContextServiceImpl } from './gap-context.service';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
 import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/stock-classification.module';
-import { GetLatestRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-rs-rating.use-case';
-import { GetLatestIndustryGroupRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-industry-group-rs-rating.use-case';
-import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/use-cases/get-industry-group-quadrant.use-case';
+import {
+  GetLatestRsRatingUseCase,
+  GetLatestIndustryGroupRsRatingUseCase,
+} from '../../../stock-analysis/stock-analysis.module';
+import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/sector-rotation.module';
 
 describe('GapContextServiceImpl', () => {
   let service: GapContextServiceImpl;

@@ -5,7 +5,7 @@ import { MonitoringType } from '../domain/value-objects/monitoring-type';
 import { WatchlistMonitoringId } from '../domain/value-objects/watchlist-monitoring-id';
 import type { WatchlistMonitoringWriteRepository } from '../domain/repositories/watchlist-monitoring-write.repository.interface';
 import { WATCHLIST_MONITORING_WRITE_REPOSITORY } from '../constants/tokens';
-import { GetWatchlistByIdUseCase } from '../../watchlist/use-cases/get-watchlist-by-id.use-case';
+import { GetWatchlistByIdUseCase } from '../../watchlist/watchlist.module';
 import type { AuthContext } from '../../auth/auth.module';
 
 export interface ActivateMonitoringRequestDto {

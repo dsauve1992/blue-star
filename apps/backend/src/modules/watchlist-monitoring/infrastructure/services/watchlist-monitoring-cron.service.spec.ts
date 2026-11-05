@@ -9,7 +9,7 @@ import * as marketTime from './market-time.util';
 import { getMarketDateKey } from './market-time.util';
 import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
 import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
-import { FindWatchlistTickersUseCase } from '../../../watchlist/use-cases/find-watchlist-tickers.use-case';
+import { FindWatchlistTickersUseCase } from '../../../watchlist/watchlist.module';
 import type { WatchlistMonitoringReadRepository } from '../../domain/repositories/watchlist-monitoring-read.repository.interface';
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';

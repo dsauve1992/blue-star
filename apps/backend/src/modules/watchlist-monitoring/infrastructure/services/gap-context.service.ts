@@ -6,9 +6,11 @@ import {
 } from '../../domain/value-objects/gap-context';
 import { GapContextService as IGapContextService } from '../../domain/services/gap-context.service';
 import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/stock-classification.module';
-import { GetLatestRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-rs-rating.use-case';
-import { GetLatestIndustryGroupRsRatingUseCase } from '../../../stock-analysis/use-cases/get-latest-industry-group-rs-rating.use-case';
-import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/use-cases/get-industry-group-quadrant.use-case';
+import {
+  GetLatestRsRatingUseCase,
+  GetLatestIndustryGroupRsRatingUseCase,
+} from '../../../stock-analysis/stock-analysis.module';
+import { GetIndustryGroupQuadrantUseCase } from '../../../sector-rotation/sector-rotation.module';
 
 @Injectable()
 export class GapContextServiceImpl implements IGapContextService {

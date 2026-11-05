@@ -3,7 +3,7 @@ import {
   MarketBreadthUniversePayload,
   MarketBreadthUniverseService,
 } from '../../domain/services/market-breadth-universe.service';
-import { GetLatestMomentumLeaderSymbolsUseCase } from '../../../stock-analysis/use-cases/get-latest-momentum-leader-symbols.use-case';
+import { GetLatestMomentumLeaderSymbolsUseCase } from '../../../stock-analysis/stock-analysis.module';
 import { BreadthDate } from '../../domain/value-objects/breadth-date';
 
 @Injectable()

@@ -5,7 +5,7 @@ import {
   CONSOLIDATION_RESULT_REPOSITORY,
   MOMENTUM_LEADER_REPOSITORY,
 } from '../constants/tokens';
-import { GetThemeNamesByTickersUseCase } from '../../themes/use-cases/get-theme-names-by-tickers.use-case';
+import { GetThemeNamesByTickersUseCase } from '../../themes/themes.module';
 import { GetOrFetchStockClassificationUseCase } from '../../stock-classification/stock-classification.module';
 
 export interface MomentumLeaderDto {

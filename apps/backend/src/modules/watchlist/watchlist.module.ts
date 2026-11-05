@@ -44,3 +44,6 @@ import { TradingViewSymbolSearchService } from './infrastructure/services/tradin
   exports: [GetWatchlistByIdUseCase, FindWatchlistTickersUseCase],
 })
 export class WatchlistModule {}
+
+export { GetWatchlistByIdUseCase } from './use-cases/get-watchlist-by-id.use-case';
+export { FindWatchlistTickersUseCase } from './use-cases/find-watchlist-tickers.use-case';
