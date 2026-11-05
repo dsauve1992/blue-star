@@ -89,6 +89,35 @@ describe('MarketDataController', () => {
     expect(chart).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ['invalid', 'symbol=%24%24%24&exchange=X'],
+    ['missing', 'exchange=NASDAQ'],
+    ['repeated', 'symbol=A&symbol=B&exchange=X'],
+  ])('returns 400 for a %s chart symbol', async (_case, query) => {
+    await request(server()).get(`/market-data/chart?${query}`).expect(400);
+
+    expect(chart).not.toHaveBeenCalled();
+  });
+
+  it('normalises a lowercase chart symbol before the use case', async () => {
+    chart.mockResolvedValue({
+      chartData: {
+        symbol: 'AAPL',
+        exchange: 'NASDAQ',
+        interval: 'D',
+        pricePoints: [],
+      },
+    });
+
+    await request(server())
+      .get('/market-data/chart?symbol=aapl&exchange=NASDAQ')
+      .expect(200);
+
+    expect(chart).toHaveBeenCalledWith(
+      expect.objectContaining({ symbol: 'AAPL' }),
+    );
+  });
+
   it.each(['abc', '0'])(
     'returns 400 with the validation message for bars=%s',
     async (bars) => {
