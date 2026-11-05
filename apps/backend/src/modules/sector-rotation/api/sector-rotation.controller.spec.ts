@@ -1,5 +1,16 @@
-import { BadRequestException } from '@nestjs/common';
+import type { Server } from 'http';
+import {
+  BadRequestException,
+  INestApplication,
+  Injectable,
+  UnauthorizedException,
+} from '@nestjs/common';
+import { APP_GUARD } from '@nestjs/core';
+import { PassportStrategy } from '@nestjs/passport';
 import { Test } from '@nestjs/testing';
+import { Strategy } from 'passport-custom';
+import request from 'supertest';
+import { AuthGuard } from '../../auth/auth.guard';
 import { SectorRotationController } from './sector-rotation.controller';
 import { CalculateSectorRotationUseCase } from '../use-cases/calculate-sector-rotation.use-case';
 import { GetSectorRotationUseCase } from '../use-cases/get-sector-rotation.use-case';
@@ -373,5 +384,69 @@ describe('SectorRotationController', () => {
         true,
       );
     });
+  });
+});
+
+describe('SectorRotationController authentication', () => {
+  let app: INestApplication;
+  const calculateExecute = jest.fn();
+  const compareExecute = jest.fn();
+
+  @Injectable()
+  class RejectingJwtStrategy extends PassportStrategy(Strategy, 'jwt') {
+    validate(): never {
+      throw new UnauthorizedException();
+    }
+  }
+
+  beforeEach(async () => {
+    calculateExecute.mockReset();
+    compareExecute.mockReset();
+    const moduleRef = await Test.createTestingModule({
+      controllers: [SectorRotationController],
+      providers: [
+        SectorRotationApiMapper,
+        RotationUniverseRegistry,
+        RejectingJwtStrategy,
+        { provide: APP_GUARD, useClass: AuthGuard },
+        {
+          provide: CalculateSectorRotationUseCase,
+          useValue: { execute: calculateExecute },
+        },
+        { provide: GetSectorRotationUseCase, useValue: { execute: jest.fn() } },
+        {
+          provide: CompareSectorRotationUseCase,
+          useValue: { execute: compareExecute },
+        },
+      ],
+    }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it('returns 401 for an unauthenticated GET /calculate and does not run the use case', async () => {
+    await request(app.getHttpServer() as Server)
+      .get('/sector-rotation/calculate')
+      .expect(401);
+
+    expect(calculateExecute).not.toHaveBeenCalled();
+  });
+
+  it('returns 401 for an unauthenticated GET /compare and does not run the use case', async () => {
+    await request(app.getHttpServer() as Server)
+      .get('/sector-rotation/compare')
+      .expect(401);
+
+    expect(compareExecute).not.toHaveBeenCalled();
+  });
+
+  it('still serves GET /universes without authentication', async () => {
+    await request(app.getHttpServer() as Server)
+      .get('/sector-rotation/universes')
+      .expect(200);
   });
 });
