@@ -133,6 +133,7 @@ export function MarketBreadthCard() {
     useMarketBreadth(SESSIONS_TO_SHOW);
   const sessions = data?.sessions ?? [];
   const latest = sessions.at(-1);
+  const hasNoGauges = !data?.trend && !data?.newHighLow && !data?.newHighLow20;
 
   return (
     <Card>
@@ -165,6 +166,10 @@ export function MarketBreadthCard() {
         ) : sessions.length === 0 ? (
           <p className="text-sm text-slate-500 dark:text-slate-400">
             No market breadth data yet.
+          </p>
+        ) : hasNoGauges ? (
+          <p className="text-sm text-slate-500 dark:text-slate-400">
+            Not enough history yet to chart market breadth.
           </p>
         ) : (
           <div className="flex flex-col gap-4">
