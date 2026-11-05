@@ -9,6 +9,7 @@ describe('WatchlistId', () => {
     ['an array', ['a'] as unknown as string],
     ['an object', { trim: () => 'x' } as unknown as string],
     ['null', null as unknown as string],
+    ['a non-UUID string', 'abc'],
     [
       'an object with a non-callable toString',
       { toString: 1 } as unknown as string,
@@ -17,7 +18,15 @@ describe('WatchlistId', () => {
     expect(() => WatchlistId.of(value)).toThrow(InvariantError);
   });
 
+  it.each([
+    '3f2504e0-4f89-41d3-9a0c-0305e82c3301',
+    '11111111-1111-1111-1111-111111111111',
+  ])('should accept the UUID %s', (uuid) => {
+    expect(WatchlistId.of(uuid).value).toBe(uuid);
+  });
+
   it('should trim the value', () => {
-    expect(WatchlistId.of('  abc  ').value).toBe('abc');
+    const uuid = '3f2504e0-4f89-41d3-9a0c-0305e82c3301';
+    expect(WatchlistId.of(`  ${uuid}  `).value).toBe(uuid);
   });
 });

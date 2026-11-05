@@ -35,7 +35,7 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
   let eventEmitter: EventEmitter2;
   let emitSpy: jest.SpyInstance;
 
-  const watchlistId = WatchlistId.of('wl-123');
+  const watchlistId = WatchlistId.of('11111111-1111-1111-1111-111111111111');
   const ticker = WatchlistTicker.of('AAPL');
 
   function buildWatchlist() {
@@ -118,7 +118,9 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
     expect(emittedEvent).toBeInstanceOf(GapDetectedEvent);
     const gapEvent = emittedEvent as GapDetectedEvent;
     expect(gapEvent.ticker.value).toBe('AAPL');
-    expect(gapEvent.watchlistId.value).toBe('wl-123');
+    expect(gapEvent.watchlistId.value).toBe(
+      '11111111-1111-1111-1111-111111111111',
+    );
     expect(gapEvent.watchlistName).toBe('Momentum');
     expect(gapEvent.marketDate).toBeInstanceOf(LocalDate);
     expect(gapEvent.marketDate.key).toBe(getMarketDateKey());
@@ -183,7 +185,9 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
   });
 
   it('continues with the next watchlist when loading one fails', async () => {
-    const secondWatchlistId = WatchlistId.of('wl-456');
+    const secondWatchlistId = WatchlistId.of(
+      '22222222-2222-2222-2222-222222222222',
+    );
     const msft = WatchlistTicker.of('MSFT');
     monitoringReadRepository.findAllActiveByType.mockResolvedValue([
       { watchlistId } as never,
@@ -201,7 +205,9 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
 
     await service.monitorGaps();
 
-    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('wl-123'));
+    expect(errorLog).toHaveBeenCalledWith(
+      expect.stringContaining('11111111-1111-1111-1111-111111111111'),
+    );
     expect(gapDetectionService.detect).toHaveBeenCalledTimes(1);
     expect(gapDetectionService.detect).toHaveBeenCalledWith(msft);
     expect(notificationService.send).toHaveBeenCalledTimes(1);
@@ -245,7 +251,7 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
   >;
   let findWatchlistTickers: jest.Mocked<FindWatchlistTickersUseCase>;
 
-  const watchlistId = WatchlistId.of('wl-123');
+  const watchlistId = WatchlistId.of('11111111-1111-1111-1111-111111111111');
   const aapl = WatchlistTicker.of('AAPL');
   const msft = WatchlistTicker.of('MSFT');
 
@@ -335,7 +341,9 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
   });
 
   it('continues with the next watchlist when loading one fails', async () => {
-    const secondWatchlistId = WatchlistId.of('wl-456');
+    const secondWatchlistId = WatchlistId.of(
+      '22222222-2222-2222-2222-222222222222',
+    );
     const nvda = WatchlistTicker.of('NVDA');
     monitoringReadRepository.findAllActiveByType.mockResolvedValue([
       { watchlistId } as never,
@@ -353,7 +361,9 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
 
     await service.monitorBreakouts();
 
-    expect(errorLog).toHaveBeenCalledWith(expect.stringContaining('wl-123'));
+    expect(errorLog).toHaveBeenCalledWith(
+      expect.stringContaining('11111111-1111-1111-1111-111111111111'),
+    );
     expect(breakoutDetectionService.detect).toHaveBeenCalledTimes(1);
     expect(breakoutDetectionService.detect).toHaveBeenCalledWith(nvda);
     expect(notificationService.send).toHaveBeenCalledTimes(1);
