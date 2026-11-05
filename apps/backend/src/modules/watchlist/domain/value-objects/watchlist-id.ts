@@ -1,6 +1,9 @@
 import { UuidGeneratorService } from '../../../../shared/services/uuid-generator.service';
 import { InvariantError } from '../domain-errors';
 
+const UUID_SHAPE =
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export class WatchlistId {
   private constructor(public readonly value: string) {}
 
@@ -11,7 +14,11 @@ export class WatchlistId {
     if (!id || id.trim().length === 0) {
       throw new InvariantError(`WatchlistId cannot be empty: ${id}`);
     }
-    return new WatchlistId(id.trim());
+    const trimmed = id.trim();
+    if (!UUID_SHAPE.test(trimmed)) {
+      throw new InvariantError(`WatchlistId must be a UUID: ${id}`);
+    }
+    return new WatchlistId(trimmed);
   }
 
   static new(): WatchlistId {
