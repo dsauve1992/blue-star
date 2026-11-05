@@ -53,7 +53,6 @@ export class SectorRotationController {
   ) {}
 
   @Get('calculate')
-  @Public()
   async calculateSectorRotation(
     @Query('sectors') sectorsParam?: string,
     @Query('startDate') startDate?: string,
@@ -108,7 +107,6 @@ export class SectorRotationController {
   }
 
   @Get('compare')
-  @Public()
   async compareSectorRotation(
     @Query('sectors') sectorsParam?: string,
     @Query('startDate') startDate?: string,
