@@ -15,17 +15,15 @@ export interface MarketBreadthSessionDto {
   date: string;
   universeSize: number;
   newHighs: number;
-  newLows: number;
-  ratio: number | null;
-  ratioEma10: number | null;
-  ratioEma20: number | null;
-  ratioState: BreadthState | null;
+  newHighsShare: number | null;
+  newHighsShareEma10: number | null;
+  newHighsShareEma20: number | null;
+  newHighsState: BreadthState | null;
   newHighs20: number | null;
-  newLows20: number | null;
-  ratio20: number | null;
-  ratio20Ema10: number | null;
-  ratio20Ema20: number | null;
-  ratio20State: BreadthState | null;
+  newHighs20Share: number | null;
+  newHighs20ShareEma10: number | null;
+  newHighs20ShareEma20: number | null;
+  newHighs20State: BreadthState | null;
   stackedCount: number | null;
   stackedRatio: number | null;
   stackedRatioEma10: number | null;
@@ -66,10 +64,14 @@ export class QueryMarketBreadthUseCase {
 
     const orderedWithWarmup = [...aggregates].reverse();
     const newHighLowSeries = emaCrossoverSeries(
-      orderedWithWarmup.map((aggregate) => aggregate.ratio),
+      orderedWithWarmup.map((aggregate) =>
+        stackedRatio(aggregate.newHighs, aggregate.universeSize),
+      ),
     );
     const newHighLow20Series = emaCrossoverSeries(
-      orderedWithWarmup.map((aggregate) => aggregate.ratio20),
+      orderedWithWarmup.map((aggregate) =>
+        stackedRatio(aggregate.newHighs20, aggregate.universeSize),
+      ),
     );
     const trendSeries = emaCrossoverSeries(
       orderedWithWarmup.map((aggregate) =>
@@ -86,17 +88,15 @@ export class QueryMarketBreadthUseCase {
       date: aggregate.date.toISOString(),
       universeSize: aggregate.universeSize,
       newHighs: aggregate.newHighs,
-      newLows: aggregate.newLows,
-      ratio: aggregate.ratio,
-      ratioEma10: newHighLowSessions[index].ema10,
-      ratioEma20: newHighLowSessions[index].ema20,
-      ratioState: newHighLowSessions[index].state,
+      newHighsShare: newHighLowSessions[index].ratio,
+      newHighsShareEma10: newHighLowSessions[index].ema10,
+      newHighsShareEma20: newHighLowSessions[index].ema20,
+      newHighsState: newHighLowSessions[index].state,
       newHighs20: aggregate.newHighs20,
-      newLows20: aggregate.newLows20,
-      ratio20: aggregate.ratio20,
-      ratio20Ema10: newHighLow20Sessions[index].ema10,
-      ratio20Ema20: newHighLow20Sessions[index].ema20,
-      ratio20State: newHighLow20Sessions[index].state,
+      newHighs20Share: newHighLow20Sessions[index].ratio,
+      newHighs20ShareEma10: newHighLow20Sessions[index].ema10,
+      newHighs20ShareEma20: newHighLow20Sessions[index].ema20,
+      newHighs20State: newHighLow20Sessions[index].state,
       stackedCount: aggregate.stackedCount,
       stackedRatio: trendSessions[index].ratio,
       stackedRatioEma10: trendSessions[index].ema10,
