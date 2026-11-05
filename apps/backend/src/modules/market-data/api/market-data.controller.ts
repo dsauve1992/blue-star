@@ -124,7 +124,7 @@ export class MarketDataController {
     }
 
     const response = await this.getChartDataUseCase.execute({
-      symbol,
+      symbol: parseSymbol(symbol).value,
       exchange,
       interval: interval as ChartInterval,
       bars: parseBars(bars),
