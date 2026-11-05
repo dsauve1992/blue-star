@@ -4,7 +4,7 @@ import { ConsolidationResult } from '../domain/value-objects/consolidation-resul
 import { ConsolidationRunStatus } from '../domain/value-objects/consolidation-run-status';
 import { CONSOLIDATION_RESULT_REPOSITORY } from '../constants/tokens';
 import { GetThemeNamesByTickersUseCase } from '../../themes/use-cases/get-theme-names-by-tickers.use-case';
-import { GetOrFetchStockClassificationUseCase } from '../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
+import { GetOrFetchStockClassificationUseCase } from '../../stock-classification/stock-classification.module';
 
 export interface QueryConsolidationAnalysisRequestDto {
   type: 'daily' | 'weekly';

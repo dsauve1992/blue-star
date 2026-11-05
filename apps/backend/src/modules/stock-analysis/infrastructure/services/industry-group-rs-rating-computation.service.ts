@@ -8,8 +8,10 @@ import {
   MIN_INDUSTRY_GROUP_SIZE,
   RS_RATING_REPOSITORY,
 } from '../../constants/tokens';
-import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/use-cases/get-industry-groups-for-tickers.use-case';
-import { GetOrFetchStockClassificationUseCase } from '../../../stock-classification/use-cases/get-or-fetch-stock-classification.use-case';
+import {
+  GetIndustryGroupsForTickersUseCase,
+  GetOrFetchStockClassificationUseCase,
+} from '../../../stock-classification/stock-classification.module';
 
 interface ScoredSymbol {
   symbol: string;
