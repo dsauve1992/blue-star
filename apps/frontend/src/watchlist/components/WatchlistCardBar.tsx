@@ -354,7 +354,7 @@ function WatchlistCard({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
       className={`
-        group relative flex-shrink-0 w-40 px-2.5 py-1.5 rounded cursor-pointer
+        group relative flex-shrink-0 w-52 px-2.5 py-1.5 rounded cursor-pointer
         border transition-all duration-200
         ${
           isDragOver
@@ -393,7 +393,7 @@ function WatchlistCard({
             ) : (
               <h3
                 onDoubleClick={startEdit}
-                title="Double-click to rename"
+                title={`${watchlist.name} (double-click to rename)`}
                 className="text-xs font-semibold text-white truncate"
               >
                 {watchlist.name}
