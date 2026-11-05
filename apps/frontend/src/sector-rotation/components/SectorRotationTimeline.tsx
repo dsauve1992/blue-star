@@ -42,10 +42,13 @@ function scrollWindowIntoView(container: HTMLDivElement) {
   const firstRect = windowHeaders[0].getBoundingClientRect();
   const lastRect =
     windowHeaders[windowHeaders.length - 1].getBoundingClientRect();
-  if (lastRect.right > containerRect.right) {
+  const visibleLeft = containerRect.left + stickyWidth;
+  const windowFits =
+    lastRect.right - firstRect.left <= containerRect.right - visibleLeft;
+  if (!windowFits || lastRect.right > containerRect.right) {
     container.scrollLeft += lastRect.right - containerRect.right;
-  } else if (firstRect.left < containerRect.left + stickyWidth) {
-    container.scrollLeft -= containerRect.left + stickyWidth - firstRect.left;
+  } else if (firstRect.left < visibleLeft) {
+    container.scrollLeft -= visibleLeft - firstRect.left;
   }
 }
 
