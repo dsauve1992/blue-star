@@ -837,6 +837,7 @@ function TechnicalChartInner({
 
       rsBenchmarks.forEach((benchmark, bIdx) => {
         const isPrimary = bIdx === 0;
+        const scaleId = isPrimary ? undefined : `rs-${bIdx}`;
         const lineColor = isPrimary ? C.rsLine : C.rsLine2;
         const smaColor = isPrimary ? C.rsSma : C.rsSma2;
         const showDivergence = benchmark.showDivergence ?? isPrimary;
@@ -863,6 +864,7 @@ function TechnicalChartInner({
           {
             color: lineColor,
             lineWidth: 2,
+            priceScaleId: scaleId,
             priceFormat: ratioPriceFormat,
             priceLineVisible: false,
             lastValueVisible: false,
@@ -882,6 +884,7 @@ function TechnicalChartInner({
           {
             color: smaColor,
             lineWidth: 1,
+            priceScaleId: scaleId,
             priceFormat: ratioPriceFormat,
             priceLineVisible: false,
             lastValueVisible: false,
@@ -910,6 +913,7 @@ function TechnicalChartInner({
             LineSeries,
             {
               color: C.rsNewHigh,
+              priceScaleId: scaleId,
               lineVisible: false,
               pointMarkersVisible: true,
               pointMarkersRadius: 4,
@@ -931,6 +935,7 @@ function TechnicalChartInner({
             LineSeries,
             {
               color: C.rsNewLow,
+              priceScaleId: scaleId,
               lineVisible: false,
               pointMarkersVisible: true,
               pointMarkersRadius: 4,
@@ -953,6 +958,7 @@ function TechnicalChartInner({
             LineSeries,
             {
               color: C.rsDivergence,
+              priceScaleId: scaleId,
               lineVisible: false,
               pointMarkersVisible: true,
               pointMarkersRadius: 6,
@@ -968,6 +974,12 @@ function TechnicalChartInner({
             ]),
           );
           rsPaneSeriesRefs.current.push(divSeries);
+        }
+
+        if (scaleId) {
+          chart
+            .priceScale(scaleId, 1)
+            .applyOptions({ scaleMargins: { top: 0.1, bottom: 0.1 } });
         }
       });
 
