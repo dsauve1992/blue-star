@@ -132,3 +132,7 @@ export {
   ],
 })
 export class StockAnalysisModule {}
+
+export { GetLatestRsRatingUseCase } from './use-cases/get-latest-rs-rating.use-case';
+export { GetLatestIndustryGroupRsRatingUseCase } from './use-cases/get-latest-industry-group-rs-rating.use-case';
+export { GetLatestMomentumLeaderSymbolsUseCase } from './use-cases/get-latest-momentum-leader-symbols.use-case';

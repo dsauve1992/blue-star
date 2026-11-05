@@ -4,7 +4,7 @@ import {
   ActivateMonitoringUseCase,
 } from './activate-monitoring.use-case';
 import { WatchlistMonitoringWriteRepository } from '../domain/repositories/watchlist-monitoring-write.repository.interface';
-import { GetWatchlistByIdUseCase } from '../../watchlist/use-cases/get-watchlist-by-id.use-case';
+import { GetWatchlistByIdUseCase } from '../../watchlist/watchlist.module';
 import { WATCHLIST_MONITORING_WRITE_REPOSITORY } from '../constants/tokens';
 import { WatchlistMonitoring } from '../domain/entities/watchlist-monitoring.entity';
 import { WatchlistMonitoringId } from '../domain/value-objects/watchlist-monitoring-id';

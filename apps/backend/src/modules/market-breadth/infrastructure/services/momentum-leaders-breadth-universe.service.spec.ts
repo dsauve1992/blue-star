@@ -1,5 +1,5 @@
 import { MomentumLeadersBreadthUniverseService } from './momentum-leaders-breadth-universe.service';
-import { GetLatestMomentumLeaderSymbolsUseCase } from '../../../stock-analysis/use-cases/get-latest-momentum-leader-symbols.use-case';
+import { GetLatestMomentumLeaderSymbolsUseCase } from '../../../stock-analysis/stock-analysis.module';
 
 describe('MomentumLeadersBreadthUniverseService', () => {
   let getLatest: jest.Mocked<GetLatestMomentumLeaderSymbolsUseCase>;

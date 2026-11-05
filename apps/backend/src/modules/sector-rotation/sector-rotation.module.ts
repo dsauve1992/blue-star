@@ -70,3 +70,5 @@ export {
   exports: [GetIndustryGroupQuadrantUseCase],
 })
 export class SectorRotationModule {}
+
+export { GetIndustryGroupQuadrantUseCase } from './use-cases/get-industry-group-quadrant.use-case';

@@ -36,3 +36,5 @@ export { THEME_EXTRACTOR_SERVICE, THEME_SERVICE };
   exports: [GetThemeNamesByTickersUseCase],
 })
 export class ThemesModule {}
+
+export { GetThemeNamesByTickersUseCase } from './use-cases/get-theme-names-by-tickers.use-case';
