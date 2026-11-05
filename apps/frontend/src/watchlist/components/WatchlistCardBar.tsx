@@ -404,9 +404,9 @@ function WatchlistCard({
                 onClick={startEdit}
                 title="Rename watchlist"
                 aria-label="Rename watchlist"
-                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-0.5 rounded hover:bg-slate-700/50 text-slate-500 hover:text-blue-400 transition-all flex-shrink-0"
+                className={`${isSelected ? "" : "opacity-0 "}group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-px rounded hover:bg-slate-700/50 text-slate-400 hover:text-blue-400 transition-all flex-shrink-0`}
               >
-                <Pencil className="w-2.5 h-2.5" />
+                <Pencil className="w-3 h-3" />
               </button>
             )}
           </div>
@@ -458,9 +458,9 @@ function WatchlistCard({
           }}
           title="Delete watchlist"
           aria-label="Delete watchlist"
-          className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-0.5 rounded hover:bg-slate-700/50 text-slate-500 hover:text-red-400 transition-all flex-shrink-0"
+          className={`${isSelected ? "" : "opacity-0 "}group-hover:opacity-100 focus-visible:opacity-100 [@media(hover:none)]:opacity-100 p-1 rounded hover:bg-slate-700/50 text-slate-400 hover:text-red-400 transition-all flex-shrink-0`}
         >
-          <Trash2 className="w-2.5 h-2.5" />
+          <Trash2 className="w-3 h-3" />
         </button>
       </div>
     </div>
