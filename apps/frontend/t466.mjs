@@ -1,0 +1,30 @@
+import { chromium } from 'playwright';
+import { resolve } from 'node:path';
+const [,, label, W, H, FE, full] = process.argv;
+const OUT='/private/tmp/claude-502/-Users-davidsauve-git-blue-star/824cc92e-615f-4f16-9f82-1d5d17d4b096/scratchpad/466';
+process.loadEnvFile(resolve(process.cwd(), '.env.local'));
+const { E2E_USER_EMAIL, E2E_USER_PASSWORD } = process.env;
+const app=`http://localhost:${FE}`;
+const b=await chromium.launch(); const ctx=await b.newContext({viewport:{width:+W,height:+H}}); const page=await ctx.newPage();
+await page.goto(`${app}/login`);
+await page.getByRole('button',{name:'Sign In'}).click();
+await page.locator('input[type="email"]').fill(E2E_USER_EMAIL);
+await page.getByRole('button',{name:'Continue',exact:true}).click();
+await page.locator('input[type="password"]').fill(E2E_USER_PASSWORD);
+await page.getByRole('button',{name:'Continue',exact:true}).click();
+await page.waitForURL(`${app}/**`,{timeout:30000}); await page.waitForLoadState('networkidle');
+const pg=await ctx.newPage();
+await pg.addInitScript(()=>{window.__n=0;const d=Object.getOwnPropertyDescriptor(Element.prototype,'scrollLeft');Object.defineProperty(Element.prototype,'scrollLeft',{get(){return d.get.call(this)},set(v){if(this.classList.contains('overflow-x-auto')&&this.querySelector('th[data-in-window]'))window.__n++;d.set.call(this,v)}})});
+await pg.goto(`${app}/sector-rotation`); await pg.locator('th[data-in-window]').first().waitFor(); await pg.waitForTimeout(3000);
+const info=()=>pg.evaluate(()=>{const c=document.querySelector('th[data-in-window]').closest('.overflow-x-auto');const ths=[...c.querySelectorAll('th[data-in-window]')];const l=ths[ths.length-1];return{sw:c.scrollWidth,cw:c.clientWidth,sl:Math.round(c.scrollLeft),max:c.scrollWidth-c.clientWidth,firstL:Math.round(ths[0].getBoundingClientRect().left),lastR:Math.round(l.getBoundingClientRect().right),cL:Math.round(c.getBoundingClientRect().left),cR:Math.round(c.getBoundingClientRect().right),first:ths[0].textContent,last:l.textContent,sets:window.__n}});
+console.log(label,W,'load',JSON.stringify(await info()));
+await pg.screenshot({path:`${OUT}/after2-${label}-${W}.png`});
+if(full){
+ await pg.evaluate(()=>{const c=document.querySelector('th[data-in-window]').closest('.overflow-x-auto');c.scrollLeft-=200});
+ await pg.waitForTimeout(3000); console.log('hand-scroll-3s',JSON.stringify(await info()));
+ await pg.reload(); await pg.locator('th[data-in-window]').first().waitFor(); await pg.waitForTimeout(2500);
+ const s=pg.getByRole('slider').first(); await s.focus();
+ const step=async(k,n,tag)=>{for(let i=0;i<n;i++){await pg.keyboard.press(k);await pg.waitForTimeout(400)}await pg.waitForTimeout(800);console.log(tag,JSON.stringify(await info()));await pg.screenshot({path:`${OUT}/after2-${label}-${W}-${tag}.png`})};
+ await step('ArrowLeft',3,'back3'); await step('ArrowRight',3,'fwd3'); await step('ArrowLeft',12,'back12'); await step('ArrowRight',12,'fwd12');
+}
+await b.close();
