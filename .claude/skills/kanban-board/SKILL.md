@@ -19,11 +19,9 @@ PROJECT_ID=$(gh project view 3 --owner dsauve1992 --format json --jq .id)
 FIELDS=$(gh project field-list 3 --owner dsauve1992 --format json)
 ```
 
-Helpers (work in bash and zsh). `item_of` finds a ticket's project item with one cheap query; `set_field` sets a single-select field by names from the cached `$FIELDS`:
+Helper (works in bash and zsh). `set_field` sets a single-select field by names from the cached `$FIELDS`; use it only on tickets you just created:
 
 ```bash
-item_of(){ gh api graphql -F n="$1" -f query='query($n:Int!){repository(owner:"dsauve1992",name:"blue-star"){issue(number:$n){projectItems(first:10){nodes{id project{number}}}}}}' \
-  --jq '.data.repository.issue.projectItems.nodes[]|select(.project.number==3)|.id'; }
 set_field(){ local item=$1 field=$2 opt=$3
   local fid=$(echo "$FIELDS" | jq -r ".fields[]|select(.name==\"$field\")|.id")
   local oid=$(echo "$FIELDS" | jq -r ".fields[]|select(.name==\"$field\")|.options[]|select(.name==\"$opt\")|.id")
@@ -49,9 +47,9 @@ gh project item-list 3 --owner dsauve1992 --limit 200 --format json \
 
 Count the Backlog: pipe the list above with `select(.status=="Backlog")` into `jq -s length`.
 
-Move a ticket: `set_field "$(item_of <number>)" Status "<column>"`. Check that the item ID is not empty before editing.
+Move a ticket: `~/git/friday/bin/friday board move blue-star <number> "<column>"`. It only queues the move and returns at once; Friday applies it within seconds with its cached board ids, and keeps retrying through rate limits. Never move a ticket with `gh project item-edit` yourself, and do not wait for or re-check the move.
 
-Rate limits: if a `gh` call fails with "API rate limit exceeded", stop. Do not retry in a loop and do not poll the board; report the situation, leave the ticket as it is, and end the session. The stage is re-run after the limit resets.
+Rate limits: if any other `gh` call fails with "API rate limit exceeded", stop. Do not retry in a loop and do not poll the board; report the situation, leave the ticket as it is, and end the session. The stage is re-run after the limit resets.
 
 Ticket body format (proposers write it, `implement-next` consumes it - it must be self-contained):
 
