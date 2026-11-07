@@ -270,27 +270,18 @@ export class MarketBreadthAnalysisServiceImpl
       }
     }
 
-    const {
-      universeSize,
-      newHighs,
-      newLows,
-      newHighs20,
-      newLows20,
-      stackedCount,
-      partial,
-    } = aggregateDay({
-      totalUniverseSize,
-      missingSymbolCount: missingSymbols.length,
-      evaluableResults,
-    });
+    const { universeSize, newHighs, newLows, stackedCount, partial } =
+      aggregateDay({
+        totalUniverseSize,
+        missingSymbolCount: missingSymbols.length,
+        evaluableResults,
+      });
 
     return MarketBreadthAggregate.create({
       date: BreadthDate.fromISOString(sessionDate),
       universeSize,
       newHighs,
       newLows,
-      newHighs20,
-      newLows20,
       stackedCount,
       missingSymbols,
       partial,

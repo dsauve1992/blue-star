@@ -39,11 +39,6 @@ const newHighLowDescription: Record<BreadthState, string> = {
   BAD: "EMA10 of the new-high share is below its EMA20 — fewer leaders are making 52-week highs; be selective with new entries.",
 };
 
-const shortTermDescription: Record<BreadthState, string> = {
-  GOOD: "EMA10 of the 20-day new-high share is at or above its EMA20 — more leaders are making one-month highs; pullbacks are being bought.",
-  BAD: "EMA10 of the 20-day new-high share is below its EMA20 — fewer leaders are making one-month highs; expect breakouts to struggle.",
-};
-
 function formatSigned(value: number, digits: number): string {
   return `${value >= 0 ? "+" : "−"}${Math.abs(value).toFixed(digits)}`;
 }
@@ -125,7 +120,7 @@ export function MarketBreadthCard() {
     useMarketBreadth(SESSIONS_TO_SHOW);
   const sessions = data?.sessions ?? [];
   const latest = sessions.at(-1);
-  const hasNoGauges = !data?.trend && !data?.newHighLow && !data?.newHighLow20;
+  const hasNoGauges = !data?.trend && !data?.newHighLow;
 
   return (
     <Card>
@@ -171,7 +166,7 @@ export function MarketBreadthCard() {
           </p>
         ) : (
           <div className="flex flex-col gap-4">
-            <div className="grid gap-4 md:grid-cols-3">
+            <div className="grid gap-4 md:grid-cols-2">
               <GaugeSummary
                 title="Trend Breadth"
                 gauge={data?.trend ?? null}
@@ -183,13 +178,6 @@ export function MarketBreadthCard() {
                 title="New Highs"
                 gauge={data?.newHighLow ?? null}
                 descriptions={newHighLowDescription}
-                format={formatPercent}
-                formatGap={formatPercentGap}
-              />
-              <GaugeSummary
-                title="20-Day New Highs"
-                gauge={data?.newHighLow20 ?? null}
-                descriptions={shortTermDescription}
                 format={formatPercent}
                 formatGap={formatPercentGap}
               />

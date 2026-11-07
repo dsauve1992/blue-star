@@ -2,6 +2,10 @@ import { QueryMarketBreadthUseCase } from './query-market-breadth.use-case';
 import { MarketBreadthRepository } from '../domain/repositories/market-breadth.repository.interface';
 import { MarketBreadthAggregate } from '../domain/entities/market-breadth-aggregate';
 import { BreadthDate } from '../domain/value-objects/breadth-date';
+import {
+  type HistoricalData,
+  type MarketDataService,
+} from '../../market-data/market-data.module';
 
 const UNIVERSE_SIZE = 3400;
 
@@ -10,16 +14,12 @@ function makeAggregate(
   newHighs: number,
   newLows: number,
   stackedCount: number | null = null,
-  newHighs20: number | null = null,
-  newLows20: number | null = null,
 ) {
   return MarketBreadthAggregate.create({
     date: BreadthDate.fromISOString(date),
     universeSize: UNIVERSE_SIZE,
     newHighs,
     newLows,
-    newHighs20,
-    newLows20,
     stackedCount,
     missingSymbols: [],
     partial: false,
@@ -41,6 +41,7 @@ function newestFirst(stackedCounts: Array<number | null>) {
 
 describe('QueryMarketBreadthUseCase', () => {
   let repository: jest.Mocked<MarketBreadthRepository>;
+  let marketDataService: jest.Mocked<MarketDataService>;
   let useCase: QueryMarketBreadthUseCase;
 
   beforeEach(() => {
@@ -51,7 +52,11 @@ describe('QueryMarketBreadthUseCase', () => {
       getRecentAggregates: jest.fn(),
       deleteAll: jest.fn(),
     };
-    useCase = new QueryMarketBreadthUseCase(repository);
+    marketDataService = { getHistoricalData: jest.fn() };
+    marketDataService.getHistoricalData.mockResolvedValue({
+      pricePoints: [],
+    } as unknown as HistoricalData);
+    useCase = new QueryMarketBreadthUseCase(repository, marketDataService);
   });
 
   it('returns sessions oldest-to-newest with the new-high share of the universe', async () => {
@@ -71,45 +76,7 @@ describe('QueryMarketBreadthUseCase', () => {
       5,
     );
     expect(response.sessions[1]).not.toHaveProperty('ratio');
-    expect(response.sessions[1]).not.toHaveProperty('ratio20');
     expect(response.sessions[1]).not.toHaveProperty('newLows');
-  });
-
-  it('derives the 20-day new-high share, averages and gauge from the short-term counts', async () => {
-    repository.getRecentAggregates.mockResolvedValue([
-      makeAggregate('2026-08-31', 120, 40, null, 900, 100),
-      makeAggregate('2026-08-28', 100, 50, null, 500, 500),
-    ]);
-
-    const response = await useCase.execute();
-
-    expect(response.sessions[0]).toMatchObject({
-      newHighs20: 500,
-      newHighs20Share: 500 / UNIVERSE_SIZE,
-      newHighs20ShareEma10: 500 / UNIVERSE_SIZE,
-      newHighs20ShareEma20: 500 / UNIVERSE_SIZE,
-      newHighs20State: null,
-    });
-    expect(response.sessions[1].newHighs20Share).toBeCloseTo(
-      900 / UNIVERSE_SIZE,
-      5,
-    );
-    expect(response.sessions[1].newHighs20State).toBe('GOOD');
-    expect(response.newHighLow20?.state).toBe('GOOD');
-  });
-
-  it('leaves the 20-day gauge null for rows predating the short-term counts', async () => {
-    repository.getRecentAggregates.mockResolvedValue([
-      makeAggregate('2026-08-31', 120, 40),
-      makeAggregate('2026-08-28', 100, 50),
-    ]);
-
-    const response = await useCase.execute();
-
-    expect(response.sessions[1].newHighs20Share).toBeNull();
-    expect(response.sessions[1].newHighs20ShareEma10).toBeNull();
-    expect(response.newHighLow20).toBeNull();
-    expect(response.newHighLow).not.toBeNull();
   });
 
   it('fetches 19 warm-up sessions beyond the default of 50', async () => {
@@ -306,8 +273,6 @@ describe('QueryMarketBreadthUseCase', () => {
         universeSize: 0,
         newHighs: 0,
         newLows: 0,
-        newHighs20: 0,
-        newLows20: 0,
         stackedCount: null,
         missingSymbols: [],
         partial: false,
@@ -318,6 +283,66 @@ describe('QueryMarketBreadthUseCase', () => {
     const response = await useCase.execute();
 
     expect(response.sessions[0].newHighsShare).toBeNull();
-    expect(response.sessions[0].newHighs20Share).toBeNull();
+  });
+
+  describe('equal-weight benchmark', () => {
+    const pricePoint = (date: string, close: number) => ({
+      date: new Date(date.replace(/-/g, '/')),
+      close,
+      open: close,
+      high: close,
+      low: close,
+      volume: 0,
+    });
+
+    it('maps RSP close and EMAs onto each breadth session by date', async () => {
+      repository.getRecentAggregates.mockResolvedValue([
+        makeAggregate('2026-08-31', 120, 40),
+        makeAggregate('2026-08-28', 100, 50),
+      ]);
+      marketDataService.getHistoricalData.mockResolvedValue({
+        pricePoints: [
+          pricePoint('2026-08-31', 110),
+          pricePoint('2026-08-28', 100),
+        ],
+      } as unknown as HistoricalData);
+
+      const response = await useCase.execute();
+
+      expect(response.sessions[0]).toMatchObject({
+        equalWeightClose: 100,
+        equalWeightEma10: 100,
+        equalWeightEma20: 100,
+      });
+      expect(response.sessions[1].equalWeightClose).toBe(110);
+      expect(response.sessions[1].equalWeightEma10).toBeCloseTo(
+        110 * (2 / 11) + 100 * (9 / 11),
+        5,
+      );
+    });
+
+    it('leaves benchmark fields null for sessions RSP has no candle for', async () => {
+      repository.getRecentAggregates.mockResolvedValue([
+        makeAggregate('2026-08-31', 120, 40),
+      ]);
+
+      const response = await useCase.execute();
+
+      expect(response.sessions[0].equalWeightClose).toBeNull();
+    });
+
+    it('still returns breadth sessions when the benchmark fetch fails', async () => {
+      repository.getRecentAggregates.mockResolvedValue([
+        makeAggregate('2026-08-31', 120, 40),
+      ]);
+      marketDataService.getHistoricalData.mockRejectedValue(
+        new Error('Yahoo is down'),
+      );
+
+      const response = await useCase.execute();
+
+      expect(response.sessions).toHaveLength(1);
+      expect(response.sessions[0].equalWeightEma10).toBeNull();
+    });
   });
 });

@@ -1,15 +1,31 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Inject, Injectable, Logger } from '@nestjs/common';
 import { MarketBreadthRepository } from '../domain/repositories/market-breadth.repository.interface';
-import { MARKET_BREADTH_REPOSITORY } from '../constants/tokens';
+import {
+  MARKET_BREADTH_MARKET_DATA_SERVICE,
+  MARKET_BREADTH_REPOSITORY,
+} from '../constants/tokens';
 import { stackedRatio } from '../domain/services/moving-average.service';
 import {
   BreadthState,
   SLOW_EMA_SESSIONS,
   emaCrossoverSeries,
 } from '../domain/services/ema-crossover.service';
+import { BreadthDate } from '../domain/value-objects/breadth-date';
+import { type MarketDataService } from '../../market-data/market-data.module';
+import { DateRange } from '../../../shared/value-objects/date-range';
+import { Symbol } from '../../../shared/value-objects/symbol';
 
 const DEFAULT_SESSION_LIMIT = 50;
 const WARMUP_SESSIONS = SLOW_EMA_SESSIONS - 1;
+const EQUAL_WEIGHT_BENCHMARK = Symbol.of('RSP');
+const BENCHMARK_WARMUP_CALENDAR_DAYS = 60;
+const MS_PER_DAY = 24 * 60 * 60 * 1000;
+
+interface BenchmarkPoint {
+  close: number;
+  ema10: number | null;
+  ema20: number | null;
+}
 
 export interface MarketBreadthSessionDto {
   date: string;
@@ -19,11 +35,9 @@ export interface MarketBreadthSessionDto {
   newHighsShareEma10: number | null;
   newHighsShareEma20: number | null;
   newHighsState: BreadthState | null;
-  newHighs20: number | null;
-  newHighs20Share: number | null;
-  newHighs20ShareEma10: number | null;
-  newHighs20ShareEma20: number | null;
-  newHighs20State: BreadthState | null;
+  equalWeightClose: number | null;
+  equalWeightEma10: number | null;
+  equalWeightEma20: number | null;
   stackedCount: number | null;
   stackedRatio: number | null;
   stackedRatioEma10: number | null;
@@ -44,15 +58,18 @@ export interface BreadthGaugeDto {
 export interface QueryMarketBreadthResponseDto {
   sessions: MarketBreadthSessionDto[];
   newHighLow: BreadthGaugeDto | null;
-  newHighLow20: BreadthGaugeDto | null;
   trend: BreadthGaugeDto | null;
 }
 
 @Injectable()
 export class QueryMarketBreadthUseCase {
+  private readonly logger = new Logger(QueryMarketBreadthUseCase.name);
+
   constructor(
     @Inject(MARKET_BREADTH_REPOSITORY)
     private readonly repository: MarketBreadthRepository,
+    @Inject(MARKET_BREADTH_MARKET_DATA_SERVICE)
+    private readonly marketDataService: MarketDataService,
   ) {}
 
   async execute(
@@ -68,11 +85,6 @@ export class QueryMarketBreadthUseCase {
         stackedRatio(aggregate.newHighs, aggregate.universeSize),
       ),
     );
-    const newHighLow20Series = emaCrossoverSeries(
-      orderedWithWarmup.map((aggregate) =>
-        stackedRatio(aggregate.newHighs20, aggregate.universeSize),
-      ),
-    );
     const trendSeries = emaCrossoverSeries(
       orderedWithWarmup.map((aggregate) =>
         stackedRatio(aggregate.stackedCount, aggregate.universeSize),
@@ -81,37 +93,81 @@ export class QueryMarketBreadthUseCase {
 
     const ordered = orderedWithWarmup.slice(-limit);
     const newHighLowSessions = newHighLowSeries.sessions.slice(-limit);
-    const newHighLow20Sessions = newHighLow20Series.sessions.slice(-limit);
     const trendSessions = trendSeries.sessions.slice(-limit);
 
-    const sessions = ordered.map((aggregate, index) => ({
-      date: aggregate.date.toISOString(),
-      universeSize: aggregate.universeSize,
-      newHighs: aggregate.newHighs,
-      newHighsShare: newHighLowSessions[index].ratio,
-      newHighsShareEma10: newHighLowSessions[index].ema10,
-      newHighsShareEma20: newHighLowSessions[index].ema20,
-      newHighsState: newHighLowSessions[index].state,
-      newHighs20: aggregate.newHighs20,
-      newHighs20Share: newHighLow20Sessions[index].ratio,
-      newHighs20ShareEma10: newHighLow20Sessions[index].ema10,
-      newHighs20ShareEma20: newHighLow20Sessions[index].ema20,
-      newHighs20State: newHighLow20Sessions[index].state,
-      stackedCount: aggregate.stackedCount,
-      stackedRatio: trendSessions[index].ratio,
-      stackedRatioEma10: trendSessions[index].ema10,
-      stackedRatioEma20: trendSessions[index].ema20,
-      trendState: trendSessions[index].state,
-      missingSymbols: aggregate.missingSymbols,
-      partial: aggregate.partial,
-      backfilled: aggregate.backfilled,
-    }));
+    const benchmark = await this.loadBenchmark(ordered[0]?.date);
+
+    const sessions = ordered.map((aggregate, index) => {
+      const equalWeight = benchmark.get(aggregate.date.toISOString());
+      return {
+        date: aggregate.date.toISOString(),
+        universeSize: aggregate.universeSize,
+        newHighs: aggregate.newHighs,
+        newHighsShare: newHighLowSessions[index].ratio,
+        newHighsShareEma10: newHighLowSessions[index].ema10,
+        newHighsShareEma20: newHighLowSessions[index].ema20,
+        newHighsState: newHighLowSessions[index].state,
+        equalWeightClose: equalWeight?.close ?? null,
+        equalWeightEma10: equalWeight?.ema10 ?? null,
+        equalWeightEma20: equalWeight?.ema20 ?? null,
+        stackedCount: aggregate.stackedCount,
+        stackedRatio: trendSessions[index].ratio,
+        stackedRatioEma10: trendSessions[index].ema10,
+        stackedRatioEma20: trendSessions[index].ema20,
+        trendState: trendSessions[index].state,
+        missingSymbols: aggregate.missingSymbols,
+        partial: aggregate.partial,
+        backfilled: aggregate.backfilled,
+      };
+    });
 
     return {
       sessions,
       newHighLow: newHighLowSeries.gauge,
-      newHighLow20: newHighLow20Series.gauge,
       trend: trendSeries.gauge,
     };
+  }
+
+  private async loadBenchmark(
+    firstSession: BreadthDate | undefined,
+  ): Promise<Map<string, BenchmarkPoint>> {
+    if (!firstSession) {
+      return new Map();
+    }
+    try {
+      const start = new Date(
+        firstSession.value.getTime() -
+          BENCHMARK_WARMUP_CALENDAR_DAYS * MS_PER_DAY,
+      );
+      const { pricePoints } = await this.marketDataService.getHistoricalData(
+        EQUAL_WEIGHT_BENCHMARK,
+        DateRange.of(start, new Date()),
+        '1d',
+      );
+      const candles = pricePoints
+        .map((p) => ({
+          date: BreadthDate.of(p.date).toISOString(),
+          close: p.close,
+        }))
+        .sort((a, b) => a.date.localeCompare(b.date));
+      const { sessions } = emaCrossoverSeries(candles.map((c) => c.close));
+      return new Map(
+        candles.map((c, index) => [
+          c.date,
+          {
+            close: c.close,
+            ema10: sessions[index].ema10,
+            ema20: sessions[index].ema20,
+          },
+        ]),
+      );
+    } catch (error) {
+      this.logger.warn(
+        `Equal-weight benchmark unavailable: ${
+          error instanceof Error ? error.message : 'Unknown error'
+        }`,
+      );
+      return new Map();
+    }
   }
 }

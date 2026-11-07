@@ -6,8 +6,6 @@ export interface MarketBreadthAggregateData {
   universeSize: number;
   newHighs: number;
   newLows: number;
-  newHighs20: number | null;
-  newLows20: number | null;
   stackedCount: number | null;
   missingSymbols: string[];
   partial: boolean;
@@ -23,8 +21,6 @@ export class MarketBreadthAggregate {
     public readonly universeSize: number,
     public readonly newHighs: number,
     public readonly newLows: number,
-    public readonly newHighs20: number | null,
-    public readonly newLows20: number | null,
     public readonly stackedCount: number | null,
     public readonly missingSymbols: string[],
     public readonly partial: boolean,
@@ -43,8 +39,6 @@ export class MarketBreadthAggregate {
       data.universeSize,
       data.newHighs,
       data.newLows,
-      data.newHighs20,
-      data.newLows20,
       data.stackedCount,
       data.missingSymbols,
       data.partial,
@@ -61,8 +55,6 @@ export class MarketBreadthAggregate {
       data.universeSize,
       data.newHighs,
       data.newLows,
-      data.newHighs20,
-      data.newLows20,
       data.stackedCount,
       data.missingSymbols,
       data.partial,
@@ -75,13 +67,5 @@ export class MarketBreadthAggregate {
   get ratio(): number | null {
     const total = this.newHighs + this.newLows;
     return total === 0 ? null : this.newHighs / total;
-  }
-
-  get ratio20(): number | null {
-    if (this.newHighs20 === null || this.newLows20 === null) {
-      return null;
-    }
-    const total = this.newHighs20 + this.newLows20;
-    return total === 0 ? null : this.newHighs20 / total;
   }
 }

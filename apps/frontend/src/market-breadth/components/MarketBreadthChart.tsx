@@ -24,6 +24,11 @@ const PERCENT_PRICE_FORMAT = {
   minMove: 0.1,
   formatter: (value: number) => `${value.toFixed(1)}%`,
 } as const;
+const PRICE_PRICE_FORMAT = {
+  type: "custom",
+  minMove: 0.01,
+  formatter: (value: number) => value.toFixed(2),
+} as const;
 const COUNT_PRICE_FORMAT = { type: "price", precision: 0, minMove: 1 } as const;
 const BAND_PANE_STRETCH = 2;
 const COUNT_PANE_STRETCH = 1;
@@ -38,7 +43,7 @@ interface BandPane {
   fast: Accessor;
   slow: Accessor;
   scale: number;
-  priceFormat: typeof PERCENT_PRICE_FORMAT;
+  priceFormat: typeof PERCENT_PRICE_FORMAT | typeof PRICE_PRICE_FORMAT;
 }
 
 interface CountPane {
@@ -50,6 +55,14 @@ interface CountPane {
 type Pane = BandPane | CountPane;
 
 const PANES: Pane[] = [
+  {
+    kind: "band",
+    label: "Equal-weight S&P 500 (RSP) EMA10 / EMA20",
+    fast: (s) => s.equalWeightEma10,
+    slow: (s) => s.equalWeightEma20,
+    scale: 1,
+    priceFormat: PRICE_PRICE_FORMAT,
+  },
   {
     kind: "band",
     label: "Trend breadth — stacked-MA ratio EMA10 / EMA20",
@@ -70,19 +83,6 @@ const PANES: Pane[] = [
     kind: "count",
     label: "52-week new highs",
     highs: (s) => s.newHighs,
-  },
-  {
-    kind: "band",
-    label: "20-day new-high share EMA10 / EMA20",
-    fast: (s) => s.newHighs20ShareEma10,
-    slow: (s) => s.newHighs20ShareEma20,
-    scale: 100,
-    priceFormat: PERCENT_PRICE_FORMAT,
-  },
-  {
-    kind: "count",
-    label: "20-day new highs",
-    highs: (s) => s.newHighs20,
   },
 ];
 
@@ -206,6 +206,10 @@ function measurePaneTops(chart: IChartApi, container: HTMLElement): number[] {
     );
 }
 
+function formatPrice(value: number | null): string {
+  return value === null ? "—" : value.toFixed(2);
+}
+
 interface MarketBreadthChartProps {
   sessions: MarketBreadthSession[];
 }
@@ -316,7 +320,7 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
         ref={containerRef}
         className="h-[760px] w-full"
         role="img"
-        aria-label="Five stacked panes sharing one date axis: the 10-day and 20-day EMAs of the stacked-MA ratio, of the new-high share, and of the 20-day new-high share, each shaded blue when EMA10 is above EMA20 and red otherwise, with histograms of daily 52-week and 20-day new highs"
+        aria-label="Four stacked panes sharing one date axis: the 10-day and 20-day EMAs of the equal-weight S&P 500 (RSP) price, of the stacked-MA ratio and of the new-high share, each shaded blue when EMA10 is above EMA20 and red otherwise, and a histogram of daily 52-week new highs"
       />
       {paneTops.map((top, paneIndex) => {
         const pane = PANES[paneIndex];
@@ -347,6 +351,22 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
           <div className="mb-1 font-semibold text-slate-50">
             {formatSessionDate(hover.session.date)}
           </div>
+          <TooltipSection title="Equal-weight S&P 500 (RSP)">
+            <TooltipRow
+              label="Close"
+              value={formatPrice(hover.session.equalWeightClose)}
+            />
+            <TooltipRow
+              label="EMA10"
+              color={EMA10_COLOR}
+              value={formatPrice(hover.session.equalWeightEma10)}
+            />
+            <TooltipRow
+              label="EMA20"
+              color={EMA20_COLOR}
+              value={formatPrice(hover.session.equalWeightEma20)}
+            />
+          </TooltipSection>
           <TooltipSection title="Trend breadth">
             <TooltipRow
               label="Stacked"
@@ -386,26 +406,6 @@ export function MarketBreadthChart({ sessions }: MarketBreadthChartProps) {
               label="EMA20"
               color={EMA20_COLOR}
               value={formatPercent(hover.session.newHighsShareEma20)}
-            />
-          </TooltipSection>
-          <TooltipSection title="20-day new highs">
-            <TooltipRow
-              label="Highs"
-              value={`${hover.session.newHighs20 ?? "—"}`}
-            />
-            <TooltipRow
-              label="Share"
-              value={formatPercent(hover.session.newHighs20Share)}
-            />
-            <TooltipRow
-              label="EMA10"
-              color={EMA10_COLOR}
-              value={formatPercent(hover.session.newHighs20ShareEma10)}
-            />
-            <TooltipRow
-              label="EMA20"
-              color={EMA20_COLOR}
-              value={formatPercent(hover.session.newHighs20ShareEma20)}
             />
           </TooltipSection>
         </div>

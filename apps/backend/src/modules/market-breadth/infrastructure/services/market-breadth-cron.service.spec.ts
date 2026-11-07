@@ -20,8 +20,6 @@ describe('MarketBreadthCronService', () => {
       universeSize: 1500,
       newHighs: 42,
       newLows: 7,
-      newHighs20: null,
-      newLows20: null,
       stackedCount: null,
       missingSymbols: [],
       partial: false,

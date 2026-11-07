@@ -6,7 +6,6 @@ import {
   MIN_EVALUABLE_COVERAGE,
   PARTIAL_RUN_MISSING_THRESHOLD,
   REQUIRED_TRAILING_SESSIONS,
-  SHORT_TERM_SESSIONS,
   SymbolDayResult,
 } from './symbol-breadth-evaluation.service';
 
@@ -34,8 +33,6 @@ function result(overrides: Partial<SymbolDayResult>): SymbolDayResult {
     evaluable: true,
     newHigh: false,
     newLow: false,
-    newHigh20: false,
-    newLow20: false,
     stacked: false,
     ...overrides,
   };
@@ -53,19 +50,15 @@ describe('evaluateSymbolOnDate', () => {
     expect(result.evaluable).toBe(true);
     expect(result.newHigh).toBe(false);
     expect(result.newLow).toBe(false);
-    expect(result.newHigh20).toBe(true);
-    expect(result.newLow20).toBe(true);
   });
 
-  it('evaluates stacked and 20-day highs for a young symbol on a rising series', () => {
+  it('evaluates stacked for a young symbol on a rising series', () => {
     const rising = buildCandles(100, {}, (i) => 100 + i);
     const result = evaluateSymbolOnDate(rising, 99);
     expect(result).toEqual({
       evaluable: true,
       newHigh: false,
       newLow: false,
-      newHigh20: true,
-      newLow20: true,
       stacked: true,
     });
   });
@@ -189,16 +182,6 @@ describe('evaluateSymbolOnDate', () => {
     expect(result.stacked).toBe(false);
   });
 
-  it('caps the 20-day window at a smaller custom window', () => {
-    const candles = buildCandles(100, {
-      85: { high: 200 },
-      99: { high: 101 },
-    });
-    const result = evaluateSymbolOnDate(candles, 99, 10);
-    expect(result.newHigh20).toBe(true);
-    expect(evaluateSymbolOnDate(candles, 99, 30).newHigh20).toBe(false);
-  });
-
   it('computes new high/low and stacked from the same candles in one call', () => {
     const risingBreakout = buildCandles(
       REQUIRED_TRAILING_SESSIONS + 1,
@@ -213,50 +196,8 @@ describe('evaluateSymbolOnDate', () => {
       evaluable: true,
       newHigh: true,
       newLow: false,
-      newHigh20: true,
-      newLow20: false,
       stacked: true,
     });
-  });
-
-  it('flags a 20-day high that falls short of the 52-week high', () => {
-    const candles = buildCandles(REQUIRED_TRAILING_SESSIONS + 1, {
-      [5]: { high: 500, low: 90 },
-      [REQUIRED_TRAILING_SESSIONS]: { high: 150, low: 90 },
-    });
-    const result = evaluateSymbolOnDate(candles, REQUIRED_TRAILING_SESSIONS);
-    expect(result.newHigh).toBe(false);
-    expect(result.newHigh20).toBe(true);
-  });
-
-  it('flags a 20-day low that falls short of the 52-week low', () => {
-    const candles = buildCandles(REQUIRED_TRAILING_SESSIONS + 1, {
-      [5]: { high: 100, low: 10 },
-      [REQUIRED_TRAILING_SESSIONS]: { high: 100, low: 50 },
-    });
-    const result = evaluateSymbolOnDate(candles, REQUIRED_TRAILING_SESSIONS);
-    expect(result.newLow).toBe(false);
-    expect(result.newLow20).toBe(true);
-  });
-
-  it('flags a 20-day high when the prior peak sits just outside the 20-day window', () => {
-    const peakIndex = REQUIRED_TRAILING_SESSIONS - SHORT_TERM_SESSIONS - 1;
-    const candles = buildCandles(REQUIRED_TRAILING_SESSIONS + 1, {
-      [peakIndex]: { high: 200, low: 90 },
-      [REQUIRED_TRAILING_SESSIONS]: { high: 150, low: 90 },
-    });
-    const result = evaluateSymbolOnDate(candles, REQUIRED_TRAILING_SESSIONS);
-    expect(result.newHigh20).toBe(true);
-  });
-
-  it('does not flag a 20-day high when the prior peak sits on the window edge', () => {
-    const peakIndex = REQUIRED_TRAILING_SESSIONS - SHORT_TERM_SESSIONS;
-    const candles = buildCandles(REQUIRED_TRAILING_SESSIONS + 1, {
-      [peakIndex]: { high: 200, low: 90 },
-      [REQUIRED_TRAILING_SESSIONS]: { high: 150, low: 90 },
-    });
-    const result = evaluateSymbolOnDate(candles, REQUIRED_TRAILING_SESSIONS);
-    expect(result.newHigh20).toBe(false);
   });
 
   it('is idempotent across repeated calls with the same input', () => {
@@ -291,24 +232,6 @@ describe('aggregateDay', () => {
     expect(output.newHighs).toBe(1);
     expect(output.newLows).toBe(1);
     expect(output.stackedCount).toBe(2);
-  });
-
-  it('counts 20-day highs and lows independently of the 52-week counts', () => {
-    const output = aggregateDay({
-      totalUniverseSize: 10,
-      missingSymbolCount: 0,
-      evaluableResults: [
-        result({ newHigh: true, newHigh20: true }),
-        result({ newHigh20: true }),
-        result({ newLow: true, newLow20: true }),
-        result({}),
-      ],
-    });
-
-    expect(output.newHighs).toBe(1);
-    expect(output.newHighs20).toBe(2);
-    expect(output.newLows).toBe(1);
-    expect(output.newLows20).toBe(1);
   });
 
   it('reports zero stackedCount when no result is stacked', () => {

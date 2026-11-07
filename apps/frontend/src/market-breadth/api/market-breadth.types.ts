@@ -8,11 +8,9 @@ export interface MarketBreadthSession {
   newHighsShareEma10: number | null;
   newHighsShareEma20: number | null;
   newHighsState: BreadthState | null;
-  newHighs20: number | null;
-  newHighs20Share: number | null;
-  newHighs20ShareEma10: number | null;
-  newHighs20ShareEma20: number | null;
-  newHighs20State: BreadthState | null;
+  equalWeightClose: number | null;
+  equalWeightEma10: number | null;
+  equalWeightEma20: number | null;
   stackedCount: number | null;
   stackedRatio: number | null;
   stackedRatioEma10: number | null;
@@ -33,6 +31,5 @@ export interface BreadthGauge {
 export interface MarketBreadthResponse {
   sessions: MarketBreadthSession[];
   newHighLow: BreadthGauge | null;
-  newHighLow20: BreadthGauge | null;
   trend: BreadthGauge | null;
 }
