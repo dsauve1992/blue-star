@@ -237,7 +237,13 @@ function TechnicalChartInner({
   const C = getChartColors(theme);
   const containerRef = useRef<HTMLDivElement>(null);
   const chartRef = useRef<IChartApi | null>(null);
-  const prevCandleCountRef = useRef<number>(0);
+  const renderedChartRef = useRef<{
+    identity: string;
+    firstTime: ChartCandleDto["time"];
+  } | null>(null);
+  const chartIdentity = `${ticker}|${exchange}|${timeframe?.value}|${extendedHours?.includeExtendedHours}`;
+  const chartIdentityRef = useRef(chartIdentity);
+  chartIdentityRef.current = chartIdentity;
 
   // Stable refs for callbacks
   const onLoadMoreRef = useRef(onLoadMore);
@@ -688,13 +694,19 @@ function TechnicalChartInner({
     const currentVolume = volumeRef.current;
     const currentRS = rsRef.current;
 
-    const prevCount = prevCandleCountRef.current;
-    const isLoadingMoreData = prevCount > 0 && candles.length > prevCount;
-    const newBarsCount = candles.length - prevCount;
-    const savedLogicalRange = isLoadingMoreData
-      ? chart.timeScale().getVisibleLogicalRange()
-      : null;
-    prevCandleCountRef.current = candles.length;
+    const rendered = renderedChartRef.current;
+    const prependedBarsCount =
+      rendered?.identity === chartIdentityRef.current
+        ? candles.findIndex((c) => c.time === rendered.firstTime)
+        : -1;
+    const savedLogicalRange =
+      prependedBarsCount >= 0
+        ? chart.timeScale().getVisibleLogicalRange()
+        : null;
+    renderedChartRef.current = {
+      identity: chartIdentityRef.current,
+      firstTime: candles[0].time,
+    };
 
     // Collect all series currently on the chart so we can safely remove them.
     // In React 18 Strict Mode, refs may hold stale series from a destroyed chart,
@@ -1049,10 +1061,10 @@ function TechnicalChartInner({
     setLegend(lastLegend);
 
     // ── Scroll position ──────────────────────────────────────────
-    if (isLoadingMoreData && savedLogicalRange) {
+    if (savedLogicalRange) {
       chart.timeScale().setVisibleLogicalRange({
-        from: savedLogicalRange.from + newBarsCount,
-        to: savedLogicalRange.to + newBarsCount,
+        from: savedLogicalRange.from + prependedBarsCount,
+        to: savedLogicalRange.to + prependedBarsCount,
       });
     } else if (
       visibleBarsRef.current &&
