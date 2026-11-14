@@ -45,21 +45,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     
-    services:
-      postgres:
-        image: postgres:18-alpine
-        env:
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_USER: postgres
-          POSTGRES_DB: blue_star_test_db
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -71,13 +56,6 @@ jobs:
 
       - name: Run tests
         run: npm run test
-        env:
-          DB_HOST: localhost
-          DB_PORT: 5432
-          DB_USERNAME: postgres
-          DB_PASSWORD: postgres
-          DB_DATABASE: blue_star_test_db
-          DB_SSL: false
 
   python-test:
     name: python-test (${{ matrix.app }})
