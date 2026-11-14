@@ -378,14 +378,13 @@ export function SectorRotationRRGChart({
       ],
       tooltip: {
         trigger: "item",
-        formatter: (params: { seriesType?: string; name?: string }) => {
+        formatter: (params: {
+          seriesType?: string;
+          name?: string;
+          dataIndex: number;
+        }) => {
           if (params.seriesType === "scatter") {
-            const point = filteredDataPoints.find((p) => {
-              const displayName = sectorNames[p.sectorSymbol]
-                ? `${sectorNames[p.sectorSymbol]} (${p.sectorSymbol})`
-                : p.sectorSymbol;
-              return displayName === params.name;
-            });
+            const point = seriesData[params.dataIndex]?.latestPoint;
             if (point) {
               return `
               <div style="padding: 8px;">
@@ -403,14 +402,7 @@ export function SectorRotationRRGChart({
         },
       },
     }),
-    [
-      seriesData,
-      axisRanges,
-      isDarkMode,
-      filteredDataPoints,
-      chartWidth,
-      isCompact,
-    ],
+    [seriesData, axisRanges, isDarkMode, chartWidth, isCompact],
   );
 
   if (!dataPoints || dataPoints.length === 0) {
