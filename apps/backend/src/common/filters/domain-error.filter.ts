@@ -1,10 +1,10 @@
 import {
   ArgumentsHost,
   Catch,
-  ExceptionFilter,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
+import { BaseExceptionFilter } from '@nestjs/core';
 import type { Response } from 'express';
 import { AuthorizationError, DomainError, NotFoundError } from '../errors';
 
@@ -21,8 +21,8 @@ import { AuthorizationError, DomainError, NotFoundError } from '../errors';
  * (`{ statusCode, message, error }`) so the frontend sees consistent errors.
  */
 @Catch()
-export class DomainErrorFilter implements ExceptionFilter {
-  catch(exception: unknown, host: ArgumentsHost): void {
+export class DomainErrorFilter extends BaseExceptionFilter {
+  override catch(exception: unknown, host: ArgumentsHost): void {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
@@ -43,8 +43,8 @@ export class DomainErrorFilter implements ExceptionFilter {
     const status = this.mapStatus(exception);
 
     if (status === HttpStatus.INTERNAL_SERVER_ERROR) {
-      // Not a recognised domain error: rethrow so the default handler logs it.
-      throw exception;
+      super.catch(exception, host);
+      return;
     }
 
     const message =
