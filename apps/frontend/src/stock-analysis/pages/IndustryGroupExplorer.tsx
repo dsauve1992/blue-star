@@ -11,17 +11,13 @@ import {
 } from "src/global/design-system";
 import { useIndustryGroups } from "../hooks/use-industry-groups";
 import { useIndustryGroupRatings } from "../hooks/use-industry-group-ratings";
-import { useChartData } from "src/market-data/hooks/use-chart-data";
+import { useRsBenchmarkChart } from "src/market-data/hooks/use-rs-benchmark-chart";
 import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
 import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
 import { useIndustryGroupQuadrantHistory } from "src/sector-rotation/hooks/use-industry-group-quadrant-history";
 import { buildQuadrantSegments } from "src/stock-analysis/utils/quadrant-segments";
-import {
-  buildRsBenchmarks,
-  GROUP_BENCHMARK_EXCHANGE,
-} from "src/market-data/utils/rs-benchmarks";
 import {
   getIndustryGroupQuadrant,
   INDUSTRY_GROUP_UNIVERSE_ID,
@@ -45,8 +41,6 @@ import { IndustryGroupSelector } from "../components/IndustryGroupSelector";
 import { IndustryGroupListItem } from "../components/IndustryGroupListItem";
 import { formatScanDate } from "../utils/format-scan-date";
 
-const BENCHMARK_SYMBOL = "SPY";
-const BENCHMARK_EXCHANGE = "AMEX";
 // Industry-group RS ratings are keyed only by symbol; we don't track the
 // listing exchange. Yahoo (the wired chart-data service) ignores it for
 // candle fetches; it only affects the TradingView deep-link target.
@@ -95,7 +89,6 @@ export default function IndustryGroupExplorer() {
     () => getDefaultMovingAverages(interval),
     [interval],
   );
-  const bars = interval === "W" ? 156 : 520;
 
   const { data: profileData } = useCompanyProfile(selectedSymbol);
   const { data: industryGroupStatusData } = useLatestSectorStatus(
@@ -105,6 +98,7 @@ export default function IndustryGroupExplorer() {
     ? getIndustryGroupQuadrant(selectedGroup, industryGroupStatusData.sectors)
     : null;
 
+  const groupSymbol = useIndustryGroupSymbol(selectedGroup);
   const {
     candles,
     isLoading: chartLoading,
@@ -112,42 +106,16 @@ export default function IndustryGroupExplorer() {
     refetch: refetchChart,
     loadMore,
     isLoadingMore,
-  } = useChartData(
-    selectedSymbol,
-    selectedSymbol ? DEFAULT_EXCHANGE : null,
-    interval,
-    bars,
-    includeExtendedHours,
-  );
-
-  const {
-    candles: spyCandles,
-    loadMore: loadMoreSpy,
-    isLoadingMore: isLoadingMoreSpy,
-  } = useChartData(
-    BENCHMARK_SYMBOL,
-    BENCHMARK_EXCHANGE,
-    interval,
-    bars,
-    includeExtendedHours,
-  );
-
-  const groupSymbol = useIndustryGroupSymbol(selectedGroup);
-  const { candles: groupCandles, loadMore: loadMoreGroup } = useChartData(
+    rs,
+    visibleBars,
+  } = useRsBenchmarkChart({
+    symbol: selectedSymbol,
+    exchange: selectedSymbol ? DEFAULT_EXCHANGE : null,
     groupSymbol,
-    // Yahoo ignores exchange for the candle fetch; the GICS subindex
-    // (^SP500-XXXX) needs none. A truthy placeholder enables the query.
-    groupSymbol ? GROUP_BENCHMARK_EXCHANGE : null,
+    groupLabel: selectedGroup,
     interval,
-    bars,
     includeExtendedHours,
-  );
-
-  const handleLoadMore = useCallback(() => {
-    loadMore();
-    loadMoreSpy();
-    loadMoreGroup();
-  }, [loadMore, loadMoreSpy, loadMoreGroup]);
+  });
 
   const {
     data: financialData,
@@ -438,24 +406,10 @@ export default function IndustryGroupExplorer() {
                           ticker={selectedSymbol}
                           exchange={DEFAULT_EXCHANGE}
                           movingAverages={movingAverages}
-                          visibleBars={interval === "W" ? 52 : 130}
+                          visibleBars={visibleBars}
                           volume={{ show: true }}
                           showTradingView
-                          rs={(() => {
-                            const benchmarks = buildRsBenchmarks({
-                              spyCandles,
-                              spyLabel: BENCHMARK_SYMBOL,
-                              groupCandles,
-                              groupLabel: selectedGroup,
-                            });
-                            return benchmarks
-                              ? {
-                                  benchmarks,
-                                  smaPeriod: 50,
-                                  lookback: interval === "W" ? 52 : 260,
-                                }
-                              : undefined;
-                          })()}
+                          rs={rs}
                           timeframe={{
                             value: interval,
                             onChange: setInterval,
@@ -471,8 +425,8 @@ export default function IndustryGroupExplorer() {
                             show: showQuadrantBackground,
                             onShowChange: setShowQuadrantBackground,
                           }}
-                          onLoadMore={handleLoadMore}
-                          isLoadingMore={isLoadingMore || isLoadingMoreSpy}
+                          onLoadMore={loadMore}
+                          isLoadingMore={isLoadingMore}
                         />
                       ) : null}
                     </div>
