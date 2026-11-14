@@ -268,6 +268,11 @@ export default function Watchlist() {
           sourceWatchlistId,
           targetWatchlistId,
           ticker,
+          targetHasTicker: Boolean(
+            data?.watchlists
+              .find((w) => w.id === targetWatchlistId)
+              ?.tickers.includes(ticker),
+          ),
         });
         if (
           sourceWatchlistId === selectedWatchlistId &&
@@ -282,6 +287,7 @@ export default function Watchlist() {
       }
     },
     [
+      data,
       selectedWatchlistId,
       selectedTicker,
       tickers,
@@ -307,6 +313,10 @@ export default function Watchlist() {
 
   const handleCopyTicker = useCallback(
     async (ticker: string, targetWatchlistId: string) => {
+      const targetHasTicker = data?.watchlists
+        .find((w) => w.id === targetWatchlistId)
+        ?.tickers.includes(ticker);
+      if (targetHasTicker) return;
       try {
         setActionError(null);
         await copyTicker.mutateAsync({ targetWatchlistId, ticker });
@@ -315,7 +325,7 @@ export default function Watchlist() {
         setActionError("Could not copy the ticker. Please try again.");
       }
     },
-    [copyTicker],
+    [data, copyTicker],
   );
 
   const otherWatchlists = useMemo(
