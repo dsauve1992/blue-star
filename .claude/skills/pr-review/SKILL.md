@@ -48,3 +48,7 @@ Checks every challenger applies, whatever the PR:
 - A role that needs to run the PR's app does so only through the `run` skill's "Stage environments" with the `pr-review` entry of `.claude/stage-ports.json`, from the review worktree, and the moderator stops those servers and drops that database copy before merging or stopping.
 - Never touch deployment. Merging to `main` is the end of this skill; `deploy` stays a manual user decision.
 - If `gh` fails with a missing-scope error, stop and report instead of working around it.
+
+## Side findings
+
+Something you notice that needs fixing or checking but is outside this run's scope: file it as described in `kanban-board` "Side findings", then carry on with this run.

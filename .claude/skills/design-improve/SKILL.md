@@ -53,3 +53,7 @@ The app is a swing-trading tool used daily by one trader. Favour changes that ma
 - Never print the test-account credentials; reference them by name only.
 - Recording scripts and raw videos live in the scratchpad, not in the repo.
 - If `gh` fails with a missing-scope error, stop and report instead of working around it.
+
+## Side findings
+
+Something you notice that needs fixing or checking but is outside this run's scope: file it as described in `kanban-board` "Side findings", then carry on with this run.

@@ -30,3 +30,7 @@ Each proposal must be a **small, incremental step** toward a better structure (e
 6. **File it in Backlog** using the `kanban-board` commands, with `ROLE=architect`, report its URL, and stop.
 
 If the dependency graph is clean enough that nothing is worth a ticket, say so and file nothing.
+
+## Side findings
+
+Something you notice that needs fixing or checking but is outside this run's scope: file it as described in `kanban-board` "Side findings", then carry on with this run.

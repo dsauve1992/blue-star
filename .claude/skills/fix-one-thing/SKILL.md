@@ -27,3 +27,7 @@ The fix must be implementable as a small diff (target: one module, a handful of 
 6. **File it in Backlog** using the `kanban-board` commands, with `ROLE=bug-finder`. File exactly one ticket, then stop and report its URL.
 
 If nothing real is found in the chosen module after a fair read, say so and file nothing.
+
+## Side findings
+
+Something you notice that needs fixing or checking but is outside this run's scope: file it as described in `kanban-board` "Side findings", then carry on with this run.

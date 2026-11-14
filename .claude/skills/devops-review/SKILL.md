@@ -46,3 +46,7 @@ The fix must be a small diff (a handful of files, under ~150 changed lines). If 
 5. **File it in Backlog** using the `kanban-board` commands, with `ROLE=devops`. File exactly one ticket, then stop and report its URL.
 
 If nothing real is found in the chosen area after a fair read, say so and file nothing.
+
+## Side findings
+
+Something you notice that needs fixing or checking but is outside this run's scope: file it as described in `kanban-board` "Side findings", then carry on with this run.

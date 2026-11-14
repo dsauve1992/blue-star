@@ -40,3 +40,7 @@ Each voice reads the ticket, watches its evidence video (step 2), reads the rele
 - A ticket that is a duplicate of an open one is rejected with a link to the original in the verdict.
 - Do not implement, review a PR, or change anything outside the issue and the board.
 - If `gh` fails with a missing-scope error, stop and report instead of working around it.
+
+## Side findings
+
+Something you notice that needs fixing or checking but is outside this run's scope: file it as described in `kanban-board` "Side findings", then carry on with this run.

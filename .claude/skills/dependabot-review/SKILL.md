@@ -11,7 +11,7 @@ Dependabot PRs have no kanban ticket, so `pr-review` never picks them up. This s
 
 ## Steps
 
-1. **Pick the PR.** If the caller gives you a number, use it. Otherwise take the oldest PR from `gh pr list --repo dsauve1992/blue-star --author app/dependabot --state open --json number,title,labels,headRefName,createdAt` that has neither `needs-human` nor `dependabot-reviewed`. Its branch must start with `dependabot/`. If the PR is a draft, comment why and stop. If it has conflicts or is behind `main`, comment `@dependabot rebase` and stop; the next run picks it up again. Add the label `dependabot-review` as the claim.
+1. **Pick the PR.** Load `kanban-board` for filing side findings. If the caller gives you a number, use it. Otherwise take the oldest PR from `gh pr list --repo dsauve1992/blue-star --author app/dependabot --state open --json number,title,labels,headRefName,createdAt` that has neither `needs-human` nor `dependabot-reviewed`. Its branch must start with `dependabot/`. If the PR is a draft, comment why and stop. If it has conflicts or is behind `main`, comment `@dependabot rebase` and stop; the next run picks it up again. Add the label `dependabot-review` as the claim.
 
 2. **Blast radius.** For every package the PR bumps (grouped `multi-*` PRs bump several), work out what can break and write it down before testing anything:
    - **Direct npm dependency**: find every import (`rg "from '<pkg>'|require\('<pkg>'\)" apps/`) and map each one to the feature it serves: a page or component on the frontend, an endpoint or job on the backend. Read the package's release notes or changelog between the two versions (`gh release list/view` on its repo, or the CHANGELOG in `node_modules` after install) and note every breaking or behavioural change that touches an API we call.
@@ -25,7 +25,7 @@ Dependabot PRs have no kanban ticket, so `pr-review` never picks them up. This s
    - **Tests and build**: `npx tsc --noEmit && npm run lint && npm run test`, plus `npm run build`. Record pass and fail counts, so that a test already failing on `main` is not later blamed on the bump.
    - **Backend features**: call the affected endpoints, or trigger the affected job, and save the responses.
    - **Frontend features**: start the app through the `run` skill's "Stage environments" with the `dependabot-review` entry of `.claude/stage-ports.json`, log in, and use Playwright to drive each affected page through the same steps. Save screenshots and record what each step showed: rendered values, chart shape, console errors.
-   - **Docker**: `docker build` the affected Dockerfile and confirm the image starts and passes `/api/health` (backend) or serves `/` (frontend).
+   - **Docker**: `docker build` the affected Dockerfile and run the image on the stage's ports against the stage database copy (`-p <BE>:3000`, `DB_HOST=host.docker.internal`, `DB_DATABASE=<DB>`, `NOTIFICATIONS_ENABLED=false`, `CRON_ENABLED=false`, the rest from `apps/backend/.env`). Confirm it boots and passes `/api/health` (backend) or serves `/` (frontend). Record the runtime versions inside it, the boot log, and the responses of the public endpoints. Also run the Python CLIs the backend spawns, inside the image.
    - **GitHub Actions**: nothing to run locally. Note which jobs use the action.
 
    Stop the stage servers before going on; one stage runs one app at a time.
@@ -50,3 +50,7 @@ Dependabot PRs have no kanban ticket, so `pr-review` never picks them up. This s
 - Never use `--admin`, never bypass branch protection, never force-push, and never touch deployment.
 - Never close a Dependabot PR or change its version. Superseding is Dependabot's job.
 - If `gh` fails with a missing-scope error, stop and report.
+
+## Side findings
+
+Something you notice that needs fixing or checking but is outside this run's scope: file it as described in `kanban-board` "Side findings", then carry on with this run.

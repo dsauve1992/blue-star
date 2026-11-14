@@ -36,7 +36,7 @@ ITEM_ID=$(gh project item-add 3 --owner dsauve1992 --url "$URL" --format json --
 set_field "$ITEM_ID" Status Backlog; set_field "$ITEM_ID" Priority P2; set_field "$ITEM_ID" Size S
 ```
 
-`ROLE` is the proposer's role, which tells later runs who filed a ticket: `designer` (`design-improve`), `bug-finder` (`fix-one-thing`), `architect` (`architect-review`) or `devops` (`devops-review`). Create the labels once if missing: `gh label create agent-proposed --color 5319e7 2>/dev/null || true`, and `gh label create "proposer:$ROLE" --color c5def5 2>/dev/null || true`.
+`ROLE` is the role of the skill that filed the ticket, which tells later runs where it came from: `designer` (`design-improve`), `bug-finder` (`fix-one-thing`), `architect` (`architect-review`), `devops` (`devops-review`), `triager` (`triage-ticket`), `implementer` (`implement-next`), `reviewer` (`pr-review`) or `dependabot` (`dependabot-review`). Create the labels once if missing: `gh label create agent-proposed --color 5319e7 2>/dev/null || true`, and `gh label create "proposer:$ROLE" --color c5def5 2>/dev/null || true`.
 
 List items by status:
 
@@ -87,6 +87,17 @@ Recording:
    Keep the GIF under ~8 MB (lower fps or width if needed).
 3. Commit `problem.gif` and `problem.mp4` to branch `qa-media/proposals` under `docs/qa/proposals/<slug>/` from a temporary worktree of that branch (push that branch, never `main`). Embed the GIF inline in the Problem section through its `https://raw.githubusercontent.com/dsauve1992/blue-star/qa-media/proposals/docs/qa/proposals/<slug>/problem.gif` URL and link the mp4.
 4. In Verification, name the flow to replay and what it must show once fixed.
+
+## Side findings
+
+Every skill in the pipeline, while doing its own job, may notice something outside its scope that needs fixing, or at least checking: a bug in another module, a broken Dockerfile step, a flaky test, a stale doc. It files that as its own Backlog ticket instead of fixing it in the current diff or dropping it.
+
+- **Evidence**: record what you actually saw, such as `file:line`, the command and its output, or a failing request. A suspicion you have not observed is not filed. If you could not confirm the cause, say so in Problem and make Verification the check that would confirm it.
+- **Duplicates**: search first with `gh issue list --repo dsauve1992/blue-star --state open --search "<keywords>"`. If an open ticket already covers it, comment the new evidence there instead.
+- **Filing**: use the standard body and the create command above, with labels `agent-proposed`, `proposer:<ROLE>`, the category label and `side-finding` (`gh label create side-finding --color d4c5f9 2>/dev/null || true`). The Evidence video is optional; a text reproduction is enough.
+- **Limits**: file at most two per run, after the run's own work. The Backlog cap still applies. At the cap, list the findings in the run's own output instead.
+- **Report**: link each ticket in the run's own output (PR comment, PR body or triage comment).
+- **Scope**: a side finding never changes the outcome of the current run. If the finding makes the current work unsafe, it is not a side finding; handle it in the current run, for example by blocking or labelling it `needs-human`.
 
 ## Agent workflow contract
 

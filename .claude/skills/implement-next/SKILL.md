@@ -39,3 +39,7 @@ If you were given an issue number, that ticket is already claimed and `In progre
 - Never push to `main` and never force-push.
 - Never run `git switch`, `checkout`, `reset` or `stash` in the main checkout (`$REPO`). If a stage fails, still remove the worktree, unless the branch has unpushed commits: push the branch first.
 - Start the app only through the `run` skill's "Stage environments", with the ports and database in the `implement-next` entry of `.claude/stage-ports.json`. If the app still cannot start, treat it as a failed QA step, not a reason to stop the other process.
+
+## Side findings
+
+Something you notice that needs fixing or checking but is outside this run's scope: file it as described in `kanban-board` "Side findings", then carry on with this run.
