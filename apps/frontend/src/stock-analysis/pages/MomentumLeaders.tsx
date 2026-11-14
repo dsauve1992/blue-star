@@ -46,12 +46,12 @@ export default function MomentumLeaders() {
     isLoadingRatings ? [] : orderedLeaders,
   );
 
-  const orderedTickers = useMemo(
-    () => orderedLeaders.map(leaderTickerFullName),
-    [orderedLeaders],
+  const tickerGroups = useMemo(
+    () => groups.map((group) => group.leaders.map(leaderTickerFullName)),
+    [groups],
   );
   useConsolidationKeyboardNavigation({
-    tickers: orderedTickers,
+    tickerGroups,
     selectedTicker,
     onTickerChange: setSelectedTicker,
   });
