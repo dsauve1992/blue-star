@@ -11,7 +11,9 @@ Dependabot PRs have no kanban ticket, so `pr-review` never picks them up. This s
 
 ## Steps
 
-1. **Pick the PR.** Load `kanban-board` for filing side findings. If the caller gives you a number, use it. Otherwise take the oldest PR from `gh pr list --repo dsauve1992/blue-star --author app/dependabot --state open --json number,title,labels,headRefName,createdAt` that has neither `needs-human` nor `dependabot-reviewed`. Its branch must start with `dependabot/`. If the PR is a draft, comment why and stop. If it has conflicts or is behind `main`, comment `@dependabot rebase` and stop; the next run picks it up again. Add the label `dependabot-review` as the claim.
+1. **Pick the PR.** Load `kanban-board` for filing side findings. If the caller gives you a number, use it. Otherwise take the oldest PR from `gh pr list --repo dsauve1992/blue-star --author app/dependabot --state open --json number,title,labels,headRefName,createdAt` that has neither `needs-human` nor `dependabot-reviewed`. Its branch must start with `dependabot/`. Add the label `dependabot-review` as the claim (a launcher may already have). If the PR is a draft, comment why, add `needs-human` and go to step 7. If it has conflicts or is behind `main`:
+   - **Dead end**: Dependabot has already answered a rebase request on this PR by saying it cannot rebase it (for example because the `dependabot.yml` entry that created it was deleted), or `main` already has every package at the PR's target version or newer. Close it with `gh pr close <pr> --comment "<the reason>"` and go to step 7. Dependabot opens a new PR if the bump is still needed.
+   - **Otherwise**: comment `@dependabot rebase`, unless the last such request is still unanswered, and go to step 7; the next run picks the PR up again.
 
 2. **Blast radius.** For every package the PR bumps (grouped `multi-*` PRs bump several), work out what can break and write it down before testing anything:
    - **Direct npm dependency**: find every import (`rg "from '<pkg>'|require\('<pkg>'\)" apps/`) and map each one to the feature it serves: a page or component on the frontend, an endpoint or job on the backend. Read the package's release notes or changelog between the two versions (`gh release list/view` on its repo, or the CHANGELOG in `node_modules` after install) and note every breaking or behavioural change that touches an API we call.
@@ -40,7 +42,7 @@ Dependabot PRs have no kanban ticket, so `pr-review` never picks them up. This s
    - **Merge** when every check matches its baseline and `gh pr checks <pr>` is all green (wait while checks are pending; never merge on red or pending). The head SHA must be the one you verified. Post a comment with the blast radius, the checks run, "no behavioural difference", and any compatibility fix you pushed. Then run `gh pr merge <pr> --squash --delete-branch` and add `dependabot-reviewed`.
    - **Block** when any check differs, a needed fix would change behaviour, or you cannot exercise an affected feature, for example because it needs data the stage copy does not have. Post a comment with the blast radius, each difference with its before and after evidence, and what the user needs to decide. For screenshots, commit them under `docs/qa/dependabot-<pr>/` on a branch `qa-media/dependabot-<pr>` from a temporary worktree and link them by raw URL. Add `needs-human` and do not merge.
 
-7. **Clean up**, whatever the outcome: stop the stage servers, drop the stage database, remove both worktrees with `git -C $REPO worktree remove --force <path>`, and remove the `dependabot-review` claim label.
+7. **Clean up**, whatever the outcome: stop the stage servers, drop the stage database, remove both worktrees with `git -C $REPO worktree remove --force <path>`, and remove the `dependabot-review` claim label. The label always comes off when a run ends, including a run that stopped at step 1 and a claim that a launcher added.
 
 ## Rules
 
@@ -48,7 +50,7 @@ Dependabot PRs have no kanban ticket, so `pr-review` never picks them up. This s
 - A major version is not blocked for being major. It follows the same proof, with the release notes read in full.
 - "Tests pass" alone is not proof when the blast radius includes a user-facing feature. That feature must be driven before and after.
 - Never use `--admin`, never bypass branch protection, never force-push, and never touch deployment.
-- Never close a Dependabot PR or change its version. Superseding is Dependabot's job.
+- Never change a Dependabot PR's version, and close one only in the dead-end case of step 1. Superseding is Dependabot's job.
 - If `gh` fails with a missing-scope error, stop and report.
 
 ## Side findings
