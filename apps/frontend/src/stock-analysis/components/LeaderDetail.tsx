@@ -16,20 +16,13 @@ import {
   type ChartInterval,
 } from "src/market-data/api/chart-data.client";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
-import { useChartData } from "src/market-data/hooks/use-chart-data";
+import { useRsBenchmarkChart } from "src/market-data/hooks/use-rs-benchmark-chart";
 import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
-import {
-  buildRsBenchmarks,
-  GROUP_BENCHMARK_EXCHANGE,
-} from "src/market-data/utils/rs-benchmarks";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { LoadingSpinner } from "src/global/design-system";
 import { MomentumLeadersChartHeader } from "./MomentumLeadersChartHeader";
 import { FinancialReportChartFooter } from "src/fundamental/components/FinancialReportChartFooter";
 import { ChartLoadError } from "./ChartLoadError";
-
-const BENCHMARK_SYMBOL = "SPY";
-const BENCHMARK_EXCHANGE = "AMEX";
 
 interface LeaderDetailProps {
   leader: MomentumLeader;
@@ -57,8 +50,8 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
     () => getDefaultMovingAverages(interval),
     [interval],
   );
-  const bars = interval === "W" ? 156 : 520;
 
+  const groupSymbol = useIndustryGroupSymbol(leader.industryGroup);
   const {
     candles,
     isLoading: chartLoading,
@@ -66,44 +59,15 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
     refetch: refetchChart,
     loadMore,
     isLoadingMore,
-  } = useChartData(
-    leader.symbol,
-    leader.exchange,
-    interval,
-    bars,
-    includeExtendedHours,
-  );
-  const {
-    candles: spyCandles,
-    loadMore: loadMoreSpy,
-    isLoadingMore: isLoadingMoreSpy,
-  } = useChartData(
-    BENCHMARK_SYMBOL,
-    BENCHMARK_EXCHANGE,
-    interval,
-    bars,
-    includeExtendedHours,
-  );
-  const groupSymbol = useIndustryGroupSymbol(leader.industryGroup);
-  const { candles: groupCandles, loadMore: loadMoreGroup } = useChartData(
+    rs,
+    visibleBars,
+  } = useRsBenchmarkChart({
+    symbol: leader.symbol,
+    exchange: leader.exchange,
     groupSymbol,
-    groupSymbol ? GROUP_BENCHMARK_EXCHANGE : null,
-    interval,
-    bars,
-    includeExtendedHours,
-  );
-
-  const handleLoadMore = useCallback(() => {
-    loadMore();
-    loadMoreSpy();
-    loadMoreGroup();
-  }, [loadMore, loadMoreSpy, loadMoreGroup]);
-
-  const rsBenchmarks = buildRsBenchmarks({
-    spyCandles,
-    spyLabel: BENCHMARK_SYMBOL,
-    groupCandles,
     groupLabel: leader.industryGroup,
+    interval,
+    includeExtendedHours,
   });
 
   const handleToggleWatchlist = useCallback(
@@ -174,18 +138,10 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
               ticker={leader.symbol}
               exchange={leader.exchange}
               movingAverages={movingAverages}
-              visibleBars={interval === "W" ? 52 : 130}
+              visibleBars={visibleBars}
               volume={{ show: true }}
               showTradingView
-              rs={
-                rsBenchmarks
-                  ? {
-                      benchmarks: rsBenchmarks,
-                      smaPeriod: 50,
-                      lookback: interval === "W" ? 52 : 260,
-                    }
-                  : undefined
-              }
+              rs={rs}
               timeframe={{
                 value: interval,
                 onChange: setInterval,
@@ -195,8 +151,8 @@ export function LeaderDetail({ leader }: LeaderDetailProps) {
                 includeExtendedHours,
                 onIncludeExtendedHoursChange: setIncludeExtendedHours,
               }}
-              onLoadMore={handleLoadMore}
-              isLoadingMore={isLoadingMore || isLoadingMoreSpy}
+              onLoadMore={loadMore}
+              isLoadingMore={isLoadingMore}
             />
           ) : null}
         </div>
