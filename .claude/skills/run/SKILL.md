@@ -128,7 +128,7 @@ A skill that starts the app for an agent stage is given three values by its call
 
 ```bash
 FE=5174 BE=6174 DB=blue_star_design_improve   # as given by your caller
-[ "$FE" -ge 5174 ] && [ "$FE" -le 5177 ] || echo "FE outside 5174-5177: stop and report"
+[ "$FE" -ge 5174 ] && [ "$FE" -le 5178 ] || echo "FE outside 5174-5178: stop and report"
 lsof -nP -iTCP:$FE -iTCP:$BE -sTCP:LISTEN     # both must print nothing, else stop and report
 docker exec blue-star-postgres psql -U blue_star_user -d postgres \
   -c "DROP DATABASE IF EXISTS $DB WITH (FORCE)" -c "CREATE DATABASE $DB"
@@ -141,7 +141,7 @@ VITE_API_URL=http://127.0.0.1:$BE/api npm run dev --workspace=frontend -- --port
 APP_URL=http://localhost:$FE node .claude/skills/run/login.mjs
 ```
 
-If `FE` is outside 5174-5177, or a port is taken, stop and report; never kill the owner and never use another port. One stage runs one app at a time, so compare "before" and "after" one after the other, not side by side. The database is a fresh copy of the user's `blue_star_db` on every run, so a migration or a test write in one stage never reaches the user's data or another stage. Drop it with `DROP DATABASE ... WITH (FORCE)` when you clean up. The `DB_HOST=localhost` and container checks above still apply. `NOTIFICATIONS_ENABLED=false` keeps a stage backend from pushing to the user's phone, and `CRON_ENABLED=false` keeps it from running the scheduled jobs (market-data analyses and the 5-minute watchlist monitor), which would otherwise hit external APIs and write to the copy. The user's own dev session sets neither and behaves as before.
+If `FE` is outside 5174-5178, or a port is taken, stop and report; never kill the owner and never use another port. One stage runs one app at a time, so compare "before" and "after" one after the other, not side by side. The database is a fresh copy of the user's `blue_star_db` on every run, so a migration or a test write in one stage never reaches the user's data or another stage. Drop it with `DROP DATABASE ... WITH (FORCE)` when you clean up. The `DB_HOST=localhost` and container checks above still apply. `NOTIFICATIONS_ENABLED=false` keeps a stage backend from pushing to the user's phone, and `CRON_ENABLED=false` keeps it from running the scheduled jobs (market-data analyses and the 5-minute watchlist monitor), which would otherwise hit external APIs and write to the copy. The user's own dev session sets neither and behaves as before.
 
 ## Smoke tests (drive it, don't just launch it)
 
