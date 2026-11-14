@@ -169,18 +169,24 @@ export function useMoveTicker() {
       sourceWatchlistId,
       targetWatchlistId,
       ticker,
+      targetHasTicker,
     }: {
       sourceWatchlistId: string;
       targetWatchlistId: string;
       ticker: string;
+      targetHasTicker: boolean;
     }) => {
-      await watchlistClient.addTickerToWatchlist(targetWatchlistId, { ticker });
+      if (!targetHasTicker) {
+        await watchlistClient.addTickerToWatchlist(targetWatchlistId, {
+          ticker,
+        });
+      }
       await watchlistClient.removeTickerFromWatchlist(
         sourceWatchlistId,
         ticker,
       );
     },
-    onSuccess: (_, variables) => {
+    onSettled: (_data, _error, variables) => {
       queryClient.invalidateQueries({ queryKey: WATCHLIST_QUERY_KEYS.all });
       queryClient.invalidateQueries({
         queryKey: WATCHLIST_QUERY_KEYS.detail(variables.sourceWatchlistId),
