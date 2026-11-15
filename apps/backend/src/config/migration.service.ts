@@ -19,10 +19,12 @@ export class MigrationService {
     process.env.DB_USERNAME = config.username;
     process.env.DB_PASSWORD = config.password;
     process.env.DB_DATABASE = config.database;
+
+    const childEnv = { ...process.env };
     if (config.ssl) {
-      process.env.DB_SSL = 'true';
+      childEnv.DB_SSL = 'no-verify';
     } else {
-      delete process.env.DB_SSL;
+      delete childEnv.DB_SSL;
     }
 
     try {
@@ -33,7 +35,7 @@ export class MigrationService {
         `npx db-migrate up --env ${environment}`,
         {
           cwd: process.cwd(),
-          env: process.env,
+          env: childEnv,
         },
       );
 
