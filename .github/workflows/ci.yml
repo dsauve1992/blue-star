@@ -169,8 +169,9 @@ jobs:
           docker exec -w /app/apps/screener backend python3 -c "import main, classifier, rs_rating_service, momentum_leaders_service"
           docker exec -w /app/apps/theme_extractor backend python3 -c "import main"
 
-      - name: Assert migrations ran
+      - name: Assert every migration ran
         run: |
-          count=$(PGPASSWORD=postgres psql -h localhost -U postgres -d blue_star_smoke -tAc "select count(*) from migrations")
-          echo "migrations applied: $count"
-          [ "$count" -gt 0 ]
+          expected=$(ls apps/backend/migrations/*.js | wc -l)
+          applied=$(PGPASSWORD=postgres psql -h localhost -U postgres -d blue_star_smoke -tAc "select count(*) from migrations")
+          echo "migrations applied: $applied / $expected"
+          [ "$applied" -eq "$expected" ] || { docker logs backend; exit 1; }
