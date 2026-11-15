@@ -47,6 +47,11 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
       a.localeCompare(b),
     );
     const currentSessionKey = orderedSessionKeys[orderedSessionKeys.length - 1];
+
+    if (currentSessionKey !== getMarketDateKey(now)) {
+      return { ticker, detected: false };
+    }
+
     const sessionBars = sessions.get(currentSessionKey) ?? [];
 
     if (sessionBars.length < BreakoutDetectionServiceImpl.EMA_MINIMUM_BARS) {
