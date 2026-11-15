@@ -175,3 +175,22 @@ jobs:
           applied=$(PGPASSWORD=postgres psql -h localhost -U postgres -d blue_star_smoke -tAc "select count(*) from migrations")
           echo "migrations applied: $applied / $expected"
           [ "$applied" -eq "$expected" ] || { docker logs backend; exit 1; }
+
+  ci-ok:
+    name: CI OK
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    if: always()
+    needs:
+      - lint-and-typecheck
+      - test
+      - python-test
+      - audit
+      - build
+      - frontend-image-build
+      - backend-image-smoke
+    steps:
+      - name: Fail unless every job succeeded
+        env:
+          NEEDS: ${{ toJSON(needs) }}
+        run: echo "$NEEDS" | jq -e 'all(.[]; .result == "success")'
