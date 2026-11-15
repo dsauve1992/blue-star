@@ -16,7 +16,7 @@ export class TestContainer {
     process.env.DB_USERNAME = this.container.getUsername();
     process.env.DB_PASSWORD = this.container.getPassword();
     process.env.DB_DATABASE = this.container.getDatabase();
-    process.env.DB_SSL = 'true';
+    process.env.DB_SSL = 'false';
   }
 
   static async stop() {
