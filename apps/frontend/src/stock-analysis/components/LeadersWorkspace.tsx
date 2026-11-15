@@ -5,7 +5,10 @@ import {
   type MomentumLeader,
 } from "../api/momentum-leaders.client";
 import type { LeaderGroup } from "../hooks/use-leader-groups";
-import type { LeaderRsRatings } from "../hooks/use-sorted-leaders";
+import type {
+  LeaderRsRatings,
+  LeaderSortKey,
+} from "../hooks/use-sorted-leaders";
 import { LeaderChartCard } from "./LeaderChartCard";
 import { LeaderDetail } from "./LeaderDetail";
 import { LeaderGroupHeader } from "./LeaderGroupHeader";
@@ -14,6 +17,7 @@ interface LeadersWorkspaceProps {
   groups: LeaderGroup[];
   orderedLeaders: MomentumLeader[];
   rsBySymbol: Map<string, LeaderRsRatings>;
+  sortKey: LeaderSortKey;
   showIndustryGroup: boolean;
   selectedTicker: string | null;
   onSelect: (tickerFullName: string) => void;
@@ -23,6 +27,7 @@ export function LeadersWorkspace({
   groups,
   orderedLeaders,
   rsBySymbol,
+  sortKey,
   showIndustryGroup,
   selectedTicker,
   onSelect,
@@ -60,6 +65,7 @@ export function LeadersWorkspace({
                     key={`${group.key}:${ticker}`}
                     leader={leader}
                     rsRating={rsBySymbol.get(leader.symbol)?.rsRating}
+                    sortKey={sortKey}
                     showIndustryGroup={showIndustryGroup}
                     scrollRootRef={scrollRootRef}
                     isSelected={ticker === selectedTicker}
