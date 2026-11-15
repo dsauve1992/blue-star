@@ -202,6 +202,9 @@ describe('GapDetectionServiceImpl', () => {
     // Entry is the 09:30 CLOSE (not the open); stop is the prior 15:55 low.
     expect(result.entryPrice).toBe(100.5);
     expect(result.stopPrice).toBe(99);
+    expect(getHistoricalData.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ symbol: Symbol.of('AAPL'), interval: '1d' }),
+    );
   });
 
   describe('condition 1: body-based gap (open >= priorClose + priorBody)', () => {
