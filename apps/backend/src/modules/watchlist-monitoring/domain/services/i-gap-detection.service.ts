@@ -1,4 +1,4 @@
-import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
+import { WatchlistTicker } from '../../../watchlist/watchlist.module';
 import { GapContext } from '../value-objects/gap-context';
 
 export interface GapDetectionResult {

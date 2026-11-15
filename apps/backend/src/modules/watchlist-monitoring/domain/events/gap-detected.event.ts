@@ -1,5 +1,7 @@
-import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
-import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
+import {
+  WatchlistTicker,
+  WatchlistId,
+} from '../../../watchlist/watchlist.module';
 import { LocalDate } from '../value-objects/local-date';
 import { IndustryGroupQuadrant } from '../value-objects/gap-context';
 

@@ -47,3 +47,7 @@ export class WatchlistModule {}
 
 export { GetWatchlistByIdUseCase } from './use-cases/get-watchlist-by-id.use-case';
 export { FindWatchlistTickersUseCase } from './use-cases/find-watchlist-tickers.use-case';
+export { WatchlistId } from './domain/value-objects/watchlist-id';
+export { WatchlistTicker } from './domain/value-objects/watchlist-ticker';
+export { WatchlistName } from './domain/value-objects/watchlist-name';
+export { Watchlist } from './domain/entities/watchlist';

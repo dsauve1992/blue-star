@@ -1,6 +1,6 @@
 import { WatchlistMonitoringId } from '../value-objects/watchlist-monitoring-id';
 import { MonitoringType } from '../value-objects/monitoring-type';
-import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
+import { WatchlistId } from '../../../watchlist/watchlist.module';
 
 export interface CreateWatchlistMonitoringArgs {
   watchlistId: WatchlistId;

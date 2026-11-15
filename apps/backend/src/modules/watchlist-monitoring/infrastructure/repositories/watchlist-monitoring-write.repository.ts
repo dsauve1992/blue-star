@@ -3,7 +3,7 @@ import { DatabaseService } from '../../../../config/database.service';
 import { WatchlistMonitoring } from '../../domain/entities/watchlist-monitoring.entity';
 import { WatchlistMonitoringId } from '../../domain/value-objects/watchlist-monitoring-id';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
-import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
+import { WatchlistId } from '../../../watchlist/watchlist.module';
 import { WatchlistMonitoringWriteRepository as IWatchlistMonitoringWriteRepository } from '../../domain/repositories/watchlist-monitoring-write.repository.interface';
 
 interface DatabaseRow {
