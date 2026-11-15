@@ -46,6 +46,9 @@ const MAX_DAYS_BACK: Partial<Record<ChartInterval, number>> = {
   '15': 59,
   '30': 59,
   '60': 729,
+  D: 36500,
+  W: 36500,
+  M: 36500,
 };
 
 @Injectable()

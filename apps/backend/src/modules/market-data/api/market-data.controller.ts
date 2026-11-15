@@ -63,10 +63,18 @@ function parseDateRange(start: string, end: string): DateRange {
   }
 }
 
+const MAX_BARS = 20000;
+
 function parseBars(raw: string): number {
   const bars = Number.parseInt(raw, 10);
-  if (!Number.isFinite(bars) || bars < 1) {
-    throw new BadRequestException('bars must be a positive integer');
+  if (
+    !/^[1-9]\d*$/.test(raw) ||
+    !Number.isSafeInteger(bars) ||
+    bars > MAX_BARS
+  ) {
+    throw new BadRequestException(
+      `bars must be a positive integer no greater than ${MAX_BARS}`,
+    );
   }
   return bars;
 }

@@ -118,7 +118,7 @@ describe('MarketDataController', () => {
     );
   });
 
-  it.each(['abc', '0'])(
+  it.each(['abc', '0', '10abc', '1000000000', '20001'])(
     'returns 400 with the validation message for bars=%s',
     async (bars) => {
       const response = await request(server())
@@ -127,6 +127,28 @@ describe('MarketDataController', () => {
 
       expect(messageOf(response)).toContain('bars');
       expect(chart).not.toHaveBeenCalled();
+    },
+  );
+
+  it.each(['200', '8000', '20000'])(
+    'delegates bars=%s to the chart use case',
+    async (bars) => {
+      chart.mockResolvedValue({
+        chartData: {
+          symbol: 'AAPL',
+          exchange: 'NASDAQ',
+          interval: 'D',
+          pricePoints: [],
+        },
+      });
+
+      await request(server())
+        .get(`/market-data/chart?symbol=AAPL&exchange=NASDAQ&bars=${bars}`)
+        .expect(200);
+
+      expect(chart).toHaveBeenCalledWith(
+        expect.objectContaining({ bars: Number(bars) }),
+      );
     },
   );
 

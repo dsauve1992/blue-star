@@ -46,9 +46,16 @@ describe('YahooChartDataService', () => {
     expect(await requestedDaysBack('15', 520)).toBe(32);
   });
 
-  it('does not cap daily requests', async () => {
+  it('does not cap a realistic daily request', async () => {
     expect(await requestedDaysBack('D', 5000)).toBe(7500);
   });
+
+  it.each(['D', 'W', 'M'] as const)(
+    'bounds a %s request for a very large bar count at 36500 days back',
+    async (interval) => {
+      expect(await requestedDaysBack(interval, 1_000_000_000)).toBe(36500);
+    },
+  );
 
   describe('on a Monday before the open', () => {
     const REGULAR_SESSION_5M_BARS = 78;
