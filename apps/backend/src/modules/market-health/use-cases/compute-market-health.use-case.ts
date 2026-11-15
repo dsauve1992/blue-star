@@ -1,13 +1,12 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { randomUUID } from 'crypto';
-import type { MarketDataService } from '../../market-data/market-data.module';
+import { GetHistoricalDataUseCase } from '../../market-data/market-data.module';
 import { Symbol } from '../../../shared/value-objects/symbol';
 import { DateRange } from '../../../shared/value-objects/date-range';
 import type { MarketHealthRepository } from '../domain/repositories/market-health.repository.interface';
 import { MarketHealth } from '../domain/entities/market-health.entity';
 import { MarketHealthStatus } from '../domain/value-objects/market-health-status';
 import { MARKET_HEALTH_REPOSITORY } from '../constants/tokens';
-import { MARKET_DATA_SERVICE } from '../../market-data/market-data.module';
 
 export type ComputeMarketHealthResponseDto = MarketHealth;
 
@@ -17,8 +16,7 @@ export class ComputeMarketHealthUseCase {
   private readonly spySymbol = Symbol.of('SPY');
 
   constructor(
-    @Inject(MARKET_DATA_SERVICE)
-    private readonly marketDataService: MarketDataService,
+    private readonly getHistoricalData: GetHistoricalDataUseCase,
     @Inject(MARKET_HEALTH_REPOSITORY)
     private readonly marketHealthRepository: MarketHealthRepository,
   ) {}
@@ -32,11 +30,11 @@ export class ComputeMarketHealthUseCase {
     ninetyDaysAgo.setDate(ninetyDaysAgo.getDate() - 90);
 
     const dateRange = DateRange.of(ninetyDaysAgo, yesterday);
-    const historicalData = await this.marketDataService.getHistoricalData(
-      this.spySymbol,
+    const { historicalData } = await this.getHistoricalData.execute({
+      symbol: this.spySymbol,
       dateRange,
-      '1d',
-    );
+      interval: '1d',
+    });
 
     const closes = [...historicalData.pricePoints]
       .sort((a, b) => a.date.getTime() - b.date.getTime())

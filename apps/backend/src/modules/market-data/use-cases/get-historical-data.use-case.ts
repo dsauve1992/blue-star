@@ -3,6 +3,7 @@ import { Symbol } from '../../../shared/value-objects/symbol';
 import { DateRange } from '../../../shared/value-objects/date-range';
 import {
   HistoricalData,
+  Interval,
   MarketDataService,
 } from '../domain/services/market-data.service';
 import { MARKET_DATA_SERVICE } from '../constants/tokens';
@@ -10,6 +11,7 @@ import { MARKET_DATA_SERVICE } from '../constants/tokens';
 export interface GetHistoricalDataRequestDto {
   symbol: Symbol;
   dateRange: DateRange;
+  interval?: Interval;
 }
 
 export interface GetHistoricalDataResponseDto {
@@ -29,6 +31,7 @@ export class GetHistoricalDataUseCase {
     const historicalData = await this.marketDataService.getHistoricalData(
       request.symbol,
       request.dateRange,
+      request.interval,
     );
 
     return { historicalData };
