@@ -1,32 +1,25 @@
-import { useState, useCallback } from "react";
+import { useState } from "react";
 import { ChevronDown, BarChart3, AlertTriangle } from "lucide-react";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
-import { useChartData } from "src/market-data/hooks/use-chart-data";
+import { useRsBenchmarkChart } from "src/market-data/hooks/use-rs-benchmark-chart";
 import { FinancialReportChartFooter } from "src/fundamental/components/FinancialReportChartFooter";
 import type { FinancialReportApiDto } from "src/fundamental/api/fundamental.client";
 import {
   MAIN_CHART_TIMEFRAME_OPTIONS,
   type ChartInterval,
 } from "src/market-data/api/chart-data.client";
-import type { ChartCandleDto } from "src/market-data/api/chart-data.client";
 import type { MovingAverageConfig } from "src/market-data/utils/chart-utils";
 import type { Watchlist } from "../api/watchlist.client";
 import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
 import { useStockClassification } from "src/stock-classification/hooks/use-stock-classification";
 import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
-import {
-  buildRsBenchmarks,
-  GROUP_BENCHMARK_EXCHANGE,
-} from "src/market-data/utils/rs-benchmarks";
 import { getQuadrantColor } from "src/sector-rotation/utils/sector-utils";
 import {
   getIndustryGroupQuadrant,
   INDUSTRY_GROUP_UNIVERSE_ID,
 } from "src/sector-rotation/utils/industry-group-utils";
 import { LoadingSpinner } from "src/global/design-system";
-
-const BENCHMARK_SYMBOL = "SPY";
 
 function getEmptyStateCopy(
   watchlistsError: Error | null,
@@ -66,19 +59,14 @@ interface ChartPanelProps {
   chartProps: {
     exchange: string;
     symbol: string;
-    interval: ChartInterval;
-    bars: number;
   } | null;
   movingAverages: MovingAverageConfig[];
   financialData: { report: FinancialReportApiDto } | undefined;
   financialLoading: boolean;
   financialError: Error | null;
   onFinancialRetry: () => void;
-  spyCandles?: ChartCandleDto[];
   interval: ChartInterval;
   onIntervalChange: (interval: ChartInterval) => void;
-  onLoadMoreSpy: () => void;
-  isLoadingMoreSpy: boolean;
   includeExtendedHours: boolean;
   onIncludeExtendedHoursChange: (value: boolean) => void;
 }
@@ -95,11 +83,8 @@ export function ChartPanel({
   financialLoading,
   financialError,
   onFinancialRetry,
-  spyCandles,
   interval,
   onIntervalChange,
-  onLoadMoreSpy,
-  isLoadingMoreSpy,
   includeExtendedHours,
   onIncludeExtendedHoursChange,
 }: ChartPanelProps) {
@@ -115,34 +100,23 @@ export function ChartPanel({
   const { data: classificationData } = useStockClassification(symbol);
   const industryGroup = classificationData?.industryGroup ?? null;
 
+  const groupSymbol = useIndustryGroupSymbol(industryGroup);
   const {
     candles,
     isLoading: chartLoading,
     error: chartError,
     loadMore,
     isLoadingMore,
-  } = useChartData(
-    chartProps?.symbol ?? null,
-    chartProps?.exchange ?? null,
-    chartProps?.interval,
-    chartProps?.bars,
-    includeExtendedHours,
-  );
-
-  const groupSymbol = useIndustryGroupSymbol(industryGroup);
-  const { candles: groupCandles, loadMore: loadMoreGroup } = useChartData(
+    rs,
+    visibleBars,
+  } = useRsBenchmarkChart({
+    symbol: chartProps?.symbol ?? null,
+    exchange: chartProps?.exchange ?? null,
     groupSymbol,
-    groupSymbol ? GROUP_BENCHMARK_EXCHANGE : null,
-    chartProps?.interval,
-    chartProps?.bars,
+    groupLabel: industryGroup,
+    interval,
     includeExtendedHours,
-  );
-
-  const handleLoadMore = useCallback(() => {
-    loadMore();
-    onLoadMoreSpy();
-    loadMoreGroup();
-  }, [loadMore, onLoadMoreSpy, loadMoreGroup]);
+  });
   const quadrant = industryGroupStatusData?.sectors
     ? getIndustryGroupQuadrant(industryGroup, industryGroupStatusData.sectors)
     : null;
@@ -191,24 +165,10 @@ export function ChartPanel({
                   ticker={chartProps?.symbol}
                   exchange={chartProps?.exchange}
                   movingAverages={movingAverages}
-                  visibleBars={interval === "W" ? 52 : 130}
+                  visibleBars={visibleBars}
                   volume={{ show: true }}
                   showTradingView
-                  rs={(() => {
-                    const benchmarks = buildRsBenchmarks({
-                      spyCandles,
-                      spyLabel: BENCHMARK_SYMBOL,
-                      groupCandles,
-                      groupLabel: industryGroup,
-                    });
-                    return benchmarks
-                      ? {
-                          benchmarks,
-                          smaPeriod: 50,
-                          lookback: interval === "W" ? 52 : 260,
-                        }
-                      : undefined;
-                  })()}
+                  rs={rs}
                   timeframe={{
                     value: interval,
                     onChange: onIntervalChange,
@@ -218,8 +178,8 @@ export function ChartPanel({
                     includeExtendedHours,
                     onIncludeExtendedHoursChange,
                   }}
-                  onLoadMore={handleLoadMore}
-                  isLoadingMore={isLoadingMore || isLoadingMoreSpy}
+                  onLoadMore={loadMore}
+                  isLoadingMore={isLoadingMore}
                 />
               ) : null}
             </div>
@@ -261,9 +221,7 @@ export function ChartPanel({
                   : "Show financial data"
               }
             >
-              <span>
-                {showFinancialFooter ? "Hide" : "Show"} Financials
-              </span>
+              <span>{showFinancialFooter ? "Hide" : "Show"} Financials</span>
               <ChevronDown
                 className={`w-3.5 h-3.5 transition-transform duration-200 ease-out ${
                   showFinancialFooter ? "rotate-180" : ""
