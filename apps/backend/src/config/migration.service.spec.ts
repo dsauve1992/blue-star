@@ -53,11 +53,15 @@ describe('MigrationService', () => {
 
     expect(execEnv).toBeDefined();
     expect(execEnv).not.toHaveProperty('DB_SSL');
+    expect(process.env.DB_SSL).toBe('false');
   });
 
-  it("sets DB_SSL to 'true' for db-migrate when ssl is enabled", async () => {
+  it("sets DB_SSL to 'no-verify' for db-migrate when ssl is enabled", async () => {
+    process.env.DB_SSL = 'true';
+
     await runMigrations('true');
 
-    expect(execEnv?.DB_SSL).toBe('true');
+    expect(execEnv?.DB_SSL).toBe('no-verify');
+    expect(process.env.DB_SSL).toBe('true');
   });
 });
