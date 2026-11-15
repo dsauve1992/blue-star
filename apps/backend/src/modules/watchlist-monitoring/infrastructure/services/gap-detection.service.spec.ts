@@ -4,15 +4,14 @@ import { WatchlistTicker } from '../../../watchlist/watchlist.module';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
 import {
-  MARKET_DATA_SERVICE,
+  GetHistoricalDataUseCase,
   PricePoint,
   type HistoricalData,
-  type MarketDataService,
 } from '../../../market-data/market-data.module';
 
 describe('GapDetectionServiceImpl', () => {
   let service: GapDetectionServiceImpl;
-  let marketDataService: jest.Mocked<MarketDataService>;
+  let getHistoricalData: jest.Mocked<Pick<GetHistoricalDataUseCase, 'execute'>>;
   let dailyBars: PricePoint[];
 
   beforeEach(async () => {
@@ -21,12 +20,12 @@ describe('GapDetectionServiceImpl', () => {
     // test can set the intraday bars via mockResolvedValue and rely on a
     // healthy default set of daily bars (ADR% ~ 4%) unless it overrides them.
     dailyBars = buildDailyBars(24, 4);
-    marketDataService = {
-      getHistoricalData: jest.fn((_symbol, _range, interval) => {
+    getHistoricalData = {
+      execute: jest.fn(({ interval }) => {
         if (interval === '1d') {
-          return Promise.resolve(historicalData(dailyBars));
+          return Promise.resolve({ historicalData: historicalData(dailyBars) });
         }
-        return Promise.resolve(historicalData([]));
+        return Promise.resolve({ historicalData: historicalData([]) });
       }),
     };
 
@@ -34,8 +33,8 @@ describe('GapDetectionServiceImpl', () => {
       providers: [
         GapDetectionServiceImpl,
         {
-          provide: MARKET_DATA_SERVICE,
-          useValue: marketDataService,
+          provide: GetHistoricalDataUseCase,
+          useValue: getHistoricalData,
         },
       ],
     }).compile();
@@ -48,14 +47,12 @@ describe('GapDetectionServiceImpl', () => {
    * routing intact.
    */
   function withIntradayBars(bars: PricePoint[]): void {
-    marketDataService.getHistoricalData.mockImplementation(
-      (_symbol, _range, interval) => {
-        if (interval === '1d') {
-          return Promise.resolve(historicalData(dailyBars));
-        }
-        return Promise.resolve(historicalData(bars));
-      },
-    );
+    getHistoricalData.execute.mockImplementation(({ interval }) => {
+      if (interval === '1d') {
+        return Promise.resolve({ historicalData: historicalData(dailyBars) });
+      }
+      return Promise.resolve({ historicalData: historicalData(bars) });
+    });
   }
 
   function historicalData(pricePoints: PricePoint[]): HistoricalData {
@@ -176,13 +173,12 @@ describe('GapDetectionServiceImpl', () => {
 
     await service.detect(ticker, now);
 
-    expect(marketDataService.getHistoricalData).toHaveBeenNthCalledWith(
-      1,
-      Symbol.of('AAPL'),
+    expect(getHistoricalData.execute).toHaveBeenNthCalledWith(1, {
+      symbol: Symbol.of('AAPL'),
       // 30 days back from Feb 14 = Jan 15, market open at 14:30 UTC (winter)
-      DateRange.of(new Date('2025-01-15T14:30:00.000Z'), now),
-      '5m',
-    );
+      dateRange: DateRange.of(new Date('2025-01-15T14:30:00.000Z'), now),
+      interval: '5m',
+    });
   });
 
   it('should return detected false when only one session of data exists', async () => {
