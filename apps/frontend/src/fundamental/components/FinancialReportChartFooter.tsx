@@ -293,13 +293,13 @@ function GrowthTable({
 }) {
   return (
     <div
-      className="min-w-max"
+      className="min-w-min md:min-w-max"
       style={{ flexGrow: columns.length + 1, flexBasis: 0 }}
     >
       <table className="w-full text-xs tabular-nums">
         <thead>
           <tr className="border-b border-slate-700">
-            <th className="pr-3 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap">
+            <th className="pr-3 py-1 text-left text-[10px] font-semibold text-slate-500 uppercase tracking-wider whitespace-normal md:whitespace-nowrap">
               {caption}
               {headerAction && (
                 <div className="mt-1 normal-case tracking-normal">
@@ -310,7 +310,7 @@ function GrowthTable({
             {columns.map((column) => (
               <th
                 key={column.key}
-                className="px-2 py-1 text-right text-[10px] font-semibold text-slate-400 uppercase whitespace-nowrap"
+                className="px-1 md:px-2 py-1 text-right text-[10px] font-semibold text-slate-400 uppercase whitespace-nowrap"
               >
                 {column.label}
               </th>
@@ -329,7 +329,7 @@ function GrowthTable({
               {row.cells.map((cell, index) => (
                 <td
                   key={columns[index].key}
-                  className="px-2 py-1 text-right whitespace-nowrap"
+                  className="px-1 md:px-2 py-1 text-right whitespace-nowrap"
                 >
                   <span className={`font-semibold ${cell.growthClassName}`}>
                     {cell.unsigned
@@ -337,7 +337,7 @@ function GrowthTable({
                       : formatPercent(cell.growth)}
                   </span>
                   {cell.value && (
-                    <span className="ml-1.5 text-[10px] text-slate-500">
+                    <span className="block md:inline ml-0 md:ml-1.5 text-[10px] text-slate-500">
                       {cell.value}
                     </span>
                   )}
