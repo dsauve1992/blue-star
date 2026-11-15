@@ -1,35 +1,39 @@
-import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
-import { useMarketHealth } from "../hooks/use-market-health";
-import type { MarketHealthStatus } from "../api/market-health.types";
+import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
+import { useMarketHealth } from '../hooks/use-market-health';
+import type { MarketHealthStatus } from '../api/market-health.types';
 
 const barClasses =
-  "sticky top-0 z-50 flex h-[var(--app-top-offset)] items-center gap-1.5 whitespace-nowrap px-3 text-xs font-medium";
+  'sticky top-0 z-50 flex h-[var(--app-top-offset)] items-center gap-1.5 whitespace-nowrap px-3 text-xs font-medium';
 
 const statusColorMap: Record<MarketHealthStatus, string> = {
-  GOOD: "bg-green-700 text-white",
-  WARNING: "bg-amber-500 text-slate-900",
-  BAD: "bg-red-700 text-white",
+  GOOD: 'bg-green-700 text-white',
+  WARNING: 'bg-amber-500 text-slate-900',
+  BAD: 'bg-red-700 text-white',
 };
 
 const statusVerdictMap: Record<MarketHealthStatus, string> = {
-  GOOD: "Good",
-  WARNING: "Warning",
-  BAD: "Bad",
+  GOOD: 'Good',
+  WARNING: 'Warning',
+  BAD: 'Bad',
 };
 
 const statusLabelMap: Record<MarketHealthStatus, string> = {
-  GOOD: "favorable",
-  WARNING: "mixed, caution",
-  BAD: "avoid new positions",
+  GOOD: 'favorable',
+  WARNING: 'mixed, caution',
+  BAD: 'avoid new positions',
 };
+
+function MarketHealthBarPlaceholder() {
+  return (
+    <div className="sticky top-0 z-50 h-[var(--app-top-offset)] bg-slate-200 dark:bg-slate-700 animate-pulse" />
+  );
+}
 
 function AuthenticatedMarketHealthBar() {
   const { data, isLoading } = useMarketHealth();
 
   if (isLoading) {
-    return (
-      <div className="sticky top-0 z-50 h-[var(--app-top-offset)] bg-slate-200 dark:bg-slate-700 animate-pulse" />
-    );
+    return <MarketHealthBarPlaceholder />;
   }
 
   if (!data) {
@@ -41,8 +45,8 @@ function AuthenticatedMarketHealthBar() {
   }
 
   const asOf = new Date(data.computedAt).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
+    month: 'short',
+    day: 'numeric',
   });
   const verdict = `SPY trend: ${statusVerdictMap[data.status]}`;
   const description = statusLabelMap[data.status];
@@ -61,7 +65,11 @@ function AuthenticatedMarketHealthBar() {
 }
 
 export function MarketHealthBar() {
-  const { isAuthenticated } = useKindeAuth();
+  const { isAuthenticated, isLoading } = useKindeAuth();
+
+  if (isLoading) {
+    return <MarketHealthBarPlaceholder />;
+  }
 
   return isAuthenticated ? <AuthenticatedMarketHealthBar /> : null;
 }
