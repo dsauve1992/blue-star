@@ -1,10 +1,10 @@
 import { StartupService } from './startup.service';
-import type { MigrationService } from './migration.service';
-import { NotificationPriority } from '../modules/notification/domain/services/notification.service';
+import type { MigrationService } from './config/migration.service';
+import { NotificationPriority } from './modules/notification/notification.module';
 import type {
   NotificationService,
   SendNotificationRequest,
-} from '../modules/notification/domain/services/notification.service';
+} from './modules/notification/notification.module';
 
 describe('StartupService', () => {
   let runMigrations: jest.Mock<Promise<void>, []>;

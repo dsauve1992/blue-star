@@ -1,5 +1,5 @@
 import { Inject, Injectable, OnModuleInit } from '@nestjs/common';
-import { MigrationService } from './migration.service';
+import { MigrationService } from './config/migration.service';
 import {
   NOTIFICATION_SERVICE,
   NotificationMessage,
@@ -7,7 +7,7 @@ import {
   NotificationTitle,
   NotificationTopic,
   type NotificationService,
-} from '../modules/notification/notification.module';
+} from './modules/notification/notification.module';
 
 const MAX_MESSAGE_LENGTH = 4000;
 
