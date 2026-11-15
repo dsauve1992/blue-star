@@ -1,9 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { Cron } from '@nestjs/schedule';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
-import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
-import { GapContext } from '../../domain/value-objects/gap-context';
 import {
   WatchlistId,
   FindWatchlistTickersUseCase,
@@ -49,7 +46,6 @@ export class WatchlistMonitoringCronService {
     private readonly gapDetectionService: IGapDetectionService,
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationService: NotificationService,
-    private readonly eventEmitter: EventEmitter2,
   ) {}
 
   @Cron('*/5 * * * 1-5', { timeZone: MARKET_TIMEZONE })
@@ -211,24 +207,6 @@ export class WatchlistMonitoringCronService {
             ticker.value,
             marketDate.key,
             MonitoringType.GAP,
-          );
-
-          const context = result.context ?? GapContext.none();
-          this.eventEmitter.emit(
-            GapDetectedEvent.NAME,
-            new GapDetectedEvent(
-              ticker,
-              watchlist.id,
-              watchlist.name,
-              marketDate,
-              detectedAt,
-              result.entryPrice,
-              result.stopPrice,
-              context.industryGroup,
-              context.globalRsRating,
-              context.industryGroupRsRating,
-              context.industryGroupQuadrant,
-            ),
           );
         }
       } catch (error) {

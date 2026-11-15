@@ -4,7 +4,6 @@ import { SectorRotationController } from './api/sector-rotation.controller';
 import { SectorRotationApiMapper } from './api/sector-rotation-api.mapper';
 import { CalculateSectorRotationUseCase } from './use-cases/calculate-sector-rotation.use-case';
 import { GetSectorRotationUseCase } from './use-cases/get-sector-rotation.use-case';
-import { GetIndustryGroupQuadrantUseCase } from './use-cases/get-industry-group-quadrant.use-case';
 import { CompareSectorRotationUseCase } from './use-cases/compare-sector-rotation.use-case';
 import { SectorRotationCalculationServiceImpl } from './infrastructure/services/sector-rotation-calculation.service';
 import { SectorRotationPersistenceServiceImpl } from './infrastructure/services/sector-rotation-persistence.service';
@@ -54,13 +53,9 @@ import { NotificationModule } from '../notification/notification.module';
     SectorRotationApiMapper,
     CalculateSectorRotationUseCase,
     GetSectorRotationUseCase,
-    GetIndustryGroupQuadrantUseCase,
     CompareSectorRotationUseCase,
     SectorRotationCronService,
     RotationUniverseRegistry,
   ],
-  exports: [GetIndustryGroupQuadrantUseCase],
 })
 export class SectorRotationModule {}
-
-export { GetIndustryGroupQuadrantUseCase } from './use-cases/get-industry-group-quadrant.use-case';

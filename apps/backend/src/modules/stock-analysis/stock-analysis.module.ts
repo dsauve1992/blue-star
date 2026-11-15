@@ -11,8 +11,6 @@ import { RunRsRatingsUseCase } from './use-cases/run-rs-ratings.use-case';
 import { RunIndustryGroupRsRatingsUseCase } from './use-cases/run-industry-group-rs-ratings.use-case';
 import { QueryIndustryGroupsUseCase } from './use-cases/query-industry-groups.use-case';
 import { QueryIndustryGroupRatingsUseCase } from './use-cases/query-industry-group-ratings.use-case';
-import { GetLatestRsRatingUseCase } from './use-cases/get-latest-rs-rating.use-case';
-import { GetLatestIndustryGroupRsRatingUseCase } from './use-cases/get-latest-industry-group-rs-rating.use-case';
 import { GetLatestMomentumLeaderSymbolsUseCase } from './use-cases/get-latest-momentum-leader-symbols.use-case';
 import { PythonConsolidationScreenerService } from './infrastructure/services/python-consolidation-screener.service';
 import { ConsolidationAnalysisServiceImpl } from './infrastructure/services/consolidation-analysis.service';
@@ -109,18 +107,10 @@ import {
     QueryIndustryGroupRatingsUseCase,
     QueryMomentumLeadersUseCase,
     RunMomentumLeadersUseCase,
-    GetLatestRsRatingUseCase,
-    GetLatestIndustryGroupRsRatingUseCase,
     GetLatestMomentumLeaderSymbolsUseCase,
   ],
-  exports: [
-    GetLatestRsRatingUseCase,
-    GetLatestIndustryGroupRsRatingUseCase,
-    GetLatestMomentumLeaderSymbolsUseCase,
-  ],
+  exports: [GetLatestMomentumLeaderSymbolsUseCase],
 })
 export class StockAnalysisModule {}
 
-export { GetLatestRsRatingUseCase } from './use-cases/get-latest-rs-rating.use-case';
-export { GetLatestIndustryGroupRsRatingUseCase } from './use-cases/get-latest-industry-group-rs-rating.use-case';
 export { GetLatestMomentumLeaderSymbolsUseCase } from './use-cases/get-latest-momentum-leader-symbols.use-case';

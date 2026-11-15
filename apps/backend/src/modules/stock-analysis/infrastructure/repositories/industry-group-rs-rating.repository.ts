@@ -69,11 +69,6 @@ export class IndustryGroupRsRatingRepositoryImpl
     return result.rows.map((row) => this.toDomain(row));
   }
 
-  async getLatestRating(symbol: string): Promise<IndustryGroupRsRating | null> {
-    const results = await this.getLatestRatings([symbol]);
-    return results.length > 0 ? results[0] : null;
-  }
-
   async listLatestGroups(): Promise<IndustryGroupSummary[]> {
     const result = (await this.databaseService.query(
       `SELECT industry_group, COUNT(*)::int AS member_count, MAX(computed_at) AS computed_at

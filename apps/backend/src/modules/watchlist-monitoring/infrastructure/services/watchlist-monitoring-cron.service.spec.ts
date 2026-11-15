@@ -1,9 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { Logger } from '@nestjs/common';
-import { EventEmitter2 } from '@nestjs/event-emitter';
 import { WatchlistMonitoringCronService } from './watchlist-monitoring-cron.service';
-import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
-import { LocalDate } from '../../domain/value-objects/local-date';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
 import * as marketTime from './market-time.util';
 import { getMarketDateKey } from './market-time.util';
@@ -27,15 +24,13 @@ import {
   MONITORING_ALERT_LOG_REPOSITORY,
 } from '../../constants/tokens';
 
-describe('WatchlistMonitoringCronService — gap event emission', () => {
+describe('WatchlistMonitoringCronService — gap alerts', () => {
   let service: WatchlistMonitoringCronService;
   let monitoringReadRepository: jest.Mocked<WatchlistMonitoringReadRepository>;
   let alertLogRepository: jest.Mocked<MonitoringAlertLogRepository>;
   let findWatchlistTickers: jest.Mocked<FindWatchlistTickersUseCase>;
   let gapDetectionService: jest.Mocked<IGapDetectionService>;
   let notificationService: jest.Mocked<NotificationService>;
-  let eventEmitter: EventEmitter2;
-  let emitSpy: jest.SpyInstance;
 
   const watchlistId = WatchlistId.of('11111111-1111-1111-1111-111111111111');
   const ticker = WatchlistTicker.of('AAPL');
@@ -73,7 +68,6 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WatchlistMonitoringCronService,
-        EventEmitter2,
         {
           provide: WATCHLIST_MONITORING_READ_REPOSITORY,
           useValue: monitoringReadRepository,
@@ -96,62 +90,33 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
     }).compile();
 
     service = module.get(WatchlistMonitoringCronService);
-    eventEmitter = module.get(EventEmitter2);
-    emitSpy = jest.spyOn(eventEmitter, 'emit');
   });
 
   afterEach(() => {
     jest.restoreAllMocks();
   });
 
-  it('emits a GapDetectedEvent on first detection, with the full payload', async () => {
-    let emittedName: string | undefined;
-    let emittedEvent: GapDetectedEvent | undefined;
-    emitSpy.mockImplementation((name: string, payload: GapDetectedEvent) => {
-      emittedName = name;
-      emittedEvent = payload;
-      return true;
-    });
-
-    await service.monitorGaps();
-
-    expect(emitSpy).toHaveBeenCalledTimes(1);
-    expect(emittedName).toBe(GapDetectedEvent.NAME);
-    expect(emittedEvent).toBeInstanceOf(GapDetectedEvent);
-    const gapEvent = emittedEvent as GapDetectedEvent;
-    expect(gapEvent.ticker.value).toBe('AAPL');
-    expect(gapEvent.watchlistId.value).toBe(
-      '11111111-1111-1111-1111-111111111111',
-    );
-    expect(gapEvent.watchlistName).toBe('Momentum');
-    expect(gapEvent.marketDate).toBeInstanceOf(LocalDate);
-    expect(gapEvent.marketDate.key).toBe(getMarketDateKey());
-    expect(gapEvent.detectedAt).toBeInstanceOf(Date);
-    expect(gapEvent.entryPrice).toBe(108);
-    expect(gapEvent.stopPrice).toBe(100);
-  });
-
-  it('does not emit when no gap is detected', async () => {
+  it('does not push when no gap is detected', async () => {
     gapDetectionService.detect.mockResolvedValue({ ticker, detected: false });
 
     await service.monitorGaps();
 
-    expect(emitSpy).not.toHaveBeenCalled();
     expect(notificationService.send).not.toHaveBeenCalled();
   });
 
-  it('does not emit when already alerted today (de-dup gate)', async () => {
+  it('does not push or record when already alerted today (de-dup gate)', async () => {
     alertLogRepository.hasAlerted.mockResolvedValue(true);
 
     await service.monitorGaps();
 
-    expect(emitSpy).not.toHaveBeenCalled();
+    expect(notificationService.send).not.toHaveBeenCalled();
     expect(alertLogRepository.recordAlert).not.toHaveBeenCalled();
   });
 
-  it('records the GAP alert when it emits', async () => {
+  it('pushes the gap alert once and records it', async () => {
     await service.monitorGaps();
 
+    expect(notificationService.send).toHaveBeenCalledTimes(1);
     expect(alertLogRepository.recordAlert).toHaveBeenCalledWith(
       'AAPL',
       getMarketDateKey(),
@@ -159,7 +124,15 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
     );
   });
 
-  it('does not record or emit when sending fails, and continues with the next ticker', async () => {
+  it('does not record the alert when the push fails', async () => {
+    notificationService.send.mockRejectedValue(new Error('ntfy down'));
+
+    await service.monitorGaps();
+
+    expect(alertLogRepository.recordAlert).not.toHaveBeenCalled();
+  });
+
+  it('does not record when sending fails, and continues with the next ticker', async () => {
     const ticker2 = WatchlistTicker.of('MSFT');
     findWatchlistTickers.execute.mockResolvedValue({
       id: watchlistId,
@@ -178,11 +151,6 @@ describe('WatchlistMonitoringCronService — gap event emission', () => {
       'MSFT',
       getMarketDateKey(),
       MonitoringType.GAP,
-    );
-    expect(emitSpy).toHaveBeenCalledTimes(1);
-    expect(emitSpy).toHaveBeenCalledWith(
-      GapDetectedEvent.NAME,
-      expect.objectContaining({ ticker: ticker2 }),
     );
   });
 
@@ -287,7 +255,6 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WatchlistMonitoringCronService,
-        EventEmitter2,
         {
           provide: WATCHLIST_MONITORING_READ_REPOSITORY,
           useValue: monitoringReadRepository,

@@ -92,7 +92,7 @@ describe('IndustryGroupRsRatingRepository Integration', () => {
     });
     await repository.saveRatings([updated]);
 
-    const result = await repository.getLatestRating('NVDA');
+    const [result] = await repository.getLatestRatings(['NVDA']);
     expect(result?.rsRating).toBe(97);
     expect(result?.groupSize).toBe(42);
   });
@@ -117,13 +117,8 @@ describe('IndustryGroupRsRatingRepository Integration', () => {
       }),
     ]);
 
-    const result = await repository.getLatestRating('NVDA');
+    const [result] = await repository.getLatestRatings(['NVDA']);
     expect(result?.rsRating).toBe(95);
-  });
-
-  it('returns null when no rating exists for a symbol', async () => {
-    const result = await repository.getLatestRating('NOTFOUND');
-    expect(result).toBeNull();
   });
 
   describe('listLatestGroups', () => {
