@@ -6,7 +6,7 @@ Strategic DDD rules for the backend. Tactical patterns (value objects, entities,
 
 - Each module in `apps/backend/src/modules` owns its domain model, its persistence and its language. A name means what its module says it means.
 - A module owns its value objects, entities, events, errors and repository ports. Nothing outside the module reaches into `domain/`, `infrastructure/` or its repositories.
-- The module barrel (`index.ts`) is the only public surface. Import another module through its barrel, never through its internals.
+- `<module>.module.ts` is the only public surface. Import another module through that file, never through its internals.
 
 ## Cross-module communication
 
