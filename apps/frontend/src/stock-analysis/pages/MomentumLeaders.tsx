@@ -112,6 +112,7 @@ export default function MomentumLeaders() {
               groups={groups}
               orderedLeaders={orderedLeaders}
               rsBySymbol={rsBySymbol}
+              sortKey={sortKey}
               showIndustryGroup={groupBy !== "industryGroup"}
               selectedTicker={selectedTicker}
               onSelect={setSelectedTicker}
