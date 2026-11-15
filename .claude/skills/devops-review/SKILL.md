@@ -27,7 +27,7 @@ In, files in this repo:
 Treat CI as its own area and compare it against what the repo claims to enforce (`CLAUDE.md` quality gates, `package.json` scripts, `apps/*/package.json`):
 
 - **Coverage gaps:** does CI run every gate locally required (lint, type-check, unit, integration/e2e tests, build)? Does the type-check really check the frontend (`tsc -b` with project references, the root `check-types` can be a no-op)? Are the Python apps (`apps/screener`, `apps/theme_extractor`) tested or linted? Are migrations applied against Postgres in CI? Do the Docker images build?
-- **Correctness:** triggers (`develop` branch that may not exist), job `needs`, services and env matching what tests read, `NODE_VERSION` vs `.tool-versions` and the Dockerfiles.
+- **Correctness:** triggers (`develop` branch that may not exist), job `needs`, services and env matching what tests read, `setup-deps` reading `.tool-versions` vs the Dockerfiles.
 - **Speed and cost:** redundant `node_modules` caching on top of `setup-node` cache, no `concurrency` group cancelling superseded runs, no `timeout-minutes`, jobs repeating the same install, uploaded artifacts nobody consumes.
 - **Safety:** no top-level `permissions:` (least privilege), actions pinned by tag instead of SHA, secrets exposed to PR jobs.
 - **Evidence:** `gh run list` and `gh run view --log-failed` for failure and flake rates, `gh run view` job timings for the slowest step.
