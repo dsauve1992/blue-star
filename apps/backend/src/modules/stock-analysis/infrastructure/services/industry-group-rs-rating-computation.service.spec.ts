@@ -52,7 +52,6 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
     rsRatingRepo = {
       saveRatings: jest.fn(),
       getLatestRatings: jest.fn(),
-      getLatestRating: jest.fn(),
       getAllForLatestDate: jest.fn(),
     } as jest.Mocked<RsRatingRepository>;
 
@@ -63,7 +62,6 @@ describe('IndustryGroupRsRatingComputationServiceImpl', () => {
     industryGroupRepo = {
       saveRatings: jest.fn(),
       getLatestRatings: jest.fn(),
-      getLatestRating: jest.fn(),
       listLatestGroups: jest.fn(),
       getLatestRatingsByGroup: jest.fn(),
     } as jest.Mocked<IndustryGroupRsRatingRepository>;

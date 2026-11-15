@@ -65,7 +65,6 @@ describe('SectorRotationPersistenceServiceImpl', () => {
       findBySectorAndDateRange: jest.fn(),
       findLatestDate: jest.fn(),
       findLatestDateBySector: jest.fn(),
-      findLatestBySector: jest.fn(),
       findExistingDates: jest.fn(),
     };
     writeRepo = {

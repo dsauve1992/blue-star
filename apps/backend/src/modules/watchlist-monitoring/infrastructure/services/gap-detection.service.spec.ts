@@ -9,14 +9,10 @@ import {
   type HistoricalData,
   type MarketDataService,
 } from '../../../market-data/market-data.module';
-import { GAP_CONTEXT_SERVICE } from '../../constants/tokens';
-import type { GapContextService } from '../../domain/services/gap-context.service';
-import { GapContext } from '../../domain/value-objects/gap-context';
 
 describe('GapDetectionServiceImpl', () => {
   let service: GapDetectionServiceImpl;
   let marketDataService: jest.Mocked<MarketDataService>;
-  let gapContextService: jest.Mocked<GapContextService>;
   let dailyBars: PricePoint[];
 
   beforeEach(async () => {
@@ -33,9 +29,6 @@ describe('GapDetectionServiceImpl', () => {
         return Promise.resolve(historicalData([]));
       }),
     };
-    gapContextService = {
-      enrich: jest.fn().mockResolvedValue(GapContext.none()),
-    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -43,10 +36,6 @@ describe('GapDetectionServiceImpl', () => {
         {
           provide: MARKET_DATA_SERVICE,
           useValue: marketDataService,
-        },
-        {
-          provide: GAP_CONTEXT_SERVICE,
-          useValue: gapContextService,
         },
       ],
     }).compile();
@@ -411,40 +400,6 @@ describe('GapDetectionServiceImpl', () => {
 
       expect(result.detected).toBe(false);
     });
-  });
-
-  it('enriches the result with gap context on a positive detection', async () => {
-    const ticker = WatchlistTicker.of('AAPL');
-    withIntradayBars(buildScenario());
-    gapContextService.enrich.mockResolvedValue(
-      GapContext.of({
-        industryGroup: 'Software & Services',
-        globalRsRating: 95,
-        industryGroupRsRating: 80,
-        industryGroupQuadrant: 'Leading',
-      }),
-    );
-
-    const result = await service.detect(ticker, NOW_IN_CURRENT_SESSION);
-
-    expect(gapContextService.enrich).toHaveBeenCalledWith(ticker);
-    expect(result.context?.industryGroup).toBe('Software & Services');
-    expect(result.context?.globalRsRating).toBe(95);
-    expect(result.context?.industryGroupRsRating).toBe(80);
-    expect(result.context?.industryGroupQuadrant).toBe('Leading');
-  });
-
-  it('does not enrich context when no gap is detected', async () => {
-    const ticker = WatchlistTicker.of('AAPL');
-    // Red open bar -> no signal.
-    const openBar: Ohlc = { open: 100.6, high: 100.7, low: 100, close: 100.5 };
-    withIntradayBars(buildScenario(PRIOR_CLOSE_BAR, openBar));
-
-    const result = await service.detect(ticker, NOW_IN_CURRENT_SESSION);
-
-    expect(result.detected).toBe(false);
-    expect(result.context).toBeUndefined();
-    expect(gapContextService.enrich).not.toHaveBeenCalled();
   });
 
   it("surfaces the prior session's 15:55 close-bar low as the stop price", async () => {

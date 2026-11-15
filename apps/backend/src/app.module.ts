@@ -17,7 +17,6 @@ import { MarketBreadthModule } from './modules/market-breadth/market-breadth.mod
 import { StockClassificationModule } from './modules/stock-classification/stock-classification.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { ScheduleModule } from '@nestjs/schedule';
-import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DatabaseModule } from './config/database.module';
 import { DomainErrorFilter } from './common/filters/domain-error.filter';
 import { StartupService } from './startup.service';
@@ -29,7 +28,6 @@ import { StartupService } from './startup.service';
       envFilePath: '.env',
     }),
     ...(process.env.CRON_ENABLED === 'false' ? [] : [ScheduleModule.forRoot()]),
-    EventEmitterModule.forRoot(),
     DatabaseModule,
     MarketDataModule,
     StockAnalysisModule,

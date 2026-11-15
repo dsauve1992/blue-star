@@ -11,8 +11,6 @@ import {
   GapDetectionResult,
   IGapDetectionService,
 } from '../../domain/services/i-gap-detection.service';
-import type { GapContextService } from '../../domain/services/gap-context.service';
-import { GAP_CONTEXT_SERVICE } from '../../constants/tokens';
 import {
   getMarketDateKey,
   getMarketOpenDateUtc,
@@ -37,8 +35,6 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
   constructor(
     @Inject(MARKET_DATA_SERVICE)
     private readonly marketDataService: MarketDataService,
-    @Inject(GAP_CONTEXT_SERVICE)
-    private readonly gapContextService: GapContextService,
   ) {}
 
   async detect(
@@ -97,7 +93,6 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
       detected: true,
       entryPrice: currentFirstBar.close,
       stopPrice: priorLastBar.low,
-      context: await this.gapContextService.enrich(ticker),
     };
   }
 

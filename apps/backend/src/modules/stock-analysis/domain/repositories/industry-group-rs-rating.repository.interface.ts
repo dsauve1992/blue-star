@@ -9,7 +9,6 @@ export interface IndustryGroupSummary {
 export interface IndustryGroupRsRatingRepository {
   saveRatings(ratings: IndustryGroupRsRating[]): Promise<void>;
   getLatestRatings(symbols: string[]): Promise<IndustryGroupRsRating[]>;
-  getLatestRating(symbol: string): Promise<IndustryGroupRsRating | null>;
   listLatestGroups(): Promise<IndustryGroupSummary[]>;
   getLatestRatingsByGroup(
     industryGroup: string,
