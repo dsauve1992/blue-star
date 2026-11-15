@@ -44,17 +44,6 @@ import {
   RS_RATING_SCREENER_SERVICE,
 } from './constants/tokens';
 
-export {
-  CONSOLIDATION_SCREENER_SERVICE,
-  CONSOLIDATION_RESULT_REPOSITORY,
-  CONSOLIDATION_ANALYSIS_SERVICE,
-  RS_RATING_REPOSITORY,
-  RS_RATING_COMPUTATION_SERVICE,
-  RS_RATING_SCREENER_SERVICE,
-  INDUSTRY_GROUP_RS_RATING_REPOSITORY,
-  INDUSTRY_GROUP_RS_RATING_COMPUTATION_SERVICE,
-};
-
 @Module({
   imports: [
     DatabaseModule,
@@ -125,7 +114,6 @@ export {
     GetLatestMomentumLeaderSymbolsUseCase,
   ],
   exports: [
-    CONSOLIDATION_SCREENER_SERVICE,
     GetLatestRsRatingUseCase,
     GetLatestIndustryGroupRsRatingUseCase,
     GetLatestMomentumLeaderSymbolsUseCase,

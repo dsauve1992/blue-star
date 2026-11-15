@@ -12,8 +12,6 @@ import {
   THEME_SERVICE,
 } from './constants/tokens';
 
-export { THEME_EXTRACTOR_SERVICE, THEME_SERVICE };
-
 @Module({
   imports: [DatabaseModule, NotificationModule],
   providers: [
