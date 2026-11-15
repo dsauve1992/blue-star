@@ -408,7 +408,7 @@ describe('BreakoutDetectionServiceImpl', () => {
     expect(result.detected).toBe(false);
   });
 
-  it('repro: judges yesterday as today at 9:30 before any bar of today exists', async () => {
+  it('should return detected false when no bar of the current market day exists yet', async () => {
     const bars = buildBreakoutScenario({ currentVolume: 250 });
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
     const nextMorning = new Date(Date.UTC(2025, 1, 12, 14, 30));
@@ -421,7 +421,7 @@ describe('BreakoutDetectionServiceImpl', () => {
     expect(result.detected).toBe(false);
   });
 
-  it('repro: on a market holiday it re-judges the last session', async () => {
+  it('should return detected false on a market holiday', async () => {
     const bars = buildBreakoutScenario({ currentVolume: 250 });
     marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
     const presidentsDay = new Date(Date.UTC(2025, 1, 17, 17, 0));
