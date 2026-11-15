@@ -25,14 +25,6 @@ import { MarketDataModule } from '../market-data/market-data.module';
 import { CACHED_MARKET_DATA_SERVICE } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
 
-export {
-  SECTOR_ROTATION_CALCULATION_SERVICE,
-  SECTOR_ROTATION_DATA_READ_REPOSITORY,
-  SECTOR_ROTATION_MARKET_DATA_SERVICE,
-  SECTOR_ROTATION_DATA_WRITE_REPOSITORY,
-  SECTOR_ROTATION_PERSISTENCE_SERVICE,
-};
-
 @Module({
   imports: [DatabaseModule, MarketDataModule, NotificationModule],
   controllers: [SectorRotationController],
