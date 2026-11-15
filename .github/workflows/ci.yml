@@ -120,16 +120,6 @@ jobs:
       - name: Build applications
         run: npm run build
 
-      - name: Upload build artifacts
-        uses: actions/upload-artifact@v7
-        with:
-          name: build-artifacts-${{ github.sha }}
-          path: |
-            apps/backend/dist
-            apps/frontend/dist
-          retention-days: 7
-          compression-level: 6
-
   frontend-image-build:
     name: Frontend Image Build
     runs-on: ubuntu-latest
