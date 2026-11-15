@@ -239,7 +239,13 @@ function WatchlistCard({
   onRename,
   onDropTicker,
 }: WatchlistCardProps) {
-  const { data: monitoringData } = useMonitoringStatus(watchlist.id);
+  const {
+    data: monitoringData,
+    isPending: statusPending,
+    isError: statusFailed,
+    isFetching: statusFetching,
+    refetch,
+  } = useMonitoringStatus(watchlist.id);
   const activateMonitoring = useActivateMonitoring();
   const deactivateMonitoring = useDeactivateMonitoring();
 
@@ -254,6 +260,11 @@ function WatchlistCard({
     e.stopPropagation();
     activateMonitoring.reset();
     deactivateMonitoring.reset();
+    if (statusFailed) {
+      void refetch();
+      return;
+    }
+    if (statusPending) return;
     if (coverage === "all") {
       deactivateMonitoring.mutate({ watchlistId: watchlist.id });
     } else {
@@ -265,6 +276,8 @@ function WatchlistCard({
     activateMonitoring.isPending || deactivateMonitoring.isPending;
   const toggleFailed =
     activateMonitoring.isError || deactivateMonitoring.isError;
+  const isPillDisabled =
+    isToggling || statusPending || (statusFailed && statusFetching);
 
   const [isEditing, setIsEditing] = useState(false);
   const [draftName, setDraftName] = useState(watchlist.name);
@@ -421,43 +434,59 @@ function WatchlistCard({
             </p>
             <button
               onClick={handleToggleMonitoring}
-              disabled={isToggling}
+              disabled={isPillDisabled}
               aria-pressed={
-                coverage === "partial" ? "mixed" : coverage === "all"
+                statusPending || statusFailed
+                  ? undefined
+                  : coverage === "partial"
+                    ? "mixed"
+                    : coverage === "all"
               }
               title={
-                toggleFailed
-                  ? "Couldn't update alerts. Click to retry"
-                  : coverage === "all"
-                    ? "Breakout and gap alerts are on. Click to turn off"
-                    : coverage === "partial"
-                      ? `Monitoring partially enabled (${activeTypes}). Click to enable all`
-                      : "Breakout and gap alerts are off. Click to turn on"
+                statusFailed
+                  ? "Couldn't load alert status. Click to retry"
+                  : statusPending
+                    ? "Loading alert status"
+                    : toggleFailed
+                      ? "Couldn't update alerts. Click to retry"
+                      : coverage === "all"
+                        ? "Breakout and gap alerts are on. Click to turn off"
+                        : coverage === "partial"
+                          ? `Monitoring partially enabled (${activeTypes}). Click to enable all`
+                          : "Breakout and gap alerts are off. Click to turn on"
               }
               className={`
                 flex items-center gap-0.5 px-1 py-px rounded-full border text-[10px] font-medium leading-tight transition-all flex-shrink-0
                 ${
-                  toggleFailed
-                    ? "border-red-500/40 bg-red-500/15 text-red-400 hover:bg-red-500/25"
-                    : coverage === "all"
-                      ? "border-green-500/40 bg-green-500/15 text-green-400 hover:bg-green-500/25"
-                      : coverage === "partial"
-                        ? "border-amber-500/40 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
-                        : "border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                  statusFailed
+                    ? "border-red-500/40 text-red-400 hover:bg-red-500/10"
+                    : statusPending
+                      ? "border-slate-700 text-slate-500"
+                      : toggleFailed
+                        ? "border-red-500/40 bg-red-500/15 text-red-400 hover:bg-red-500/25"
+                        : coverage === "all"
+                          ? "border-green-500/40 bg-green-500/15 text-green-400 hover:bg-green-500/25"
+                          : coverage === "partial"
+                            ? "border-amber-500/40 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
+                            : "border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200"
                 }
-                ${isToggling ? "opacity-50 cursor-not-allowed" : ""}
+                ${isPillDisabled ? "opacity-50 cursor-not-allowed" : ""}
               `}
             >
               <Radio
                 className={`w-2.5 h-2.5 ${coverage === "all" ? "animate-pulse" : ""}`}
               />
-              {toggleFailed
-                ? "Retry alerts"
-                : coverage === "all"
-                  ? "Alerts on"
-                  : coverage === "partial"
-                    ? "Alerts partial"
-                    : "Alerts off"}
+              {statusFailed
+                ? "Alerts ?"
+                : statusPending
+                  ? "Alerts …"
+                  : toggleFailed
+                    ? "Retry alerts"
+                    : coverage === "all"
+                      ? "Alerts on"
+                      : coverage === "partial"
+                        ? "Alerts partial"
+                        : "Alerts off"}
             </button>
           </div>
         </div>
