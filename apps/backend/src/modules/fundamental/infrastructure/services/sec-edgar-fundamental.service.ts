@@ -43,6 +43,18 @@ interface PeriodValue {
   label: { fiscalYear: number; fiscalPeriod: string } | null;
 }
 
+interface StockSplit {
+  factor: number;
+  boundary: string;
+}
+
+interface SplitObservation {
+  period: string;
+  factor: number;
+  from: string;
+  to: string;
+}
+
 interface Quarter {
   fiscalYear: number;
   quarter: number;
@@ -89,6 +101,9 @@ const QUARTER_MAX_DAYS = 100;
 const YEAR_MIN_DAYS = 350;
 const YEAR_MAX_DAYS = 380;
 const CONSECUTIVE_YEAR_MAX_GAP_DAYS = 7;
+const SPLIT_MIN_EPS = 0.1;
+const SPLIT_RATIO_TOLERANCE = 0.02;
+const SPLIT_MIN_PERIODS = 2;
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 const SEC_TIMEOUT_MS = 15_000;
 
@@ -122,7 +137,7 @@ export class SecEdgarFundamentalService implements FundamentalService {
     if (!concepts) return [];
 
     const revenue = this.periodValues(concepts, REVENUE_CONCEPTS, 'USD');
-    const eps = this.periodValues(concepts, EPS_CONCEPTS, 'USD/shares');
+    const eps = this.periodValues(concepts, EPS_CONCEPTS, 'USD/shares', true);
 
     return this.toQuarters(revenue, eps)
       .slice(0, limit)
@@ -330,16 +345,98 @@ export class SecEdgarFundamentalService implements FundamentalService {
     concepts: Record<string, SecConcept>,
     conceptPriority: string[],
     unit: string,
+    adjustForSplits = false,
   ): Map<string, PeriodValue> {
+    const factsByConcept = conceptPriority.map(
+      (concept) => concepts[concept]?.units[unit] ?? [],
+    );
+    const splits = adjustForSplits ? this.detectSplits(factsByConcept) : [];
     const merged = new Map<string, PeriodValue>();
-    for (const concept of conceptPriority) {
+    for (const facts of factsByConcept) {
       for (const [key, value] of this.conceptPeriodValues(
-        concepts[concept]?.units[unit] ?? [],
+        this.splitAdjusted(facts, splits),
       )) {
         if (!merged.has(key)) merged.set(key, value);
       }
     }
     return merged;
+  }
+
+  private detectSplits(factsByConcept: SecFact[][]): StockSplit[] {
+    let observations = factsByConcept
+      .flatMap((facts) => this.splitObservations(facts))
+      .sort((a, b) => a.to.localeCompare(b.to));
+
+    const splits: StockSplit[] = [];
+    while (observations.length > 0) {
+      const boundary = observations[0].to;
+      const spanning = observations.filter(
+        ({ from, to }) => from < boundary && boundary <= to,
+      );
+      const periodsByFactor = new Map<number, Set<string>>();
+      for (const { factor, period } of spanning) {
+        periodsByFactor.set(
+          factor,
+          (periodsByFactor.get(factor) ?? new Set()).add(period),
+        );
+      }
+      const [factor, periods] = [...periodsByFactor].reduce((best, entry) =>
+        entry[1].size > best[1].size ? entry : best,
+      );
+      const isSplit =
+        periods.size >= SPLIT_MIN_PERIODS &&
+        spanning.some((o) => o.factor === factor && o.to === boundary);
+      if (isSplit) splits.push({ factor, boundary });
+      observations = observations
+        .slice(1)
+        .filter((observation) => !isSplit || !spanning.includes(observation));
+    }
+    return splits;
+  }
+
+  private splitObservations(facts: SecFact[]): SplitObservation[] {
+    const factsByPeriod = new Map<string, SecFact[]>();
+    for (const fact of facts) {
+      if (!fact.start || !PERIODIC_FORMS.has(fact.form)) continue;
+      const period = `${fact.start}|${fact.end}`;
+      factsByPeriod.set(period, [...(factsByPeriod.get(period) ?? []), fact]);
+    }
+
+    return [...factsByPeriod].flatMap(([period, periodFacts]) =>
+      periodFacts
+        .sort((a, b) => a.filed.localeCompare(b.filed))
+        .slice(1)
+        .map((newer, index) => ({ older: periodFacts[index], newer }))
+        .flatMap(({ older, newer }) => {
+          const factor =
+            older.filed < newer.filed
+              ? this.splitFactor(older.val, newer.val)
+              : null;
+          return factor == null
+            ? []
+            : [{ period, factor, from: older.filed, to: newer.filed }];
+        }),
+    );
+  }
+
+  private splitFactor(older: number, newer: number): number | null {
+    if (older * newer <= 0) return null;
+    if (Math.max(Math.abs(older), Math.abs(newer)) < SPLIT_MIN_EPS) return null;
+    const ratio = older / newer;
+    const multiple = Math.max(ratio, 1 / ratio);
+    const n = Math.round(multiple);
+    const isWholeMultiple = Math.abs(multiple / n - 1) <= SPLIT_RATIO_TOLERANCE;
+    if (n < 2 || !isWholeMultiple) return null;
+    return ratio >= 1 ? n : 1 / n;
+  }
+
+  private splitAdjusted(facts: SecFact[], splits: StockSplit[]): SecFact[] {
+    return facts.map((fact) => ({
+      ...fact,
+      val: splits
+        .filter(({ boundary }) => boundary > fact.filed)
+        .reduce((val, { factor }) => val / factor, fact.val),
+    }));
   }
 
   private instantValues(
