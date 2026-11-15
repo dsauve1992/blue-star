@@ -450,3 +450,73 @@ describe('SectorRotationController authentication', () => {
       .expect(200);
   });
 });
+
+describe('SectorRotationController sectors query parsing', () => {
+  let app: INestApplication;
+  const calculateExecute = jest.fn();
+  const compareExecute = jest.fn();
+
+  beforeEach(async () => {
+    calculateExecute.mockReset();
+    compareExecute.mockReset();
+    const moduleRef = await Test.createTestingModule({
+      controllers: [SectorRotationController],
+      providers: [
+        SectorRotationApiMapper,
+        RotationUniverseRegistry,
+        {
+          provide: CalculateSectorRotationUseCase,
+          useValue: { execute: calculateExecute },
+        },
+        { provide: GetSectorRotationUseCase, useValue: { execute: jest.fn() } },
+        {
+          provide: CompareSectorRotationUseCase,
+          useValue: { execute: compareExecute },
+        },
+      ],
+    }).compile();
+    app = moduleRef.createNestApplication();
+    await app.init();
+  });
+
+  afterEach(async () => {
+    await app.close();
+  });
+
+  it('returns 400 for a repeated sectors param on GET /calculate and does not run the use case', async () => {
+    await request(app.getHttpServer() as Server)
+      .get('/sector-rotation/calculate?sectors=XLK&sectors=XLF')
+      .expect(400);
+
+    expect(calculateExecute).not.toHaveBeenCalled();
+  });
+
+  it('returns 400 for a repeated sectors param on GET /compare and does not run the use case', async () => {
+    await request(app.getHttpServer() as Server)
+      .get(
+        '/sector-rotation/compare?sectors=XLK&sectors=XLF&startDate=2024-01-01&endDate=2024-02-01',
+      )
+      .expect(400);
+
+    expect(compareExecute).not.toHaveBeenCalled();
+  });
+
+  it('serves a comma-separated sectors param', async () => {
+    calculateExecute.mockResolvedValue({
+      result: SectorRotationResult.of(
+        new Date('2024-01-01T00:00:00.000Z'),
+        new Date('2024-02-01T00:00:00.000Z'),
+        [makePoint('2024-02-01T00:00:00.000Z', 'XLK')],
+        ['XLK'],
+      ),
+    });
+
+    await request(app.getHttpServer() as Server)
+      .get(
+        '/sector-rotation/calculate?sectors=XLK,XLF&startDate=2024-01-01&endDate=2024-02-01',
+      )
+      .expect(200);
+
+    expect(calculateExecute).toHaveBeenCalledTimes(1);
+  });
+});
