@@ -125,4 +125,48 @@ describe('GetOrFetchStockClassificationUseCase', () => {
     expect(result.industryGroup).toBe('Materials');
     expect(repository.save).toHaveBeenCalledWith(result);
   });
+
+  it('stores a null industryGroup for an unmapped non-empty industryKey and saves it', async () => {
+    repository.findByTicker.mockResolvedValue(null);
+    classifierReturns({ industryKey: 'not-a-real-industry' });
+
+    const result = await useCase.execute('AAPL');
+
+    expect(result.industryKey).toBe('not-a-real-industry');
+    expect(result.industryGroup).toBeNull();
+    expect(repository.save).toHaveBeenCalledWith(result);
+  });
+
+  describe('executeMany', () => {
+    beforeEach(() => {
+      repository.findByTicker.mockResolvedValue(null);
+    });
+
+    it('returns the other tickers when one ticker fails to classify', async () => {
+      classifier.classify.mockImplementation((ticker) =>
+        ticker === 'BAD'
+          ? Promise.reject(new Error('yfinance down'))
+          : Promise.resolve({
+              ticker,
+              sector: '',
+              industry: '',
+              industryKey: '',
+            }),
+      );
+
+      const result = await useCase.executeMany(['BAD', 'GOOD']);
+
+      expect([...result.keys()]).toEqual(['GOOD']);
+      expect(repository.save).toHaveBeenCalledTimes(1);
+    });
+
+    it('keys results by the upper-cased ticker', async () => {
+      classifierReturns({});
+
+      const result = await useCase.executeMany(['aapl']);
+
+      expect(result.has('AAPL')).toBe(true);
+      expect(result.has('aapl')).toBe(false);
+    });
+  });
 });
