@@ -4,27 +4,24 @@ import { WatchlistTicker } from '../../../watchlist/watchlist.module';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
 import {
-  MARKET_DATA_SERVICE,
+  GetHistoricalDataUseCase,
   PricePoint,
   type HistoricalData,
-  type MarketDataService,
 } from '../../../market-data/market-data.module';
 
 describe('BreakoutDetectionServiceImpl', () => {
   let service: BreakoutDetectionServiceImpl;
-  let marketDataService: jest.Mocked<MarketDataService>;
+  let getHistoricalData: jest.Mocked<Pick<GetHistoricalDataUseCase, 'execute'>>;
 
   beforeEach(async () => {
-    marketDataService = {
-      getHistoricalData: jest.fn(),
-    };
+    getHistoricalData = { execute: jest.fn() };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         BreakoutDetectionServiceImpl,
         {
-          provide: MARKET_DATA_SERVICE,
-          useValue: marketDataService,
+          provide: GetHistoricalDataUseCase,
+          useValue: getHistoricalData,
         },
       ],
     }).compile();
@@ -108,7 +105,9 @@ describe('BreakoutDetectionServiceImpl', () => {
 
   it('should return detected false when price points are empty', async () => {
     const ticker = WatchlistTicker.of('AAPL');
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData([]));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData([]),
+    });
 
     const result = await service.detect(ticker);
 
@@ -119,17 +118,18 @@ describe('BreakoutDetectionServiceImpl', () => {
   it('should fetch intraday market data with a 30-day lookback from the given now', async () => {
     const ticker = WatchlistTicker.of('AAPL');
     const now = new Date('2025-02-14T16:00:00.000Z');
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData([]));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData([]),
+    });
 
     await service.detect(ticker, now);
 
-    expect(marketDataService.getHistoricalData).toHaveBeenNthCalledWith(
-      1,
-      Symbol.of('AAPL'),
+    expect(getHistoricalData.execute).toHaveBeenNthCalledWith(1, {
+      symbol: Symbol.of('AAPL'),
       // 30 days back from Feb 14 = Jan 15, market open at 14:30 UTC (winter)
-      DateRange.of(new Date('2025-01-15T14:30:00.000Z'), now),
-      '5m',
-    );
+      dateRange: DateRange.of(new Date('2025-01-15T14:30:00.000Z'), now),
+      interval: '5m',
+    });
   });
 
   it('should filter out bars outside market hours', async () => {
@@ -161,9 +161,9 @@ describe('BreakoutDetectionServiceImpl', () => {
       100,
       1000,
     );
-    marketDataService.getHistoricalData.mockResolvedValue(
-      historicalData([preMarketBar, marketBar, afterHoursBar]),
-    );
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData([preMarketBar, marketBar, afterHoursBar]),
+    });
 
     const result = await service.detect(
       ticker,
@@ -177,7 +177,9 @@ describe('BreakoutDetectionServiceImpl', () => {
     const ticker = WatchlistTicker.of('AAPL');
     // 8 bars — one short of the EMA(9) minimum warm-up requirement
     const bars = buildSessionBars(14, new Array(8).fill(100), 1000);
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -197,7 +199,9 @@ describe('BreakoutDetectionServiceImpl', () => {
       currentCloses: [100, 100, 100, 100, 100, 100, 100, 100, 100, 105],
       currentVolume: 250,
     });
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -212,7 +216,9 @@ describe('BreakoutDetectionServiceImpl', () => {
     // All prior sessions flat at 100 vol/bar → weighted baseline = 1000.
     // Current cumulative: 10 × 99 = 990 < 1000 → no surge.
     const bars = buildBreakoutScenario({ currentVolume: 99 });
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -227,7 +233,9 @@ describe('BreakoutDetectionServiceImpl', () => {
     // Only 2 prior down-day sessions — below the minimum of 3 for any baseline.
     // Fallback also has only 2 sessions → still below minimum → false.
     const bars = buildBreakoutScenario({ priorSessionCount: 2 });
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -246,7 +254,9 @@ describe('BreakoutDetectionServiceImpl', () => {
     //   Prior session high: 100 → 105 > 100 ✓
     //   Volume: 2500 >= 1000 (weighted baseline) ✓
     const bars = buildBreakoutScenario({ currentVolume: 250 });
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -284,7 +294,9 @@ describe('BreakoutDetectionServiceImpl', () => {
         210,
       ),
     );
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -323,7 +335,9 @@ describe('BreakoutDetectionServiceImpl', () => {
         90,
       ),
     );
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -361,7 +375,9 @@ describe('BreakoutDetectionServiceImpl', () => {
         250,
       ),
     );
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -398,7 +414,9 @@ describe('BreakoutDetectionServiceImpl', () => {
         90,
       ),
     );
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
 
     const result = await service.detect(
       ticker,
@@ -410,7 +428,9 @@ describe('BreakoutDetectionServiceImpl', () => {
 
   it('should return detected false when no bar of the current market day exists yet', async () => {
     const bars = buildBreakoutScenario({ currentVolume: 250 });
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
     const nextMorning = new Date(Date.UTC(2025, 1, 12, 14, 30));
 
     const result = await service.detect(
@@ -423,7 +443,9 @@ describe('BreakoutDetectionServiceImpl', () => {
 
   it('should return detected false on a market holiday', async () => {
     const bars = buildBreakoutScenario({ currentVolume: 250 });
-    marketDataService.getHistoricalData.mockResolvedValue(historicalData(bars));
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: historicalData(bars),
+    });
     const presidentsDay = new Date(Date.UTC(2025, 1, 17, 17, 0));
 
     const result = await service.detect(

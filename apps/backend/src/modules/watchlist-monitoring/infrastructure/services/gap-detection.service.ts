@@ -1,11 +1,10 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { WatchlistTicker } from '../../../watchlist/watchlist.module';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
 import {
-  MARKET_DATA_SERVICE,
+  GetHistoricalDataUseCase,
   PricePoint,
-  type MarketDataService,
 } from '../../../market-data/market-data.module';
 import {
   GapDetectionResult,
@@ -32,10 +31,7 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
   // Enough calendar days to guarantee ADR_PERIOD closed trading sessions.
   private static readonly DAILY_LOOKBACK_CALENDAR_DAYS = 45;
 
-  constructor(
-    @Inject(MARKET_DATA_SERVICE)
-    private readonly marketDataService: MarketDataService,
-  ) {}
+  constructor(private readonly getHistoricalData: GetHistoricalDataUseCase) {}
 
   async detect(
     ticker: WatchlistTicker,
@@ -200,11 +196,12 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
     );
     const marketOpen = getMarketOpenDateUtc(lookbackStart);
     const dateRange = DateRange.of(marketOpen, now);
-    return this.marketDataService.getHistoricalData(
-      Symbol.of(ticker.symbolOnly),
+    const { historicalData } = await this.getHistoricalData.execute({
+      symbol: Symbol.of(ticker.symbolOnly),
       dateRange,
-      '5m',
-    );
+      interval: '5m',
+    });
+    return historicalData;
   }
 
   private async fetchDailyBars(
@@ -220,11 +217,11 @@ export class GapDetectionServiceImpl implements IGapDetectionService {
           1000,
     );
     const dateRange = DateRange.of(lookbackStart, now);
-    const historicalData = await this.marketDataService.getHistoricalData(
-      Symbol.of(ticker.symbolOnly),
+    const { historicalData } = await this.getHistoricalData.execute({
+      symbol: Symbol.of(ticker.symbolOnly),
       dateRange,
-      '1d',
-    );
+      interval: '1d',
+    });
     return [...historicalData.pricePoints].sort(
       (a, b) => a.date.getTime() - b.date.getTime(),
     );
