@@ -222,16 +222,19 @@ describe('MarketDataController', () => {
     });
 
     it.each([
-      ['chart', chartQuery],
-      ['intraday', intradayQuery],
-    ])('returns 400 for a repeated %s parameter', async (name, path) => {
-      const response = await request(server())
-        .get(`${path}&includeExtendedHours=true&includeExtendedHours=false`)
-        .expect(400);
+      ['chart', chartQuery, chart],
+      ['intraday', intradayQuery, intraday],
+    ])(
+      'returns 400 for a repeated %s parameter',
+      async (_name, path, handler) => {
+        const response = await request(server())
+          .get(`${path}&includeExtendedHours=true&includeExtendedHours=false`)
+          .expect(400);
 
-      expect(messageOf(response)).toBe(extendedHoursMessage);
-      expect(name === 'chart' ? chart : intraday).not.toHaveBeenCalled();
-    });
+        expect(messageOf(response)).toBe(extendedHoursMessage);
+        expect(handler).not.toHaveBeenCalled();
+      },
+    );
 
     it('returns 400 for an unrecognised value', async () => {
       const response = await request(server())
@@ -266,9 +269,15 @@ describe('MarketDataController', () => {
 
     it('treats an empty value as true on both endpoints', async () => {
       await request(server())
+        .get(`${chartQuery}&includeExtendedHours=`)
+        .expect(200);
+      await request(server())
         .get(`${intradayQuery}&includeExtendedHours=`)
         .expect(200);
 
+      expect(chart).toHaveBeenCalledWith(
+        expect.objectContaining({ includeExtendedHours: true }),
+      );
       expect(intraday).toHaveBeenCalledWith(
         expect.objectContaining({ includeExtendedHours: true }),
       );
