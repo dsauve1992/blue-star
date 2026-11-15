@@ -19,7 +19,11 @@ export class MigrationService {
     process.env.DB_USERNAME = config.username;
     process.env.DB_PASSWORD = config.password;
     process.env.DB_DATABASE = config.database;
-    process.env.DB_SSL = config.ssl.toString();
+    if (config.ssl) {
+      process.env.DB_SSL = 'true';
+    } else {
+      delete process.env.DB_SSL;
+    }
 
     try {
       console.log(
