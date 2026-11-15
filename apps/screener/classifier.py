@@ -1,3 +1,4 @@
+import tradingview_scraper
 #!/usr/bin/env python3
 """
 Stock Classifier - Fetches GICS-relevant classification fields from yfinance.
