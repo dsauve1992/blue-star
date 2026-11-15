@@ -1,62 +1,75 @@
-import { useState } from 'react';
+import { useKindeAuth } from '@kinde-oss/kinde-auth-react';
 import { useMarketHealth } from '../hooks/use-market-health';
 import type { MarketHealthStatus } from '../api/market-health.types';
 
+const barClasses =
+  'sticky top-0 z-50 flex h-[var(--app-top-offset)] items-center gap-1.5 whitespace-nowrap px-3 text-xs font-medium';
+
 const statusColorMap: Record<MarketHealthStatus, string> = {
-  GOOD: 'bg-green-500',
-  WARNING: 'bg-amber-500',
-  BAD: 'bg-red-500',
+  GOOD: 'bg-green-700 text-white',
+  WARNING: 'bg-amber-500 text-slate-900',
+  BAD: 'bg-red-700 text-white',
+};
+
+const statusVerdictMap: Record<MarketHealthStatus, string> = {
+  GOOD: 'Good',
+  WARNING: 'Warning',
+  BAD: 'Bad',
 };
 
 const statusLabelMap: Record<MarketHealthStatus, string> = {
-  GOOD: 'Market conditions favorable for trading',
-  WARNING: 'Market conditions mixed — proceed with caution',
-  BAD: 'Adverse market conditions — avoid new positions',
+  GOOD: 'favorable',
+  WARNING: 'mixed, caution',
+  BAD: 'avoid new positions',
 };
 
-export function MarketHealthBar() {
+function MarketHealthBarPlaceholder() {
+  return (
+    <div className="sticky top-0 z-50 h-[var(--app-top-offset)] bg-slate-200 dark:bg-slate-700 animate-pulse" />
+  );
+}
+
+function AuthenticatedMarketHealthBar() {
   const { data, isLoading } = useMarketHealth();
-  const [isLabelOpen, setIsLabelOpen] = useState(false);
 
   if (isLoading) {
-    return <div className="h-1 bg-slate-200 dark:bg-slate-700 animate-pulse" />;
+    return <MarketHealthBarPlaceholder />;
   }
 
   if (!data) {
-    return null;
+    return (
+      <div role="status" className={`${barClasses} bg-slate-600 text-white`}>
+        SPY trend unavailable
+      </div>
+    );
   }
 
   const asOf = new Date(data.computedAt).toLocaleDateString(undefined, {
     month: 'short',
     day: 'numeric',
   });
-  const label = `${statusLabelMap[data.status]} (as of ${asOf})`;
+  const verdict = `SPY trend: ${statusVerdictMap[data.status]}`;
+  const description = statusLabelMap[data.status];
 
   return (
-    <div className="relative z-50">
-      <div
-        tabIndex={0}
-        role="status"
-        className={`relative h-1 ${statusColorMap[data.status]} transition-colors duration-300 after:absolute after:inset-x-0 after:top-0 after:h-4 after:content-['']`}
-        aria-label={label}
-        onClick={() => setIsLabelOpen(true)}
-        onMouseEnter={() => setIsLabelOpen(true)}
-        onMouseLeave={() => setIsLabelOpen(false)}
-        onFocus={() => setIsLabelOpen(true)}
-        onBlur={() => setIsLabelOpen(false)}
-        onKeyDown={(event) => event.key === 'Escape' && setIsLabelOpen(false)}
-      />
-      {isLabelOpen && (
-        <div
-          aria-hidden="true"
-          className="absolute left-16 top-2 flex max-w-[calc(100vw-5rem)] items-center gap-2 rounded-md border border-slate-200 bg-white px-3 py-2 text-xs text-slate-700 shadow-md dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200"
-        >
-          <span
-            className={`h-2 w-2 shrink-0 rounded-full ${statusColorMap[data.status]}`}
-          />
-          {label}
-        </div>
-      )}
+    <div
+      role="status"
+      className={`${barClasses} ${statusColorMap[data.status]} transition-colors duration-300`}
+      aria-label={`${verdict} · ${description} · as of ${asOf}`}
+    >
+      <span className="shrink-0">{verdict}</span>
+      <span className="min-w-0 truncate">· {description}</span>
+      <span className="shrink-0">· as of {asOf}</span>
     </div>
   );
+}
+
+export function MarketHealthBar() {
+  const { isAuthenticated, isLoading } = useKindeAuth();
+
+  if (isLoading) {
+    return <MarketHealthBarPlaceholder />;
+  }
+
+  return isAuthenticated ? <AuthenticatedMarketHealthBar /> : null;
 }

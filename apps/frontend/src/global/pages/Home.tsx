@@ -34,7 +34,7 @@ export default function Home() {
   ];
 
   return (
-    <div className="min-h-screen">
+    <div className="min-h-[calc(100vh-var(--app-top-offset))]">
       {/* Hero Section */}
       <section className="relative py-20 px-6 bg-gradient-to-br from-background-primary via-background-secondary to-background-primary">
         <div className="max-w-7xl mx-auto text-center">

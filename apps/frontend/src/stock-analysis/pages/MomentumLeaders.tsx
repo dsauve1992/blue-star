@@ -60,7 +60,7 @@ export default function MomentumLeaders() {
 
   return (
     <PageContainer fullWidth noPadding>
-      <div className="w-full h-screen flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="w-full h-[calc(100vh-var(--app-top-offset))] flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <LeadersToolbar
           data={data}
           groupBy={groupBy}

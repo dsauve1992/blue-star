@@ -212,10 +212,10 @@ export default function IndustryGroupExplorer() {
 
   return (
     <PageContainer fullWidth noPadding>
-      <div className="w-full relative min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="w-full relative min-h-[calc(100vh-var(--app-top-offset))] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative flex flex-col md:h-screen">
+        <div className="relative flex flex-col md:h-[calc(100vh-var(--app-top-offset))]">
           <div className="flex-1 flex flex-col md:flex-row min-h-0">
             <aside className="relative z-10 w-full max-h-[40vh] md:w-72 md:max-h-none flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
               <div className="px-3 py-2 border-b border-slate-700/50 space-y-2">
