@@ -1,10 +1,5 @@
 name: Setup Dependencies
 description: Install and cache npm dependencies for CI with optimizations
-inputs:
-  node-version:
-    description: 'Node.js version'
-    required: false
-    default: '22'
 
 runs:
   using: 'composite'
@@ -12,7 +7,7 @@ runs:
     - name: Setup Node.js
       uses: actions/setup-node@v5
       with:
-        node-version: ${{ inputs.node-version }}
+        node-version-file: .tool-versions
         cache: 'npm'
         cache-dependency-path: 'package-lock.json'
 

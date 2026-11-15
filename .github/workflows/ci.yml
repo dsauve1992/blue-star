@@ -12,9 +12,6 @@ concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
-env:
-  NODE_VERSION: '24'
-
 jobs:
   # Parallel execution: lint and test run simultaneously
   lint-and-typecheck:
@@ -28,8 +25,6 @@ jobs:
 
       - name: Setup dependencies
         uses: ./.github/actions/setup-deps
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Lint code
         run: npm run lint
@@ -51,8 +46,6 @@ jobs:
 
       - name: Setup dependencies
         uses: ./.github/actions/setup-deps
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Run tests
         run: npm run test
@@ -96,8 +89,6 @@ jobs:
 
       - name: Setup dependencies
         uses: ./.github/actions/setup-deps
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Audit production dependencies
         run: npm audit --omit=dev --audit-level=critical
@@ -114,8 +105,6 @@ jobs:
 
       - name: Setup dependencies
         uses: ./.github/actions/setup-deps
-        with:
-          node-version: ${{ env.NODE_VERSION }}
 
       - name: Build applications
         run: npm run build

@@ -32,7 +32,7 @@ Dependabot PRs have no kanban ticket, so `pr-review` never picks them up. This s
 
    Stop the stage servers before going on; one stage runs one app at a time.
 
-4. **After: apply the bump.** Add a worktree of the PR branch at `../blue-star-worktrees/dependabot-<pr>-after` and run `npm ci`. If type-checking, lint, the build or tests fail, find the cause:
+4. **After: apply the bump.** Add a worktree of the PR branch at `../blue-star-worktrees/dependabot-<pr>-after` and run `npm ci`. On a `node` base-image bump only (not nginx or other images), Dependabot cannot edit `.tool-versions`: read the `node` version from `FROM node:` in both Dockerfiles. If they differ, go to step 6, **Block**. Otherwise set `.tool-versions` (`nodejs <version>`) and the pin in `README.md` to that version. Push it once without force, after any compatibility fix below, as the last edit before step 5; Dependabot stops rebasing a PR once someone else pushes to it. If type-checking, lint, the build or tests fail, find the cause:
    - A fix that keeps behaviour identical, such as a renamed import, a changed type signature or a moved option, may be committed to the PR branch. Run the quality gates, push without force, and describe the fix in the final comment.
    - A fix that would change what a feature does or shows is not allowed: no changed defaults, output, formatting, rendering, timing or data. Go to step 6, **Block**.
 
@@ -50,7 +50,7 @@ Dependabot PRs have no kanban ticket, so `pr-review` never picks them up. This s
 - A major version is not blocked for being major. It follows the same proof, with the release notes read in full.
 - "Tests pass" alone is not proof when the blast radius includes a user-facing feature. That feature must be driven before and after.
 - Never use `--admin`, never bypass branch protection, never force-push, and never touch deployment.
-- Never change a Dependabot PR's version, and close one only in the dead-end case of step 1. Superseding is Dependabot's job.
+- Never change a Dependabot PR's version, and close one only in the dead-end case of step 1. Superseding is Dependabot's job. The one allowed non-behavioural push besides compatibility fixes is the `.tool-versions` and `README.md` sync of step 4; the bumped version itself still never changes.
 - If `gh` fails with a missing-scope error, stop and report.
 
 ## Side findings

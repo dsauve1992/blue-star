@@ -70,7 +70,7 @@ The strategic rules are in [docs/architecture.md](docs/architecture.md) and the 
 
 ## Getting started
 
-Prerequisites: Node.js 24 or later (`.tool-versions` pins 24.22.1), npm, Python 3 (for the screeners) and Docker (local PostgreSQL).
+Prerequisites: Node.js 24 or later (`.tool-versions` pins 24.22.3), npm, Python 3 (for the screeners) and Docker (local PostgreSQL).
 
 ```bash
 npm ci

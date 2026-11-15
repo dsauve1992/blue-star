@@ -10,7 +10,9 @@ updates:
     commit-message:
       prefix: "ci"
   - package-ecosystem: "docker"
-    directory: "/apps/backend"
+    directories:
+      - "/apps/backend"
+      - "/apps/frontend"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 3
@@ -19,13 +21,7 @@ updates:
     ignore:
       - dependency-name: "node"
         update-types: ["version-update:semver-major"]
-  - package-ecosystem: "docker"
-    directory: "/apps/frontend"
-    schedule:
-      interval: "weekly"
-    open-pull-requests-limit: 3
-    commit-message:
-      prefix: "ci"
-    ignore:
-      - dependency-name: "node"
-        update-types: ["version-update:semver-major"]
+    groups:
+      node:
+        patterns: ["node"]
+        group-by: dependency-name
