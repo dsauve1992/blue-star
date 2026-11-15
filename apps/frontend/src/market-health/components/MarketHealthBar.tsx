@@ -44,9 +44,10 @@ function AuthenticatedMarketHealthBar() {
     );
   }
 
-  const asOf = new Date(data.computedAt).toLocaleDateString(undefined, {
+  const asOf = new Date(data.computedAt).toLocaleDateString('en-US', {
     month: 'short',
     day: 'numeric',
+    year: 'numeric',
   });
   const verdict = `SPY trend: ${statusVerdictMap[data.status]}`;
   const description = statusLabelMap[data.status];
