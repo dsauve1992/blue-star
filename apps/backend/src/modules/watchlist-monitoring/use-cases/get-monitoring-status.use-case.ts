@@ -1,9 +1,11 @@
 import { Inject, Injectable } from '@nestjs/common';
-import { WatchlistId } from '../../watchlist/domain/value-objects/watchlist-id';
+import {
+  WatchlistId,
+  GetWatchlistByIdUseCase,
+} from '../../watchlist/watchlist.module';
 import { MonitoringType } from '../domain/value-objects/monitoring-type';
 import type { WatchlistMonitoringReadRepository } from '../domain/repositories/watchlist-monitoring-read.repository.interface';
 import { WATCHLIST_MONITORING_READ_REPOSITORY } from '../constants/tokens';
-import { GetWatchlistByIdUseCase } from '../../watchlist/watchlist.module';
 import type { AuthContext } from '../../auth/auth.module';
 
 export interface MonitoringStatusDto {

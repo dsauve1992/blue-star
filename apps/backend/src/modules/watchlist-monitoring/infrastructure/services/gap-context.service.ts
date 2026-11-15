@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
+import { WatchlistTicker } from '../../../watchlist/watchlist.module';
 import {
   GapContext,
   IndustryGroupQuadrant,

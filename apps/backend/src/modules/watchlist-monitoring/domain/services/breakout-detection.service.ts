@@ -1,4 +1,4 @@
-import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
+import { WatchlistTicker } from '../../../watchlist/watchlist.module';
 
 export interface BreakoutDetectionResult {
   ticker: WatchlistTicker;

@@ -1,5 +1,5 @@
 import { Body, Controller, Get, Param, Post, Req } from '@nestjs/common';
-import { WatchlistId } from '../../watchlist/domain/value-objects/watchlist-id';
+import { WatchlistId } from '../../watchlist/watchlist.module';
 import {
   MonitoringType,
   isValidMonitoringType,

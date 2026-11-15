@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { GapContextServiceImpl } from './gap-context.service';
-import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
+import { WatchlistTicker } from '../../../watchlist/watchlist.module';
 import { GetIndustryGroupsForTickersUseCase } from '../../../stock-classification/stock-classification.module';
 import {
   GetLatestRsRatingUseCase,

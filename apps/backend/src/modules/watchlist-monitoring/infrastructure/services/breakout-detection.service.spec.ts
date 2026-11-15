@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { BreakoutDetectionServiceImpl } from './breakout-detection.service';
-import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
+import { WatchlistTicker } from '../../../watchlist/watchlist.module';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
 import {

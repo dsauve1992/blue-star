@@ -4,8 +4,10 @@ import { EventEmitter2 } from '@nestjs/event-emitter';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
 import { GapDetectedEvent } from '../../domain/events/gap-detected.event';
 import { GapContext } from '../../domain/value-objects/gap-context';
-import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
-import { FindWatchlistTickersUseCase } from '../../../watchlist/watchlist.module';
+import {
+  WatchlistId,
+  FindWatchlistTickersUseCase,
+} from '../../../watchlist/watchlist.module';
 import {
   NOTIFICATION_SERVICE,
   NotificationMessage,

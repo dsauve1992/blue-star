@@ -4,14 +4,16 @@ import {
   GetMonitoringStatusUseCase,
 } from './get-monitoring-status.use-case';
 import { WatchlistMonitoringReadRepository } from '../domain/repositories/watchlist-monitoring-read.repository.interface';
-import { GetWatchlistByIdUseCase } from '../../watchlist/watchlist.module';
+import {
+  GetWatchlistByIdUseCase,
+  Watchlist,
+  WatchlistName,
+  WatchlistId,
+} from '../../watchlist/watchlist.module';
 import { WATCHLIST_MONITORING_READ_REPOSITORY } from '../constants/tokens';
 import { WatchlistMonitoring } from '../domain/entities/watchlist-monitoring.entity';
 import { WatchlistMonitoringId } from '../domain/value-objects/watchlist-monitoring-id';
 import { MonitoringType } from '../domain/value-objects/monitoring-type';
-import { Watchlist } from '../../watchlist/domain/entities/watchlist';
-import { WatchlistName } from '../../watchlist/domain/value-objects/watchlist-name';
-import { WatchlistId } from '../../watchlist/domain/value-objects/watchlist-id';
 import { UserId } from '../../../shared/value-objects/user-id';
 import { AuthorizationError, NotFoundError } from '../domain/domain-errors';
 import type { AuthContext } from '../../auth/auth.module';

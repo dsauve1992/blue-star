@@ -7,9 +7,11 @@ import { LocalDate } from '../../domain/value-objects/local-date';
 import { MonitoringType } from '../../domain/value-objects/monitoring-type';
 import * as marketTime from './market-time.util';
 import { getMarketDateKey } from './market-time.util';
-import { WatchlistId } from '../../../watchlist/domain/value-objects/watchlist-id';
-import { WatchlistTicker } from '../../../watchlist/domain/value-objects/watchlist-ticker';
-import { FindWatchlistTickersUseCase } from '../../../watchlist/watchlist.module';
+import {
+  WatchlistId,
+  WatchlistTicker,
+  FindWatchlistTickersUseCase,
+} from '../../../watchlist/watchlist.module';
 import type { WatchlistMonitoringReadRepository } from '../../domain/repositories/watchlist-monitoring-read.repository.interface';
 import type { MonitoringAlertLogRepository } from '../../domain/repositories/monitoring-alert-log.repository.interface';
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
