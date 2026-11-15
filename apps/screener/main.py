@@ -96,6 +96,11 @@ def main():
             sys.exit(1)
 
 
+def raise_if_all_failed(timeframe: str, candidates: list[Any], failed_count: int, last_error: Exception | None) -> None:
+    if candidates and failed_count == len(candidates):
+        raise RuntimeError(f"All {len(candidates)} {timeframe} candidates failed to analyze; last error: {last_error}")
+
+
 def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service: YahooFinanceService, quiet: bool = False) -> list[Any]:
     green_candidates = []
     custom_filters = [
@@ -135,6 +140,8 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
         print(f"Found {len(candidates)} candidates with custom filters", file=sys.stderr)
 
     # Analyze first few candidates for testing
+    failed_count = 0
+    last_error = None
     for i, candidate in enumerate(candidates):
         try:
             if i > 0:
@@ -244,8 +251,12 @@ def analyse_daily_setup(screener_service: ScreenerService, yahoo_finance_service
                 })
 
         except Exception as error:
+            failed_count += 1
+            last_error = error
             if not quiet:
                 print(f"   ❌ Failed to analyze {candidate['name']}: {error}", file=sys.stderr)
+
+    raise_if_all_failed('daily', candidates, failed_count, last_error)
 
     return green_candidates
 
@@ -288,6 +299,8 @@ def analyse_weekly_setup(screener_service: ScreenerService, yahoo_finance_servic
         print(f"Found {len(candidates)} candidates with custom filters", file=sys.stderr)
 
     # Analyze first few candidates for testing
+    failed_count = 0
+    last_error = None
     for i, candidate in enumerate(candidates):
         try:
             if i > 0:
@@ -385,8 +398,12 @@ def analyse_weekly_setup(screener_service: ScreenerService, yahoo_finance_servic
                 })
 
         except Exception as error:
+            failed_count += 1
+            last_error = error
             if not quiet:
                 print(f"   ❌ Failed to analyze {candidate['name']}: {error}", file=sys.stderr)
+
+    raise_if_all_failed('weekly', candidates, failed_count, last_error)
 
     return green_candidates
 
