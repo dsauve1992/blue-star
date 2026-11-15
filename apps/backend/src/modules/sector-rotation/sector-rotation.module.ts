@@ -16,12 +16,10 @@ import { RotationUniverseRegistry } from './infrastructure/universes/rotation-un
 import {
   SECTOR_ROTATION_CALCULATION_SERVICE,
   SECTOR_ROTATION_DATA_READ_REPOSITORY,
-  SECTOR_ROTATION_MARKET_DATA_SERVICE,
   SECTOR_ROTATION_DATA_WRITE_REPOSITORY,
   SECTOR_ROTATION_PERSISTENCE_SERVICE,
 } from './constants/tokens';
 import { MarketDataModule } from '../market-data/market-data.module';
-import { CACHED_MARKET_DATA_SERVICE } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
 
 @Module({
@@ -43,10 +41,6 @@ import { NotificationModule } from '../notification/notification.module';
     {
       provide: SECTOR_ROTATION_PERSISTENCE_SERVICE,
       useClass: SectorRotationPersistenceServiceImpl,
-    },
-    {
-      provide: SECTOR_ROTATION_MARKET_DATA_SERVICE,
-      useExisting: CACHED_MARKET_DATA_SERVICE,
     },
     ZScoreNormalizer,
     BenchmarkCalculator,

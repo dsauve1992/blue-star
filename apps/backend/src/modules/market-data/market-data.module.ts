@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { MarketDataController } from './api/market-data.controller';
 import { MarketDataApiMapper } from './api/market-data-api.mapper';
 import { GetHistoricalDataUseCase } from './use-cases/get-historical-data.use-case';
+import { GetCachedHistoricalDataUseCase } from './use-cases/get-cached-historical-data.use-case';
 import { GetChartDataUseCase } from './use-cases/get-chart-data.use-case';
 import { GetIntradayDataUseCase } from './use-cases/get-intraday-data.use-case';
 import { YahooMarketDataService } from './infrastructure/services/yahoo-market-data.service';
@@ -24,7 +25,7 @@ export type {
   MarketDataService,
   HistoricalData,
 } from './domain/services/market-data.service';
-export { GetHistoricalDataUseCase };
+export { GetHistoricalDataUseCase, GetCachedHistoricalDataUseCase };
 export { PricePoint } from './domain/value-objects/price-point';
 
 @Module({
@@ -53,10 +54,15 @@ export { PricePoint } from './domain/value-objects/price-point';
     },
     MarketDataApiMapper,
     GetHistoricalDataUseCase,
+    GetCachedHistoricalDataUseCase,
     GetCompanyProfileUseCase,
     GetChartDataUseCase,
     GetIntradayDataUseCase,
   ],
-  exports: [CACHED_MARKET_DATA_SERVICE, GetHistoricalDataUseCase],
+  exports: [
+    CACHED_MARKET_DATA_SERVICE,
+    GetHistoricalDataUseCase,
+    GetCachedHistoricalDataUseCase,
+  ],
 })
 export class MarketDataModule {}

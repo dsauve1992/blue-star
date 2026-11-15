@@ -1,7 +1,7 @@
-import { Injectable, Inject, Logger } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
-import type { MarketDataService } from '../../../market-data/market-data.module';
+import { GetCachedHistoricalDataUseCase } from '../../../market-data/market-data.module';
 import {
   SectorRotationCalculationService,
   SectorRotationCalculationParams,
@@ -17,7 +17,6 @@ import { WeekUtils } from '../utils/week-utils';
 import { EMACalculator } from '../../../../shared/utils/ema-calculator';
 import { RollingStatsCalculator, RollingStats } from '../utils/rolling-stats';
 import { RRG_PARAMETERS } from '../../constants/rrg-parameters';
-import { SECTOR_ROTATION_MARKET_DATA_SERVICE } from '../../constants/tokens';
 
 interface WeeklyPriceData {
   date: Date;
@@ -42,8 +41,7 @@ export class SectorRotationCalculationServiceImpl
   );
 
   constructor(
-    @Inject(SECTOR_ROTATION_MARKET_DATA_SERVICE)
-    private readonly marketDataService: MarketDataService,
+    private readonly getCachedHistoricalData: GetCachedHistoricalDataUseCase,
     private readonly zScoreNormalizer: ZScoreNormalizer,
     private readonly benchmarkCalculator: BenchmarkCalculator,
   ) {}
@@ -234,11 +232,11 @@ export class SectorRotationCalculationServiceImpl
     dateRange: DateRange,
   ): Promise<MemberWeeklyData> {
     const symbol = Symbol.of(member.symbol);
-    const historicalData = await this.marketDataService.getHistoricalData(
+    const { historicalData } = await this.getCachedHistoricalData.execute({
       symbol,
       dateRange,
-      '1wk',
-    );
+      interval: '1wk',
+    });
 
     const weeklyPrices = this.convertToWeeklyPrices(
       historicalData.pricePoints.map((p) => ({
