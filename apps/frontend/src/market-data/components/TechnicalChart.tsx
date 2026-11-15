@@ -1184,7 +1184,7 @@ function TechnicalChartInner({
           <ChartTooltip tooltip={tooltip} colors={C} />
         )}
         {quadrantBackground?.show && quadrantBackground.segments.length > 0 && (
-          <QuadrantLegend />
+          <QuadrantLegend compact={compactLegend} />
         )}
       </div>
     </div>
@@ -1202,7 +1202,7 @@ const QUADRANT_LEGEND_ITEMS: { label: ChartQuadrant; color: string }[] = [
   { label: "Lagging", color: "#ef4444" },
 ];
 
-function QuadrantLegend() {
+function QuadrantLegend({ compact }: { compact: boolean }) {
   return (
     <div
       style={{
@@ -1212,7 +1212,7 @@ function QuadrantLegend() {
         zIndex: 10,
         pointerEvents: "none",
         display: "flex",
-        flexWrap: "wrap",
+        flexWrap: compact ? "nowrap" : "wrap",
         gap: "4px 10px",
         fontFamily: "'JetBrains Mono', monospace",
         fontSize: 9,
@@ -1222,7 +1222,9 @@ function QuadrantLegend() {
         padding: "4px 8px",
       }}
     >
-      <span style={{ color: "rgba(148, 163, 184, 0.7)" }}>Group RRG</span>
+      {!compact && (
+        <span style={{ color: "rgba(148, 163, 184, 0.7)" }}>Group RRG</span>
+      )}
       {QUADRANT_LEGEND_ITEMS.map((item) => (
         <span
           key={item.label}
@@ -1237,9 +1239,11 @@ function QuadrantLegend() {
               opacity: 0.6,
             }}
           />
-          <span style={{ color: "rgba(148, 163, 184, 0.85)" }}>
-            {item.label}
-          </span>
+          {!compact && (
+            <span style={{ color: "rgba(148, 163, 184, 0.85)" }}>
+              {item.label}
+            </span>
+          )}
         </span>
       ))}
     </div>
