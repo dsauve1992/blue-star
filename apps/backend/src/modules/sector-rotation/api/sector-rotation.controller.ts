@@ -232,8 +232,11 @@ export class SectorRotationController {
   }
 
   private parseSectors(
-    sectorsParam: string,
+    sectorsParam: unknown,
   ): Array<{ symbol: string; name: string }> {
+    if (typeof sectorsParam !== 'string') {
+      throw new BadRequestException('sectors must be a single value');
+    }
     try {
       const parsed = JSON.parse(sectorsParam);
       if (Array.isArray(parsed)) {
