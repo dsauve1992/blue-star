@@ -2,8 +2,8 @@ import { DateRange } from '../../../../shared/value-objects/date-range';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import {
   PricePoint,
+  GetCachedHistoricalDataUseCase,
   type HistoricalData,
-  type MarketDataService,
 } from '../../../market-data/market-data.module';
 import { RotationMember } from '../../domain/value-objects/rotation-member';
 import { RotationUniverse } from '../../domain/value-objects/rotation-universe';
@@ -44,20 +44,28 @@ function buildWeeklyPoints(startISO: string, closes: number[]): PricePoint[] {
   });
 }
 
+type Request = { symbol: Symbol; dateRange: DateRange };
+type GetCachedHistoricalData = jest.Mocked<GetCachedHistoricalDataUseCase>;
+
 function makeMarketDataService(
   pricesBySymbol: Record<string, PricePoint[]>,
-): jest.Mocked<MarketDataService> {
+): GetCachedHistoricalData {
   return {
-    getHistoricalData: jest.fn(
-      (symbol: Symbol, dateRange: DateRange): Promise<HistoricalData> => {
+    execute: jest.fn(
+      ({
+        symbol,
+        dateRange,
+      }: Request): Promise<{ historicalData: HistoricalData }> => {
         const points = pricesBySymbol[symbol.value];
         if (!points) {
           return Promise.reject(new Error(`No mock data for ${symbol.value}`));
         }
-        return Promise.resolve({ symbol, dateRange, pricePoints: points });
+        return Promise.resolve({
+          historicalData: { symbol, dateRange, pricePoints: points },
+        });
       },
     ),
-  };
+  } as unknown as GetCachedHistoricalData;
 }
 
 describe('SectorRotationCalculationServiceImpl', () => {
@@ -66,7 +74,7 @@ describe('SectorRotationCalculationServiceImpl', () => {
   const START = '2024-01-01T00:00:00.000Z'; // Monday
 
   let service: SectorRotationCalculationServiceImpl;
-  let marketData: jest.Mocked<MarketDataService>;
+  let marketData: GetCachedHistoricalData;
   let benchmark: BenchmarkCalculator;
   let zScore: ZScoreNormalizer;
 
@@ -188,8 +196,8 @@ describe('SectorRotationCalculationServiceImpl', () => {
       );
 
       // First fetch is for the sector ETF.
-      const firstCall = marketData.getHistoricalData.mock.calls[0];
-      const fetchedStart = firstCall[1].startDate;
+      const firstCall = marketData.execute.mock.calls[0];
+      const fetchedStart = firstCall[0].dateRange.startDate;
       const expectedStart = new Date(requestedStart);
       expectedStart.setDate(
         expectedStart.getDate() - expectedLookbackWeeks * 7,
@@ -319,20 +327,16 @@ describe('SectorRotationCalculationServiceImpl', () => {
       const { sectorPoints, spyPoints } = setupTrendingScenario();
 
       marketData = {
-        getHistoricalData: jest.fn(
-          (symbol: Symbol, dateRange: DateRange): Promise<HistoricalData> => {
-            if (symbol.value === 'XLF') {
-              return Promise.reject(new Error('Simulated upstream failure'));
-            }
-            const points = symbol.value === 'SPY' ? spyPoints : sectorPoints;
-            return Promise.resolve({
-              symbol,
-              dateRange,
-              pricePoints: points,
-            });
-          },
-        ),
-      };
+        execute: jest.fn(({ symbol, dateRange }: Request) => {
+          if (symbol.value === 'XLF') {
+            return Promise.reject(new Error('Simulated upstream failure'));
+          }
+          const points = symbol.value === 'SPY' ? spyPoints : sectorPoints;
+          return Promise.resolve({
+            historicalData: { symbol, dateRange, pricePoints: points },
+          });
+        }),
+      } as unknown as GetCachedHistoricalData;
       benchmark = new BenchmarkCalculator(marketData);
       service = new SectorRotationCalculationServiceImpl(
         marketData,
@@ -364,22 +368,22 @@ describe('SectorRotationCalculationServiceImpl', () => {
 
     it('throws when all sector fetches fail', async () => {
       marketData = {
-        getHistoricalData: jest.fn(
-          (symbol: Symbol, dateRange: DateRange): Promise<HistoricalData> => {
-            if (symbol.value === 'SPY') {
-              return Promise.resolve({
+        execute: jest.fn(({ symbol, dateRange }: Request) => {
+          if (symbol.value === 'SPY') {
+            return Promise.resolve({
+              historicalData: {
                 symbol,
                 dateRange,
                 pricePoints: buildWeeklyPoints(
                   START,
                   Array.from({ length: TOTAL_WEEKS }, (_, i) => 100 + i * 1.0),
                 ),
-              });
-            }
-            return Promise.reject(new Error(`No data for ${symbol.value}`));
-          },
-        ),
-      };
+              },
+            });
+          }
+          return Promise.reject(new Error(`No data for ${symbol.value}`));
+        }),
+      } as unknown as GetCachedHistoricalData;
       benchmark = new BenchmarkCalculator(marketData);
       service = new SectorRotationCalculationServiceImpl(
         marketData,

@@ -1,15 +1,13 @@
-import { Injectable, Inject } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { Symbol } from '../../../../shared/value-objects/symbol';
 import { DateRange } from '../../../../shared/value-objects/date-range';
-import type { MarketDataService } from '../../../market-data/market-data.module';
+import { GetCachedHistoricalDataUseCase } from '../../../market-data/market-data.module';
 import { WeekUtils } from '../utils/week-utils';
-import { SECTOR_ROTATION_MARKET_DATA_SERVICE } from '../../constants/tokens';
 
 @Injectable()
 export class BenchmarkCalculator {
   constructor(
-    @Inject(SECTOR_ROTATION_MARKET_DATA_SERVICE)
-    private readonly marketDataService: MarketDataService,
+    private readonly getCachedHistoricalData: GetCachedHistoricalDataUseCase,
   ) {}
 
   async calculate(
@@ -17,11 +15,11 @@ export class BenchmarkCalculator {
     dateRange: DateRange,
   ): Promise<Map<number, number>> {
     const symbol = Symbol.of(benchmarkSymbol);
-    const historicalData = await this.marketDataService.getHistoricalData(
+    const { historicalData } = await this.getCachedHistoricalData.execute({
       symbol,
       dateRange,
-      '1wk',
-    );
+      interval: '1wk',
+    });
 
     const benchmark = new Map<number, number>();
     const weeklyMap = new Map<string, { date: Date; price: number }>();
