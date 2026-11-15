@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import {
   ChartDataClient,
@@ -11,6 +11,20 @@ const chartDataClient = new ChartDataClient();
 
 const LOAD_MORE_INCREMENT = 200;
 
+interface LoadMoreState {
+  key: string;
+  extraBars: number;
+  hasMoreHistory: boolean;
+  candleCountBeforeLoadMore: number | null;
+}
+
+const freshLoadMoreState = (key: string): LoadMoreState => ({
+  key,
+  extraBars: 0,
+  hasMoreHistory: true,
+  candleCountBeforeLoadMore: null,
+});
+
 export function useChartData(
   symbol: string | null,
   exchange: string | null,
@@ -18,16 +32,23 @@ export function useChartData(
   initialBars: number = 200,
   includeExtendedHours = true,
 ) {
-  const [bars, setBars] = useState(initialBars);
-  const [hasMoreHistory, setHasMoreHistory] = useState(true);
-  const candleCountBeforeLoadMoreRef = useRef<number | null>(null);
-
-  // Reset bars when symbol/interval changes
-  useEffect(() => {
-    setBars(initialBars);
-    setHasMoreHistory(true);
-    candleCountBeforeLoadMoreRef.current = null;
-  }, [symbol, exchange, interval, initialBars, includeExtendedHours]);
+  const key = JSON.stringify([
+    symbol,
+    exchange,
+    interval,
+    initialBars,
+    includeExtendedHours,
+  ]);
+  const [storedLoadMoreState, setLoadMoreState] = useState(() =>
+    freshLoadMoreState(key),
+  );
+  const isStale = storedLoadMoreState.key !== key;
+  const loadMoreState = isStale
+    ? freshLoadMoreState(key)
+    : storedLoadMoreState;
+  if (isStale) setLoadMoreState(loadMoreState);
+  const { hasMoreHistory, candleCountBeforeLoadMore } = loadMoreState;
+  const bars = initialBars + loadMoreState.extraBars;
 
   const query = useQuery({
     queryKey: MARKET_DATA_QUERY_KEYS.chart(
@@ -61,17 +82,33 @@ export function useChartData(
   const candleCount = query.data?.chartData?.candles.length ?? 0;
 
   useEffect(() => {
-    const countBefore = candleCountBeforeLoadMoreRef.current;
-    if (countBefore === null || !query.data || query.isPlaceholderData) return;
-    candleCountBeforeLoadMoreRef.current = null;
-    if (candleCount <= countBefore) setHasMoreHistory(false);
-  }, [query.data, query.isPlaceholderData, candleCount]);
+    if (
+      candleCountBeforeLoadMore === null ||
+      !query.data ||
+      query.isPlaceholderData
+    )
+      return;
+    setLoadMoreState({
+      ...loadMoreState,
+      candleCountBeforeLoadMore: null,
+      hasMoreHistory: candleCount > candleCountBeforeLoadMore,
+    });
+  }, [
+    query.data,
+    query.isPlaceholderData,
+    candleCount,
+    candleCountBeforeLoadMore,
+    loadMoreState,
+  ]);
 
   const loadMore = useCallback(() => {
     if (!hasMoreHistory) return;
-    candleCountBeforeLoadMoreRef.current = candleCount;
-    setBars((prev) => prev + LOAD_MORE_INCREMENT);
-  }, [hasMoreHistory, candleCount]);
+    setLoadMoreState({
+      ...loadMoreState,
+      extraBars: loadMoreState.extraBars + LOAD_MORE_INCREMENT,
+      candleCountBeforeLoadMore: candleCount,
+    });
+  }, [hasMoreHistory, loadMoreState, candleCount]);
 
   const isLoadingMore = query.isPlaceholderData && bars > initialBars;
 
