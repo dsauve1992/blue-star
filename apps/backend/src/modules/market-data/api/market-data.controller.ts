@@ -30,12 +30,14 @@ const VALID_CHART_INTERVALS: ChartInterval[] = [
   'M',
 ];
 
-function parseIncludeExtendedHours(raw?: string): boolean {
+function parseIncludeExtendedHours(raw?: unknown): boolean {
   if (raw == null || raw === '') return true;
-  const v = raw.toLowerCase();
+  const v = typeof raw === 'string' ? raw.toLowerCase() : undefined;
   if (v === 'false' || v === '0' || v === 'no') return false;
   if (v === 'true' || v === '1' || v === 'yes') return true;
-  return true;
+  throw new BadRequestException(
+    'includeExtendedHours must be one of true, false, 1, 0, yes, no',
+  );
 }
 
 function parseSymbol(raw: string): Symbol {
@@ -123,7 +125,7 @@ export class MarketDataController {
     @Query('exchange') exchange: string,
     @Query('interval') interval: string = 'D',
     @Query('bars') bars: string = '200',
-    @Query('includeExtendedHours') includeExtendedHours?: string,
+    @Query('includeExtendedHours') includeExtendedHours?: unknown,
   ): Promise<GetChartDataApiResponseDto> {
     if (!VALID_CHART_INTERVALS.includes(interval as ChartInterval)) {
       throw new BadRequestException(
@@ -148,7 +150,7 @@ export class MarketDataController {
     @Query('startDate') startDate: string,
     @Query('endDate') endDate: string,
     @Query('interval') interval: string = '5m',
-    @Query('includeExtendedHours') includeExtendedHours?: string,
+    @Query('includeExtendedHours') includeExtendedHours?: unknown,
   ): Promise<GetIntradayDataApiResponseDto> {
     if (!isIntradayInterval(interval as Interval)) {
       throw new BadRequestException(
