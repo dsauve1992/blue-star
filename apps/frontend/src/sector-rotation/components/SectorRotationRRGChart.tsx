@@ -11,6 +11,7 @@ import { createRrgLabelLayout } from "../utils/rrg-label-layout";
 const COMPACT_LABEL_WIDTH = 640;
 const COMPACT_CHART_HEIGHT = 420;
 const CHART_HEIGHT = 600;
+const NO_SECTOR_NAMES: Record<string, string> = {};
 
 interface SectorRotationRRGChartProps {
   dataPoints: SectorRotationDataPoint[];
@@ -27,7 +28,7 @@ export function SectorRotationRRGChart({
   startDate,
   endDate,
   enabledSectors,
-  sectorNames = {},
+  sectorNames = NO_SECTOR_NAMES,
 }: SectorRotationRRGChartProps) {
   const { theme } = useTheme();
   const isDarkMode = theme === "dark";
@@ -156,7 +157,7 @@ export function SectorRotationRRGChart({
         };
       })
       .filter((d): d is NonNullable<typeof d> => d !== null);
-  }, [sectorSymbols, filteredDataPoints, trailWeeks]);
+  }, [sectorSymbols, filteredDataPoints, trailWeeks, sectorNames]);
 
   const isCompact = chartWidth < COMPACT_LABEL_WIDTH;
 
