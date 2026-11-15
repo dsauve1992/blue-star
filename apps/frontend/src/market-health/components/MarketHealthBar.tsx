@@ -1,33 +1,34 @@
-import { useMarketHealth } from '../hooks/use-market-health';
-import type { MarketHealthStatus } from '../api/market-health.types';
+import { useKindeAuth } from "@kinde-oss/kinde-auth-react";
+import { useMarketHealth } from "../hooks/use-market-health";
+import type { MarketHealthStatus } from "../api/market-health.types";
 
 const barClasses =
-  'sticky top-0 z-50 flex h-[var(--market-health-bar-height)] items-center gap-1.5 whitespace-nowrap px-3 text-xs font-medium';
+  "sticky top-0 z-50 flex h-[var(--app-top-offset)] items-center gap-1.5 whitespace-nowrap px-3 text-xs font-medium";
 
 const statusColorMap: Record<MarketHealthStatus, string> = {
-  GOOD: 'bg-green-700 text-white',
-  WARNING: 'bg-amber-500 text-slate-900',
-  BAD: 'bg-red-700 text-white',
+  GOOD: "bg-green-700 text-white",
+  WARNING: "bg-amber-500 text-slate-900",
+  BAD: "bg-red-700 text-white",
 };
 
 const statusVerdictMap: Record<MarketHealthStatus, string> = {
-  GOOD: 'Good',
-  WARNING: 'Warning',
-  BAD: 'Bad',
+  GOOD: "Good",
+  WARNING: "Warning",
+  BAD: "Bad",
 };
 
 const statusLabelMap: Record<MarketHealthStatus, string> = {
-  GOOD: 'favorable',
-  WARNING: 'mixed, caution',
-  BAD: 'avoid new positions',
+  GOOD: "favorable",
+  WARNING: "mixed, caution",
+  BAD: "avoid new positions",
 };
 
-export function MarketHealthBar() {
+function AuthenticatedMarketHealthBar() {
   const { data, isLoading } = useMarketHealth();
 
   if (isLoading) {
     return (
-      <div className="sticky top-0 z-50 h-[var(--market-health-bar-height)] bg-slate-200 dark:bg-slate-700 animate-pulse" />
+      <div className="sticky top-0 z-50 h-[var(--app-top-offset)] bg-slate-200 dark:bg-slate-700 animate-pulse" />
     );
   }
 
@@ -40,8 +41,8 @@ export function MarketHealthBar() {
   }
 
   const asOf = new Date(data.computedAt).toLocaleDateString(undefined, {
-    month: 'short',
-    day: 'numeric',
+    month: "short",
+    day: "numeric",
   });
   const verdict = `SPY trend: ${statusVerdictMap[data.status]}`;
   const description = statusLabelMap[data.status];
@@ -57,4 +58,10 @@ export function MarketHealthBar() {
       <span className="shrink-0">· as of {asOf}</span>
     </div>
   );
+}
+
+export function MarketHealthBar() {
+  const { isAuthenticated } = useKindeAuth();
+
+  return isAuthenticated ? <AuthenticatedMarketHealthBar /> : null;
 }

@@ -42,7 +42,7 @@ export function AnimatedLayout({ children }: AnimatedLayoutProps) {
         exit="out"
         variants={pageVariants}
         transition={pageTransition}
-        className="min-h-[calc(100vh-var(--market-health-bar-height))]"
+        className="min-h-[calc(100vh-var(--app-top-offset))]"
         style={{
           willChange: 'transform, opacity',
           backfaceVisibility: 'hidden',

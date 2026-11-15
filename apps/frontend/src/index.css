@@ -1,5 +1,5 @@
 :root {
-  --market-health-bar-height: 1.25rem;
+  --app-top-offset: 1.25rem;
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
   line-height: 1.5;
   font-weight: 400;

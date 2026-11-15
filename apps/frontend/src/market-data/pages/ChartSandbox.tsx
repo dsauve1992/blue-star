@@ -79,7 +79,7 @@ export default function ChartSandbox() {
           />
         </div>
       )}
-      <div className="h-[calc(100vh-160px-var(--market-health-bar-height))] rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl overflow-hidden">
+      <div className="h-[calc(100vh-160px-var(--app-top-offset))] rounded-xl border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl overflow-hidden">
         {loading && (
           <div className="flex items-center justify-center h-full text-slate-400">
             Loading chart data...

@@ -338,10 +338,10 @@ export default function Watchlist() {
 
   return (
     <PageContainer fullWidth noPadding>
-      <div className="w-full relative min-h-[calc(100vh-var(--market-health-bar-height))] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+      <div className="w-full relative min-h-[calc(100vh-var(--app-top-offset))] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none" />
 
-        <div className="relative flex flex-col md:h-[calc(100vh-var(--market-health-bar-height))]">
+        <div className="relative flex flex-col md:h-[calc(100vh-var(--app-top-offset))]">
           <WatchlistCardBar
             watchlists={data?.watchlists ?? []}
             selectedWatchlistId={selectedWatchlistId}
