@@ -20,6 +20,7 @@ import { ScheduleModule } from '@nestjs/schedule';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { DatabaseModule } from './config/database.module';
 import { DomainErrorFilter } from './common/filters/domain-error.filter';
+import { StartupService } from './startup.service';
 
 @Module({
   imports: [
@@ -46,6 +47,7 @@ import { DomainErrorFilter } from './common/filters/domain-error.filter';
   controllers: [AppController],
   providers: [
     AppService,
+    StartupService,
     {
       provide: APP_GUARD,
       useClass: AuthGuard,
