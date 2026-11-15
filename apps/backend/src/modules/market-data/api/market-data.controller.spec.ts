@@ -192,4 +192,86 @@ describe('MarketDataController', () => {
       expect.objectContaining({ bars: 200, interval: 'D' }),
     );
   });
+
+  describe('includeExtendedHours', () => {
+    const chartQuery = '/market-data/chart?symbol=AAPL&exchange=NASDAQ';
+    const intradayQuery =
+      '/market-data/intraday?symbol=AAPL&startDate=2026-01-01&endDate=2026-01-02';
+    const extendedHoursMessage =
+      'includeExtendedHours must be one of true, false, 1, 0, yes, no';
+
+    beforeEach(() => {
+      chart.mockResolvedValue({
+        chartData: {
+          symbol: 'AAPL',
+          exchange: 'NASDAQ',
+          interval: 'D',
+          pricePoints: [],
+        },
+      });
+      intraday.mockResolvedValue({
+        historicalData: {
+          symbol: 'AAPL',
+          dateRange: {
+            startDate: new Date('2026-01-01'),
+            endDate: new Date('2026-01-02'),
+          },
+          pricePoints: [],
+        },
+      });
+    });
+
+    it.each([
+      ['chart', chartQuery],
+      ['intraday', intradayQuery],
+    ])('returns 400 for a repeated %s parameter', async (name, path) => {
+      const response = await request(server())
+        .get(`${path}&includeExtendedHours=true&includeExtendedHours=false`)
+        .expect(400);
+
+      expect(messageOf(response)).toBe(extendedHoursMessage);
+      expect(name === 'chart' ? chart : intraday).not.toHaveBeenCalled();
+    });
+
+    it('returns 400 for an unrecognised value', async () => {
+      const response = await request(server())
+        .get(`${chartQuery}&includeExtendedHours=fasle`)
+        .expect(400);
+
+      expect(messageOf(response)).toBe(extendedHoursMessage);
+      expect(chart).not.toHaveBeenCalled();
+    });
+
+    it('parses the value case-insensitively', async () => {
+      await request(server())
+        .get(`${chartQuery}&includeExtendedHours=FALSE`)
+        .expect(200);
+
+      expect(chart).toHaveBeenCalledWith(
+        expect.objectContaining({ includeExtendedHours: false }),
+      );
+    });
+
+    it('defaults to true on chart and false on intraday when absent', async () => {
+      await request(server()).get(chartQuery).expect(200);
+      await request(server()).get(intradayQuery).expect(200);
+
+      expect(chart).toHaveBeenCalledWith(
+        expect.objectContaining({ includeExtendedHours: true }),
+      );
+      expect(intraday).toHaveBeenCalledWith(
+        expect.objectContaining({ includeExtendedHours: false }),
+      );
+    });
+
+    it('treats an empty value as true on both endpoints', async () => {
+      await request(server())
+        .get(`${intradayQuery}&includeExtendedHours=`)
+        .expect(200);
+
+      expect(intraday).toHaveBeenCalledWith(
+        expect.objectContaining({ includeExtendedHours: true }),
+      );
+    });
+  });
 });
