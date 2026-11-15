@@ -1,15 +1,16 @@
 import { ComputeMarketHealthUseCase } from './compute-market-health.use-case';
 import {
   PricePoint,
-  type MarketDataService,
+  type GetHistoricalDataUseCase,
 } from '../../market-data/market-data.module';
+import { Symbol } from '../../../shared/value-objects/symbol';
 import type { MarketHealthRepository } from '../domain/repositories/market-health.repository.interface';
 import type { MarketHealth } from '../domain/entities/market-health.entity';
 import { MarketHealthStatusValue } from '../domain/value-objects/market-health-status';
 
 describe('ComputeMarketHealthUseCase', () => {
   let useCase: ComputeMarketHealthUseCase;
-  let marketDataService: jest.Mocked<MarketDataService>;
+  let getHistoricalData: jest.Mocked<Pick<GetHistoricalDataUseCase, 'execute'>>;
   let marketHealthRepository: jest.Mocked<MarketHealthRepository>;
 
   const rising = Array.from({ length: 30 }, (_, i) => 100 + i);
@@ -30,8 +31,8 @@ describe('ComputeMarketHealthUseCase', () => {
   }
 
   function givenCloses(closes: number[]) {
-    marketDataService.getHistoricalData.mockResolvedValue({
-      pricePoints: pricePointsFrom(closes),
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: { pricePoints: pricePointsFrom(closes) },
     } as never);
   }
 
@@ -40,13 +41,13 @@ describe('ComputeMarketHealthUseCase', () => {
   }
 
   beforeEach(() => {
-    marketDataService = { getHistoricalData: jest.fn() };
+    getHistoricalData = { execute: jest.fn() };
     marketHealthRepository = {
       save: jest.fn().mockResolvedValue(undefined),
       findLatest: jest.fn(),
     };
     useCase = new ComputeMarketHealthUseCase(
-      marketDataService,
+      getHistoricalData as unknown as GetHistoricalDataUseCase,
       marketHealthRepository,
     );
   });
@@ -58,6 +59,16 @@ describe('ComputeMarketHealthUseCase', () => {
 
     expect(result.status.value).toBe(MarketHealthStatusValue.GOOD);
     expect(savedHealth()).toBe(result);
+  });
+
+  it('requests daily SPY data', async () => {
+    givenCloses(rising);
+
+    await useCase.execute();
+
+    expect(getHistoricalData.execute).toHaveBeenCalledWith(
+      expect.objectContaining({ symbol: Symbol.of('SPY'), interval: '1d' }),
+    );
   });
 
   it('saves WARNING when EMA9 is above EMA21 but EMA9 is falling', async () => {
@@ -98,7 +109,7 @@ describe('ComputeMarketHealthUseCase', () => {
 
   it('throws and saves nothing when market data fails', async () => {
     const error = new Error('boom');
-    marketDataService.getHistoricalData.mockRejectedValue(error);
+    getHistoricalData.execute.mockRejectedValue(error);
 
     await expect(useCase.execute()).rejects.toBe(error);
 
@@ -111,8 +122,8 @@ describe('ComputeMarketHealthUseCase', () => {
     const sortedResult = savedHealth();
 
     marketHealthRepository.save.mockClear();
-    marketDataService.getHistoricalData.mockResolvedValue({
-      pricePoints: pricePointsFrom(rising).reverse(),
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: { pricePoints: pricePointsFrom(rising).reverse() },
     } as never);
     await useCase.execute();
 
@@ -124,8 +135,8 @@ describe('ComputeMarketHealthUseCase', () => {
   it('does not mutate the order of the market data price points', async () => {
     const pricePoints = pricePointsFrom(rising).reverse();
     const originalOrder = [...pricePoints];
-    marketDataService.getHistoricalData.mockResolvedValue({
-      pricePoints,
+    getHistoricalData.execute.mockResolvedValue({
+      historicalData: { pricePoints },
     } as never);
 
     await useCase.execute();

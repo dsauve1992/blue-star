@@ -24,6 +24,7 @@ export type {
   MarketDataService,
   HistoricalData,
 } from './domain/services/market-data.service';
+export { GetHistoricalDataUseCase };
 export { PricePoint } from './domain/value-objects/price-point';
 
 @Module({
@@ -56,6 +57,10 @@ export { PricePoint } from './domain/value-objects/price-point';
     GetChartDataUseCase,
     GetIntradayDataUseCase,
   ],
-  exports: [MARKET_DATA_SERVICE, CACHED_MARKET_DATA_SERVICE],
+  exports: [
+    MARKET_DATA_SERVICE,
+    CACHED_MARKET_DATA_SERVICE,
+    GetHistoricalDataUseCase,
+  ],
 })
 export class MarketDataModule {}

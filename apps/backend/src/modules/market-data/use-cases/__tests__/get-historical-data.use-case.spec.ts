@@ -73,6 +73,28 @@ describe('GetHistoricalDataUseCase', () => {
       expect(mockMarketDataService.getHistoricalData).toHaveBeenCalledWith(
         symbol,
         dateRange,
+        undefined,
+      );
+    });
+
+    it('should forward the requested interval to the service', async () => {
+      const symbol = Symbol.of('AAPL');
+      const dateRange = DateRange.of(
+        new Date('2024-01-01'),
+        new Date('2024-01-31'),
+      );
+      mockMarketDataService.getHistoricalData.mockResolvedValue({
+        symbol,
+        dateRange,
+        pricePoints: [],
+      });
+
+      await useCase.execute({ symbol, dateRange, interval: '1d' });
+
+      expect(mockMarketDataService.getHistoricalData).toHaveBeenCalledWith(
+        symbol,
+        dateRange,
+        '1d',
       );
     });
 
