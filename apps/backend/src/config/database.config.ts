@@ -21,7 +21,7 @@ export const getDatabaseConfig = (
     'blue_star_password',
   );
   const database = configService.get<string>('DB_DATABASE', 'blue_star_db');
-  const ssl = configService.get<boolean>('DB_SSL', false);
+  const ssl = configService.get<string>('DB_SSL') === 'true';
 
   // Support both individual config and DATABASE_URL
   const databaseUrl = configService.get<string>('DATABASE_URL');
