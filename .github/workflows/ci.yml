@@ -76,7 +76,7 @@ jobs:
 
       - name: Run tests
         working-directory: apps/${{ matrix.app }}
-        run: python -m pytest -q
+        run: exit 1
 
   audit:
     name: Dependency Audit
