@@ -113,7 +113,9 @@ export function useChartData(
   const isLoadingMore = query.isPlaceholderData && bars > initialBars;
 
   return {
-    ...query,
+    isLoading: query.isLoading,
+    error: query.error,
+    refetch: query.refetch,
     candles: query.data?.chartData?.candles as ChartCandleDto[] | undefined,
     loadMore,
     hasMoreHistory,
