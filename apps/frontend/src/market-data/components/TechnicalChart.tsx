@@ -22,6 +22,7 @@ import {
   type LineData,
   type Time,
   type LogicalRange,
+  type IRange,
   type MouseEventParams,
   type SeriesMarker,
   type LineWidth,
@@ -521,9 +522,11 @@ function TechnicalChartInner({
   // ── Load-more handler (with delay guard) ──────────────────────────
 
   const loadMoreEnabledRef = useRef(false);
+  const visibleLogicalRangeRef = useRef<IRange<number> | null>(null);
 
   const handleVisibleLogicalRangeChange = useCallback(
     (logicalRange: LogicalRange | null) => {
+      visibleLogicalRangeRef.current = logicalRange;
       if (!loadMoreEnabledRef.current) return;
       if (!logicalRange || !onLoadMoreRef.current || isLoadingMoreRef.current)
         return;
@@ -700,9 +703,7 @@ function TechnicalChartInner({
         ? candles.findIndex((c) => c.time === rendered.firstTime)
         : -1;
     const savedLogicalRange =
-      prependedBarsCount >= 0
-        ? chart.timeScale().getVisibleLogicalRange()
-        : null;
+      prependedBarsCount >= 0 ? visibleLogicalRangeRef.current : null;
     renderedChartRef.current = {
       identity: chartIdentityRef.current,
       firstTime: candles[0].time,
@@ -1061,22 +1062,27 @@ function TechnicalChartInner({
     setLegend(lastLegend);
 
     // ── Scroll position ──────────────────────────────────────────
+    let requestedLogicalRange: IRange<number> | null = null;
     if (savedLogicalRange) {
-      chart.timeScale().setVisibleLogicalRange({
+      requestedLogicalRange = {
         from: savedLogicalRange.from + prependedBarsCount,
         to: savedLogicalRange.to + prependedBarsCount,
-      });
+      };
     } else if (
       visibleBarsRef.current &&
       candles.length > visibleBarsRef.current
     ) {
-      chart.timeScale().setVisibleLogicalRange({
+      requestedLogicalRange = {
         from: candles.length - visibleBarsRef.current,
         to: candles.length,
-      });
+      };
+    }
+    if (requestedLogicalRange) {
+      chart.timeScale().setVisibleLogicalRange(requestedLogicalRange);
     } else {
       chart.timeScale().fitContent();
     }
+    visibleLogicalRangeRef.current = requestedLogicalRange;
 
     // Re-enable load-more after a delay so fitContent/setVisibleLogicalRange
     // doesn't immediately trigger it
