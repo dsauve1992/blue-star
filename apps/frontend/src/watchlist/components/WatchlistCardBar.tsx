@@ -252,6 +252,8 @@ function WatchlistCard({
 
   const handleToggleMonitoring = (e: React.MouseEvent) => {
     e.stopPropagation();
+    activateMonitoring.reset();
+    deactivateMonitoring.reset();
     if (coverage === "all") {
       deactivateMonitoring.mutate({ watchlistId: watchlist.id });
     } else {
@@ -261,6 +263,8 @@ function WatchlistCard({
 
   const isToggling =
     activateMonitoring.isPending || deactivateMonitoring.isPending;
+  const toggleFailed =
+    activateMonitoring.isError || deactivateMonitoring.isError;
 
   const [isEditing, setIsEditing] = useState(false);
   const [draftName, setDraftName] = useState(watchlist.name);
@@ -422,20 +426,24 @@ function WatchlistCard({
                 coverage === "partial" ? "mixed" : coverage === "all"
               }
               title={
-                coverage === "all"
-                  ? "Breakout and gap alerts are on. Click to turn off"
-                  : coverage === "partial"
-                    ? `Monitoring partially enabled (${activeTypes}). Click to enable all`
-                    : "Breakout and gap alerts are off. Click to turn on"
+                toggleFailed
+                  ? "Couldn't update alerts. Click to retry"
+                  : coverage === "all"
+                    ? "Breakout and gap alerts are on. Click to turn off"
+                    : coverage === "partial"
+                      ? `Monitoring partially enabled (${activeTypes}). Click to enable all`
+                      : "Breakout and gap alerts are off. Click to turn on"
               }
               className={`
                 flex items-center gap-0.5 px-1 py-px rounded-full border text-[10px] font-medium leading-tight transition-all flex-shrink-0
                 ${
-                  coverage === "all"
-                    ? "border-green-500/40 bg-green-500/15 text-green-400 hover:bg-green-500/25"
-                    : coverage === "partial"
-                      ? "border-amber-500/40 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
-                      : "border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200"
+                  toggleFailed
+                    ? "border-red-500/40 bg-red-500/15 text-red-400 hover:bg-red-500/25"
+                    : coverage === "all"
+                      ? "border-green-500/40 bg-green-500/15 text-green-400 hover:bg-green-500/25"
+                      : coverage === "partial"
+                        ? "border-amber-500/40 bg-amber-500/15 text-amber-400 hover:bg-amber-500/25"
+                        : "border-slate-600 text-slate-400 hover:border-slate-500 hover:text-slate-200"
                 }
                 ${isToggling ? "opacity-50 cursor-not-allowed" : ""}
               `}
@@ -443,11 +451,13 @@ function WatchlistCard({
               <Radio
                 className={`w-2.5 h-2.5 ${coverage === "all" ? "animate-pulse" : ""}`}
               />
-              {coverage === "all"
-                ? "Alerts on"
-                : coverage === "partial"
-                  ? "Alerts partial"
-                  : "Alerts off"}
+              {toggleFailed
+                ? "Retry alerts"
+                : coverage === "all"
+                  ? "Alerts on"
+                  : coverage === "partial"
+                    ? "Alerts partial"
+                    : "Alerts off"}
             </button>
           </div>
         </div>
