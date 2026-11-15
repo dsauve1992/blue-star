@@ -12,7 +12,6 @@ import {
 import { useWatchlistSelection } from "../hooks/use-watchlist-selection";
 import { useTickerKeyboardNavigation } from "../hooks/use-ticker-keyboard-navigation";
 import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
-import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import type { ChartInterval } from "src/market-data/api/chart-data.client";
 import { PageContainer } from "src/global/design-system/page-container";
@@ -22,8 +21,6 @@ import { WatchlistCardBar } from "../components/WatchlistCardBar";
 import { TickerSidebar } from "../components/TickerSidebar";
 import { ChartPanel } from "../components/ChartPanel";
 
-const BENCHMARK_SYMBOL = "SPY";
-const BENCHMARK_EXCHANGE = "AMEX";
 const UNDO_NOTICE_MS = 8000;
 
 interface RemovedTicker {
@@ -114,29 +111,13 @@ export default function Watchlist() {
     [interval],
   );
 
-  const bars = interval === "W" ? 156 : 520;
-
   const chartProps = useMemo(() => {
     if (!selectedTicker) return null;
     return {
       exchange: extractExchange(selectedTicker),
       symbol: extractSymbol(selectedTicker),
-      interval,
-      bars,
     };
-  }, [selectedTicker, interval, bars]);
-
-  const {
-    candles: spyCandles,
-    loadMore: loadMoreSpy,
-    isLoadingMore: isLoadingMoreSpy,
-  } = useChartData(
-    BENCHMARK_SYMBOL,
-    BENCHMARK_EXCHANGE,
-    interval,
-    bars,
-    includeExtendedHours,
-  );
+  }, [selectedTicker]);
 
   const handleCreateWatchlist = useCallback(
     async (name: string) => {
@@ -434,11 +415,8 @@ export default function Watchlist() {
               financialLoading={financialLoading}
               financialError={financialError}
               onFinancialRetry={() => refetchFinancials()}
-              spyCandles={spyCandles}
               interval={interval}
               onIntervalChange={setInterval}
-              onLoadMoreSpy={loadMoreSpy}
-              isLoadingMoreSpy={isLoadingMoreSpy}
               includeExtendedHours={includeExtendedHours}
               onIncludeExtendedHoursChange={setIncludeExtendedHours}
             />
