@@ -3,8 +3,8 @@ import { MarketBreadthRepository } from '../domain/repositories/market-breadth.r
 import { MarketBreadthAggregate } from '../domain/entities/market-breadth-aggregate';
 import { BreadthDate } from '../domain/value-objects/breadth-date';
 import {
+  GetCachedHistoricalDataUseCase,
   type HistoricalData,
-  type MarketDataService,
 } from '../../market-data/market-data.module';
 
 const UNIVERSE_SIZE = 3400;
@@ -41,7 +41,7 @@ function newestFirst(stackedCounts: Array<number | null>) {
 
 describe('QueryMarketBreadthUseCase', () => {
   let repository: jest.Mocked<MarketBreadthRepository>;
-  let marketDataService: jest.Mocked<MarketDataService>;
+  let getCachedHistoricalData: jest.Mocked<GetCachedHistoricalDataUseCase>;
   let useCase: QueryMarketBreadthUseCase;
 
   beforeEach(() => {
@@ -52,11 +52,16 @@ describe('QueryMarketBreadthUseCase', () => {
       getRecentAggregates: jest.fn(),
       deleteAll: jest.fn(),
     };
-    marketDataService = { getHistoricalData: jest.fn() };
-    marketDataService.getHistoricalData.mockResolvedValue({
-      pricePoints: [],
-    } as unknown as HistoricalData);
-    useCase = new QueryMarketBreadthUseCase(repository, marketDataService);
+    getCachedHistoricalData = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<GetCachedHistoricalDataUseCase>;
+    getCachedHistoricalData.execute.mockResolvedValue({
+      historicalData: { pricePoints: [] } as unknown as HistoricalData,
+    });
+    useCase = new QueryMarketBreadthUseCase(
+      repository,
+      getCachedHistoricalData,
+    );
   });
 
   it('returns sessions oldest-to-newest with the new-high share of the universe', async () => {
@@ -300,12 +305,14 @@ describe('QueryMarketBreadthUseCase', () => {
         makeAggregate('2026-08-31', 120, 40),
         makeAggregate('2026-08-28', 100, 50),
       ]);
-      marketDataService.getHistoricalData.mockResolvedValue({
-        pricePoints: [
-          pricePoint('2026-08-31', 110),
-          pricePoint('2026-08-28', 100),
-        ],
-      } as unknown as HistoricalData);
+      getCachedHistoricalData.execute.mockResolvedValue({
+        historicalData: {
+          pricePoints: [
+            pricePoint('2026-08-31', 110),
+            pricePoint('2026-08-28', 100),
+          ],
+        } as unknown as HistoricalData,
+      });
 
       const response = await useCase.execute();
 
@@ -335,7 +342,7 @@ describe('QueryMarketBreadthUseCase', () => {
       repository.getRecentAggregates.mockResolvedValue([
         makeAggregate('2026-08-31', 120, 40),
       ]);
-      marketDataService.getHistoricalData.mockRejectedValue(
+      getCachedHistoricalData.execute.mockRejectedValue(
         new Error('Yahoo is down'),
       );
 

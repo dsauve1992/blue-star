@@ -2,8 +2,8 @@ import { MarketBreadthAnalysisServiceImpl } from './market-breadth-analysis.serv
 import { MarketBreadthUniverseService } from '../../domain/services/market-breadth-universe.service';
 import { MarketBreadthRepository } from '../../domain/repositories/market-breadth.repository.interface';
 import {
+  GetCachedHistoricalDataUseCase,
   PricePoint,
-  type MarketDataService,
 } from '../../../market-data/market-data.module';
 import { DateRange } from '../../../../shared/value-objects/date-range';
 import { REQUIRED_TRAILING_SESSIONS } from '../../domain/services/symbol-breadth-evaluation.service';
@@ -41,7 +41,7 @@ function buildDailyPricePoints(
 
 describe('MarketBreadthAnalysisServiceImpl', () => {
   let universeService: jest.Mocked<MarketBreadthUniverseService>;
-  let marketDataService: jest.Mocked<MarketDataService>;
+  let getCachedHistoricalData: jest.Mocked<GetCachedHistoricalDataUseCase>;
   let repository: jest.Mocked<MarketBreadthRepository>;
   let service: MarketBreadthAnalysisServiceImpl;
 
@@ -60,17 +60,18 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
       }),
     };
 
-    const getHistoricalData: jest.MockedFunction<
-      MarketDataService['getHistoricalData']
-    > = jest.fn();
-    getHistoricalData.mockImplementation((symbol) =>
+    getCachedHistoricalData = {
+      execute: jest.fn(),
+    } as unknown as jest.Mocked<GetCachedHistoricalDataUseCase>;
+    getCachedHistoricalData.execute.mockImplementation(({ symbol }) =>
       Promise.resolve({
-        symbol,
-        dateRange: FAKE_DATE_RANGE,
-        pricePoints: candles,
+        historicalData: {
+          symbol,
+          dateRange: FAKE_DATE_RANGE,
+          pricePoints: candles,
+        },
       }),
     );
-    marketDataService = { getHistoricalData };
 
     repository = {
       saveMembership: jest.fn().mockResolvedValue(undefined),
@@ -82,7 +83,7 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
 
     service = new MarketBreadthAnalysisServiceImpl(
       universeService,
-      marketDataService,
+      getCachedHistoricalData,
       repository,
     );
   });
@@ -118,11 +119,13 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
   });
 
   it('carries the stacked count from the per-session aggregation into the saved aggregate', async () => {
-    marketDataService.getHistoricalData.mockImplementation((symbol) =>
+    getCachedHistoricalData.execute.mockImplementation(({ symbol }) =>
       Promise.resolve({
-        symbol,
-        dateRange: FAKE_DATE_RANGE,
-        pricePoints: symbol.value === 'MSFT' ? risingCandles : candles,
+        historicalData: {
+          symbol,
+          dateRange: FAKE_DATE_RANGE,
+          pricePoints: symbol.value === 'MSFT' ? risingCandles : candles,
+        },
       }),
     );
 
@@ -141,12 +144,14 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
       universe_size: 3,
       symbols: ['AAPL', 'MSFT', 'NEWCO'],
     });
-    marketDataService.getHistoricalData.mockImplementation((symbol) =>
+    getCachedHistoricalData.execute.mockImplementation(({ symbol }) =>
       Promise.resolve({
-        symbol,
-        dateRange: FAKE_DATE_RANGE,
-        pricePoints:
-          symbol.value === 'NEWCO' ? risingCandles.slice(-120) : candles,
+        historicalData: {
+          symbol,
+          dateRange: FAKE_DATE_RANGE,
+          pricePoints:
+            symbol.value === 'NEWCO' ? risingCandles.slice(-120) : candles,
+        },
       }),
     );
 
@@ -167,14 +172,16 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
       symbols: Array.from({ length: 20 }, (_, i) => `SYM${i}`),
     });
 
-    marketDataService.getHistoricalData.mockImplementation((symbol) => {
+    getCachedHistoricalData.execute.mockImplementation(({ symbol }) => {
       if (symbol.value.startsWith('SYM') && Number(symbol.value.slice(3)) < 2) {
         return Promise.reject(new Error('Yahoo fetch failed'));
       }
       return Promise.resolve({
-        symbol,
-        dateRange: FAKE_DATE_RANGE,
-        pricePoints: candles,
+        historicalData: {
+          symbol,
+          dateRange: FAKE_DATE_RANGE,
+          pricePoints: candles,
+        },
       });
     });
 
@@ -199,7 +206,7 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
   });
 
   it('still persists membership when every symbol fails to fetch candles', async () => {
-    marketDataService.getHistoricalData.mockRejectedValue(
+    getCachedHistoricalData.execute.mockRejectedValue(
       new Error('Yahoo is down'),
     );
 
@@ -220,11 +227,13 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
       universe_size: symbols.length,
       symbols,
     });
-    marketDataService.getHistoricalData.mockImplementation((symbol) =>
+    getCachedHistoricalData.execute.mockImplementation(({ symbol }) =>
       Promise.resolve({
-        symbol,
-        dateRange: FAKE_DATE_RANGE,
-        pricePoints: symbol.value === 'SYM0' ? aheadCandles : candles,
+        historicalData: {
+          symbol,
+          dateRange: FAKE_DATE_RANGE,
+          pricePoints: symbol.value === 'SYM0' ? aheadCandles : candles,
+        },
       }),
     );
 
@@ -247,13 +256,14 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
 
     it('uses a longer candle lookback window than the daily run', async () => {
       await service.runDaily();
-      const dailyRange = marketDataService.getHistoricalData.mock.calls[0][1];
+      const dailyRange =
+        getCachedHistoricalData.execute.mock.calls[0][0].dateRange;
 
-      marketDataService.getHistoricalData.mockClear();
+      getCachedHistoricalData.execute.mockClear();
 
       await service.runBackfill(5);
       const backfillRange =
-        marketDataService.getHistoricalData.mock.calls[0][1];
+        getCachedHistoricalData.execute.mock.calls[0][0].dateRange;
 
       const dailyDays = dailyRange.getDaysDifference();
       const backfillDays = backfillRange.getDaysDifference();
@@ -275,11 +285,13 @@ describe('MarketBreadthAnalysisServiceImpl', () => {
     });
 
     it('writes the stacked count through the same per-session path as the daily run', async () => {
-      marketDataService.getHistoricalData.mockImplementation((symbol) =>
+      getCachedHistoricalData.execute.mockImplementation(({ symbol }) =>
         Promise.resolve({
-          symbol,
-          dateRange: FAKE_DATE_RANGE,
-          pricePoints: symbol.value === 'MSFT' ? risingCandles : candles,
+          historicalData: {
+            symbol,
+            dateRange: FAKE_DATE_RANGE,
+            pricePoints: symbol.value === 'MSFT' ? risingCandles : candles,
+          },
         }),
       );
 

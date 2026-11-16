@@ -16,12 +16,11 @@ import {
 } from '../../domain/services/symbol-breadth-evaluation.service';
 import {
   MARKET_BREADTH_REPOSITORY,
-  MARKET_BREADTH_MARKET_DATA_SERVICE,
   MARKET_BREADTH_UNIVERSE_SERVICE,
 } from '../../constants/tokens';
 import {
+  GetCachedHistoricalDataUseCase,
   PricePoint,
-  type MarketDataService,
 } from '../../../market-data/market-data.module';
 import { DateRange } from '../../../../shared/value-objects/date-range';
 import { Symbol } from '../../../../shared/value-objects/symbol';
@@ -79,8 +78,7 @@ export class MarketBreadthAnalysisServiceImpl
   constructor(
     @Inject(MARKET_BREADTH_UNIVERSE_SERVICE)
     private readonly universeService: MarketBreadthUniverseService,
-    @Inject(MARKET_BREADTH_MARKET_DATA_SERVICE)
-    private readonly marketDataService: MarketDataService,
+    private readonly getCachedHistoricalData: GetCachedHistoricalDataUseCase,
     @Inject(MARKET_BREADTH_REPOSITORY)
     private readonly repository: MarketBreadthRepository,
   ) {}
@@ -204,11 +202,11 @@ export class MarketBreadthAnalysisServiceImpl
     for (let attempt = 0; attempt < 2; attempt++) {
       try {
         const symbolVo = Symbol.of(symbol);
-        const historicalData = await this.marketDataService.getHistoricalData(
-          symbolVo,
+        const { historicalData } = await this.getCachedHistoricalData.execute({
+          symbol: symbolVo,
           dateRange,
-          '1d',
-        );
+          interval: '1d',
+        });
         return historicalData.pricePoints;
       } catch (error) {
         if (attempt === 1) {
