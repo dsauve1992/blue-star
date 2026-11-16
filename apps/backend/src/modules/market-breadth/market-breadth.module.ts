@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { DatabaseModule } from '../../config/database.module';
 import { MarketDataModule } from '../market-data/market-data.module';
-import { CACHED_MARKET_DATA_SERVICE } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
 import { StockAnalysisModule } from '../stock-analysis/stock-analysis.module';
 import { MarketBreadthController } from './api/market-breadth.controller';
@@ -14,7 +13,6 @@ import { BackfillMarketBreadthUseCase } from './use-cases/backfill-market-breadt
 import { QueryMarketBreadthUseCase } from './use-cases/query-market-breadth.use-case';
 import {
   MARKET_BREADTH_ANALYSIS_SERVICE,
-  MARKET_BREADTH_MARKET_DATA_SERVICE,
   MARKET_BREADTH_REPOSITORY,
   MARKET_BREADTH_UNIVERSE_SERVICE,
 } from './constants/tokens';
@@ -35,10 +33,6 @@ import {
     {
       provide: MARKET_BREADTH_UNIVERSE_SERVICE,
       useClass: MomentumLeadersBreadthUniverseService,
-    },
-    {
-      provide: MARKET_BREADTH_MARKET_DATA_SERVICE,
-      useExisting: CACHED_MARKET_DATA_SERVICE,
     },
     {
       provide: MARKET_BREADTH_ANALYSIS_SERVICE,

@@ -1,9 +1,6 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { MarketBreadthRepository } from '../domain/repositories/market-breadth.repository.interface';
-import {
-  MARKET_BREADTH_MARKET_DATA_SERVICE,
-  MARKET_BREADTH_REPOSITORY,
-} from '../constants/tokens';
+import { MARKET_BREADTH_REPOSITORY } from '../constants/tokens';
 import { stackedRatio } from '../domain/services/moving-average.service';
 import {
   BreadthState,
@@ -11,7 +8,7 @@ import {
   emaCrossoverSeries,
 } from '../domain/services/ema-crossover.service';
 import { BreadthDate } from '../domain/value-objects/breadth-date';
-import { type MarketDataService } from '../../market-data/market-data.module';
+import { GetCachedHistoricalDataUseCase } from '../../market-data/market-data.module';
 import { DateRange } from '../../../shared/value-objects/date-range';
 import { Symbol } from '../../../shared/value-objects/symbol';
 
@@ -68,8 +65,7 @@ export class QueryMarketBreadthUseCase {
   constructor(
     @Inject(MARKET_BREADTH_REPOSITORY)
     private readonly repository: MarketBreadthRepository,
-    @Inject(MARKET_BREADTH_MARKET_DATA_SERVICE)
-    private readonly marketDataService: MarketDataService,
+    private readonly getCachedHistoricalData: GetCachedHistoricalDataUseCase,
   ) {}
 
   async execute(
@@ -139,11 +135,13 @@ export class QueryMarketBreadthUseCase {
         firstSession.value.getTime() -
           BENCHMARK_WARMUP_CALENDAR_DAYS * MS_PER_DAY,
       );
-      const { pricePoints } = await this.marketDataService.getHistoricalData(
-        EQUAL_WEIGHT_BENCHMARK,
-        DateRange.of(start, new Date()),
-        '1d',
-      );
+      const {
+        historicalData: { pricePoints },
+      } = await this.getCachedHistoricalData.execute({
+        symbol: EQUAL_WEIGHT_BENCHMARK,
+        dateRange: DateRange.of(start, new Date()),
+        interval: '1d',
+      });
       const candles = pricePoints
         .map((p) => ({
           date: BreadthDate.of(p.date).toISOString(),

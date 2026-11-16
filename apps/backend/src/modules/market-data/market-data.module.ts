@@ -20,11 +20,7 @@ import {
 } from './constants/tokens';
 import { GetCompanyProfileUseCase } from './use-cases/get-company-profile.use-case';
 
-export { CACHED_MARKET_DATA_SERVICE };
-export type {
-  MarketDataService,
-  HistoricalData,
-} from './domain/services/market-data.service';
+export type { HistoricalData } from './domain/services/market-data.service';
 export { GetHistoricalDataUseCase, GetCachedHistoricalDataUseCase };
 export { PricePoint } from './domain/value-objects/price-point';
 
@@ -59,10 +55,6 @@ export { PricePoint } from './domain/value-objects/price-point';
     GetChartDataUseCase,
     GetIntradayDataUseCase,
   ],
-  exports: [
-    CACHED_MARKET_DATA_SERVICE,
-    GetHistoricalDataUseCase,
-    GetCachedHistoricalDataUseCase,
-  ],
+  exports: [GetHistoricalDataUseCase, GetCachedHistoricalDataUseCase],
 })
 export class MarketDataModule {}
