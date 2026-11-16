@@ -1,5 +1,6 @@
 import {
   getMarketOpenDateUtc,
+  isCompletedBar,
   isDuringMarketHours,
   isWithinMarketHours,
   marketToday,
@@ -56,6 +57,19 @@ describe('market-time.util', () => {
     // 4:30 PM Toronto = 21:30 UTC in winter (after 4:00 close)
     expect(isDuringMarketHours(new Date('2025-02-14T21:30:00.000Z'))).toBe(
       false,
+    );
+  });
+
+  it('should treat a bar as completed only once its 5-minute interval has ended', () => {
+    const barOpen = new Date('2025-02-14T15:15:00.000Z');
+    expect(isCompletedBar(barOpen, new Date('2025-02-14T15:19:59.999Z'))).toBe(
+      false,
+    );
+    expect(isCompletedBar(barOpen, new Date('2025-02-14T15:20:00.000Z'))).toBe(
+      true,
+    );
+    expect(isCompletedBar(barOpen, new Date('2025-02-14T15:20:00.001Z'))).toBe(
+      true,
     );
   });
 });

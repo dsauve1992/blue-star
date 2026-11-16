@@ -455,4 +455,65 @@ describe('BreakoutDetectionServiceImpl', () => {
 
     expect(result.detected).toBe(false);
   });
+  describe('completed bars only', () => {
+    const ticker = WatchlistTicker.of('AAPL');
+
+    function stubBars(extra: PricePoint[]): void {
+      getHistoricalData.execute.mockResolvedValue({
+        historicalData: historicalData([
+          ...buildBreakoutScenario({ currentVolume: 250 }),
+          ...extra,
+        ]),
+      });
+    }
+
+    it('should ignore a trailing live-quote point stamped at now', async () => {
+      const now = new Date(Date.UTC(2025, 1, 11, 15, 20, 10));
+      stubBars([PricePoint.of(now, 100, 100, 100, 100, 0)]);
+
+      const result = await service.detect(ticker, now);
+
+      expect(result.detected).toBe(true);
+    });
+
+    it('should ignore a grid bar whose interval is still forming', async () => {
+      const now = new Date(Date.UTC(2025, 1, 11, 15, 22));
+      stubBars([
+        PricePoint.of(
+          new Date(Date.UTC(2025, 1, 11, 15, 20)),
+          100,
+          100,
+          100,
+          100,
+          0,
+        ),
+      ]);
+
+      const result = await service.detect(ticker, now);
+
+      expect(result.detected).toBe(true);
+    });
+
+    it('should keep a bar whose interval ends exactly at now', async () => {
+      stubBars([]);
+
+      const result = await service.detect(
+        ticker,
+        new Date(Date.UTC(2025, 1, 11, 15, 20)),
+      );
+
+      expect(result.detected).toBe(true);
+    });
+
+    it('should drop the last bar while its interval is still open', async () => {
+      stubBars([]);
+
+      const result = await service.detect(
+        ticker,
+        new Date(Date.UTC(2025, 1, 11, 15, 19, 59)),
+      );
+
+      expect(result.detected).toBe(false);
+    });
+  });
 });

@@ -56,3 +56,7 @@ export function isSessionCloseBar(date: Date): boolean {
     MARKET_CLOSE_HOUR * 60 + MARKET_CLOSE_MINUTE - INTRADAY_BAR_MINUTES;
   return totalMinutes === lastBarOpen;
 }
+
+export function isCompletedBar(barOpen: Date, now: Date): boolean {
+  return barOpen.getTime() + INTRADAY_BAR_MINUTES * 60_000 <= now.getTime();
+}

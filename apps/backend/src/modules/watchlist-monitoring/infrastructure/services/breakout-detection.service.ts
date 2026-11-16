@@ -14,6 +14,7 @@ import {
 import {
   getMarketDateKey,
   getMarketOpenDateUtc,
+  isCompletedBar,
   isDuringMarketHours,
 } from './market-time.util';
 
@@ -96,6 +97,7 @@ export class BreakoutDetectionServiceImpl implements IBreakoutDetectionService {
     const historicalData = await this.fetchIntradayData(ticker, now);
     return [...historicalData.pricePoints]
       .filter((p) => isDuringMarketHours(p.date))
+      .filter((p) => isCompletedBar(p.date, now))
       .sort((a, b) => a.date.getTime() - b.date.getTime());
   }
 
