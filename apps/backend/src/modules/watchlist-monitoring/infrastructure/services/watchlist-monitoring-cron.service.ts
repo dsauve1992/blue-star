@@ -6,6 +6,7 @@ import {
   FindWatchlistTickersUseCase,
 } from '../../../watchlist/watchlist.module';
 import {
+  CronJobNotificationService,
   NOTIFICATION_SERVICE,
   NotificationMessage,
   NotificationPriority,
@@ -28,11 +29,24 @@ import {
 } from './market-time.util';
 import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
+export interface GapScanSummary {
+  watchlists: number;
+  failedWatchlists: number;
+  checkedTickers: number;
+  failedTickers: number;
+  firstError?: unknown;
+}
+
 @Injectable()
 export class WatchlistMonitoringCronService {
   private readonly logger = new Logger(WatchlistMonitoringCronService.name);
   private readonly breakoutTopic = NotificationTopic.of('blue-star-breakout');
   private readonly gapTopic = NotificationTopic.of('blue-star-gap');
+  private readonly gapJobOptions = {
+    jobName: 'Watchlist Gap Monitoring',
+    jobType: 'gap',
+    frequency: 'daily',
+  } as const;
 
   constructor(
     @Inject(WATCHLIST_MONITORING_READ_REPOSITORY)
@@ -46,6 +60,7 @@ export class WatchlistMonitoringCronService {
     private readonly gapDetectionService: IGapDetectionService,
     @Inject(NOTIFICATION_SERVICE)
     private readonly notificationService: NotificationService,
+    private readonly cronJobNotificationService: CronJobNotificationService,
   ) {}
 
   @Cron('*/5 * * * 1-5', { timeZone: MARKET_TIMEZONE })
@@ -145,15 +160,44 @@ export class WatchlistMonitoringCronService {
   @Cron('45 9 * * 1-5', { timeZone: MARKET_TIMEZONE })
   async monitorGaps(): Promise<void> {
     try {
-      await this.scanGaps();
+      const summary = await this.scanGaps();
+      if (summary.failedTickers > 0 || summary.failedWatchlists > 0) {
+        await this.cronJobNotificationService.notifyJobError(
+          this.gapJobOptions,
+          new Error(this.describeGapScanFailures(summary)),
+        );
+      }
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Watchlist Gap Monitoring failed: ${errorMessage}`);
+      await this.cronJobNotificationService.notifyJobError(
+        this.gapJobOptions,
+        error,
+      );
     }
   }
 
-  async scanGaps(): Promise<void> {
+  private describeGapScanFailures(summary: GapScanSummary): string {
+    const firstMessage =
+      summary.firstError instanceof Error
+        ? summary.firstError.message
+        : 'Unknown error';
+    const parts: string[] = [];
+    if (summary.failedTickers > 0) {
+      parts.push(
+        `${summary.failedTickers} of ${summary.checkedTickers} tickers could not be checked`,
+      );
+    }
+    if (summary.failedWatchlists > 0) {
+      parts.push(
+        `${summary.failedWatchlists} of ${summary.watchlists} watchlists could not be loaded`,
+      );
+    }
+    return `${parts.join('; ')}: ${firstMessage}`;
+  }
+
+  async scanGaps(): Promise<GapScanSummary> {
     this.logger.log('Starting Watchlist Gap Monitoring...');
 
     const activeMonitorings =
@@ -163,10 +207,21 @@ export class WatchlistMonitoringCronService {
 
     this.logger.log(`Found ${activeMonitorings.length} active gap monitorings`);
 
+    const summary: GapScanSummary = {
+      watchlists: activeMonitorings.length,
+      failedWatchlists: 0,
+      checkedTickers: 0,
+      failedTickers: 0,
+    };
     for (const monitoring of activeMonitorings) {
       try {
-        await this.processGapMonitoring(monitoring.watchlistId);
+        const result = await this.processGapMonitoring(monitoring.watchlistId);
+        summary.checkedTickers += result.checked;
+        summary.failedTickers += result.failed;
+        summary.firstError ??= result.firstError;
       } catch (error) {
+        summary.failedWatchlists++;
+        summary.firstError ??= error;
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
         this.logger.error(
@@ -174,18 +229,23 @@ export class WatchlistMonitoringCronService {
         );
       }
     }
+    return summary;
   }
 
-  private async processGapMonitoring(watchlistId: WatchlistId): Promise<void> {
+  private async processGapMonitoring(
+    watchlistId: WatchlistId,
+  ): Promise<{ checked: number; failed: number; firstError?: unknown }> {
     const watchlist = await this.findWatchlistTickers.execute(watchlistId);
 
     if (!watchlist) {
       this.logger.warn(
         `Watchlist ${watchlistId.value} not found, skipping gap monitoring`,
       );
-      return;
+      return { checked: 0, failed: 0 };
     }
 
+    let failed = 0;
+    let firstError: unknown;
     for (const ticker of watchlist.tickers) {
       try {
         const result = await this.gapDetectionService.detect(ticker);
@@ -210,6 +270,8 @@ export class WatchlistMonitoringCronService {
           );
         }
       } catch (error) {
+        failed++;
+        firstError ??= error;
         const errorMessage =
           error instanceof Error ? error.message : 'Unknown error';
         this.logger.warn(
@@ -217,6 +279,8 @@ export class WatchlistMonitoringCronService {
         );
       }
     }
+
+    return { checked: watchlist.tickers.length, failed, firstError };
   }
 
   private async sendGapAlert(
