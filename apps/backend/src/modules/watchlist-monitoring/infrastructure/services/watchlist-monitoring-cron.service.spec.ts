@@ -14,6 +14,7 @@ import type { MonitoringAlertLogRepository } from '../../domain/repositories/mon
 import type { BreakoutDetectionService } from '../../domain/services/breakout-detection.service';
 import type { IGapDetectionService } from '../../domain/services/i-gap-detection.service';
 import {
+  CronJobNotificationService,
   NOTIFICATION_SERVICE,
   type NotificationService,
 } from '../../../notification/notification.module';
@@ -31,6 +32,7 @@ describe('WatchlistMonitoringCronService — gap alerts', () => {
   let findWatchlistTickers: jest.Mocked<FindWatchlistTickersUseCase>;
   let gapDetectionService: jest.Mocked<IGapDetectionService>;
   let notificationService: jest.Mocked<NotificationService>;
+  let cronJobNotificationService: { notifyJobError: jest.Mock };
 
   const watchlistId = WatchlistId.of('11111111-1111-1111-1111-111111111111');
   const ticker = WatchlistTicker.of('AAPL');
@@ -64,10 +66,17 @@ describe('WatchlistMonitoringCronService — gap alerts', () => {
       }),
     };
     notificationService = { send: jest.fn().mockResolvedValue(undefined) };
+    cronJobNotificationService = {
+      notifyJobError: jest.fn().mockResolvedValue(undefined),
+    };
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         WatchlistMonitoringCronService,
+        {
+          provide: CronJobNotificationService,
+          useValue: cronJobNotificationService,
+        },
         {
           provide: WATCHLIST_MONITORING_READ_REPOSITORY,
           useValue: monitoringReadRepository,
@@ -208,6 +217,129 @@ describe('WatchlistMonitoringCronService — gap alerts', () => {
       'Watchlist Gap Monitoring failed: db down',
     );
   });
+
+  describe('failure push', () => {
+    const ticker2 = WatchlistTicker.of('MSFT');
+
+    function pushedErrorMessage(): string {
+      const [, error] = cronJobNotificationService.notifyJobError.mock
+        .calls[0] as [unknown, Error];
+      return error.message;
+    }
+
+    beforeEach(() => {
+      findWatchlistTickers.execute.mockResolvedValue({
+        id: watchlistId,
+        name: 'Momentum',
+        tickers: [ticker, ticker2],
+      } as never);
+    });
+
+    it('pushes one failure when every ticker fails', async () => {
+      gapDetectionService.detect.mockRejectedValue(new Error('yahoo down'));
+
+      await service.monitorGaps();
+
+      expect(cronJobNotificationService.notifyJobError).toHaveBeenCalledTimes(
+        1,
+      );
+      expect(cronJobNotificationService.notifyJobError).toHaveBeenCalledWith(
+        expect.objectContaining({ jobType: 'gap' }),
+        expect.any(Error),
+      );
+      expect(pushedErrorMessage()).toBe(
+        '2 of 2 tickers could not be checked: yahoo down',
+      );
+    });
+
+    it('still alerts for the tickers that succeed and pushes one failure for the rest', async () => {
+      gapDetectionService.detect
+        .mockRejectedValueOnce(new Error('yahoo down'))
+        .mockResolvedValueOnce({
+          ticker: ticker2,
+          detected: true,
+          entryPrice: 108,
+          stopPrice: 100,
+        });
+
+      await service.monitorGaps();
+
+      expect(notificationService.send).toHaveBeenCalledTimes(1);
+      expect(alertLogRepository.recordAlert).toHaveBeenCalledWith(
+        'MSFT',
+        getMarketDateKey(),
+        MonitoringType.GAP,
+      );
+      expect(cronJobNotificationService.notifyJobError).toHaveBeenCalledTimes(
+        1,
+      );
+      expect(pushedErrorMessage()).toBe(
+        '1 of 2 tickers could not be checked: yahoo down',
+      );
+    });
+
+    it('counts a failed gap alert send as a failed ticker', async () => {
+      notificationService.send.mockRejectedValue(new Error('ntfy down'));
+
+      await service.monitorGaps();
+
+      expect(pushedErrorMessage()).toBe(
+        '2 of 2 tickers could not be checked: ntfy down',
+      );
+    });
+
+    it('pushes one failure when a watchlist cannot be loaded', async () => {
+      const secondWatchlistId = WatchlistId.of(
+        '22222222-2222-2222-2222-222222222222',
+      );
+      monitoringReadRepository.findAllActiveByType.mockResolvedValue([
+        { watchlistId } as never,
+        { watchlistId: secondWatchlistId } as never,
+      ]);
+      findWatchlistTickers.execute.mockRejectedValueOnce(new Error('db blip'));
+      jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+      await service.monitorGaps();
+
+      expect(cronJobNotificationService.notifyJobError).toHaveBeenCalledTimes(
+        1,
+      );
+      expect(pushedErrorMessage()).toBe(
+        '1 of 2 watchlists could not be loaded: db blip',
+      );
+    });
+
+    it('does not push when nothing fails', async () => {
+      await service.monitorGaps();
+
+      expect(notificationService.send).toHaveBeenCalledTimes(2);
+      expect(cronJobNotificationService.notifyJobError).not.toHaveBeenCalled();
+    });
+
+    it('pushes the error when the whole job fails', async () => {
+      const dbError = new Error('db unavailable');
+      monitoringReadRepository.findAllActiveByType.mockRejectedValue(dbError);
+      jest.spyOn(Logger.prototype, 'error').mockImplementation();
+
+      await service.monitorGaps();
+
+      expect(cronJobNotificationService.notifyJobError).toHaveBeenCalledTimes(
+        1,
+      );
+      expect(cronJobNotificationService.notifyJobError).toHaveBeenCalledWith(
+        expect.objectContaining({ jobType: 'gap' }),
+        dbError,
+      );
+    });
+
+    it('does not push from a manual scanGaps run', async () => {
+      gapDetectionService.detect.mockRejectedValue(new Error('yahoo down'));
+
+      await service.scanGaps();
+
+      expect(cronJobNotificationService.notifyJobError).not.toHaveBeenCalled();
+    });
+  });
 });
 
 describe('WatchlistMonitoringCronService — breakout alerting', () => {
@@ -273,6 +405,10 @@ describe('WatchlistMonitoringCronService — breakout alerting', () => {
         },
         { provide: GAP_DETECTION_SERVICE, useValue: { detect: jest.fn() } },
         { provide: NOTIFICATION_SERVICE, useValue: notificationService },
+        {
+          provide: CronJobNotificationService,
+          useValue: { notifyJobError: jest.fn().mockResolvedValue(undefined) },
+        },
       ],
     }).compile();
 
