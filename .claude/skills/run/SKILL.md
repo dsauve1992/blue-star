@@ -149,7 +149,7 @@ Backend — public routes, no auth needed:
 
 ```bash
 curl http://127.0.0.1:3000/api/health              # {"status":"ok",...}
-curl http://127.0.0.1:3000/api/leader-scan/latest  # real data from Postgres
+curl http://127.0.0.1:3000/api/stock-analysis/momentum-leaders  # latest leader scan from Postgres (public)
 ```
 
 Most other routes require a Kinde JWT; public ones are marked `@Public()` in
