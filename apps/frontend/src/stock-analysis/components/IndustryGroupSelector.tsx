@@ -101,7 +101,10 @@ export function IndustryGroupSelector({
         disabled={isLoading || groups.length === 0}
         className="w-full flex items-center justify-between gap-2 px-3 py-2 rounded-lg border border-slate-700/50 bg-slate-800/50 hover:bg-slate-700/50 disabled:opacity-50 disabled:cursor-not-allowed text-left transition-colors"
       >
-        <span className="text-sm leading-snug text-slate-200">
+        <span
+          className="min-w-0 truncate text-sm leading-snug text-slate-200"
+          title={selectedGroup ?? undefined}
+        >
           {selectedGroup ??
             (isLoading
               ? "Loading industry groups..."
@@ -110,7 +113,7 @@ export function IndustryGroupSelector({
                 : "Select an industry group")}
         </span>
         <ChevronDown
-          className={`w-4 h-4 text-slate-400 transition-transform ${
+          className={`w-4 h-4 shrink-0 text-slate-400 transition-transform ${
             isOpen ? "rotate-180" : ""
           }`}
         />

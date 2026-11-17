@@ -1,7 +1,5 @@
-import { useEffect, useMemo, useState, useCallback } from "react";
-import type { Time } from "lightweight-charts";
-import { BarChart3, ChevronDown } from "lucide-react";
-import { ChevronUp, Layers, RefreshCw } from "lucide-react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
+import { BarChart3, Layers, RefreshCw } from "lucide-react";
 import { PageContainer } from "src/global/design-system/page-container";
 import {
   LoadingSpinner,
@@ -11,34 +9,17 @@ import {
 } from "src/global/design-system";
 import { useIndustryGroups } from "../hooks/use-industry-groups";
 import { useIndustryGroupRatings } from "../hooks/use-industry-group-ratings";
-import { useRsBenchmarkChart } from "src/market-data/hooks/use-rs-benchmark-chart";
-import { useFinancialReport } from "src/fundamental/hooks/use-financial-report";
-import { useCompanyProfile } from "src/market-data/hooks/use-company-profile";
+import { useConsolidationKeyboardNavigation } from "../hooks/use-consolidation-keyboard-navigation";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
-import { useIndustryGroupSymbol } from "src/sector-rotation/hooks/use-industry-group-symbol";
 import { useIndustryGroupQuadrantHistory } from "src/sector-rotation/hooks/use-industry-group-quadrant-history";
-import { buildQuadrantSegments } from "src/stock-analysis/utils/quadrant-segments";
 import {
   getIndustryGroupQuadrant,
   INDUSTRY_GROUP_UNIVERSE_ID,
 } from "src/sector-rotation/utils/industry-group-utils";
 import { getQuadrantColor } from "src/sector-rotation/utils/sector-utils";
-import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
-import {
-  MAIN_CHART_TIMEFRAME_OPTIONS,
-  type ChartInterval,
-} from "src/market-data/api/chart-data.client";
-import { TechnicalChart } from "src/market-data/components/TechnicalChart";
-import { FinancialReportChartFooter } from "src/fundamental/components/FinancialReportChartFooter";
-import { AddToWatchlistButton } from "src/watchlist/components/AddToWatchlistButton";
-import {
-  useWatchlists,
-  useAddTickerToWatchlist,
-  useRemoveTickerFromWatchlist,
-  useCreateWatchlist,
-} from "src/watchlist/hooks/use-watchlists";
 import { IndustryGroupSelector } from "../components/IndustryGroupSelector";
-import { IndustryGroupListItem } from "../components/IndustryGroupListItem";
+import { ChartGridCard } from "../components/ChartGridCard";
+import { IndustryGroupMemberDetail } from "../components/IndustryGroupMemberDetail";
 import { formatScanDate } from "../utils/format-scan-date";
 
 // Industry-group RS ratings are keyed only by symbol; we don't track the
@@ -46,13 +27,22 @@ import { formatScanDate } from "../utils/format-scan-date";
 // candle fetches; it only affects the TradingView deep-link target.
 const DEFAULT_EXCHANGE = "NASDAQ";
 
+const GRID_QUADRANT_LOOKBACK_DAYS = 300;
+
+function isoDaysAgo(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return date.toISOString().slice(0, 10);
+}
+
+function memberTickerId(symbol: string): string {
+  return `${DEFAULT_EXCHANGE}:${symbol}`;
+}
+
 export default function IndustryGroupExplorer() {
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [selectedSymbol, setSelectedSymbol] = useState<string | null>(null);
-  const [interval, setInterval] = useState<ChartInterval>("D");
-  const [includeExtendedHours, setIncludeExtendedHours] = useState(true);
-  const [showFinancialFooter, setShowFinancialFooter] = useState(true);
-  const [showQuadrantBackground, setShowQuadrantBackground] = useState(true);
+  const gridRef = useRef<HTMLDivElement>(null);
 
   const {
     data: groupsData,
@@ -61,6 +51,11 @@ export default function IndustryGroupExplorer() {
     refetch: refetchGroups,
   } = useIndustryGroups();
 
+  const firstGroup = groupsData?.groups[0]?.industryGroup ?? null;
+  useEffect(() => {
+    if (!selectedGroup && firstGroup) setSelectedGroup(firstGroup);
+  }, [selectedGroup, firstGroup]);
+
   const {
     data: ratingsData,
     isLoading: ratingsLoading,
@@ -68,429 +63,207 @@ export default function IndustryGroupExplorer() {
     refetch: refetchRatings,
   } = useIndustryGroupRatings(selectedGroup);
 
-  // Auto-select first ticker when group changes / data loads.
+  const ratings = useMemo(() => ratingsData?.ratings ?? [], [ratingsData]);
+
   useEffect(() => {
-    if (!ratingsData?.ratings || ratingsData.ratings.length === 0) {
+    if (ratings.length === 0) {
       setSelectedSymbol(null);
       return;
     }
-    const symbols = ratingsData.ratings.map((r) => r.symbol);
-    if (!selectedSymbol || !symbols.includes(selectedSymbol)) {
-      setSelectedSymbol(symbols[0]);
+    if (!selectedSymbol || !ratings.some((r) => r.symbol === selectedSymbol)) {
+      setSelectedSymbol(ratings[0].symbol);
     }
-  }, [ratingsData, selectedSymbol]);
+  }, [ratings, selectedSymbol]);
 
   const handleSelectGroup = useCallback((group: string) => {
     setSelectedGroup(group);
     setSelectedSymbol(null);
   }, []);
 
-  const movingAverages = useMemo(
-    () => getDefaultMovingAverages(interval),
-    [interval],
-  );
+  const handleSelectTicker = useCallback((tickerId: string) => {
+    setSelectedSymbol(tickerId.split(":")[1] ?? tickerId);
+  }, []);
 
-  const { data: profileData } = useCompanyProfile(selectedSymbol);
+  const tickerGroups = useMemo(
+    () => [ratings.map((r) => memberTickerId(r.symbol))],
+    [ratings],
+  );
+  const selectedTicker = selectedSymbol ? memberTickerId(selectedSymbol) : null;
+
+  useConsolidationKeyboardNavigation({
+    tickerGroups,
+    selectedTicker,
+    onTickerChange: handleSelectTicker,
+  });
+
+  useEffect(() => {
+    if (!selectedTicker) return;
+    gridRef.current
+      ?.querySelector(`[data-ticker="${CSS.escape(selectedTicker)}"]`)
+      ?.scrollIntoView({ block: "nearest" });
+  }, [selectedTicker]);
+
   const { data: industryGroupStatusData } = useLatestSectorStatus(
     INDUSTRY_GROUP_UNIVERSE_ID,
+  );
+  const [quadrantHistoryRange] = useState(() => ({
+    start: isoDaysAgo(GRID_QUADRANT_LOOKBACK_DAYS),
+    end: isoDaysAgo(0),
+  }));
+  const { data: gridQuadrantHistory } = useIndustryGroupQuadrantHistory(
+    selectedGroup,
+    quadrantHistoryRange.start,
+    quadrantHistoryRange.end,
   );
   const quadrant = industryGroupStatusData?.sectors
     ? getIndustryGroupQuadrant(selectedGroup, industryGroupStatusData.sectors)
     : null;
 
-  const groupSymbol = useIndustryGroupSymbol(selectedGroup);
-  const {
-    candles,
-    isLoading: chartLoading,
-    error: chartError,
-    refetch: refetchChart,
-    loadMore,
-    isLoadingMore,
-    rs,
-    visibleBars,
-  } = useRsBenchmarkChart({
-    symbol: selectedSymbol,
-    exchange: selectedSymbol ? DEFAULT_EXCHANGE : null,
-    groupSymbol,
-    groupLabel: selectedGroup,
-    interval,
-    includeExtendedHours,
-  });
-
-  const {
-    data: financialData,
-    isLoading: financialLoading,
-    error: financialError,
-    refetch: refetchFinancials,
-  } = useFinancialReport(selectedSymbol);
-
-  const { data: watchlistsData } = useWatchlists();
-  const addTickerToWatchlist = useAddTickerToWatchlist();
-  const removeTickerFromWatchlist = useRemoveTickerFromWatchlist();
-  const createWatchlist = useCreateWatchlist();
-
-  const selectedTicker = selectedSymbol
-    ? `${DEFAULT_EXCHANGE}:${selectedSymbol}`
-    : null;
-
-  const handleToggleWatchlist = useCallback(
-    async (watchlistId: string, isTickerInWatchlist: boolean) => {
-      if (!selectedSymbol || !selectedTicker) return;
-      const tickerToUse =
-        watchlistsData?.watchlists
-          .find((w) => w.id === watchlistId)
-          ?.tickers.find((t) => t === selectedTicker || t === selectedSymbol) ||
-        selectedTicker;
-      if (isTickerInWatchlist) {
-        await removeTickerFromWatchlist.mutateAsync({
-          watchlistId,
-          ticker: tickerToUse,
-        });
-      } else {
-        await addTickerToWatchlist.mutateAsync({
-          watchlistId,
-          request: { ticker: selectedTicker },
-        });
-      }
-    },
-    [
-      selectedSymbol,
-      selectedTicker,
-      watchlistsData,
-      addTickerToWatchlist,
-      removeTickerFromWatchlist,
-    ],
-  );
-
-  const handleCreateWatchlist = useCallback(
-    async (name: string) => {
-      if (!selectedTicker) return;
-      const response = await createWatchlist.mutateAsync({ name });
-      await addTickerToWatchlist.mutateAsync({
-        watchlistId: response.watchlistId,
-        request: { ticker: selectedTicker },
-      });
-    },
-    [selectedTicker, createWatchlist, addTickerToWatchlist],
-  );
-
-  const chartStartDate =
-    typeof candles?.[0]?.time === "string" ? candles[0].time : undefined;
-  const chartEndDate =
-    typeof candles?.[candles.length - 1]?.time === "string"
-      ? (candles[candles.length - 1].time as string)
-      : undefined;
-  const { data: quadrantHistory } = useIndustryGroupQuadrantHistory(
-    selectedGroup,
-    chartStartDate,
-    chartEndDate,
-  );
-  const quadrantSegments = useMemo(
-    () =>
-      buildQuadrantSegments(
-        quadrantHistory ?? [],
-        (candles ?? []).map((c) => c.time as Time),
-      ),
-    [quadrantHistory, candles],
-  );
-
-  const ratings = ratingsData?.ratings ?? [];
-  const currentIndex = ratings.findIndex((r) => r.symbol === selectedSymbol);
-
-  const navigate = (direction: "up" | "down") => {
-    if (ratings.length === 0) return;
-    let newIndex: number;
-    if (currentIndex === -1) {
-      newIndex = 0;
-    } else if (direction === "down") {
-      newIndex = Math.min(currentIndex + 1, ratings.length - 1);
-    } else {
-      newIndex = Math.max(currentIndex - 1, 0);
-    }
-    setSelectedSymbol(ratings[newIndex].symbol);
-  };
-
   return (
     <PageContainer fullWidth noPadding>
-      <div className="w-full relative min-h-[calc(100vh-var(--app-top-offset))] bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-900/20 via-transparent to-transparent pointer-events-none" />
+      <div className="w-full h-[calc(100vh-var(--app-top-offset))] flex flex-col bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+        <div className="relative z-40 flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-2.5 border-b border-slate-700/50 bg-slate-800/30 backdrop-blur-xl">
+          <div className="flex items-center gap-2 text-xs text-slate-400">
+            <Layers className="w-3.5 h-3.5" />
+            <span>Industry Group</span>
+          </div>
+          <div className="w-full sm:w-96">
+            <IndustryGroupSelector
+              groups={groupsData?.groups ?? []}
+              selectedGroup={selectedGroup}
+              isLoading={groupsLoading}
+              onSelect={handleSelectGroup}
+            />
+          </div>
+          {quadrant && (
+            <span
+              className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap border ${getQuadrantColor(quadrant)}`}
+            >
+              {quadrant}
+            </span>
+          )}
+          {selectedGroup && ratingsData && (
+            <span className="text-xs text-slate-500">
+              {ratingsData.ratings.length} members · ranked as of{" "}
+              {formatScanDate(ratingsData.computedAt)}
+            </span>
+          )}
+          {groupsError && (
+            <div className="flex items-center gap-2 text-xs text-red-400">
+              Failed to load industry groups.
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => refetchGroups()}
+              >
+                <RefreshCw className="w-4 h-4 mr-2" />
+                Retry
+              </Button>
+            </div>
+          )}
+        </div>
 
-        <div className="relative flex flex-col md:h-[calc(100vh-var(--app-top-offset))]">
-          <div className="flex-1 flex flex-col md:flex-row min-h-0">
-            <aside className="relative z-10 w-full max-h-[40vh] md:w-72 md:max-h-none flex-shrink-0 border-b md:border-b-0 md:border-r border-slate-700/50 bg-slate-800/30 backdrop-blur-xl flex flex-col">
-              <div className="px-3 py-2 border-b border-slate-700/50 space-y-2">
-                <div className="flex items-center gap-2 text-xs text-slate-400">
-                  <Layers className="w-3.5 h-3.5" />
-                  <span>Industry Group</span>
+        <div className="flex-1 min-h-0 flex">
+          {!selectedGroup ? (
+            <div className="flex-1 flex flex-col items-center justify-center px-4 text-center">
+              <div className="p-6 rounded-full bg-slate-700/30 mb-6">
+                <BarChart3 className="w-16 h-16 text-slate-500" />
+              </div>
+              <h3 className="text-xl font-semibold text-slate-300 mb-2">
+                No industry group selected
+              </h3>
+              <p className="text-slate-500 max-w-md">
+                Pick an industry group to see its ranked members.
+              </p>
+            </div>
+          ) : ratingsLoading ? (
+            <div className="flex-1 flex items-center justify-center">
+              <LoadingSpinner
+                label="Loading ratings..."
+                className="[&>span]:text-slate-400"
+              />
+            </div>
+          ) : ratingsError ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Alert variant="danger" className="max-w-md">
+                <AlertDescription>
+                  Failed to load ratings for this group.
+                </AlertDescription>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="mt-3"
+                  onClick={() => refetchRatings()}
+                >
+                  <RefreshCw className="w-4 h-4 mr-2" />
+                  Retry
+                </Button>
+              </Alert>
+            </div>
+          ) : ratings.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center">
+              <Alert variant="warning" className="max-w-md">
+                <AlertDescription>This group has no members.</AlertDescription>
+              </Alert>
+            </div>
+          ) : (
+            <div className="flex-1 min-w-0 min-h-0 flex flex-col md:flex-row">
+              <div
+                key={selectedGroup}
+                ref={gridRef}
+                className="flex-1 min-h-0 md:flex-none md:w-[55%] md:shrink-0 overflow-y-auto px-4 pb-4"
+              >
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3 pt-3">
+                  {ratings.map((r, idx) => {
+                    const tickerId = memberTickerId(r.symbol);
+                    return (
+                      <ChartGridCard
+                        key={tickerId}
+                        symbol={r.symbol}
+                        exchange={DEFAULT_EXCHANGE}
+                        tickerId={tickerId}
+                        quadrantHistory={gridQuadrantHistory}
+                        scrollRootRef={gridRef}
+                        isSelected={tickerId === selectedTicker}
+                        onOpen={handleSelectTicker}
+                        header={
+                          <>
+                            <span className="shrink-0 w-6 font-mono text-slate-500 tabular-nums">
+                              #{idx + 1}
+                            </span>
+                            <span className="shrink-0 font-semibold text-sm text-white">
+                              {r.symbol}
+                            </span>
+                            <span className="shrink-0 whitespace-nowrap font-mono text-emerald-400">
+                              RS {r.rsRating}
+                            </span>
+                          </>
+                        }
+                      />
+                    );
+                  })}
                 </div>
-                <IndustryGroupSelector
-                  groups={groupsData?.groups ?? []}
-                  selectedGroup={selectedGroup}
-                  isLoading={groupsLoading}
-                  onSelect={handleSelectGroup}
-                />
-                {groupsError && (
-                  <Alert variant="danger">
-                    <AlertDescription>
-                      Failed to load industry groups.
-                    </AlertDescription>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="mt-3"
-                      onClick={() => refetchGroups()}
-                    >
-                      <RefreshCw className="w-4 h-4 mr-2" />
-                      Retry
-                    </Button>
-                  </Alert>
-                )}
-                {selectedGroup && ratingsData && (
-                  <div className="text-[10px] text-slate-500 px-1">
-                    {ratingsData.ratings.length} members · ranked as of{" "}
-                    {formatScanDate(ratingsData.computedAt)}
-                  </div>
-                )}
               </div>
 
-              <div
-                className="flex-1 overflow-y-auto py-1 scrollbar-thin scrollbar-thumb-slate-600 scrollbar-track-transparent"
-                tabIndex={0}
-              >
-                {!selectedGroup && (
-                  <div className="hidden md:flex flex-col items-center justify-center h-full text-center px-4">
-                    <div className="p-3 rounded-full bg-slate-700/50 mb-3">
-                      <Layers className="w-6 h-6 text-slate-500" />
-                    </div>
-                    <p className="text-slate-400 text-xs">
-                      Pick an industry group to see its ranked members.
+              <aside className="order-first h-[55vh] shrink-0 md:order-none md:h-auto md:flex-1 md:shrink min-w-0 border-b md:border-b-0 md:border-l border-slate-700/50 bg-slate-900/30">
+                {selectedSymbol ? (
+                  <IndustryGroupMemberDetail
+                    symbol={selectedSymbol}
+                    exchange={DEFAULT_EXCHANGE}
+                    industryGroup={selectedGroup}
+                    quadrant={quadrant}
+                  />
+                ) : (
+                  <div className="h-full flex flex-col items-center justify-center gap-3 text-center px-6">
+                    <BarChart3 className="w-10 h-10 text-slate-600" />
+                    <p className="text-sm text-slate-400">
+                      Select a chart to see its details
                     </p>
                   </div>
                 )}
-
-                {selectedGroup && ratingsLoading && (
-                  <div className="flex items-center justify-center h-full">
-                    <LoadingSpinner
-                      label="Loading ratings..."
-                      className="[&>span]:text-slate-400"
-                    />
-                  </div>
-                )}
-
-                {selectedGroup && ratingsError && (
-                  <div className="p-3">
-                    <Alert variant="danger">
-                      <AlertDescription>
-                        Failed to load ratings for this group.
-                      </AlertDescription>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        className="mt-3"
-                        onClick={() => refetchRatings()}
-                      >
-                        <RefreshCw className="w-4 h-4 mr-2" />
-                        Retry
-                      </Button>
-                    </Alert>
-                  </div>
-                )}
-
-                {selectedGroup &&
-                  !ratingsLoading &&
-                  !ratingsError &&
-                  ratings.map((r, idx) => (
-                    <IndustryGroupListItem
-                      key={r.symbol}
-                      symbol={r.symbol}
-                      rsRating={r.rsRating}
-                      rank={idx + 1}
-                      isSelected={selectedSymbol === r.symbol}
-                      onSelect={setSelectedSymbol}
-                    />
-                  ))}
-              </div>
-
-              {ratings.length > 0 && (
-                <div className="px-3 py-2 border-t border-slate-700/50 bg-slate-900/30">
-                  <div className="flex items-center justify-between gap-1">
-                    <button
-                      onClick={() => navigate("up")}
-                      aria-label="Previous ticker"
-                      title="Previous ticker"
-                      disabled={currentIndex <= 0}
-                      className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronUp className="w-3.5 h-3.5" />
-                    </button>
-                    <span className="text-xs text-slate-400 tabular-nums">
-                      {currentIndex + 1} of {ratings.length}
-                    </span>
-                    <button
-                      onClick={() => navigate("down")}
-                      aria-label="Next ticker"
-                      title="Next ticker"
-                      disabled={currentIndex >= ratings.length - 1}
-                      className="flex items-center justify-center w-8 h-8 rounded text-slate-400 hover:text-white hover:bg-slate-700/50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-400 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                    >
-                      <ChevronDown className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </aside>
-
-            <main className="flex-1 flex flex-col min-w-0">
-              <div className="flex-1 flex flex-col min-h-0 p-4 gap-2 md:overflow-hidden">
-                {selectedSymbol && selectedTicker && (
-                  <div className="flex-shrink-0 flex items-center justify-between gap-3 px-1 py-1">
-                    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 min-w-0">
-                      <h2 className="text-xl font-bold text-white">
-                        {selectedSymbol}
-                      </h2>
-                      {profileData?.profile?.sector && (
-                        <span className="text-xs text-slate-400">
-                          {profileData.profile.sector}
-                          {profileData.profile.industry && (
-                            <span className="text-slate-500">
-                              {" "}
-                              · {profileData.profile.industry}
-                            </span>
-                          )}
-                        </span>
-                      )}
-                      {quadrant && (
-                        <span
-                          className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium whitespace-nowrap border ${getQuadrantColor(quadrant)}`}
-                        >
-                          {quadrant}
-                        </span>
-                      )}
-                    </div>
-                    <AddToWatchlistButton
-                      ticker={selectedTicker}
-                      watchlists={watchlistsData?.watchlists ?? []}
-                      onToggleWatchlist={handleToggleWatchlist}
-                      onCreateWatchlist={handleCreateWatchlist}
-                      isAddingToWatchlist={addTickerToWatchlist.isPending}
-                      isRemovingFromWatchlist={
-                        removeTickerFromWatchlist.isPending
-                      }
-                      isCreatingWatchlist={createWatchlist.isPending}
-                    />
-                  </div>
-                )}
-
-                <div className="h-[420px] md:h-auto md:flex-1 md:min-h-0">
-                  {selectedSymbol ? (
-                    <div className="h-full rounded-xl overflow-hidden border border-slate-700/50 bg-slate-800/30 backdrop-blur-xl shadow-2xl">
-                      {chartLoading ? (
-                        <div className="h-full flex items-center justify-center">
-                          <LoadingSpinner />
-                        </div>
-                      ) : chartError ? (
-                        <div className="h-full flex flex-col items-center justify-center gap-3 text-red-400 text-sm">
-                          Failed to load chart data
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => refetchChart()}
-                          >
-                            <RefreshCw className="w-4 h-4 mr-2" />
-                            Retry
-                          </Button>
-                        </div>
-                      ) : candles ? (
-                        <TechnicalChart
-                          candles={candles}
-                          ticker={selectedSymbol}
-                          exchange={DEFAULT_EXCHANGE}
-                          movingAverages={movingAverages}
-                          visibleBars={visibleBars}
-                          volume={{ show: true }}
-                          showTradingView
-                          rs={rs}
-                          timeframe={{
-                            value: interval,
-                            onChange: setInterval,
-                            options: MAIN_CHART_TIMEFRAME_OPTIONS,
-                          }}
-                          extendedHours={{
-                            includeExtendedHours,
-                            onIncludeExtendedHoursChange:
-                              setIncludeExtendedHours,
-                          }}
-                          quadrantBackground={{
-                            segments: quadrantSegments,
-                            show: showQuadrantBackground,
-                            onShowChange: setShowQuadrantBackground,
-                          }}
-                          onLoadMore={loadMore}
-                          isLoadingMore={isLoadingMore}
-                        />
-                      ) : null}
-                    </div>
-                  ) : (
-                    <div className="h-full flex flex-col items-center justify-center rounded-xl border border-slate-700/50 border-dashed bg-slate-800/20">
-                      <div className="p-6 rounded-full bg-slate-700/30 mb-6">
-                        <BarChart3 className="w-16 h-16 text-slate-500" />
-                      </div>
-                      <h3 className="text-xl font-semibold text-slate-300 mb-2">
-                        {selectedGroup
-                          ? "No ticker selected"
-                          : "No industry group selected"}
-                      </h3>
-                      <p className="text-slate-500 text-center max-w-md">
-                        {selectedGroup
-                          ? "Select a ticker from the list."
-                          : "Select an industry group to begin."}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                {selectedSymbol && (
-                  <div className="flex-shrink-0">
-                    <button
-                      onClick={() =>
-                        setShowFinancialFooter(!showFinancialFooter)
-                      }
-                      className="w-full flex items-center justify-center gap-1.5 py-1.5 text-xs text-slate-400 hover:text-slate-200 transition-colors duration-150"
-                      aria-expanded={showFinancialFooter}
-                      aria-label={
-                        showFinancialFooter
-                          ? "Hide financial data"
-                          : "Show financial data"
-                      }
-                    >
-                      <span>
-                        {showFinancialFooter ? "Hide" : "Show"} Financials
-                      </span>
-                      <ChevronDown
-                        className={`w-3.5 h-3.5 transition-transform duration-200 ease-out ${
-                          showFinancialFooter ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                    <div
-                      className={`overflow-hidden transition-all duration-200 ease-out ${
-                        showFinancialFooter
-                          ? "max-h-[500px] opacity-100"
-                          : "max-h-0 opacity-0"
-                      }`}
-                    >
-                      <FinancialReportChartFooter
-                        report={financialData?.report ?? null}
-                        isLoading={financialLoading}
-                        error={financialError}
-                        onRetry={() => refetchFinancials()}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-            </main>
-          </div>
+              </aside>
+            </div>
+          )}
         </div>
       </div>
     </PageContainer>

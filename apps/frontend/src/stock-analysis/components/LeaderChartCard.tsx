@@ -1,19 +1,10 @@
-import { memo, useRef, type RefObject } from "react";
+import { memo, type RefObject } from "react";
 import {
   leaderTickerFullName,
   type MomentumLeader,
 } from "../api/momentum-leaders.client";
 import type { LeaderSortKey } from "../hooks/use-sorted-leaders";
-import { useInViewOnce } from "../hooks/use-in-view-once";
-import { useChartData } from "src/market-data/hooks/use-chart-data";
-import { TechnicalChart } from "src/market-data/components/TechnicalChart";
-import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
-import { LoadingSpinner } from "src/global/design-system";
-import { ChartLoadError } from "./ChartLoadError";
-
-const GRID_CHART_BARS = 200;
-const GRID_VISIBLE_BARS = 130;
-const GRID_MOVING_AVERAGES = getDefaultMovingAverages("D");
+import { ChartGridCard } from "./ChartGridCard";
 
 function perfHorizon(leader: MomentumLeader, sortKey: LeaderSortKey) {
   switch (sortKey) {
@@ -58,81 +49,44 @@ function LeaderChartCardInner({
   isSelected = false,
   onOpen,
 }: LeaderChartCardProps) {
-  const tickerFullName = leaderTickerFullName(leader);
-  const cardRef = useRef<HTMLDivElement>(null);
   const perf = perfBadge(leader, sortKey);
-  const inView = useInViewOnce(cardRef, scrollRootRef);
-  const { candles, error, refetch } = useChartData(
-    inView ? leader.symbol : null,
-    inView ? leader.exchange : null,
-    "D",
-    GRID_CHART_BARS,
-  );
 
   return (
-    <div
-      ref={cardRef}
-      data-ticker={tickerFullName}
-      className={`flex flex-col h-80 scroll-mt-12 rounded-xl overflow-hidden border bg-slate-800/30 transition-colors duration-150 ${
-        isSelected
-          ? "border-blue-400 ring-1 ring-blue-400/60"
-          : "border-slate-700/50 hover:border-blue-500/50"
-      }`}
-    >
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-700/50 text-xs">
-        <span className="shrink-0 font-semibold text-sm text-white">
-          {leader.symbol}
-        </span>
-        {rsRating !== undefined && (
-          <span className="shrink-0 whitespace-nowrap font-mono text-emerald-400">
-            RS {rsRating}
+    <ChartGridCard
+      symbol={leader.symbol}
+      exchange={leader.exchange}
+      tickerId={leaderTickerFullName(leader)}
+      scrollRootRef={scrollRootRef}
+      isSelected={isSelected}
+      onOpen={onOpen}
+      header={
+        <>
+          <span className="shrink-0 font-semibold text-sm text-white">
+            {leader.symbol}
           </span>
-        )}
-        <span className="shrink-0 whitespace-nowrap font-mono text-slate-400">
-          ADR {leader.adrPct.toFixed(1)}%
-        </span>
-        {perf && (
-          <span
-            className={`shrink-0 whitespace-nowrap font-mono ${perf.color}`}
-          >
-            {perf.text}
+          {rsRating !== undefined && (
+            <span className="shrink-0 whitespace-nowrap font-mono text-emerald-400">
+              RS {rsRating}
+            </span>
+          )}
+          <span className="shrink-0 whitespace-nowrap font-mono text-slate-400">
+            ADR {leader.adrPct.toFixed(1)}%
           </span>
-        )}
-        {showIndustryGroup && leader.industryGroup && (
-          <span className="ml-auto min-w-0 truncate text-slate-500">
-            {leader.industryGroup}
-          </span>
-        )}
-      </div>
-      <div className="relative flex-1 min-h-0">
-        {error ? (
-          <ChartLoadError symbol={leader.symbol} onRetry={() => refetch()} />
-        ) : candles ? (
-          <TechnicalChart
-            candles={candles}
-            ticker={leader.symbol}
-            exchange={leader.exchange}
-            movingAverages={GRID_MOVING_AVERAGES}
-            visibleBars={GRID_VISIBLE_BARS}
-            volume={{ show: true }}
-            showLegend={false}
-            showTooltip={false}
-            showExport={false}
-          />
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <LoadingSpinner />
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => onOpen(tickerFullName)}
-          aria-pressed={isSelected}
-          className="absolute inset-0 z-10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400"
-          aria-label={`Open ${leader.symbol} chart`}
-        />
-      </div>
-    </div>
+          {perf && (
+            <span
+              className={`shrink-0 whitespace-nowrap font-mono ${perf.color}`}
+            >
+              {perf.text}
+            </span>
+          )}
+          {showIndustryGroup && leader.industryGroup && (
+            <span className="ml-auto min-w-0 truncate text-slate-500">
+              {leader.industryGroup}
+            </span>
+          )}
+        </>
+      }
+    />
   );
 }
 

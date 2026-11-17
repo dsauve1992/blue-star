@@ -94,7 +94,7 @@ export interface RSConfig {
 export interface QuadrantBackgroundConfig {
   segments: QuadrantSegment[];
   show: boolean;
-  onShowChange: (show: boolean) => void;
+  onShowChange?: (show: boolean) => void;
 }
 
 export interface TimeframeConfig {
@@ -1116,7 +1116,7 @@ function TechnicalChartInner({
         showTradingView ||
         drawingTool ||
         extendedHours ||
-        quadrantBackground) && (
+        quadrantBackground?.onShowChange) && (
         <ChartToolbar
           timeframe={timeframe}
           extendedHours={extendedHours}
@@ -1183,9 +1183,11 @@ function TechnicalChartInner({
         {showTooltip && tooltip && (
           <ChartTooltip tooltip={tooltip} colors={C} />
         )}
-        {quadrantBackground?.show && quadrantBackground.segments.length > 0 && (
-          <QuadrantLegend compact={compactLegend} />
-        )}
+        {showLegend &&
+          quadrantBackground?.show &&
+          quadrantBackground.segments.length > 0 && (
+            <QuadrantLegend compact={compactLegend} />
+          )}
       </div>
     </div>
   );
@@ -1530,11 +1532,11 @@ function ChartToolbar({
         boxSizing: "border-box",
       }}
     >
-      {quadrantBackground && (
+      {quadrantBackground?.onShowChange && (
         <button
           type="button"
           onClick={() =>
-            quadrantBackground.onShowChange(!quadrantBackground.show)
+            quadrantBackground.onShowChange?.(!quadrantBackground.show)
           }
           title={
             quadrantBackground.show
