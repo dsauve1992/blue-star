@@ -3,7 +3,7 @@ import type { AuthContext } from '../../auth/auth.module';
 import { BROKERAGE_SERVICE } from '../constants/tokens';
 import type {
   BrokerageService,
-  WorkingOrder,
+  BrokerOrder,
 } from '../domain/services/brokerage.service';
 import { BrokerAccountId } from '../domain/value-objects/broker-account-id';
 import { BrokerageAccess } from './brokerage-access';
@@ -13,7 +13,7 @@ export interface GetWorkingOrdersRequestDto {
 }
 
 export interface GetWorkingOrdersResponseDto {
-  orders: WorkingOrder[];
+  orders: BrokerOrder[];
 }
 
 @Injectable()

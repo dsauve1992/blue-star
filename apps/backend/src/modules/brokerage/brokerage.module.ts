@@ -13,6 +13,7 @@ import { PlaceBracketOrderUseCase } from './use-cases/place-bracket-order.use-ca
 import { ConfirmOrderUseCase } from './use-cases/confirm-order.use-case';
 import { ModifyOrderUseCase } from './use-cases/modify-order.use-case';
 import { CancelOrderUseCase } from './use-cases/cancel-order.use-case';
+import { GetTradingJournalUseCase } from './use-cases/get-trading-journal.use-case';
 
 @Module({
   controllers: [BrokerageController],
@@ -32,6 +33,7 @@ import { CancelOrderUseCase } from './use-cases/cancel-order.use-case';
     ConfirmOrderUseCase,
     ModifyOrderUseCase,
     CancelOrderUseCase,
+    GetTradingJournalUseCase,
   ],
 })
 export class BrokerageModule {}

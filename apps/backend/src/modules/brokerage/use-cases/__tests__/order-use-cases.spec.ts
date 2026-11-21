@@ -4,7 +4,7 @@ import { InvariantError, NotFoundError } from '../../domain/domain-errors';
 import type {
   BracketOrder,
   BrokerageService,
-  WorkingOrder,
+  BrokerOrder,
 } from '../../domain/services/brokerage.service';
 import { BrokerAccountId } from '../../domain/value-objects/broker-account-id';
 import { BrokerOrderId } from '../../domain/value-objects/broker-order-id';
@@ -18,7 +18,7 @@ import { PlaceBracketOrderUseCase } from '../place-bracket-order.use-case';
 const AUTH = { userId: UserId.of('owner-user') };
 const ACCOUNT = BrokerAccountId.of('DU1234567');
 
-const STOP_ORDER: WorkingOrder = {
+const STOP_ORDER: BrokerOrder = {
   accountId: ACCOUNT,
   orderId: BrokerOrderId.of('101'),
   ticker: 'KOD',
@@ -31,6 +31,7 @@ const STOP_ORDER: WorkingOrder = {
   stopPrice: 97.51,
   timeInForce: 'GTC',
   status: 'PreSubmitted',
+  isWorking: true,
   ocaGroupId: null,
 };
 

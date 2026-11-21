@@ -15,6 +15,7 @@ import { PlaceBracketOrderUseCase } from '../use-cases/place-bracket-order.use-c
 import { ConfirmOrderUseCase } from '../use-cases/confirm-order.use-case';
 import { ModifyOrderUseCase } from '../use-cases/modify-order.use-case';
 import { CancelOrderUseCase } from '../use-cases/cancel-order.use-case';
+import { GetTradingJournalUseCase } from '../use-cases/get-trading-journal.use-case';
 import { BrokerageApiMapper } from './brokerage-api.mapper';
 import { BrokerageController } from './brokerage.controller';
 
@@ -53,6 +54,7 @@ describe('BrokerageController', () => {
         { provide: ConfirmOrderUseCase, useValue: unused },
         { provide: ModifyOrderUseCase, useValue: modifyOrder },
         { provide: CancelOrderUseCase, useValue: unused },
+        { provide: GetTradingJournalUseCase, useValue: unused },
       ],
     }).compile();
 

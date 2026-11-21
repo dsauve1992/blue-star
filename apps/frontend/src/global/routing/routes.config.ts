@@ -62,6 +62,12 @@ export const routes: RouteConfig[] = [
     showInNavigation: true,
   },
   {
+    path: "/journal",
+    label: "Trading Journal",
+    isProtected: true,
+    showInNavigation: true,
+  },
+  {
     path: "/chart-sandbox",
     label: "Chart Sandbox",
     isProtected: true,

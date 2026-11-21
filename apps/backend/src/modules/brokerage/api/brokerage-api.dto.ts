@@ -2,6 +2,10 @@ import type {
   OrderSide,
   OrderType,
 } from '../domain/services/brokerage.service';
+import type {
+  JournalStats,
+  TradingCampaign,
+} from '../domain/services/trading-journal';
 
 export interface ListBrokerAccountsApiResponseDto {
   accounts: string[];
@@ -36,6 +40,7 @@ export interface WorkingOrderApiDto {
   stopPrice: number | null;
   timeInForce: string;
   status: string;
+  isWorking: boolean;
   ocaGroupId: string | null;
 }
 
@@ -78,4 +83,17 @@ export interface PlaceBracketOrderApiRequestDto {
 export interface ModifyOrderApiRequestDto {
   price?: number;
   quantity?: number;
+}
+
+export type TradingCampaignApiDto = Omit<
+  TradingCampaign,
+  'openedAt' | 'closedAt'
+> & {
+  openedAt: string | null;
+  closedAt: string | null;
+};
+
+export interface GetTradingJournalApiResponseDto {
+  campaigns: TradingCampaignApiDto[];
+  stats: JournalStats;
 }

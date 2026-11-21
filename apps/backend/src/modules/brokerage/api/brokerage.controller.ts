@@ -31,10 +31,12 @@ import { PlaceBracketOrderUseCase } from '../use-cases/place-bracket-order.use-c
 import { ConfirmOrderUseCase } from '../use-cases/confirm-order.use-case';
 import { ModifyOrderUseCase } from '../use-cases/modify-order.use-case';
 import { CancelOrderUseCase } from '../use-cases/cancel-order.use-case';
+import { GetTradingJournalUseCase } from '../use-cases/get-trading-journal.use-case';
 import { BrokerageApiMapper } from './brokerage-api.mapper';
 import type {
   GetBrokerPositionsApiResponseDto,
   GetExecutionsApiResponseDto,
+  GetTradingJournalApiResponseDto,
   GetWorkingOrdersApiResponseDto,
   ListBrokerAccountsApiResponseDto,
   ModifyOrderApiRequestDto,
@@ -57,6 +59,7 @@ export class BrokerageController {
     private readonly confirmOrderUseCase: ConfirmOrderUseCase,
     private readonly modifyOrderUseCase: ModifyOrderUseCase,
     private readonly cancelOrderUseCase: CancelOrderUseCase,
+    private readonly getTradingJournalUseCase: GetTradingJournalUseCase,
     private readonly mapper: BrokerageApiMapper,
   ) {}
 
@@ -112,6 +115,18 @@ export class BrokerageController {
         this.mapper.mapExecution(execution),
       ),
     };
+  }
+
+  @Get('accounts/:accountId/journal')
+  async getTradingJournal(
+    @Param('accountId') accountId: string,
+    @Req() req: AuthenticatedRequest,
+  ): Promise<GetTradingJournalApiResponseDto> {
+    const journal = await this.getTradingJournalUseCase.execute(
+      { accountId: BrokerAccountId.of(accountId) },
+      authContextOf(req),
+    );
+    return this.mapper.mapTradingJournal(journal);
   }
 
   @Post('accounts/:accountId/orders/bracket')

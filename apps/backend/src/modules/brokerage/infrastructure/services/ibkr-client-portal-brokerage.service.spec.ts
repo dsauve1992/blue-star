@@ -5,7 +5,7 @@ import {
   BrokerUnavailableError,
   InvariantError,
 } from '../../domain/domain-errors';
-import type { WorkingOrder } from '../../domain/services/brokerage.service';
+import type { BrokerOrder } from '../../domain/services/brokerage.service';
 import { BrokerAccountId } from '../../domain/value-objects/broker-account-id';
 import { BrokerOrderId } from '../../domain/value-objects/broker-order-id';
 import { OrderPrice } from '../../domain/value-objects/order-price';
@@ -163,6 +163,7 @@ describe('IbkrClientPortalBrokerageService', () => {
         remainingQuantity: 6,
         timeInForce: 'GTC',
         status: 'PreSubmitted',
+        isWorking: true,
         ocaGroupId: '777',
       };
       expect(orders).toEqual([
@@ -436,7 +437,7 @@ describe('IbkrClientPortalBrokerageService', () => {
   });
 
   describe('modifyOrder', () => {
-    const stopOrder: WorkingOrder = {
+    const stopOrder: BrokerOrder = {
       accountId: ACCOUNT,
       orderId: BrokerOrderId.of('101'),
       ticker: 'KOD',
@@ -449,6 +450,7 @@ describe('IbkrClientPortalBrokerageService', () => {
       stopPrice: 97.51,
       timeInForce: 'GTC',
       status: 'PreSubmitted',
+      isWorking: true,
       ocaGroupId: '777',
     };
 

@@ -3,12 +3,14 @@ import type {
   BrokerPosition,
   Execution,
   OrderSubmission,
-  WorkingOrder,
+  BrokerOrder,
 } from '../domain/services/brokerage.service';
+import type { TradingJournal } from '../domain/services/trading-journal';
 import { BrokerAccountId } from '../domain/value-objects/broker-account-id';
 import type {
   BrokerPositionApiDto,
   ExecutionApiDto,
+  GetTradingJournalApiResponseDto,
   OrderSubmissionApiResponseDto,
   WorkingOrderApiDto,
 } from './brokerage-api.dto';
@@ -23,7 +25,7 @@ export class BrokerageApiMapper {
     return { ...position, accountId: position.accountId.value };
   }
 
-  mapWorkingOrder(order: WorkingOrder): WorkingOrderApiDto {
+  mapWorkingOrder(order: BrokerOrder): WorkingOrderApiDto {
     return {
       ...order,
       accountId: order.accountId.value,
@@ -50,6 +52,17 @@ export class BrokerageApiMapper {
     return {
       status: submission.status,
       orderIds: submission.orderIds.map((orderId) => orderId.value),
+    };
+  }
+
+  mapTradingJournal(journal: TradingJournal): GetTradingJournalApiResponseDto {
+    return {
+      campaigns: journal.campaigns.map((campaign) => ({
+        ...campaign,
+        openedAt: campaign.openedAt?.toISOString() ?? null,
+        closedAt: campaign.closedAt?.toISOString() ?? null,
+      })),
+      stats: journal.stats,
     };
   }
 }

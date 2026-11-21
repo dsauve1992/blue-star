@@ -10,7 +10,7 @@ import {
   OrderSide,
   OrderSubmission,
   OrderType,
-  WorkingOrder,
+  BrokerOrder,
 } from '../../domain/services/brokerage.service';
 import {
   BrokerRejectedError,
@@ -150,7 +150,12 @@ export class IbkrClientPortalBrokerageService implements BrokerageService {
       }));
   }
 
-  async getWorkingOrders(accountId: BrokerAccountId): Promise<WorkingOrder[]> {
+  async getWorkingOrders(accountId: BrokerAccountId): Promise<BrokerOrder[]> {
+    const orders = await this.getOrdersOfTheDay(accountId);
+    return orders.filter((order) => order.isWorking);
+  }
+
+  async getOrdersOfTheDay(accountId: BrokerAccountId): Promise<BrokerOrder[]> {
     await this.ensureBrokerageSession();
     const response = await this.gateway.request<{
       orders?: IbkrOrder[];
@@ -163,11 +168,8 @@ export class IbkrClientPortalBrokerageService implements BrokerageService {
     }
 
     return (response.orders ?? [])
-      .filter(
-        (order) =>
-          order.acct === accountId.value && WORKING_STATUSES.has(order.status),
-      )
-      .map((order) => toWorkingOrder(accountId, order));
+      .filter((order) => order.acct === accountId.value)
+      .map((order) => toBrokerOrder(accountId, order));
   }
 
   async getExecutions(accountId: BrokerAccountId): Promise<Execution[]> {
@@ -250,7 +252,7 @@ export class IbkrClientPortalBrokerageService implements BrokerageService {
   }
 
   async modifyOrder(
-    order: WorkingOrder,
+    order: BrokerOrder,
     changes: OrderChanges,
   ): Promise<OrderSubmission> {
     await this.ensureBrokerageSession();
@@ -339,10 +341,10 @@ const ENTRY_ORDER_TYPES: Record<
   STOP: 'STP',
 };
 
-function toWorkingOrder(
+function toBrokerOrder(
   accountId: BrokerAccountId,
   order: IbkrOrder,
-): WorkingOrder {
+): BrokerOrder {
   const type = toOrderType(order.orderType);
   return {
     accountId,
@@ -361,6 +363,7 @@ function toWorkingOrder(
         : null,
     timeInForce: toTimeInForce(order.timeInForce),
     status: order.status,
+    isWorking: WORKING_STATUSES.has(order.status),
     ocaGroupId:
       order.ocaGroupId === undefined ? null : String(order.ocaGroupId),
   };
@@ -403,7 +406,7 @@ function modifiableOrderType(type: OrderType): IbkrOrderTicket['orderType'] {
 }
 
 function modifiedPrice(
-  order: WorkingOrder,
+  order: BrokerOrder,
   changes: OrderChanges,
 ): { price?: number } {
   if (order.type === 'MARKET') {

@@ -22,7 +22,7 @@ export interface BrokerPosition {
   currency: string;
 }
 
-export interface WorkingOrder {
+export interface BrokerOrder {
   accountId: BrokerAccountId;
   orderId: BrokerOrderId;
   ticker: string;
@@ -35,6 +35,7 @@ export interface WorkingOrder {
   stopPrice: number | null;
   timeInForce: string;
   status: string;
+  isWorking: boolean;
   ocaGroupId: string | null;
 }
 
@@ -79,12 +80,13 @@ export type OrderSubmission =
 export interface BrokerageService {
   listAccounts(): Promise<BrokerAccountId[]>;
   getPositions(accountId: BrokerAccountId): Promise<BrokerPosition[]>;
-  getWorkingOrders(accountId: BrokerAccountId): Promise<WorkingOrder[]>;
+  getWorkingOrders(accountId: BrokerAccountId): Promise<BrokerOrder[]>;
+  getOrdersOfTheDay(accountId: BrokerAccountId): Promise<BrokerOrder[]>;
   getExecutions(accountId: BrokerAccountId): Promise<Execution[]>;
   placeBracketOrder(order: BracketOrder): Promise<OrderSubmission>;
   confirmOrder(replyId: OrderReplyId): Promise<OrderSubmission>;
   modifyOrder(
-    order: WorkingOrder,
+    order: BrokerOrder,
     changes: OrderChanges,
   ): Promise<OrderSubmission>;
   cancelOrder(
