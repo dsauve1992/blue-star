@@ -380,9 +380,7 @@ describe('SectorRotationController', () => {
 
       const ig = response.universes.find((u) => u.id === 'gics-industry-group');
       expect(ig?.members).toHaveLength(25);
-      expect(ig?.members.every((m) => /^\^SP500-\d{4}$/.test(m.symbol))).toBe(
-        true,
-      );
+      expect(ig?.members.every((m) => m.symbol && m.name)).toBe(true);
     });
   });
 });

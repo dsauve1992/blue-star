@@ -2,7 +2,7 @@ import type { ChartCandleDto } from "../api/chart-data.client";
 import type { RSBenchmark } from "../components/TechnicalChart";
 
 /**
- * Placeholder exchange for a GICS subindex (^SP500-XXXX) chart fetch. The Yahoo
+ * Placeholder exchange for an industry-group proxy chart fetch. The Yahoo
  * chart service ignores `exchange` when retrieving candles, but `useChartData`
  * requires a truthy exchange to enable the query.
  */

@@ -3,7 +3,7 @@ import { INDUSTRY_GROUP_UNIVERSE_ID } from "../utils/industry-group-utils";
 
 /**
  * Resolve a GICS industry-group name (e.g. "Semiconductors & Semiconductor
- * Equipment") to its Yahoo subindex symbol (e.g. "^SP500-4530") so it can be
+ * Equipment") to its proxy ETF symbol (e.g. "SMH") so it can be
  * charted as an RS benchmark exactly like SPY. The group symbol is a real
  * tradeable series in the rotation universe config.
  *
