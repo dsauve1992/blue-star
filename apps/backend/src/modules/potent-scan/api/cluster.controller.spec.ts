@@ -20,6 +20,8 @@ describe('ClusterController', () => {
   let addMember: { execute: jest.Mock };
   let removeMember: { execute: jest.Mock };
   let update: { execute: jest.Mock };
+  let get: { execute: jest.Mock };
+  let close: { execute: jest.Mock };
 
   beforeEach(async () => {
     create = {
@@ -31,16 +33,18 @@ describe('ClusterController', () => {
     addMember = { execute: jest.fn() };
     removeMember = { execute: jest.fn() };
     update = { execute: jest.fn() };
+    get = { execute: jest.fn().mockResolvedValue({ id: CLUSTER_ID }) };
+    close = { execute: jest.fn() };
 
     const module = await Test.createTestingModule({
       controllers: [ClusterController],
       providers: [
         { provide: CreateClusterUseCase, useValue: create },
         { provide: ListClustersUseCase, useValue: list },
-        { provide: GetClusterUseCase, useValue: { execute: jest.fn() } },
+        { provide: GetClusterUseCase, useValue: get },
         { provide: AddClusterMemberUseCase, useValue: addMember },
         { provide: RemoveClusterMemberUseCase, useValue: removeMember },
-        { provide: CloseClusterUseCase, useValue: { execute: jest.fn() } },
+        { provide: CloseClusterUseCase, useValue: close },
         { provide: UpdateClusterUseCase, useValue: update },
       ],
     }).compile();
@@ -117,5 +121,37 @@ describe('ClusterController', () => {
       name: undefined,
       description: 'New',
     });
+  });
+
+  it('should delegate get and return the cluster', async () => {
+    const result = await controller.get(CLUSTER_ID);
+
+    expect(get.execute).toHaveBeenNthCalledWith(1, {
+      clusterId: ClusterId.of(CLUSTER_ID),
+    });
+    expect(result).toEqual({ id: CLUSTER_ID });
+  });
+
+  it('should delegate close to the close use case', async () => {
+    await controller.close(CLUSTER_ID);
+
+    expect(close.execute).toHaveBeenNthCalledWith(1, {
+      clusterId: ClusterId.of(CLUSTER_ID),
+    });
+    expect(update.execute).not.toHaveBeenCalled();
+  });
+
+  it('should reject a non-string name on update with 400', async () => {
+    await expect(controller.update(CLUSTER_ID, { name: 42 })).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(update.execute).not.toHaveBeenCalled();
+  });
+
+  it('should reject a missing member ticker with 400', async () => {
+    await expect(controller.addMember(CLUSTER_ID, {})).rejects.toThrow(
+      BadRequestException,
+    );
+    expect(addMember.execute).not.toHaveBeenCalled();
   });
 });

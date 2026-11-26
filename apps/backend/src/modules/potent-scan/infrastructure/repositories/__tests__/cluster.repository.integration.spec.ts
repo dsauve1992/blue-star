@@ -111,7 +111,11 @@ describe('ClusterRepository Integration', () => {
           ],
         }),
       ),
-    ).rejects.toThrow();
+    ).rejects.toMatchObject({
+      code: '23505',
+      constraint: 'idx_potent_cluster_members_active_ticker',
+    });
+    expect(await repository.findById(ClusterId.of(CLUSTER_ID))).toBeNull();
   });
 
   it('should filter clusters by status', async () => {
