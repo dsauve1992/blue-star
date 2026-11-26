@@ -15,7 +15,7 @@ import {
   type LeaderGroupBy,
 } from "../hooks/use-leader-groups";
 import { leaderTickerFullName } from "../api/momentum-leaders.client";
-import { useConsolidationKeyboardNavigation } from "../hooks/use-consolidation-keyboard-navigation";
+import { useChartGridKeyboardNavigation } from "src/global/hooks/use-chart-grid-keyboard-navigation";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
 import { INDUSTRY_GROUP_UNIVERSE_ID } from "src/sector-rotation/utils/industry-group-utils";
 import { LeadersToolbar } from "../components/LeadersToolbar";
@@ -50,7 +50,7 @@ export default function MomentumLeaders() {
     () => groups.map((group) => group.leaders.map(leaderTickerFullName)),
     [groups],
   );
-  useConsolidationKeyboardNavigation({
+  useChartGridKeyboardNavigation({
     tickerGroups,
     selectedTicker,
     onTickerChange: setSelectedTicker,

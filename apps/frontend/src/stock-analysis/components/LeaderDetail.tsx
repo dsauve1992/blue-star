@@ -22,7 +22,7 @@ import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { LoadingSpinner } from "src/global/design-system";
 import { MomentumLeadersChartHeader } from "./MomentumLeadersChartHeader";
 import { FinancialReportChartFooter } from "src/fundamental/components/FinancialReportChartFooter";
-import { ChartLoadError } from "./ChartLoadError";
+import { ChartLoadError } from "src/global/components/ChartLoadError";
 
 interface LeaderDetailProps {
   leader: MomentumLeader;

@@ -25,6 +25,7 @@ export function TierPath({ dates, tiers }: TierPathProps) {
           <span
             key={date}
             title={label}
+            role="img"
             aria-label={label}
             data-date={date}
             data-tier={tier ?? ""}

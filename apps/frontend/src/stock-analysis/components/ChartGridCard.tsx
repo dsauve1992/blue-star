@@ -1,11 +1,12 @@
 import { memo, useMemo, useRef, type ReactNode, type RefObject } from "react";
 import type { Time } from "lightweight-charts";
-import { useInViewOnce } from "../hooks/use-in-view-once";
+import { useInViewOnce } from "src/global/hooks/use-in-view-once";
+import { ChartGridCardFrame } from "src/global/components/ChartGridCardFrame";
 import { useChartData } from "src/market-data/hooks/use-chart-data";
 import { TechnicalChart } from "src/market-data/components/TechnicalChart";
 import { getDefaultMovingAverages } from "src/market-data/utils/chart-utils";
 import { LoadingSpinner } from "src/global/design-system";
-import { ChartLoadError } from "./ChartLoadError";
+import { ChartLoadError } from "src/global/components/ChartLoadError";
 import { buildQuadrantSegments } from "../utils/quadrant-segments";
 import type { QuadrantHistoryPoint } from "src/sector-rotation/hooks/use-industry-group-quadrant-history";
 
@@ -57,48 +58,35 @@ function ChartGridCardInner({
   );
 
   return (
-    <div
-      ref={cardRef}
-      data-ticker={tickerId}
-      className={`flex flex-col h-80 scroll-mt-12 rounded-xl overflow-hidden border bg-slate-800/30 transition-colors duration-150 ${
-        isSelected
-          ? "border-blue-400 ring-1 ring-blue-400/60"
-          : "border-slate-700/50 hover:border-blue-500/50"
-      }`}
+    <ChartGridCardFrame
+      cardRef={cardRef}
+      symbol={symbol}
+      tickerId={tickerId}
+      header={header}
+      isSelected={isSelected}
+      onOpen={onOpen}
     >
-      <div className="flex items-center gap-2 px-3 py-1.5 border-b border-slate-700/50 text-xs">
-        {header}
-      </div>
-      <div className="relative flex-1 min-h-0">
-        {error ? (
-          <ChartLoadError symbol={symbol} onRetry={() => refetch()} />
-        ) : candles ? (
-          <TechnicalChart
-            candles={candles}
-            ticker={symbol}
-            exchange={exchange}
-            movingAverages={GRID_MOVING_AVERAGES}
-            visibleBars={GRID_VISIBLE_BARS}
-            volume={{ show: true }}
-            showLegend={false}
-            showTooltip={false}
-            showExport={false}
-            quadrantBackground={quadrantBackground}
-          />
-        ) : (
-          <div className="h-full flex items-center justify-center">
-            <LoadingSpinner />
-          </div>
-        )}
-        <button
-          type="button"
-          onClick={() => onOpen(tickerId)}
-          aria-pressed={isSelected}
-          className="absolute inset-0 z-10 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-blue-400"
-          aria-label={`Open ${symbol} chart`}
+      {error ? (
+        <ChartLoadError symbol={symbol} onRetry={() => refetch()} />
+      ) : candles ? (
+        <TechnicalChart
+          candles={candles}
+          ticker={symbol}
+          exchange={exchange}
+          movingAverages={GRID_MOVING_AVERAGES}
+          visibleBars={GRID_VISIBLE_BARS}
+          volume={{ show: true }}
+          showLegend={false}
+          showTooltip={false}
+          showExport={false}
+          quadrantBackground={quadrantBackground}
         />
-      </div>
-    </div>
+      ) : (
+        <div className="h-full flex items-center justify-center">
+          <LoadingSpinner />
+        </div>
+      )}
+    </ChartGridCardFrame>
   );
 }
 
