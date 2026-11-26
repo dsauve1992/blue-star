@@ -57,7 +57,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        app: [hot-theme-detection]
+        app: [hot-theme-detection, screener]
 
     steps:
       - name: Checkout code
