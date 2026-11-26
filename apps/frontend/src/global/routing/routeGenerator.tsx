@@ -13,6 +13,7 @@ import IndustryGroupExplorer from "../../stock-analysis/pages/IndustryGroupExplo
 import Watchlist from "../../watchlist/pages/Watchlist";
 import SectorRotation from "../../sector-rotation/pages/SectorRotation";
 import ChartSandbox from "../../market-data/pages/ChartSandbox";
+import { PotentScan } from "../../potent-scan/pages/PotentScan";
 
 // Map of path to component
 const componentMap = {
@@ -25,6 +26,7 @@ const componentMap = {
   "/watchlists": Watchlist,
   "/sector-rotation": SectorRotation,
   "/industry-groups": IndustryGroupExplorer,
+  "/potent-scan": PotentScan,
   "/chart-sandbox": ChartSandbox,
 } as const;
 

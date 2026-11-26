@@ -14,7 +14,7 @@ import { Symbol } from '../../../shared/value-objects/symbol';
 import { ClusterId } from '../domain/value-objects/cluster-id';
 import { SessionDate } from '../domain/value-objects/session-date';
 import { ClusterStatus } from '../domain/entities/cluster';
-import { ClusterDto } from '../use-cases/cluster.dto';
+import { ClusterDetailDto } from '../use-cases/cluster.dto';
 import { CreateClusterUseCase } from '../use-cases/create-cluster.use-case';
 import {
   ListClustersResponseDto,
@@ -105,7 +105,7 @@ export class ClusterController {
 
   @Get(':id')
   @Public()
-  async get(@Param('id') id: string): Promise<ClusterDto> {
+  async get(@Param('id') id: string): Promise<ClusterDetailDto> {
     return this.getClusterUseCase.execute({ clusterId: ClusterId.of(id) });
   }
 

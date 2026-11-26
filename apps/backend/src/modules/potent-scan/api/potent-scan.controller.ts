@@ -10,6 +10,7 @@ import {
 } from '../use-cases/list-potent-scan-dates.use-case';
 import { RunPotentScanUseCase } from '../use-cases/run-potent-scan.use-case';
 import { ResearchPotentHitsUseCase } from '../use-cases/research-potent-hits.use-case';
+import { TrackMemberTiersUseCase } from '../use-cases/track-member-tiers.use-case';
 import { SessionDate } from '../domain/value-objects/session-date';
 
 type ResearchOutcome =
@@ -25,6 +26,7 @@ export class PotentScanController {
     private readonly listPotentScanDatesUseCase: ListPotentScanDatesUseCase,
     private readonly runPotentScanUseCase: RunPotentScanUseCase,
     private readonly researchPotentHitsUseCase: ResearchPotentHitsUseCase,
+    private readonly trackMemberTiersUseCase: TrackMemberTiersUseCase,
   ) {}
 
   @Get('scans')
@@ -84,5 +86,16 @@ export class PotentScanController {
       researchedCount,
       costUsd: usage.costUsd,
     };
+  }
+
+  @Post('tiers/run')
+  async trackTiers(): Promise<{
+    sessionDate: string;
+    tierCount: number;
+    failures: string[];
+  }> {
+    const { sessionDate, tierCount, failures } =
+      await this.trackMemberTiersUseCase.execute();
+    return { sessionDate: sessionDate.value, tierCount, failures };
   }
 }

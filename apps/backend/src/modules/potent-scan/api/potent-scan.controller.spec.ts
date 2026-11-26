@@ -4,6 +4,7 @@ import { GetPotentScanUseCase } from '../use-cases/get-potent-scan.use-case';
 import { ListPotentScanDatesUseCase } from '../use-cases/list-potent-scan-dates.use-case';
 import { RunPotentScanUseCase } from '../use-cases/run-potent-scan.use-case';
 import { ResearchPotentHitsUseCase } from '../use-cases/research-potent-hits.use-case';
+import { TrackMemberTiersUseCase } from '../use-cases/track-member-tiers.use-case';
 import { SessionDate } from '../domain/value-objects/session-date';
 import { InvariantError } from '../domain/domain-errors';
 
@@ -12,6 +13,7 @@ describe('PotentScanController', () => {
   let getScan: { execute: jest.Mock };
   let runScan: { execute: jest.Mock };
   let researchHits: { execute: jest.Mock };
+  let trackTiers: { execute: jest.Mock };
 
   beforeEach(async () => {
     getScan = { execute: jest.fn().mockResolvedValue({}) };
@@ -34,6 +36,14 @@ describe('PotentScanController', () => {
       }),
     };
 
+    trackTiers = {
+      execute: jest.fn().mockResolvedValue({
+        sessionDate: SessionDate.of('2026-11-25'),
+        tierCount: 6,
+        failures: ['BBB: boom'],
+      }),
+    };
+
     const module = await Test.createTestingModule({
       controllers: [PotentScanController],
       providers: [
@@ -44,6 +54,7 @@ describe('PotentScanController', () => {
         },
         { provide: RunPotentScanUseCase, useValue: runScan },
         { provide: ResearchPotentHitsUseCase, useValue: researchHits },
+        { provide: TrackMemberTiersUseCase, useValue: trackTiers },
       ],
     }).compile();
 
@@ -128,5 +139,16 @@ describe('PotentScanController', () => {
       InvariantError,
     );
     expect(researchHits.execute).not.toHaveBeenCalled();
+  });
+
+  it('should run tier tracking and return its failures', async () => {
+    const result = await controller.trackTiers();
+
+    expect(trackTiers.execute).toHaveBeenNthCalledWith(1);
+    expect(result).toEqual({
+      sessionDate: '2026-11-25',
+      tierCount: 6,
+      failures: ['BBB: boom'],
+    });
   });
 });
