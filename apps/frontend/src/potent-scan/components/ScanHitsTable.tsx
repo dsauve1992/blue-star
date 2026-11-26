@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import { Badge } from "src/global/design-system";
 import type { Cluster, PotentScanHit } from "../api/potent-scan.client";
 import { TierBadge } from "./TierBadge";
@@ -109,14 +110,18 @@ export function ScanHitsTable({
                 <td className="p-2">
                   <span className="flex flex-wrap gap-1">
                     {clusters.map((cluster) => (
-                      <Badge
+                      <Link
                         key={cluster.id}
-                        variant="secondary"
-                        title={cluster.name}
-                        className="max-w-48"
+                        to={`/potent-scan/clusters/${cluster.id}`}
                       >
-                        <span className="truncate">{cluster.name}</span>
-                      </Badge>
+                        <Badge
+                          variant="secondary"
+                          title={cluster.name}
+                          className="max-w-48 hover:bg-slate-200 dark:hover:bg-slate-700"
+                        >
+                          <span className="truncate">{cluster.name}</span>
+                        </Badge>
+                      </Link>
                     ))}
                   </span>
                 </td>

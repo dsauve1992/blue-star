@@ -1,5 +1,6 @@
-import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { PageContainer, cn } from "src/global/design-system";
+import { ClustersTab } from "../components/ClustersTab";
 import { ScanTab } from "../components/ScanTab";
 
 const TABS = [
@@ -10,7 +11,11 @@ const TABS = [
 type TabId = (typeof TABS)[number]["id"];
 
 export function PotentScan() {
-  const [activeTab, setActiveTab] = useState<TabId>("scan");
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab: TabId =
+    searchParams.get("tab") === "clusters" ? "clusters" : "scan";
+  const setActiveTab = (tab: TabId) =>
+    setSearchParams(tab === "scan" ? {} : { tab }, { replace: true });
 
   return (
     <PageContainer fullWidth className="space-y-4">
@@ -39,13 +44,7 @@ export function PotentScan() {
         ))}
       </div>
       <div role="tabpanel">
-        {activeTab === "scan" ? (
-          <ScanTab />
-        ) : (
-          <p className="text-sm text-slate-600 dark:text-slate-400">
-            Cluster tracking is coming next.
-          </p>
-        )}
+        {activeTab === "scan" ? <ScanTab /> : <ClustersTab />}
       </div>
     </PageContainer>
   );

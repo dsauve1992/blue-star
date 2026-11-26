@@ -7,4 +7,6 @@ export const POTENT_SCAN_QUERY_KEYS = {
     [...POTENT_SCAN_QUERY_KEYS.all, "scan", scanDate] as const,
   clusters: (status: ClusterStatus) =>
     [...POTENT_SCAN_QUERY_KEYS.all, "clusters", status] as const,
+  cluster: (clusterId: string) =>
+    [...POTENT_SCAN_QUERY_KEYS.all, "cluster", clusterId] as const,
 } as const;

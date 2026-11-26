@@ -4,9 +4,9 @@ import { POTENT_SCAN_QUERY_KEYS } from "../constants/query-keys";
 
 const client = new PotentScanClient();
 
-export function useTrackingClusters() {
+export function useCluster(clusterId: string) {
   return useQuery({
-    queryKey: POTENT_SCAN_QUERY_KEYS.clusters("tracking"),
-    queryFn: () => client.listClusters("tracking"),
+    queryKey: POTENT_SCAN_QUERY_KEYS.cluster(clusterId),
+    queryFn: () => client.getCluster(clusterId),
   });
 }

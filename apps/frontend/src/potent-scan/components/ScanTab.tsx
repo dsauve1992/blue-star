@@ -8,7 +8,7 @@ import {
 import type { Cluster, PotentScanHit } from "../api/potent-scan.client";
 import { usePotentScanDates } from "../hooks/use-potent-scan-dates";
 import { usePotentScan } from "../hooks/use-potent-scan";
-import { useTrackingClusters } from "../hooks/use-tracking-clusters";
+import { useClusters } from "../hooks/use-clusters";
 import { ScanDateNavigator } from "./ScanDateNavigator";
 import {
   ALL_INDUSTRIES,
@@ -62,7 +62,7 @@ export function ScanTab() {
   }
   const scanDate = selectedDate ?? latestScanDate;
   const scan = usePotentScan(scanDate);
-  const clusters = useTrackingClusters();
+  const clusters = useClusters("tracking");
 
   const [filters, setFilters] = useState(INITIAL_FILTERS);
   const [selected, setSelected] = useState<Set<string>>(new Set());
