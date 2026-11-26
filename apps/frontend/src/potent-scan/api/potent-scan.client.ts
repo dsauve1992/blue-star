@@ -91,6 +91,82 @@ export interface CreateClusterRequest {
   sourceScanDate: string;
 }
 
+export type ProposalStatus = "pending" | "accepted" | "edited" | "rejected";
+
+export interface ProposedMember {
+  ticker: string;
+  reason: string;
+  catalystToday: string;
+  source: string | null;
+}
+
+export interface ProposedCluster {
+  name: string;
+  description: string;
+  sharedCatalyst: string;
+  sources: string[];
+  members: ProposedMember[];
+}
+
+export interface ProposalAlternative {
+  kind: "split" | "merge";
+  description: string;
+  clusters: ProposedCluster[];
+}
+
+interface ProposalDecision {
+  id: string;
+  status: ProposalStatus;
+  appliedAlternative: number | null;
+  clusterIds: string[];
+  createdAt: string;
+  decidedAt: string | null;
+}
+
+export interface NewClusterProposal extends ProposalDecision, ProposedCluster {
+  alternatives: ProposalAlternative[];
+}
+
+export interface AdditionProposal extends ProposalDecision {
+  existingClusterId: string;
+  existingClusterName: string;
+  ticker: string;
+  reason: string;
+  source: string | null;
+}
+
+export interface UnclusteredHit {
+  ticker: string;
+  reason: string;
+}
+
+export interface ScanProposals {
+  scanDate: string;
+  run: {
+    model: string;
+    finishedAt: string;
+    inputTokens: number;
+    outputTokens: number;
+    costUsd: number;
+    dropped: string[];
+  } | null;
+  newClusters: NewClusterProposal[];
+  additions: AdditionProposal[];
+  unclustered: UnclusteredHit[];
+}
+
+export interface ProposalEdit {
+  name?: string;
+  description?: string;
+  addTickers?: string[];
+  removeTickers?: string[];
+}
+
+export type AcceptProposalRequest =
+  | Record<string, never>
+  | { edit: ProposalEdit }
+  | { alternativeIndex: number };
+
 export class PotentScanClient {
   async listScanDates(): Promise<string[]> {
     const response = await apiClient.get<{ scanDates: string[] }>(
@@ -157,6 +233,33 @@ export class PotentScanClient {
   async closeCluster(clusterId: string): Promise<void> {
     await apiClient.post(
       `/potent-scan/clusters/${encodeURIComponent(clusterId)}/close`,
+    );
+  }
+
+  async getProposals(scanDate: string): Promise<ScanProposals> {
+    const response = await apiClient.get<ScanProposals>(
+      `/potent-scan/scans/${scanDate}/proposals`,
+    );
+    return response.data;
+  }
+
+  async acceptProposal(
+    proposalId: string,
+    request: AcceptProposalRequest,
+  ): Promise<{ clusterIds: string[] }> {
+    const response = await apiClient.post<
+      { clusterIds: string[] },
+      AcceptProposalRequest
+    >(
+      `/potent-scan/proposals/${encodeURIComponent(proposalId)}/accept`,
+      request,
+    );
+    return response.data;
+  }
+
+  async rejectProposal(proposalId: string): Promise<void> {
+    await apiClient.post(
+      `/potent-scan/proposals/${encodeURIComponent(proposalId)}/reject`,
     );
   }
 }
