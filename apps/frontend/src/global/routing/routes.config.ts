@@ -62,6 +62,12 @@ export const routes: RouteConfig[] = [
     showInNavigation: true,
   },
   {
+    path: "/potent-scan",
+    label: "Potent",
+    isProtected: true,
+    showInNavigation: true,
+  },
+  {
     path: "/chart-sandbox",
     label: "Chart Sandbox",
     isProtected: true,
