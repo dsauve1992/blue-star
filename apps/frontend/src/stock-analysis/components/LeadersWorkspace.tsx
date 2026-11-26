@@ -1,5 +1,5 @@
-import { useEffect, useRef } from "react";
-import { BarChart3 } from "lucide-react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { BarChart3, X } from "lucide-react";
 import {
   leaderTickerFullName,
   type MomentumLeader,
@@ -33,6 +33,8 @@ export function LeadersWorkspace({
   onSelect,
 }: LeadersWorkspaceProps) {
   const scrollRootRef = useRef<HTMLDivElement>(null);
+  const sheetRef = useRef<HTMLElement>(null);
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const selectedLeader = orderedLeaders.find(
     (leader) => leaderTickerFullName(leader) === selectedTicker,
   );
@@ -43,6 +45,30 @@ export function LeadersWorkspace({
       ?.querySelector(`[data-ticker="${CSS.escape(selectedTicker)}"]`)
       ?.scrollIntoView({ block: "nearest" });
   }, [selectedTicker]);
+
+  useEffect(() => {
+    if (!isSheetOpen) return;
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      if (
+        sheetRef.current?.querySelector(
+          '[aria-haspopup="true"][aria-expanded="true"]',
+        )
+      )
+        return;
+      setIsSheetOpen(false);
+    };
+    document.addEventListener("keydown", closeOnEscape);
+    return () => document.removeEventListener("keydown", closeOnEscape);
+  }, [isSheetOpen]);
+
+  const openSheet = useCallback(
+    (tickerFullName: string) => {
+      onSelect(tickerFullName);
+      setIsSheetOpen(true);
+    },
+    [onSelect],
+  );
 
   return (
     <div className="flex-1 min-w-0 min-h-0 flex flex-col md:flex-row">
@@ -69,7 +95,7 @@ export function LeadersWorkspace({
                     showIndustryGroup={showIndustryGroup}
                     scrollRootRef={scrollRootRef}
                     isSelected={ticker === selectedTicker}
-                    onOpen={onSelect}
+                    onOpen={openSheet}
                   />
                 );
               })}
@@ -78,7 +104,24 @@ export function LeadersWorkspace({
         ))}
       </div>
 
-      <aside className="order-first h-[55vh] shrink-0 md:order-none md:h-auto md:flex-1 md:shrink min-w-0 border-b md:border-b-0 md:border-l border-slate-700/50 bg-slate-900/30">
+      <aside
+        ref={sheetRef}
+        className={`min-w-0 border-slate-700/50 md:static md:z-auto md:block md:h-auto md:flex-1 md:rounded-none md:border-t-0 md:border-l md:bg-slate-900/30 md:shadow-none ${
+          isSheetOpen
+            ? "fixed inset-x-0 bottom-0 z-40 flex flex-col h-[75vh] rounded-t-2xl border-t bg-slate-900 shadow-2xl"
+            : "hidden"
+        }`}
+      >
+        <div className="md:hidden flex justify-end px-2 pt-2 shrink-0">
+          <button
+            type="button"
+            aria-label="Close details"
+            onClick={() => setIsSheetOpen(false)}
+            className="rounded-md p-1.5 text-slate-400 hover:text-slate-200"
+          >
+            <X className="w-4 h-4" />
+          </button>
+        </div>
         {selectedLeader ? (
           <LeaderDetail key={selectedTicker} leader={selectedLeader} />
         ) : (
