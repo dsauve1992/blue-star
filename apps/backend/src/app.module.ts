@@ -15,6 +15,7 @@ import { WatchlistMonitoringModule } from './modules/watchlist-monitoring/watchl
 import { MarketHealthModule } from './modules/market-health/market-health.module';
 import { MarketBreadthModule } from './modules/market-breadth/market-breadth.module';
 import { StockClassificationModule } from './modules/stock-classification/stock-classification.module';
+import { PotentScanModule } from './modules/potent-scan/potent-scan.module';
 import { AuthGuard } from './modules/auth/auth.guard';
 import { ScheduleModule } from '@nestjs/schedule';
 import { DatabaseModule } from './config/database.module';
@@ -41,6 +42,7 @@ import { StartupService } from './startup.service';
     MarketHealthModule,
     MarketBreadthModule,
     StockClassificationModule,
+    PotentScanModule,
   ],
   controllers: [AppController],
   providers: [
