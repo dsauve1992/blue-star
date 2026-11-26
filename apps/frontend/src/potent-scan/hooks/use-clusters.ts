@@ -1,0 +1,15 @@
+import { useQuery } from "@tanstack/react-query";
+import {
+  PotentScanClient,
+  type ClusterStatus,
+} from "../api/potent-scan.client";
+import { POTENT_SCAN_QUERY_KEYS } from "../constants/query-keys";
+
+const client = new PotentScanClient();
+
+export function useClusters(status: ClusterStatus) {
+  return useQuery({
+    queryKey: POTENT_SCAN_QUERY_KEYS.clusters(status),
+    queryFn: () => client.listClusters(status),
+  });
+}

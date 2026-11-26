@@ -68,6 +68,12 @@ export const routes: RouteConfig[] = [
     showInNavigation: true,
   },
   {
+    path: "/potent-scan/clusters/:id",
+    label: "Cluster",
+    isProtected: true,
+    showInNavigation: false,
+  },
+  {
     path: "/chart-sandbox",
     label: "Chart Sandbox",
     isProtected: true,
