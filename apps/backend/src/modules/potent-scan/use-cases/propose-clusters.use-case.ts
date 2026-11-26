@@ -80,13 +80,17 @@ export class ProposeClustersUseCase {
     }));
 
     const startedAt = new Date();
-    const failedRun = (usage: ResearchUsage, error: string) => ({
+    const failedRun = (
+      usage: ResearchUsage,
+      error: string,
+      dropped: string[],
+    ) => ({
       scanDate,
       status: 'failed' as const,
       model: this.proposer.model,
       proposalCount: 0,
       unclustered: [],
-      dropped: [],
+      dropped,
       usage,
       error,
       startedAt,
@@ -106,6 +110,7 @@ export class ProposeClustersUseCase {
         failedRun(
           error instanceof ClusterProposalError ? error.usage : NO_USAGE,
           message,
+          [],
         ),
       );
       throw error;
@@ -131,7 +136,9 @@ export class ProposeClustersUseCase {
     const { newClusters, additions, unclustered } = proposals;
     if (newClusters.length + additions.length + unclustered.length === 0) {
       const message = `Clustering for ${scanDate.value} produced nothing valid (${dropped.length} item(s) dropped)`;
-      await this.proposalRepository.recordRun(failedRun(output.usage, message));
+      await this.proposalRepository.recordRun(
+        failedRun(output.usage, message, dropped),
+      );
       throw new StateError(message);
     }
 

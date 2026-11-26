@@ -276,7 +276,10 @@ describe('ProposeClustersUseCase', () => {
       model: 'fake-sonnet',
       proposalCount: 0,
       unclustered: [],
-      dropped: [],
+      dropped: [
+        'Cluster "Nuclear fuel": ZZZ is neither a hit nor a tracked member',
+        'Cluster "Nuclear fuel": 0 valid member(s), needs 3',
+      ],
       usage,
       error:
         'Clustering for 2026-11-25 produced nothing valid (2 item(s) dropped)',
