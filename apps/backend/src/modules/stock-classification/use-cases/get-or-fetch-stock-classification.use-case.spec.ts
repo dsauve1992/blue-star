@@ -137,6 +137,42 @@ describe('GetOrFetchStockClassificationUseCase', () => {
     expect(repository.save).toHaveBeenCalledWith(result);
   });
 
+  describe('when the classifier fails', () => {
+    const failure = new Error('yfinance down');
+
+    beforeEach(() => {
+      classifier.classify.mockRejectedValue(failure);
+    });
+
+    it('rejects without saving when nothing is cached', async () => {
+      repository.findByTicker.mockResolvedValue(null);
+
+      await expect(useCase.execute('AAPL')).rejects.toBe(failure);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('rejects without re-stamping a null-group row older than the retry window', async () => {
+      repository.findByTicker.mockResolvedValue(
+        cachedRow({ ageMs: 25 * HOUR_MS }),
+      );
+
+      await expect(useCase.execute('AAPL')).rejects.toBe(failure);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+
+    it('retries the classifier on every call and never saves', async () => {
+      repository.findByTicker.mockResolvedValue(
+        cachedRow({ ageMs: 25 * HOUR_MS }),
+      );
+
+      await expect(useCase.execute('AAPL')).rejects.toBe(failure);
+      await expect(useCase.execute('AAPL')).rejects.toBe(failure);
+
+      expect(classifier.classify).toHaveBeenCalledTimes(2);
+      expect(repository.save).not.toHaveBeenCalled();
+    });
+  });
+
   describe('executeMany', () => {
     beforeEach(() => {
       repository.findByTicker.mockResolvedValue(null);
