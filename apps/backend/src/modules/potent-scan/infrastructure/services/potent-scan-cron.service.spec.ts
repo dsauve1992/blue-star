@@ -1,6 +1,7 @@
 import { Test } from '@nestjs/testing';
 import { PotentScanCronService } from './potent-scan-cron.service';
 import { RunPotentScanUseCase } from '../../use-cases/run-potent-scan.use-case';
+import { ResearchPotentHitsUseCase } from '../../use-cases/research-potent-hits.use-case';
 import { TrackMemberTiersUseCase } from '../../use-cases/track-member-tiers.use-case';
 import { CronJobNotificationService } from '../../../notification/notification.module';
 import { SessionDate } from '../../domain/value-objects/session-date';
@@ -9,6 +10,7 @@ import { StateError } from '../../domain/domain-errors';
 describe('PotentScanCronService', () => {
   let cron: PotentScanCronService;
   let runPotentScan: { execute: jest.Mock };
+  let researchHits: { execute: jest.Mock };
   let trackMemberTiers: { execute: jest.Mock };
   let notifications: jest.Mocked<
     Pick<
@@ -22,12 +24,29 @@ describe('PotentScanCronService', () => {
     jobType: 'potent-scan',
     frequency: 'daily',
   };
+  const researchJob = {
+    jobName: 'Potent Hit Research',
+    jobType: 'potent-hit-research',
+    frequency: 'daily',
+  };
 
   beforeEach(async () => {
     runPotentScan = {
       execute: jest.fn().mockResolvedValue({
         sessionDate: SessionDate.of('2026-11-25'),
         hitCount: 40,
+      }),
+    };
+    researchHits = {
+      execute: jest.fn().mockResolvedValue({
+        sessionDate: SessionDate.of('2026-11-25'),
+        researchedCount: 40,
+        usage: {
+          inputTokens: 90000,
+          outputTokens: 12000,
+          webSearchRequests: 9,
+          costUsd: 0.10512,
+        },
       }),
     };
     trackMemberTiers = {
@@ -47,6 +66,7 @@ describe('PotentScanCronService', () => {
       providers: [
         PotentScanCronService,
         { provide: RunPotentScanUseCase, useValue: runPotentScan },
+        { provide: ResearchPotentHitsUseCase, useValue: researchHits },
         { provide: TrackMemberTiersUseCase, useValue: trackMemberTiers },
         { provide: CronJobNotificationService, useValue: notifications },
       ],
@@ -78,6 +98,44 @@ describe('PotentScanCronService', () => {
     expect(notifications.notifyJobSuccess).not.toHaveBeenCalled();
   });
 
+  it('should research the scanned session after a successful scan and report its cost', async () => {
+    await cron.runDailyScan();
+
+    expect(researchHits.execute).toHaveBeenNthCalledWith(1, {
+      sessionDate: SessionDate.of('2026-11-25'),
+    });
+    expect(notifications.notifyJobStart).toHaveBeenNthCalledWith(
+      2,
+      researchJob,
+    );
+    expect(notifications.notifyJobSuccess).toHaveBeenNthCalledWith(2, {
+      ...researchJob,
+      additionalData: '40 hits researched for $0.1051',
+    });
+  });
+
+  it('should not research when the scan fails', async () => {
+    runPotentScan.execute.mockRejectedValue(new Error('screener crashed'));
+
+    await cron.runDailyScan();
+
+    expect(researchHits.execute).not.toHaveBeenCalled();
+  });
+
+  it('should report a research failure as its own error and keep the scan success', async () => {
+    const error = new StateError('Potent research is incomplete');
+    researchHits.execute.mockRejectedValue(error);
+
+    await cron.runDailyScan();
+
+    expect(notifications.notifyJobSuccess).toHaveBeenNthCalledWith(1, job);
+    expect(notifications.notifyJobSuccess).toHaveBeenCalledTimes(1);
+    expect(notifications.notifyJobError).toHaveBeenNthCalledWith(
+      1,
+      researchJob,
+      error,
+    );
+  });
   describe('trackMemberTiers', () => {
     const tierJob = {
       jobName: 'Daily Potent Member Tiers',

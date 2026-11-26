@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { DatabaseModule } from '../../config/database.module';
 import { MarketDataModule } from '../market-data/market-data.module';
 import { NotificationModule } from '../notification/notification.module';
@@ -22,8 +23,17 @@ import { AddClusterMemberUseCase } from './use-cases/add-cluster-member.use-case
 import { RemoveClusterMemberUseCase } from './use-cases/remove-cluster-member.use-case';
 import { CloseClusterUseCase } from './use-cases/close-cluster.use-case';
 import { UpdateClusterUseCase } from './use-cases/update-cluster.use-case';
+import { ResearchPotentHitsUseCase } from './use-cases/research-potent-hits.use-case';
+import { HitResearchRepositoryImpl } from './infrastructure/repositories/hit-research.repository';
+import { PythonHeadlineSource } from './infrastructure/services/python-headline-source.service';
+import { AnthropicHitResearcher } from './infrastructure/services/anthropic-hit-researcher.service';
+import { lazyAnthropicMessages } from './infrastructure/services/anthropic-messages.client';
 import { TrackMemberTiersUseCase } from './use-cases/track-member-tiers.use-case';
 import {
+  ANTHROPIC_MESSAGES,
+  HEADLINE_SOURCE,
+  HIT_RESEARCH_REPOSITORY,
+  HIT_RESEARCHER,
   CLUSTER_REPOSITORY,
   DAILY_BAR_PROVIDER,
   MEMBER_TIER_REPOSITORY,
@@ -58,6 +68,15 @@ import {
     RemoveClusterMemberUseCase,
     CloseClusterUseCase,
     UpdateClusterUseCase,
+    { provide: HIT_RESEARCH_REPOSITORY, useClass: HitResearchRepositoryImpl },
+    { provide: HEADLINE_SOURCE, useClass: PythonHeadlineSource },
+    { provide: HIT_RESEARCHER, useClass: AnthropicHitResearcher },
+    {
+      provide: ANTHROPIC_MESSAGES,
+      useFactory: lazyAnthropicMessages,
+      inject: [ConfigService],
+    },
+    ResearchPotentHitsUseCase,
     TrackMemberTiersUseCase,
   ],
 })
