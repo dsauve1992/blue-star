@@ -3,7 +3,15 @@ import { ConfigModule } from '@nestjs/config';
 import { DatabaseService } from '../../../../../config/database.service';
 import { ClusterRepository } from '../../../domain/repositories/cluster.repository.interface';
 import { ClusterRepositoryImpl } from '../cluster.repository';
-import { CLUSTER_REPOSITORY } from '../../../constants/tokens';
+import {
+  CLUSTER_REPOSITORY,
+  MEMBER_TIER_REPOSITORY,
+} from '../../../constants/tokens';
+import { MemberTierRepository } from '../../../domain/repositories/member-tier.repository.interface';
+import { MemberTierRepositoryImpl } from '../member-tier.repository';
+import { SessionDate } from '../../../domain/value-objects/session-date';
+import { MemberTier } from '../../../domain/value-objects/member-tier';
+import { Tier } from '../../../domain/value-objects/potent-scan-stock';
 import { ClusterId } from '../../../domain/value-objects/cluster-id';
 import {
   cluster,
@@ -136,5 +144,172 @@ describe('ClusterRepository Integration', () => {
     expect(tracking.map((c) => c.id)).toEqual([ClusterId.of(CLUSTER_ID)]);
     expect(closed.map((c) => c.id)).toEqual([ClusterId.of(OTHER_ID)]);
     expect(all).toHaveLength(2);
+  });
+});
+
+// Shares potent_clusters with the suite above, so it must run in the same file (jest runs files in parallel against one database).
+const tier = (
+  id: string,
+  date: string,
+  value: Tier,
+  close = 10,
+  adrPct: number | null = 4.25,
+): MemberTier => ({
+  memberId: id,
+  date: SessionDate.of(date),
+  tier: value,
+  close,
+  ema9: 9.5,
+  ema21: 9.25,
+  ema50: 8.75,
+  adrPct,
+});
+
+describe('MemberTierRepository Integration', () => {
+  const OTHER_ID = '33333333-3333-4333-8333-333333333333';
+  let module: TestingModule;
+  let repository: MemberTierRepository;
+  let clusters: ClusterRepository;
+  let databaseService: DatabaseService;
+
+  beforeAll(async () => {
+    module = await Test.createTestingModule({
+      imports: [await ConfigModule.forRoot({ isGlobal: true })],
+      providers: [
+        DatabaseService,
+        { provide: CLUSTER_REPOSITORY, useClass: ClusterRepositoryImpl },
+        { provide: MEMBER_TIER_REPOSITORY, useClass: MemberTierRepositoryImpl },
+      ],
+    }).compile();
+
+    await module.init();
+
+    repository = module.get<MemberTierRepository>(MEMBER_TIER_REPOSITORY);
+    clusters = module.get<ClusterRepository>(CLUSTER_REPOSITORY);
+    databaseService = module.get<DatabaseService>(DatabaseService);
+  });
+
+  afterAll(async () => {
+    if (module) await module.close();
+  });
+
+  beforeEach(async () => {
+    await databaseService.query('DELETE FROM potent_member_tiers');
+    await databaseService.query('DELETE FROM potent_cluster_members');
+    await databaseService.query('DELETE FROM potent_clusters');
+    await clusters.save(cluster());
+    await clusters.save(
+      cluster({
+        id: ClusterId.of(OTHER_ID),
+        members: [clusterMember('AAA', { id: memberId('AAA', 1) })],
+      }),
+    );
+  });
+
+  it("should return a cluster's tiers ordered by member and date, without other clusters' tiers", async () => {
+    await repository.saveAll([
+      tier(memberId('BBB'), '2026-11-25', 'Lag', 20, null),
+      tier(memberId('AAA'), '2026-11-25', 'Lead', 12.5),
+      tier(memberId('AAA'), '2026-11-24', 'Mediocre', 11),
+      tier(memberId('AAA', 1), '2026-11-25', 'Lead'),
+    ]);
+
+    const tiers = await repository.findByCluster(ClusterId.of(CLUSTER_ID));
+
+    expect(tiers).toEqual([
+      tier(memberId('AAA'), '2026-11-24', 'Mediocre', 11),
+      tier(memberId('AAA'), '2026-11-25', 'Lead', 12.5),
+      tier(memberId('BBB'), '2026-11-25', 'Lag', 20, null),
+    ]);
+  });
+
+  it('should overwrite the tier of a member and session already stored', async () => {
+    await repository.saveAll([tier(memberId('AAA'), '2026-11-25', 'Lag', 10)]);
+
+    await repository.saveAll([tier(memberId('AAA'), '2026-11-25', 'Lead', 11)]);
+
+    expect(await repository.findByCluster(ClusterId.of(CLUSTER_ID))).toEqual([
+      tier(memberId('AAA'), '2026-11-25', 'Lead', 11),
+    ]);
+  });
+
+  it('should count Lead, Mediocre and Lag members per cluster and session', async () => {
+    await repository.saveAll([
+      tier(memberId('AAA'), '2026-11-24', 'Mediocre'),
+      tier(memberId('BBB'), '2026-11-24', 'Mediocre'),
+      tier(memberId('AAA'), '2026-11-25', 'Lead'),
+      tier(memberId('BBB'), '2026-11-25', 'Lag'),
+      tier(memberId('AAA', 1), '2026-11-25', 'Lead'),
+    ]);
+
+    const counts = await repository.dailyCountsByCluster([
+      ClusterId.of(CLUSTER_ID),
+      ClusterId.of(OTHER_ID),
+    ]);
+
+    expect(counts).toEqual(
+      new Map([
+        [
+          CLUSTER_ID,
+          [
+            {
+              date: SessionDate.of('2026-11-24'),
+              lead: 0,
+              mediocre: 2,
+              lag: 0,
+            },
+            {
+              date: SessionDate.of('2026-11-25'),
+              lead: 1,
+              mediocre: 0,
+              lag: 1,
+            },
+          ],
+        ],
+        [
+          OTHER_ID,
+          [
+            {
+              date: SessionDate.of('2026-11-25'),
+              lead: 1,
+              mediocre: 0,
+              lag: 0,
+            },
+          ],
+        ],
+      ]),
+    );
+  });
+
+  it("should count only active Lead members on each cluster's latest tier date", async () => {
+    await repository.saveAll([
+      tier(memberId('AAA'), '2026-11-24', 'Lead'),
+      tier(memberId('BBB'), '2026-11-24', 'Lead'),
+      tier(memberId('AAA'), '2026-11-25', 'Lag'),
+      tier(memberId('BBB'), '2026-11-25', 'Lead'),
+      tier(memberId('AAA', 1), '2026-11-24', 'Lead'),
+    ]);
+    await databaseService.query(
+      `UPDATE potent_cluster_members SET removed_at = NOW() WHERE id = $1`,
+      [memberId('AAA', 1)],
+    );
+
+    const counts = await repository.activeLeadCountsOnLatestDate([
+      ClusterId.of(CLUSTER_ID),
+      ClusterId.of(OTHER_ID),
+    ]);
+
+    expect(counts).toEqual(
+      new Map([
+        [CLUSTER_ID, 1],
+        [OTHER_ID, 0],
+      ]),
+    );
+  });
+
+  it('should return no counts for clusters without tiers', async () => {
+    expect(
+      await repository.dailyCountsByCluster([ClusterId.of(CLUSTER_ID)]),
+    ).toEqual(new Map());
   });
 });
