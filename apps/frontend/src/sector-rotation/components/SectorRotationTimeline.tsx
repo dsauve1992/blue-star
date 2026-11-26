@@ -1,18 +1,41 @@
 import { useLayoutEffect, useRef, useState } from "react";
 import { Card } from "src/global/design-system";
-import { useTheme } from "src/global/design-system";
 import type { SectorRotationDataPoint } from "../api/sector-rotation.client";
 import { parseLocalDate } from "../utils/parse-local-date";
 import { formatDisplayDate } from "../utils/format-display-date";
 
 const QUADRANT_STYLES = [
-  { quadrant: "Leading", code: "Ld", color: "bg-green-500" },
-  { quadrant: "Weakening", code: "Wk", color: "bg-yellow-500" },
-  { quadrant: "Lagging", code: "Lg", color: "bg-red-500" },
-  { quadrant: "Improving", code: "Im", color: "bg-blue-500" },
+  {
+    quadrant: "Leading",
+    code: "Ld",
+    color: "bg-green-500/70 dark:bg-green-500/80",
+    text: "text-slate-900",
+  },
+  {
+    quadrant: "Weakening",
+    code: "Wk",
+    color: "bg-yellow-500/70 dark:bg-yellow-500/80",
+    text: "text-slate-900",
+  },
+  {
+    quadrant: "Lagging",
+    code: "Lg",
+    color: "bg-red-500/70 dark:bg-red-500/80",
+    text: "text-slate-900 dark:text-white",
+  },
+  {
+    quadrant: "Improving",
+    code: "Im",
+    color: "bg-blue-500/70 dark:bg-blue-500/80",
+    text: "text-slate-900 dark:text-white",
+  },
 ] as const;
 
-const UNKNOWN_QUADRANT_STYLE = { code: "?", color: "bg-gray-500" };
+const UNKNOWN_QUADRANT_STYLE = {
+  code: "?",
+  color: "bg-gray-500/70 dark:bg-gray-500/80",
+  text: "text-slate-900 dark:text-white",
+};
 
 const quadrantStyle = (quadrant: string) =>
   QUADRANT_STYLES.find((style) => style.quadrant === quadrant) ??
@@ -60,8 +83,6 @@ export function SectorRotationTimeline({
   windowStart,
   windowEnd,
 }: SectorRotationTimelineProps) {
-  const { theme } = useTheme();
-  const isDarkMode = theme === "dark";
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isScrolledSideways, setIsScrolledSideways] = useState(false);
   const stickyColumnShadow = isScrolledSideways
@@ -193,10 +214,10 @@ export function SectorRotationTimeline({
                       return (
                         <td
                           key={`${symbol}-${date}`}
-                          className={`border-b border-r border-border p-1 text-center text-xs ${style.color} ${isDarkMode ? "opacity-80" : "opacity-70"}`}
+                          className={`border-b border-r border-border p-1 text-center text-xs ${style.color}`}
                           title={`${sectorNames[symbol] ? `${sectorNames[symbol]} (${symbol})` : symbol} - ${formatDisplayDate(parseLocalDate(date))}: ${quadrant}`}
                         >
-                          <span className="text-white font-bold">
+                          <span className={`${style.text} font-bold`}>
                             {style.code}
                           </span>
                         </td>
@@ -210,10 +231,10 @@ export function SectorRotationTimeline({
         </div>
       </div>
       <div className="mt-4 flex flex-wrap gap-4 text-sm">
-        {QUADRANT_STYLES.map(({ quadrant, code, color }) => (
+        {QUADRANT_STYLES.map(({ quadrant, code, color, text }) => (
           <div key={quadrant} className="flex items-center gap-2">
             <span
-              className={`inline-flex h-5 min-w-7 items-center justify-center rounded px-1 text-xs font-bold text-white ${color}`}
+              className={`inline-flex h-5 min-w-7 items-center justify-center rounded px-1 text-xs font-bold ${text} ${color}`}
             >
               {code}
             </span>
