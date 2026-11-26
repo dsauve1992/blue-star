@@ -9,6 +9,7 @@ Output (stdout, single JSON line):
     {"ticker": "AAPL", "sector": "Technology", "industry": "Consumer Electronics", "industryKey": "consumer-electronics"}
 
 If yfinance has no data for the ticker, all fields except `ticker` are empty strings.
+If the fetch itself fails (transport error, rate limit), the script exits non-zero with a traceback on stderr.
 """
 import json
 import sys
@@ -17,10 +18,7 @@ import yfinance as yf
 
 
 def classify(symbol: str) -> dict:
-    try:
-        info = yf.Ticker(symbol).info
-    except Exception:
-        info = {}
+    info = yf.Ticker(symbol).info
 
     return {
         "ticker": symbol,
