@@ -69,7 +69,8 @@ describe('GetPotentScanUseCase', () => {
   it('should read the latest scan for "latest"', async () => {
     const result = await useCase.execute({ sessionDate: 'latest' });
 
-    expect(repository.findLatest).toHaveBeenCalledTimes(1);
+    expect(repository.findLatest).toHaveBeenNthCalledWith(1);
+    expect(repository.findBySessionDate).not.toHaveBeenCalled();
     expect(result.scanDate).toBe('2026-11-25');
   });
 

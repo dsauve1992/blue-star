@@ -81,7 +81,15 @@ describe('RunPotentScanUseCase', () => {
 
     await useCase.execute({ replaceExisting: true });
 
-    expect(repository.replace).toHaveBeenCalledTimes(1);
+    expect(repository.replace).toHaveBeenNthCalledWith(
+      1,
+      PotentScan.of({
+        sessionDate: session,
+        universeSize: 2400,
+        hits: [hit('AAA'), hit('BBB')],
+        nearMisses: [nearMiss('CCC')],
+      }),
+    );
   });
 
   it('should store nothing when the scan has no hits', async () => {

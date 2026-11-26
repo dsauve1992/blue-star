@@ -61,6 +61,45 @@ describe('SpySessionCalendar', () => {
     jest.useFakeTimers({ now: new Date('2026-11-24T17:00:00.000Z') });
     respondWith('2026-11-23T14:30:00.000Z', '2026-11-24T14:30:00.000Z');
 
+    await expect(calendar.lastCompletedSession()).rejects.toThrow(
+      new StateError(
+        'The 2026-11-24 session is still open; run the potent scan after the close',
+      ),
+    );
+  });
+
+  it('should refuse during market hours even when SPY has no bar for today yet', async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-24T14:31:00.000Z') });
+    respondWith('2026-11-20T14:30:00.000Z', '2026-11-23T14:30:00.000Z');
+
     await expect(calendar.lastCompletedSession()).rejects.toThrow(StateError);
+    expect(getHistoricalData.execute).not.toHaveBeenCalled();
+  });
+
+  it('should return the previous session before the open', async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-24T14:29:00.000Z') });
+    respondWith('2026-11-20T14:30:00.000Z', '2026-11-23T14:30:00.000Z');
+
+    const session = await calendar.lastCompletedSession();
+
+    expect(session).toEqual(SessionDate.of('2026-11-23'));
+  });
+
+  it("should return Friday's session on a Saturday during what would be market hours", async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-21T16:00:00.000Z') });
+    respondWith('2026-11-19T14:30:00.000Z', '2026-11-20T14:30:00.000Z');
+
+    const session = await calendar.lastCompletedSession();
+
+    expect(session).toEqual(SessionDate.of('2026-11-20'));
+  });
+
+  it('should refuse when SPY returns no daily bar', async () => {
+    jest.useFakeTimers({ now: new Date('2026-11-24T22:50:00.000Z') });
+    respondWith();
+
+    await expect(calendar.lastCompletedSession()).rejects.toThrow(
+      new StateError('SPY returned no daily bar to date the session'),
+    );
   });
 });

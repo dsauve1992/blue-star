@@ -12,7 +12,9 @@ import { SessionDate } from '../../domain/value-objects/session-date';
 import { StateError } from '../../domain/domain-errors';
 
 const LOOKBACK_DAYS = 10;
-const MARKET_CLOSE_HOUR = 16;
+const MARKET_OPEN_MINUTE = 9 * 60 + 30;
+const MARKET_CLOSE_MINUTE = 16 * 60;
+const SATURDAY = 6;
 
 @Injectable()
 export class SpySessionCalendar implements SessionCalendar {
@@ -20,6 +22,13 @@ export class SpySessionCalendar implements SessionCalendar {
 
   async lastCompletedSession(): Promise<SessionDate> {
     const now = new Date();
+    const marketNow = DateTime.fromJSDate(now, { zone: MARKET_TIMEZONE });
+    if (isDuringRegularHours(marketNow)) {
+      throw new StateError(
+        `The ${getMarketDateKey(now)} session is still open; run the potent scan after the close`,
+      );
+    }
+
     const { historicalData } = await this.getHistoricalData.execute({
       symbol: Symbol.of('SPY'),
       dateRange: DateRange.of(
@@ -33,17 +42,15 @@ export class SpySessionCalendar implements SessionCalendar {
       throw new StateError('SPY returned no daily bar to date the session');
     }
 
-    const sessionKey = getMarketDateKey(lastBar.date);
-    const marketNow = DateTime.fromJSDate(now, { zone: MARKET_TIMEZONE });
-    if (
-      sessionKey === getMarketDateKey(now) &&
-      marketNow.hour < MARKET_CLOSE_HOUR
-    ) {
-      throw new StateError(
-        `The ${sessionKey} session is still open; run the potent scan after the close`,
-      );
-    }
-
-    return SessionDate.of(sessionKey);
+    return SessionDate.of(getMarketDateKey(lastBar.date));
   }
+}
+
+function isDuringRegularHours(marketNow: DateTime): boolean {
+  const minuteOfDay = marketNow.hour * 60 + marketNow.minute;
+  return (
+    marketNow.weekday < SATURDAY &&
+    minuteOfDay >= MARKET_OPEN_MINUTE &&
+    minuteOfDay < MARKET_CLOSE_MINUTE
+  );
 }
