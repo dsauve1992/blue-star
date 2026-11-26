@@ -91,7 +91,7 @@ Names only; see `apps/backend/.env.example`, `apps/frontend/.env.example` and `.
 | Scope                    | Variables                                                                          |
 | ------------------------ | ---------------------------------------------------------------------------------- |
 | Backend database         | `DB_HOST`, `DB_PORT`, `DB_USERNAME`, `DB_PASSWORD`, `DB_DATABASE`, `DB_SSL`        |
-| Backend data providers   | `FINANCIAL_MODELING_PREP_API_KEY`, `SEC_EDGAR_CONTACT_EMAIL`                       |
+| Backend data providers   | `FINANCIAL_MODELING_PREP_API_KEY`, `SEC_EDGAR_CONTACT_EMAIL`, `ANTHROPIC_API_KEY`  |
 | Backend notifications    | `NTFY_API_KEY`, `NTFY_BASE_URL`, `NOTIFICATIONS_ENABLED`                           |
 | Backend auth and serving | `KINDE_DOMAIN`, `KINDE_CLIENT_ID`, `PORT`, `FRONTEND_URL`, `CRON_ENABLED`          |
 | Frontend                 | `VITE_API_URL`, `VITE_KINDE_CLIENT_ID`, `VITE_KINDE_DOMAIN`, `VITE_KINDE_AUDIENCE` |

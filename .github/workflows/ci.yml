@@ -166,7 +166,7 @@ jobs:
 
       - name: Assert spawned Python scripts import
         run: |
-          docker exec -w /app/apps/screener backend python3 -c "import main, classifier, rs_rating_service, momentum_leaders_service, potent_scan_service"
+          docker exec -w /app/apps/screener backend python3 -c "import main, classifier, rs_rating_service, momentum_leaders_service, potent_scan_service, potent_headlines_service"
           docker exec -w /app/apps/theme_extractor backend python3 -c "import main"
 
       - name: Assert every migration ran
