@@ -6,6 +6,7 @@ import {
 } from '@nestjs/common';
 import { AppService } from './app.service';
 import { DatabaseService } from './config/database.service';
+import { MigrationService } from './config/migration.service';
 import { Public } from './modules/auth/auth.module';
 
 const HEALTH_CHECK_TIMEOUT_MS = 3000;
@@ -17,6 +18,7 @@ export class AppController {
   constructor(
     private readonly appService: AppService,
     private readonly databaseService: DatabaseService,
+    private readonly migrationService: MigrationService,
   ) {}
 
   @Get()
@@ -28,6 +30,9 @@ export class AppController {
   @Get('health')
   @Public()
   async getHealth(): Promise<{ status: string; timestamp: string }> {
+    if (this.migrationService.startupFailure() !== undefined) {
+      throw new ServiceUnavailableException('Startup migrations failed');
+    }
     let timer: NodeJS.Timeout | undefined;
     try {
       await Promise.race([

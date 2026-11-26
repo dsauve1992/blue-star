@@ -8,7 +8,13 @@ const execAsync = promisify(exec);
 
 @Injectable()
 export class MigrationService {
+  private failure: string | undefined;
+
   constructor(private readonly configService: ConfigService) {}
+
+  startupFailure(): string | undefined {
+    return this.failure;
+  }
 
   async runMigrations(): Promise<void> {
     const config = getDatabaseConfig(this.configService);
@@ -45,6 +51,7 @@ export class MigrationService {
       console.log('Database migrations completed successfully');
     } catch (error) {
       console.error('Migration failed:', error);
+      this.failure = error instanceof Error ? error.message : String(error);
       throw error;
     }
   }

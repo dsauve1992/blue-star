@@ -9,7 +9,7 @@ describe('MigrationService', () => {
   const execMock = exec as unknown as jest.Mock;
   let execEnv: NodeJS.ProcessEnv | undefined;
 
-  const runMigrations = (dbSsl: string) =>
+  const createService = (dbSsl: string) =>
     new MigrationService(
       new ConfigService({
         NODE_ENV: 'production',
@@ -20,7 +20,9 @@ describe('MigrationService', () => {
         DB_DATABASE: 'blue_star_db',
         DB_SSL: dbSsl,
       }),
-    ).runMigrations();
+    );
+
+  const runMigrations = (dbSsl: string) => createService(dbSsl).runMigrations();
 
   beforeEach(() => {
     process.env = { ...originalEnv };
@@ -63,5 +65,28 @@ describe('MigrationService', () => {
 
     expect(execEnv?.DB_SSL).toBe('no-verify');
     expect(process.env.DB_SSL).toBe('true');
+  });
+
+  it('leaves the startup failure undefined after a successful run', async () => {
+    const service = createService('false');
+
+    await service.runMigrations();
+
+    expect(service.startupFailure()).toBeUndefined();
+  });
+
+  it('records the startup failure when a run fails', async () => {
+    jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    execMock.mockImplementation(
+      (_command: string, _options: unknown, callback: (error: Error) => void) =>
+        callback(new Error('relation already exists')),
+    );
+    const service = createService('false');
+
+    await expect(service.runMigrations()).rejects.toThrow(
+      'relation already exists',
+    );
+
+    expect(service.startupFailure()).toBe('relation already exists');
   });
 });
