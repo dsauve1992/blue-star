@@ -4,6 +4,7 @@ import { RunPotentScanUseCase } from '../../use-cases/run-potent-scan.use-case';
 import { ResearchPotentHitsUseCase } from '../../use-cases/research-potent-hits.use-case';
 import { SessionDate } from '../../domain/value-objects/session-date';
 import { TrackMemberTiersUseCase } from '../../use-cases/track-member-tiers.use-case';
+import { ProposeClustersUseCase } from '../../use-cases/propose-clusters.use-case';
 import { CronJobNotificationService } from '../../../notification/notification.module';
 import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 
@@ -16,6 +17,7 @@ export class PotentScanCronService {
     private readonly trackMemberTiersUseCase: TrackMemberTiersUseCase,
     private readonly cronJobNotificationService: CronJobNotificationService,
     private readonly researchPotentHitsUseCase: ResearchPotentHitsUseCase,
+    private readonly proposeClustersUseCase: ProposeClustersUseCase,
   ) {}
 
   @Cron('50 17 * * 1-5', { timeZone: MARKET_TIMEZONE })
@@ -49,10 +51,12 @@ export class PotentScanCronService {
       return;
     }
 
-    await this.researchHits(scannedSession);
+    if (await this.researchHits(scannedSession)) {
+      await this.proposeClusters(scannedSession);
+    }
   }
 
-  private async researchHits(sessionDate: SessionDate) {
+  private async researchHits(sessionDate: SessionDate): Promise<boolean> {
     const job = {
       jobName: 'Potent Hit Research',
       jobType: 'potent-hit-research',
@@ -67,10 +71,38 @@ export class PotentScanCronService {
         ...job,
         additionalData: `${researchedCount} hits researched for $${usage.costUsd.toFixed(4)}`,
       });
+      return true;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Potent hit research failed: ${errorMessage}`);
+
+      await this.cronJobNotificationService.notifyJobError(job, error);
+      return false;
+    }
+  }
+
+  private async proposeClusters(sessionDate: SessionDate) {
+    const job = {
+      jobName: 'Potent Cluster Proposals',
+      jobType: 'potent-cluster-proposals',
+      frequency: 'daily',
+    };
+    await this.cronJobNotificationService.notifyJobStart(job);
+
+    try {
+      const { newClusterCount, additionCount, droppedCount, usage } =
+        await this.proposeClustersUseCase.execute({ sessionDate });
+      await this.cronJobNotificationService.notifyJobSuccess({
+        ...job,
+        additionalData:
+          `${newClusterCount} clusters and ${additionCount} additions proposed ` +
+          `(${droppedCount} dropped) for $${usage.costUsd.toFixed(4)}`,
+      });
+    } catch (error) {
+      const errorMessage =
+        error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Potent cluster proposals failed: ${errorMessage}`);
 
       await this.cronJobNotificationService.notifyJobError(job, error);
     }

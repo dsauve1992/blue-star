@@ -11,11 +11,17 @@ import {
 import { RunPotentScanUseCase } from '../use-cases/run-potent-scan.use-case';
 import { ResearchPotentHitsUseCase } from '../use-cases/research-potent-hits.use-case';
 import { TrackMemberTiersUseCase } from '../use-cases/track-member-tiers.use-case';
+import { ProposeClustersUseCase } from '../use-cases/propose-clusters.use-case';
 import { SessionDate } from '../domain/value-objects/session-date';
 
 type ResearchOutcome =
   | { status: 'succeeded'; researchedCount: number; costUsd: number }
   | { status: 'failed'; error: string };
+
+type ProposalsOutcome =
+  | { status: 'succeeded'; proposalCount: number; costUsd: number }
+  | { status: 'failed'; error: string }
+  | { status: 'skipped' };
 
 @Controller('potent-scan')
 export class PotentScanController {
@@ -27,6 +33,7 @@ export class PotentScanController {
     private readonly runPotentScanUseCase: RunPotentScanUseCase,
     private readonly researchPotentHitsUseCase: ResearchPotentHitsUseCase,
     private readonly trackMemberTiersUseCase: TrackMemberTiersUseCase,
+    private readonly proposeClustersUseCase: ProposeClustersUseCase,
   ) {}
 
   @Get('scans')
@@ -50,6 +57,7 @@ export class PotentScanController {
     scanDate: string;
     hitCount: number;
     research: ResearchOutcome;
+    proposals: ProposalsOutcome;
   }> {
     const { sessionDate, hitCount } = await this.runPotentScanUseCase.execute({
       replaceExisting: true,
@@ -70,13 +78,21 @@ export class PotentScanController {
       research = { status: 'failed', error: message };
     }
 
-    return { scanDate: sessionDate.value, hitCount, research };
+    const proposals: ProposalsOutcome =
+      research.status === 'succeeded'
+        ? await this.proposeClusters(sessionDate)
+        : { status: 'skipped' };
+
+    return { scanDate: sessionDate.value, hitCount, research, proposals };
   }
 
   @Post('scans/:date/research')
-  async researchScan(
-    @Param('date') date: string,
-  ): Promise<{ scanDate: string; researchedCount: number; costUsd: number }> {
+  async researchScan(@Param('date') date: string): Promise<{
+    scanDate: string;
+    researchedCount: number;
+    costUsd: number;
+    proposals: ProposalsOutcome;
+  }> {
     const { sessionDate, researchedCount, usage } =
       await this.researchPotentHitsUseCase.execute({
         sessionDate: SessionDate.of(date),
@@ -85,7 +101,26 @@ export class PotentScanController {
       scanDate: sessionDate.value,
       researchedCount,
       costUsd: usage.costUsd,
+      proposals: await this.proposeClusters(sessionDate),
     };
+  }
+
+  private async proposeClusters(
+    sessionDate: SessionDate,
+  ): Promise<ProposalsOutcome> {
+    try {
+      const { newClusterCount, additionCount, usage } =
+        await this.proposeClustersUseCase.execute({ sessionDate });
+      return {
+        status: 'succeeded',
+        proposalCount: newClusterCount + additionCount,
+        costUsd: usage.costUsd,
+      };
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      this.logger.error(`Potent cluster proposals failed: ${message}`);
+      return { status: 'failed', error: message };
+    }
   }
 
   @Post('tiers/run')

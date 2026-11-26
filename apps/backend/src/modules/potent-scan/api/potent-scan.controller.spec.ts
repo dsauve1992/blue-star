@@ -5,6 +5,7 @@ import { ListPotentScanDatesUseCase } from '../use-cases/list-potent-scan-dates.
 import { RunPotentScanUseCase } from '../use-cases/run-potent-scan.use-case';
 import { ResearchPotentHitsUseCase } from '../use-cases/research-potent-hits.use-case';
 import { TrackMemberTiersUseCase } from '../use-cases/track-member-tiers.use-case';
+import { ProposeClustersUseCase } from '../use-cases/propose-clusters.use-case';
 import { SessionDate } from '../domain/value-objects/session-date';
 import { InvariantError } from '../domain/domain-errors';
 
@@ -14,6 +15,7 @@ describe('PotentScanController', () => {
   let runScan: { execute: jest.Mock };
   let researchHits: { execute: jest.Mock };
   let trackTiers: { execute: jest.Mock };
+  let proposeClusters: { execute: jest.Mock };
 
   beforeEach(async () => {
     getScan = { execute: jest.fn().mockResolvedValue({}) };
@@ -44,6 +46,22 @@ describe('PotentScanController', () => {
       }),
     };
 
+    proposeClusters = {
+      execute: jest.fn().mockResolvedValue({
+        sessionDate: SessionDate.of('2026-11-25'),
+        newClusterCount: 2,
+        additionCount: 1,
+        unclusteredCount: 9,
+        droppedCount: 1,
+        usage: {
+          inputTokens: 20000,
+          outputTokens: 3000,
+          webSearchRequests: 0,
+          costUsd: 0.07,
+        },
+      }),
+    };
+
     const module = await Test.createTestingModule({
       controllers: [PotentScanController],
       providers: [
@@ -55,6 +73,7 @@ describe('PotentScanController', () => {
         { provide: RunPotentScanUseCase, useValue: runScan },
         { provide: ResearchPotentHitsUseCase, useValue: researchHits },
         { provide: TrackMemberTiersUseCase, useValue: trackTiers },
+        { provide: ProposeClustersUseCase, useValue: proposeClusters },
       ],
     }).compile();
 
@@ -97,7 +116,20 @@ describe('PotentScanController', () => {
       scanDate: '2026-11-25',
       hitCount: 40,
       research: { status: 'succeeded', researchedCount: 40, costUsd: 0.12 },
+      proposals: { status: 'succeeded', proposalCount: 3, costUsd: 0.07 },
     });
+    expect(proposeClusters.execute).toHaveBeenNthCalledWith(1, {
+      sessionDate: SessionDate.of('2026-11-25'),
+    });
+  });
+
+  it('should keep the manual scan and research and report the proposals failure', async () => {
+    proposeClusters.execute.mockRejectedValue(new Error('refusal'));
+
+    const result = await controller.runScan();
+
+    expect(result.proposals).toEqual({ status: 'failed', error: 'refusal' });
+    expect(result.research.status).toBe('succeeded');
   });
 
   it('should keep the manual scan and report the research failure in the response', async () => {
@@ -111,7 +143,9 @@ describe('PotentScanController', () => {
       scanDate: '2026-11-25',
       hitCount: 40,
       research: { status: 'failed', error: 'ANTHROPIC_API_KEY is not set' },
+      proposals: { status: 'skipped' },
     });
+    expect(proposeClusters.execute).not.toHaveBeenCalled();
   });
 
   it('should not research when the manual scan fails', async () => {
@@ -131,6 +165,7 @@ describe('PotentScanController', () => {
       scanDate: '2026-11-25',
       researchedCount: 40,
       costUsd: 0.12,
+      proposals: { status: 'succeeded', proposalCount: 3, costUsd: 0.07 },
     });
   });
 
