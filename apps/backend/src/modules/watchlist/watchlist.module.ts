@@ -8,6 +8,7 @@ import { DeleteWatchlistUseCase } from './use-cases/delete-watchlist.use-case';
 import { RenameWatchlistUseCase } from './use-cases/rename-watchlist.use-case';
 import { ListWatchlistsUseCase } from './use-cases/list-watchlists.use-case';
 import { GetWatchlistByIdUseCase } from './use-cases/get-watchlist-by-id.use-case';
+import { AssertWatchlistOwnershipUseCase } from './use-cases/assert-watchlist-ownership.use-case';
 import { FindWatchlistTickersUseCase } from './use-cases/find-watchlist-tickers.use-case';
 import {
   WATCHLIST_READ_REPOSITORY,
@@ -39,15 +40,14 @@ import { TradingViewSymbolSearchService } from './infrastructure/services/tradin
     RenameWatchlistUseCase,
     ListWatchlistsUseCase,
     GetWatchlistByIdUseCase,
+    AssertWatchlistOwnershipUseCase,
     FindWatchlistTickersUseCase,
   ],
-  exports: [GetWatchlistByIdUseCase, FindWatchlistTickersUseCase],
+  exports: [AssertWatchlistOwnershipUseCase, FindWatchlistTickersUseCase],
 })
 export class WatchlistModule {}
 
-export { GetWatchlistByIdUseCase } from './use-cases/get-watchlist-by-id.use-case';
+export { AssertWatchlistOwnershipUseCase } from './use-cases/assert-watchlist-ownership.use-case';
 export { FindWatchlistTickersUseCase } from './use-cases/find-watchlist-tickers.use-case';
 export { WatchlistId } from './domain/value-objects/watchlist-id';
 export { WatchlistTicker } from './domain/value-objects/watchlist-ticker';
-export { WatchlistName } from './domain/value-objects/watchlist-name';
-export { Watchlist } from './domain/entities/watchlist';

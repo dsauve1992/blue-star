@@ -1,7 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   WatchlistId,
-  GetWatchlistByIdUseCase,
+  AssertWatchlistOwnershipUseCase,
 } from '../../watchlist/watchlist.module';
 import { MonitoringType } from '../domain/value-objects/monitoring-type';
 import type { WatchlistMonitoringReadRepository } from '../domain/repositories/watchlist-monitoring-read.repository.interface';
@@ -27,15 +27,15 @@ export class GetMonitoringStatusUseCase {
   constructor(
     @Inject(WATCHLIST_MONITORING_READ_REPOSITORY)
     private readonly monitoringReadRepository: WatchlistMonitoringReadRepository,
-    private readonly getWatchlistById: GetWatchlistByIdUseCase,
+    private readonly assertWatchlistOwnership: AssertWatchlistOwnershipUseCase,
   ) {}
 
   async execute(
     request: GetMonitoringStatusRequestDto,
     authContext: AuthContext,
   ): Promise<GetMonitoringStatusResponseDto> {
-    await this.getWatchlistById.execute(
-      { watchlistId: request.watchlistId },
+    await this.assertWatchlistOwnership.execute(
+      request.watchlistId,
       authContext,
     );
 
