@@ -270,7 +270,19 @@ describe('ProposeClustersUseCase', () => {
       StateError,
     );
     expect(proposals.replacePending).not.toHaveBeenCalled();
-    expect(proposals.recordRun.mock.calls[0][0].status).toBe('failed');
+    expect(proposals.recordRun).toHaveBeenNthCalledWith(1, {
+      scanDate: SCAN_DATE,
+      status: 'failed',
+      model: 'fake-sonnet',
+      proposalCount: 0,
+      unclustered: [],
+      dropped: [],
+      usage,
+      error:
+        'Clustering for 2026-11-25 produced nothing valid (2 item(s) dropped)',
+      startedAt: NOW,
+      finishedAt: NOW,
+    });
   });
 
   it('should refuse to propose without research', async () => {

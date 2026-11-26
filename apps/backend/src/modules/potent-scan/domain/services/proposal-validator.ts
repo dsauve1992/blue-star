@@ -1,3 +1,4 @@
+import { MAX_CLUSTER_NAME_LENGTH } from '../entities/cluster';
 import {
   ClusterProposalSet,
   NewClusterProposal,
@@ -72,6 +73,12 @@ export function validateProposals(
     }
     if (!cluster.name.trim()) {
       dropped.push(`${label}: no name`);
+      return null;
+    }
+    if (cluster.name.trim().length > MAX_CLUSTER_NAME_LENGTH) {
+      dropped.push(
+        `${label}: name longer than ${MAX_CLUSTER_NAME_LENGTH} characters`,
+      );
       return null;
     }
     if (members.length < MIN_NEW_CLUSTER_MEMBERS) {

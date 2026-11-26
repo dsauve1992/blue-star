@@ -236,18 +236,17 @@ describe('Proposal decision use cases', () => {
       members: ['AAA', 'BBB', 'CCC'].map((t) => proposedMember(t)),
     };
     const reactors = { ...fuel, name: 'Reactors' };
-    proposals.findById.mockResolvedValue(
-      proposal({
-        content: {
-          kind: 'new_cluster',
-          cluster: proposedCluster({
-            alternatives: [
-              { kind: 'split', description: 'Two', clusters: [fuel, reactors] },
-            ],
-          }),
-        },
-      }),
-    );
+    const withAlternative = proposal({
+      content: {
+        kind: 'new_cluster',
+        cluster: proposedCluster({
+          alternatives: [
+            { kind: 'split', description: 'Two', clusters: [fuel, reactors] },
+          ],
+        }),
+      },
+    });
+    proposals.findById.mockResolvedValue(withAlternative);
     mockIds(
       NEW_ID,
       memberId('AAA'),
@@ -275,7 +274,16 @@ describe('Proposal decision use cases', () => {
     expect(result).toEqual({
       clusterIds: [ClusterId.of(NEW_ID), ClusterId.of(SECOND_ID)],
     });
-    expect(proposals.saveDecision.mock.calls[0][0].appliedAlternative).toBe(0);
+    expect(proposals.saveDecision).toHaveBeenNthCalledWith(
+      1,
+      proposal({
+        content: withAlternative.content,
+        status: 'accepted',
+        appliedAlternative: 0,
+        clusterIds: [ClusterId.of(NEW_ID), ClusterId.of(SECOND_ID)],
+        decidedAt: NOW,
+      }),
+    );
   });
 
   it('should refuse an alternative that does not exist', async () => {
@@ -358,13 +366,49 @@ describe('Proposal decision use cases', () => {
   });
 
   it('should refuse an edit and an alternative together', async () => {
+    proposals.findById.mockResolvedValue(
+      proposal({
+        content: {
+          kind: 'new_cluster',
+          cluster: proposedCluster({
+            alternatives: [
+              {
+                kind: 'split',
+                description: 'One',
+                clusters: [proposedCluster({ alternatives: undefined })],
+              },
+            ],
+          }),
+        },
+      }),
+    );
+
     await expect(
       accept.execute({
         proposalId,
         alternativeIndex: 0,
         edit: { addTickers: [], removeTickers: [] },
       }),
-    ).rejects.toThrow(InvariantError);
+    ).rejects.toThrow(
+      new InvariantError('Accept with an edit or an alternative, not both'),
+    );
+    expect(proposals.saveDecision).not.toHaveBeenCalled();
+    expect(clusters.save).not.toHaveBeenCalled();
+  });
+
+  it.each([
+    { edit: { name: 'Renamed', addTickers: [], removeTickers: [] } },
+    { alternativeIndex: 0 },
+  ])('should refuse to change an addition with %j', async (change) => {
+    proposals.findById.mockResolvedValue(
+      proposal({ content: { kind: 'addition', addition } }),
+    );
+
+    await expect(accept.execute({ proposalId, ...change })).rejects.toThrow(
+      new InvariantError('An addition is accepted as proposed'),
+    );
+    expect(proposals.saveDecision).not.toHaveBeenCalled();
+    expect(clusters.save).not.toHaveBeenCalled();
   });
 
   it('should throw NotFoundError for an unknown proposal', async () => {

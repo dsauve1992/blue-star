@@ -49,6 +49,20 @@ describe('validateProposals', () => {
     });
   });
 
+  it('should drop a cluster whose name the Cluster aggregate would refuse', () => {
+    const name = 'N'.repeat(201);
+
+    const result = validateProposals(
+      set({ newClusters: [proposedCluster({ name })] }),
+      context,
+    );
+
+    expect(result.proposals.newClusters).toEqual([]);
+    expect(result.dropped).toEqual([
+      `Cluster "${name}": name longer than 200 characters`,
+    ]);
+  });
+
   it('should drop a cluster with only two members', () => {
     const result = validateProposals(
       set({
