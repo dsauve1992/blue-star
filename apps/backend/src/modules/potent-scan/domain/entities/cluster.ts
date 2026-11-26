@@ -4,7 +4,7 @@ import { InvariantError, NotFoundError, StateError } from '../domain-errors';
 import { ClusterId } from '../value-objects/cluster-id';
 import { SessionDate } from '../value-objects/session-date';
 
-const MAX_NAME_LENGTH = 200;
+export const MAX_CLUSTER_NAME_LENGTH = 200;
 const MAX_TICKER_LENGTH = 20;
 
 export type ClusterStatus = 'tracking' | 'closed';
@@ -184,9 +184,9 @@ export class Cluster {
     if (trimmed.length === 0) {
       throw new InvariantError('Cluster name cannot be empty');
     }
-    if (trimmed.length > MAX_NAME_LENGTH) {
+    if (trimmed.length > MAX_CLUSTER_NAME_LENGTH) {
       throw new InvariantError(
-        `Cluster name cannot exceed ${MAX_NAME_LENGTH} characters`,
+        `Cluster name cannot exceed ${MAX_CLUSTER_NAME_LENGTH} characters`,
       );
     }
     return trimmed;

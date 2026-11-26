@@ -6,6 +6,7 @@ import { NotificationModule } from '../notification/notification.module';
 import { StockAnalysisModule } from '../stock-analysis/stock-analysis.module';
 import { PotentScanController } from './api/potent-scan.controller';
 import { ClusterController } from './api/cluster.controller';
+import { ProposalController } from './api/proposal.controller';
 import { PotentScanRepositoryImpl } from './infrastructure/repositories/potent-scan.repository';
 import { ClusterRepositoryImpl } from './infrastructure/repositories/cluster.repository';
 import { MemberTierRepositoryImpl } from './infrastructure/repositories/member-tier.repository';
@@ -29,16 +30,24 @@ import { PythonHeadlineSource } from './infrastructure/services/python-headline-
 import { AnthropicHitResearcher } from './infrastructure/services/anthropic-hit-researcher.service';
 import { lazyAnthropicMessages } from './infrastructure/services/anthropic-messages.client';
 import { TrackMemberTiersUseCase } from './use-cases/track-member-tiers.use-case';
+import { ProposalRepositoryImpl } from './infrastructure/repositories/proposal.repository';
+import { AnthropicClusterProposer } from './infrastructure/services/anthropic-cluster-proposer.service';
+import { ProposeClustersUseCase } from './use-cases/propose-clusters.use-case';
+import { GetProposalsUseCase } from './use-cases/get-proposals.use-case';
+import { AcceptProposalUseCase } from './use-cases/accept-proposal.use-case';
+import { RejectProposalUseCase } from './use-cases/reject-proposal.use-case';
 import {
   ANTHROPIC_MESSAGES,
   HEADLINE_SOURCE,
   HIT_RESEARCH_REPOSITORY,
   HIT_RESEARCHER,
+  CLUSTER_PROPOSER,
   CLUSTER_REPOSITORY,
   DAILY_BAR_PROVIDER,
   MEMBER_TIER_REPOSITORY,
   POTENT_SCAN_REPOSITORY,
   POTENT_SCREENER_SERVICE,
+  PROPOSAL_REPOSITORY,
   SESSION_CALENDAR,
 } from './constants/tokens';
 
@@ -49,7 +58,7 @@ import {
     NotificationModule,
     StockAnalysisModule,
   ],
-  controllers: [PotentScanController, ClusterController],
+  controllers: [PotentScanController, ClusterController, ProposalController],
   providers: [
     { provide: POTENT_SCAN_REPOSITORY, useClass: PotentScanRepositoryImpl },
     { provide: CLUSTER_REPOSITORY, useClass: ClusterRepositoryImpl },
@@ -78,6 +87,12 @@ import {
     },
     ResearchPotentHitsUseCase,
     TrackMemberTiersUseCase,
+    { provide: PROPOSAL_REPOSITORY, useClass: ProposalRepositoryImpl },
+    { provide: CLUSTER_PROPOSER, useClass: AnthropicClusterProposer },
+    ProposeClustersUseCase,
+    GetProposalsUseCase,
+    AcceptProposalUseCase,
+    RejectProposalUseCase,
   ],
 })
 export class PotentScanModule {}

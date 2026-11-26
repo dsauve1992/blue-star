@@ -5,6 +5,12 @@ import {
   ClusterMember,
 } from '../domain/entities/cluster';
 import { ClusterId } from '../domain/value-objects/cluster-id';
+import { Proposal, ProposalData } from '../domain/entities/proposal';
+import { ProposalId } from '../domain/value-objects/proposal-id';
+import {
+  NewClusterProposal,
+  ProposedMember,
+} from '../domain/value-objects/cluster-proposal';
 import { SessionDate } from '../domain/value-objects/session-date';
 import {
   PotentScanHit,
@@ -80,3 +86,45 @@ export const clusterData = (
 
 export const cluster = (overrides: Partial<ClusterData> = {}): Cluster =>
   Cluster.fromData(clusterData(overrides));
+
+export const PROPOSAL_ID = '44444444-4444-4444-8444-444444444444';
+
+export const proposedMember = (
+  ticker: string,
+  overrides: Partial<ProposedMember> = {},
+): ProposedMember => ({
+  ticker,
+  reason: `${ticker} supplies SMR fuel`,
+  catalystToday: 'DOE loan program announced',
+  source: `https://news.example.com/${ticker}`,
+  ...overrides,
+});
+
+export const proposedCluster = (
+  overrides: Partial<NewClusterProposal> = {},
+): NewClusterProposal => ({
+  name: 'Nuclear fuel',
+  description: 'Fuel suppliers for small modular reactors',
+  sharedCatalyst: 'DOE loan program',
+  sources: ['https://news.example.com/AAA'],
+  members: ['AAA', 'BBB', 'CCC'].map((ticker) => proposedMember(ticker)),
+  alternatives: [],
+  ...overrides,
+});
+
+export const proposalData = (
+  overrides: Partial<ProposalData> = {},
+): ProposalData => ({
+  id: ProposalId.of(PROPOSAL_ID),
+  scanDate: SessionDate.of('2026-11-25'),
+  content: { kind: 'new_cluster', cluster: proposedCluster() },
+  status: 'pending',
+  appliedAlternative: null,
+  clusterIds: [],
+  createdAt: JOINED_AT,
+  decidedAt: null,
+  ...overrides,
+});
+
+export const proposal = (overrides: Partial<ProposalData> = {}): Proposal =>
+  Proposal.fromData(proposalData(overrides));

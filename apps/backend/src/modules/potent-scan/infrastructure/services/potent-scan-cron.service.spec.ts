@@ -3,6 +3,7 @@ import { PotentScanCronService } from './potent-scan-cron.service';
 import { RunPotentScanUseCase } from '../../use-cases/run-potent-scan.use-case';
 import { ResearchPotentHitsUseCase } from '../../use-cases/research-potent-hits.use-case';
 import { TrackMemberTiersUseCase } from '../../use-cases/track-member-tiers.use-case';
+import { ProposeClustersUseCase } from '../../use-cases/propose-clusters.use-case';
 import { CronJobNotificationService } from '../../../notification/notification.module';
 import { SessionDate } from '../../domain/value-objects/session-date';
 import { StateError } from '../../domain/domain-errors';
@@ -12,6 +13,7 @@ describe('PotentScanCronService', () => {
   let runPotentScan: { execute: jest.Mock };
   let researchHits: { execute: jest.Mock };
   let trackMemberTiers: { execute: jest.Mock };
+  let proposeClusters: { execute: jest.Mock };
   let notifications: jest.Mocked<
     Pick<
       CronJobNotificationService,
@@ -27,6 +29,11 @@ describe('PotentScanCronService', () => {
   const researchJob = {
     jobName: 'Potent Hit Research',
     jobType: 'potent-hit-research',
+    frequency: 'daily',
+  };
+  const proposalsJob = {
+    jobName: 'Potent Cluster Proposals',
+    jobType: 'potent-cluster-proposals',
     frequency: 'daily',
   };
 
@@ -56,6 +63,21 @@ describe('PotentScanCronService', () => {
         failures: [],
       }),
     };
+    proposeClusters = {
+      execute: jest.fn().mockResolvedValue({
+        sessionDate: SessionDate.of('2026-11-25'),
+        newClusterCount: 2,
+        additionCount: 1,
+        unclusteredCount: 9,
+        droppedCount: 1,
+        usage: {
+          inputTokens: 20000,
+          outputTokens: 3000,
+          webSearchRequests: 0,
+          costUsd: 0.07,
+        },
+      }),
+    };
     notifications = {
       notifyJobStart: jest.fn().mockResolvedValue(undefined),
       notifyJobSuccess: jest.fn().mockResolvedValue(undefined),
@@ -68,6 +90,7 @@ describe('PotentScanCronService', () => {
         { provide: RunPotentScanUseCase, useValue: runPotentScan },
         { provide: ResearchPotentHitsUseCase, useValue: researchHits },
         { provide: TrackMemberTiersUseCase, useValue: trackMemberTiers },
+        { provide: ProposeClustersUseCase, useValue: proposeClusters },
         { provide: CronJobNotificationService, useValue: notifications },
       ],
     }).compile();
@@ -136,6 +159,45 @@ describe('PotentScanCronService', () => {
       error,
     );
   });
+  it('should propose clusters after a successful research and report it as its own job', async () => {
+    await cron.runDailyScan();
+
+    expect(proposeClusters.execute).toHaveBeenNthCalledWith(1, {
+      sessionDate: SessionDate.of('2026-11-25'),
+    });
+    expect(notifications.notifyJobStart).toHaveBeenNthCalledWith(
+      3,
+      proposalsJob,
+    );
+    expect(notifications.notifyJobSuccess).toHaveBeenNthCalledWith(3, {
+      ...proposalsJob,
+      additionalData:
+        '2 clusters and 1 additions proposed (1 dropped) for $0.0700',
+    });
+  });
+
+  it('should not propose clusters when the research fails', async () => {
+    researchHits.execute.mockRejectedValue(new StateError('incomplete'));
+
+    await cron.runDailyScan();
+
+    expect(proposeClusters.execute).not.toHaveBeenCalled();
+  });
+
+  it('should report a proposals failure as its own error and keep the scan and research successes', async () => {
+    const error = new Error('Clustering stopped with refusal');
+    proposeClusters.execute.mockRejectedValue(error);
+
+    await cron.runDailyScan();
+
+    expect(notifications.notifyJobSuccess).toHaveBeenCalledTimes(2);
+    expect(notifications.notifyJobError).toHaveBeenNthCalledWith(
+      1,
+      proposalsJob,
+      error,
+    );
+  });
+
   describe('trackMemberTiers', () => {
     const tierJob = {
       jobName: 'Daily Potent Member Tiers',

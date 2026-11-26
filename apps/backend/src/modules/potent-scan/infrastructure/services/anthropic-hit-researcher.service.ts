@@ -18,7 +18,7 @@ import {
 import { SessionDate } from '../../domain/value-objects/session-date';
 import type { AnthropicMessages } from './anthropic-messages.client';
 
-interface ModelPricing {
+export interface ModelPricing {
   model: string;
   inputUsdPerMTok: number;
   outputUsdPerMTok: number;
@@ -109,7 +109,7 @@ export function costOf(
   );
 }
 
-function usageOf(pricing: ModelPricing, message: Anthropic.Message) {
+export function usageOf(pricing: ModelPricing, message: Anthropic.Message) {
   const usage = message.usage;
   const inputTokens =
     usage.input_tokens +
@@ -203,7 +203,7 @@ export function validateResults(
   return { accepted, rejected };
 }
 
-function textOf(message: Anthropic.Message): string {
+export function textOf(message: Anthropic.Message): string {
   return message.content
     .filter((block): block is Anthropic.TextBlock => block.type === 'text')
     .map((block) => block.text)
