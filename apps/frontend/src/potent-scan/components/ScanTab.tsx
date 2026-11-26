@@ -17,6 +17,7 @@ import {
 } from "./ScanHitsFilters";
 import { ScanHitsTable } from "./ScanHitsTable";
 import { CreateClusterForm } from "./CreateClusterForm";
+import { ProposalsPanel } from "./ProposalsPanel";
 
 const INITIAL_FILTERS: ScanHitsFilterValues = {
   tier: "all",
@@ -152,6 +153,15 @@ export function ScanTab() {
           </p>
         )}
       </div>
+
+      {scan.data && (
+        <ProposalsPanel
+          key={scanDate}
+          scanDate={scanDate}
+          hits={hits}
+          trackedClusters={clusters.data ?? []}
+        />
+      )}
 
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ScanHitsFilters
