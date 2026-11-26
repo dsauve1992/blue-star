@@ -281,6 +281,44 @@ describe('MemberTierRepository Integration', () => {
     );
   });
 
+  it('should count a ticker removed and re-added in the same session once', async () => {
+    const readded = memberId('AAA', 2);
+    await databaseService.query(
+      `UPDATE potent_cluster_members SET removed_at = NOW() WHERE id = $1`,
+      [memberId('AAA')],
+    );
+    await databaseService.query(
+      `INSERT INTO potent_cluster_members (id, cluster_id, ticker, joined_at)
+       VALUES ($1, $2, 'AAA', NOW())`,
+      [readded, CLUSTER_ID],
+    );
+    await repository.saveAll([
+      tier(memberId('AAA'), '2026-11-25', 'Lead'),
+      tier(readded, '2026-11-25', 'Lead'),
+      tier(memberId('BBB'), '2026-11-25', 'Lag'),
+    ]);
+
+    const counts = await repository.dailyCountsByCluster([
+      ClusterId.of(CLUSTER_ID),
+    ]);
+
+    expect(counts).toEqual(
+      new Map([
+        [
+          CLUSTER_ID,
+          [
+            {
+              date: SessionDate.of('2026-11-25'),
+              lead: 1,
+              mediocre: 0,
+              lag: 1,
+            },
+          ],
+        ],
+      ]),
+    );
+  });
+
   it("should count only active Lead members on each cluster's latest tier date", async () => {
     await repository.saveAll([
       tier(memberId('AAA'), '2026-11-24', 'Lead'),

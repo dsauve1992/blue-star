@@ -1,9 +1,27 @@
+import { DateTime } from 'luxon';
 import { EMACalculator } from '../../../../shared/utils/ema-calculator';
+import { MARKET_TIMEZONE } from '../../../../shared/utils/market-clock';
 import { classifyTier, MemberTier } from '../value-objects/member-tier';
 import { SessionDate } from '../value-objects/session-date';
 import { DailyBar } from './daily-bar-provider.service';
 
 const ADR_PERIOD = 14;
+const MARKET_CLOSE_HOUR = 16;
+
+export function lastClosedDateAt(instant: Date): SessionDate {
+  const marketTime = DateTime.fromJSDate(instant, { zone: MARKET_TIMEZONE });
+  const closedDay =
+    marketTime.hour >= MARKET_CLOSE_HOUR
+      ? marketTime
+      : marketTime.minus({ days: 1 });
+  return SessionDate.of(closedDay.toFormat('yyyy-LL-dd'));
+}
+
+export function joinSession(joinedAt: Date, bars: DailyBar[]): SessionDate {
+  const cutoff = lastClosedDateAt(joinedAt).value;
+  const closedBefore = bars.filter((bar) => bar.date.value <= cutoff);
+  return (closedBefore.at(-1) ?? bars[0]).date;
+}
 
 export function computeMemberTiers(
   memberId: string,

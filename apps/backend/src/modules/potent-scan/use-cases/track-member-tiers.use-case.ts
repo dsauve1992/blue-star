@@ -13,12 +13,15 @@ import type {
   DailyBar,
   DailyBarProvider,
 } from '../domain/services/daily-bar-provider.service';
-import { computeMemberTiers } from '../domain/services/member-tier-calculator';
+import {
+  computeMemberTiers,
+  joinSession,
+  lastClosedDateAt,
+} from '../domain/services/member-tier-calculator';
 import { ClusterMember } from '../domain/entities/cluster';
 import { MemberTier } from '../domain/value-objects/member-tier';
 import { SessionDate } from '../domain/value-objects/session-date';
 import { StateError } from '../domain/domain-errors';
-import { getMarketDateKey } from '../../../shared/utils/market-clock';
 
 const EMA_WARMUP_DAYS = 400;
 
@@ -44,14 +47,11 @@ export class TrackMemberTiersUseCase {
   async execute(): Promise<TrackMemberTiersResponseDto> {
     const sessionDate = await this.sessionCalendar.lastCompletedSession();
     const clusters = await this.clusterRepository.findAll('tracking');
-    const membersByTicker = new Map<string, TrackedMember[]>();
+    const membersByTicker = new Map<string, ClusterMember[]>();
     for (const member of clusters.flatMap((cluster) => cluster.members)) {
-      const joinDate = joinSession(member);
-      if (member.removedAt !== null || joinDate.value > sessionDate.value) {
-        continue;
-      }
+      if (member.removedAt !== null) continue;
       const tracked = membersByTicker.get(member.ticker.value) ?? [];
-      tracked.push({ member, joinDate });
+      tracked.push(member);
       membersByTicker.set(member.ticker.value, tracked);
     }
 
@@ -60,9 +60,14 @@ export class TrackMemberTiersUseCase {
     for (const [ticker, tracked] of membersByTicker) {
       try {
         const bars = await this.completedBars(tracked, sessionDate);
-        for (const { member, joinDate } of tracked) {
+        for (const member of tracked) {
           tiers.push(
-            ...computeMemberTiers(member.id, bars, joinDate, sessionDate),
+            ...computeMemberTiers(
+              member.id,
+              bars,
+              joinSession(member.joinedAt, bars),
+              sessionDate,
+            ),
           );
         }
       } catch (error) {
@@ -76,15 +81,15 @@ export class TrackMemberTiersUseCase {
   }
 
   private async completedBars(
-    tracked: TrackedMember[],
+    tracked: ClusterMember[],
     sessionDate: SessionDate,
   ): Promise<DailyBar[]> {
     const earliestJoin = tracked
-      .map(({ joinDate }) => joinDate.value)
+      .map((member) => lastClosedDateAt(member.joinedAt).value)
       .sort()[0];
     const bars = (
       await this.dailyBarProvider.dailyBarsSince(
-        tracked[0].member.ticker,
+        tracked[0].ticker,
         warmupStart(earliestJoin),
       )
     ).filter((bar) => bar.date.value <= sessionDate.value);
@@ -96,15 +101,6 @@ export class TrackMemberTiersUseCase {
     }
     return bars;
   }
-}
-
-interface TrackedMember {
-  member: ClusterMember;
-  joinDate: SessionDate;
-}
-
-function joinSession(member: ClusterMember): SessionDate {
-  return SessionDate.of(getMarketDateKey(member.joinedAt));
 }
 
 function warmupStart(joinDate: string): SessionDate {

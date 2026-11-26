@@ -89,9 +89,9 @@ export class MemberTierRepositoryImpl implements MemberTierRepository {
 
     const result = (await this.databaseService.query(
       `SELECT m.cluster_id, t.session_date::text AS session_date,
-              COUNT(*) FILTER (WHERE t.tier = 'Lead')::int AS lead,
-              COUNT(*) FILTER (WHERE t.tier = 'Mediocre')::int AS mediocre,
-              COUNT(*) FILTER (WHERE t.tier = 'Lag')::int AS lag
+              COUNT(DISTINCT m.ticker) FILTER (WHERE t.tier = 'Lead')::int AS lead,
+              COUNT(DISTINCT m.ticker) FILTER (WHERE t.tier = 'Mediocre')::int AS mediocre,
+              COUNT(DISTINCT m.ticker) FILTER (WHERE t.tier = 'Lag')::int AS lag
        FROM potent_member_tiers t
        JOIN potent_cluster_members m ON m.id = t.member_id
        WHERE m.cluster_id = ANY($1)

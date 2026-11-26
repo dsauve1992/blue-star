@@ -21,19 +21,28 @@ import { TrackMemberTiersUseCase } from './track-member-tiers.use-case';
 const LAST_SESSION = '2026-11-25';
 const EVENING_OF_NOV_24_ET = new Date('2026-11-25T02:00:00.000Z');
 
-const barsUntil = (lastDate: string, count = 300): DailyBar[] => {
-  const last = new Date(`${lastDate}T00:00:00.000Z`).getTime();
-  return Array.from({ length: count }, (_, index) => {
-    const date = new Date(last - (count - 1 - index) * 86_400_000);
+const weekdaysUntil = (lastDate: string, count: number): string[] => {
+  const dates: string[] = [];
+  const day = new Date(`${lastDate}T00:00:00.000Z`);
+  while (dates.length < count) {
+    if (day.getUTCDay() !== 0 && day.getUTCDay() !== 6) {
+      dates.unshift(day.toISOString().slice(0, 10));
+    }
+    day.setUTCDate(day.getUTCDate() - 1);
+  }
+  return dates;
+};
+
+const barsUntil = (lastDate: string, count = 300): DailyBar[] =>
+  weekdaysUntil(lastDate, count).map((date, index) => {
     const close = 100 + index;
     return {
-      date: SessionDate.of(date.toISOString().slice(0, 10)),
+      date: SessionDate.of(date),
       high: close + 1,
       low: close - 1,
       close,
     };
   });
-};
 
 const savedRows = (repository: jest.Mocked<MemberTierRepository>) =>
   repository.saveAll.mock.calls[0][0].map((tier) => [
@@ -77,7 +86,7 @@ describe('TrackMemberTiersUseCase', () => {
     useCase = module.get(TrackMemberTiersUseCase);
   });
 
-  it('should write one tier per session from the market-date join session to the last completed session', async () => {
+  it('should write warmed-up tiers from the session closed before the evening join to the last completed session', async () => {
     clusters.findAll.mockResolvedValue([
       cluster({
         members: [clusterMember('AAA', { joinedAt: EVENING_OF_NOV_24_ET })],
@@ -92,6 +101,17 @@ describe('TrackMemberTiersUseCase', () => {
       Symbol.of('AAA'),
       SessionDate.of('2025-10-20'),
     );
+    const [joinDay] = tiers.saveAll.mock.calls[0][0];
+    expect(joinDay).toEqual({
+      memberId: memberId('AAA'),
+      date: SessionDate.of('2026-11-24'),
+      tier: 'Lead',
+      close: 398,
+      ema9: expect.closeTo(398 - (9 - 1) / 2, 6) as number,
+      ema21: expect.closeTo(398 - (21 - 1) / 2, 6) as number,
+      ema50: expect.closeTo(398 - (50 - 1) / 2, 3) as number,
+      adrPct: (2 / 398) * 100,
+    });
     expect(savedRows(tiers)).toEqual([
       [memberId('AAA'), '2026-11-24'],
       [memberId('AAA'), '2026-11-25'],
@@ -119,7 +139,7 @@ describe('TrackMemberTiersUseCase', () => {
     ]);
   });
 
-  it('should skip removed members and members who joined after the last completed session', async () => {
+  it('should skip removed members and start a mid-session join at the last completed session', async () => {
     clusters.findAll.mockResolvedValue([
       cluster({
         members: [
@@ -137,12 +157,36 @@ describe('TrackMemberTiersUseCase', () => {
 
     await useCase.execute();
 
-    expect(bars.dailyBarsSince).toHaveBeenCalledTimes(1);
+    expect(bars.dailyBarsSince).toHaveBeenCalledTimes(2);
     expect(savedRows(tiers)).toEqual([
+      [memberId('BBB'), '2026-11-25'],
       [memberId('CCC'), '2026-11-24'],
       [memberId('CCC'), '2026-11-25'],
     ]);
   });
+
+  it.each([
+    ['on Saturday', '2026-11-21T15:00:00.000Z'],
+    ['before the Monday open', '2026-11-23T13:00:00.000Z'],
+  ])(
+    'should start a member who joined %s at the Friday session it was proposed from',
+    async (_, joinedAt) => {
+      clusters.findAll.mockResolvedValue([
+        cluster({
+          members: [clusterMember('AAA', { joinedAt: new Date(joinedAt) })],
+        }),
+      ]);
+
+      await useCase.execute();
+
+      expect(savedRows(tiers)).toEqual([
+        [memberId('AAA'), '2026-11-20'],
+        [memberId('AAA'), '2026-11-23'],
+        [memberId('AAA'), '2026-11-24'],
+        [memberId('AAA'), '2026-11-25'],
+      ]);
+    },
+  );
 
   it('should fetch a ticker shared by two clusters once, from its earliest join', async () => {
     const otherClusterMemberId = memberId('AAA', 1);
@@ -166,15 +210,14 @@ describe('TrackMemberTiersUseCase', () => {
     expect(bars.dailyBarsSince).toHaveBeenNthCalledWith(
       1,
       Symbol.of('AAA'),
-      SessionDate.of('2025-10-16'),
+      SessionDate.of('2025-10-15'),
     );
     expect(bars.dailyBarsSince).toHaveBeenCalledTimes(1);
     expect(savedRows(tiers)).toEqual([
       [memberId('AAA'), '2026-11-24'],
       [memberId('AAA'), '2026-11-25'],
+      [otherClusterMemberId, '2026-11-19'],
       [otherClusterMemberId, '2026-11-20'],
-      [otherClusterMemberId, '2026-11-21'],
-      [otherClusterMemberId, '2026-11-22'],
       [otherClusterMemberId, '2026-11-23'],
       [otherClusterMemberId, '2026-11-24'],
       [otherClusterMemberId, '2026-11-25'],
