@@ -23,16 +23,18 @@ export class HitResearchRepositoryImpl implements HitResearchRepository {
 
   async saveRun(research: HitResearch[], run: ResearchRun): Promise<void> {
     await this.databaseService.transaction(async (client) => {
-      await client.query(
-        'DELETE FROM potent_hit_research WHERE scan_date = $1',
-        [run.scanDate.value],
-      );
-
       for (const item of research) {
         await client.query(
           `INSERT INTO potent_hit_research
            (scan_date, symbol, business, catalyst_today, catalyst_type, source, model)
-           VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+           VALUES ($1, $2, $3, $4, $5, $6, $7)
+           ON CONFLICT (scan_date, symbol) DO UPDATE SET
+             business = EXCLUDED.business,
+             catalyst_today = EXCLUDED.catalyst_today,
+             catalyst_type = EXCLUDED.catalyst_type,
+             source = EXCLUDED.source,
+             model = EXCLUDED.model,
+             created_at = NOW()`,
           [
             run.scanDate.value,
             item.symbol,

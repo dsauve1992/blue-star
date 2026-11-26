@@ -241,11 +241,38 @@ describe('AnthropicHitResearcher', () => {
       subject('CCC'),
     ]);
 
+    expect(tickersIn(params(1))).toEqual(['BBB', 'CCC']);
     expect(result.research.map((r) => [r.symbol, r.business])).toEqual([
       ['AAA', 'AAA makes chips'],
       ['BBB', 'BBB makes chips'],
     ]);
   });
+
+  it.each([
+    ['an invalid catalystType', { catalystType: 'analyst' }],
+    ['a blank business', { business: '   ' }],
+    ['an empty catalystToday', { catalystToday: '' }],
+    ['a catalyst without source', { catalystType: 'earnings', source: null }],
+  ])(
+    'should drop a web search answer with %s',
+    async (_, overrides: Record<string, unknown>) => {
+      create.mockResolvedValueOnce(
+        searchMessage(
+          ['https://wire.example.com/aaa'],
+          [
+            item('AAA', {
+              source: 'https://wire.example.com/aaa',
+              ...overrides,
+            }),
+          ],
+        ),
+      );
+
+      const result = await researcher.research(SESSION, [subject('AAA', [])]);
+
+      expect(result.research).toEqual([]);
+    },
+  );
 
   it('should accept "none" with no source once web search found nothing', async () => {
     create.mockResolvedValueOnce(

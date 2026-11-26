@@ -273,6 +273,34 @@ describe('HitResearchRepository Integration', () => {
     ]);
   });
 
+  it('should keep completed research when a later re-run fails, updating only what it researched', async () => {
+    await repository.saveRun([research('AAA'), research('BBB')], run());
+
+    await repository.saveRun(
+      [research('BBB', { business: 'BBB, researched again' })],
+      run({
+        status: 'failed',
+        researchedCount: 1,
+        missingSymbols: ['AAA'],
+        error: 'overloaded',
+      }),
+    );
+    await repository.saveRun(
+      [],
+      run({
+        status: 'failed',
+        researchedCount: 0,
+        missingSymbols: ['AAA', 'BBB'],
+        error: 'ANTHROPIC_API_KEY is not set',
+      }),
+    );
+
+    expect(await repository.findByScanDate(SESSION)).toEqual([
+      research('AAA'),
+      research('BBB', { business: 'BBB, researched again' }),
+    ]);
+  });
+
   it('should drop the research with its scan when the scan is replaced, but keep the run records', async () => {
     await repository.saveRun([research('AAA'), research('BBB')], run());
 
