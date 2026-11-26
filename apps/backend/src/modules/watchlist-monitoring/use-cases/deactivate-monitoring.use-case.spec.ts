@@ -5,9 +5,7 @@ import {
 } from './deactivate-monitoring.use-case';
 import { WatchlistMonitoringWriteRepository } from '../domain/repositories/watchlist-monitoring-write.repository.interface';
 import {
-  GetWatchlistByIdUseCase,
-  Watchlist,
-  WatchlistName,
+  AssertWatchlistOwnershipUseCase,
   WatchlistId,
 } from '../../watchlist/watchlist.module';
 import { WATCHLIST_MONITORING_WRITE_REPOSITORY } from '../constants/tokens';
@@ -21,7 +19,7 @@ import type { AuthContext } from '../../auth/auth.module';
 describe('DeactivateMonitoringUseCase', () => {
   let useCase: DeactivateMonitoringUseCase;
   let mockMonitoringWriteRepository: jest.Mocked<WatchlistMonitoringWriteRepository>;
-  let mockGetWatchlistById: jest.Mocked<GetWatchlistByIdUseCase>;
+  let mockAssertWatchlistOwnership: jest.Mocked<AssertWatchlistOwnershipUseCase>;
 
   const userId = UserId.of('user-123');
   const watchlistId = WatchlistId.of('11111111-1111-1111-1111-111111111111');
@@ -32,25 +30,15 @@ describe('DeactivateMonitoringUseCase', () => {
     type: MonitoringType.BREAKOUT,
   };
 
-  const ownedWatchlist = (): Watchlist =>
-    Watchlist.fromData({
-      id: watchlistId,
-      userId,
-      name: WatchlistName.of('My Watchlist'),
-      tickers: [],
-      createdAt: new Date('2026-01-01T00:00:00.000Z'),
-      updatedAt: new Date('2026-01-01T00:00:00.000Z'),
-    });
-
   beforeEach(async () => {
     mockMonitoringWriteRepository = {
       save: jest.fn().mockResolvedValue(undefined),
       findByWatchlistIdAndType: jest.fn(),
     };
 
-    mockGetWatchlistById = {
-      execute: jest.fn(),
-    } as unknown as jest.Mocked<GetWatchlistByIdUseCase>;
+    mockAssertWatchlistOwnership = {
+      execute: jest.fn().mockResolvedValue(undefined),
+    } as unknown as jest.Mocked<AssertWatchlistOwnershipUseCase>;
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -60,8 +48,8 @@ describe('DeactivateMonitoringUseCase', () => {
           useValue: mockMonitoringWriteRepository,
         },
         {
-          provide: GetWatchlistByIdUseCase,
-          useValue: mockGetWatchlistById,
+          provide: AssertWatchlistOwnershipUseCase,
+          useValue: mockAssertWatchlistOwnership,
         },
       ],
     }).compile();
@@ -73,9 +61,6 @@ describe('DeactivateMonitoringUseCase', () => {
 
   describe('execute', () => {
     it('should deactivate and save the monitoring when it exists', async () => {
-      mockGetWatchlistById.execute.mockResolvedValue({
-        watchlist: ownedWatchlist(),
-      });
       const existing = WatchlistMonitoring.fromData({
         id: WatchlistMonitoringId.of('22222222-2222-2222-2222-222222222222'),
         watchlistId,
@@ -90,8 +75,8 @@ describe('DeactivateMonitoringUseCase', () => {
 
       const result = await useCase.execute(request, authContext);
 
-      expect(mockGetWatchlistById.execute).toHaveBeenCalledWith(
-        { watchlistId },
+      expect(mockAssertWatchlistOwnership.execute).toHaveBeenCalledWith(
+        watchlistId,
         authContext,
       );
 
@@ -106,9 +91,6 @@ describe('DeactivateMonitoringUseCase', () => {
     });
 
     it('should deactivate every existing type and skip missing rows when no type is given', async () => {
-      mockGetWatchlistById.execute.mockResolvedValue({
-        watchlist: ownedWatchlist(),
-      });
       const breakout = WatchlistMonitoring.fromData({
         id: WatchlistMonitoringId.of('22222222-2222-2222-2222-222222222222'),
         watchlistId,
@@ -133,9 +115,6 @@ describe('DeactivateMonitoringUseCase', () => {
     });
 
     it('should not throw when no type is given and no rows exist', async () => {
-      mockGetWatchlistById.execute.mockResolvedValue({
-        watchlist: ownedWatchlist(),
-      });
       mockMonitoringWriteRepository.findByWatchlistIdAndType.mockResolvedValue(
         null,
       );
@@ -147,9 +126,6 @@ describe('DeactivateMonitoringUseCase', () => {
     });
 
     it('should throw NotFoundError when no monitoring exists for the watchlist', async () => {
-      mockGetWatchlistById.execute.mockResolvedValue({
-        watchlist: ownedWatchlist(),
-      });
       mockMonitoringWriteRepository.findByWatchlistIdAndType.mockResolvedValue(
         null,
       );
@@ -161,7 +137,7 @@ describe('DeactivateMonitoringUseCase', () => {
     });
 
     it('should throw NotFoundError when the watchlist does not exist', async () => {
-      mockGetWatchlistById.execute.mockRejectedValue(
+      mockAssertWatchlistOwnership.execute.mockRejectedValue(
         new NotFoundError(`Watchlist with ID ${watchlistId.value} not found`),
       );
 
@@ -175,7 +151,7 @@ describe('DeactivateMonitoringUseCase', () => {
     });
 
     it('should throw AuthorizationError when the watchlist belongs to another user', async () => {
-      mockGetWatchlistById.execute.mockRejectedValue(
+      mockAssertWatchlistOwnership.execute.mockRejectedValue(
         new AuthorizationError('User does not own this watchlist'),
       );
 
