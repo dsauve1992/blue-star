@@ -56,7 +56,11 @@ function matchesFilters(
 export function ScanTab() {
   const scanDates = usePotentScanDates();
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
-  const scanDate = selectedDate ?? scanDates.data?.[0];
+  const latestScanDate = scanDates.data?.[0];
+  if (selectedDate === null && latestScanDate) {
+    setSelectedDate(latestScanDate);
+  }
+  const scanDate = selectedDate ?? latestScanDate;
   const scan = usePotentScan(scanDate);
   const clusters = useTrackingClusters();
 
