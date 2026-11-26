@@ -9,7 +9,7 @@ import {
 } from "src/global/design-system";
 import { useIndustryGroups } from "../hooks/use-industry-groups";
 import { useIndustryGroupRatings } from "../hooks/use-industry-group-ratings";
-import { useConsolidationKeyboardNavigation } from "../hooks/use-consolidation-keyboard-navigation";
+import { useChartGridKeyboardNavigation } from "src/global/hooks/use-chart-grid-keyboard-navigation";
 import { useLatestSectorStatus } from "src/sector-rotation/hooks/use-latest-sector-status";
 import { useIndustryGroupQuadrantHistory } from "src/sector-rotation/hooks/use-industry-group-quadrant-history";
 import {
@@ -90,7 +90,7 @@ export default function IndustryGroupExplorer() {
   );
   const selectedTicker = selectedSymbol ? memberTickerId(selectedSymbol) : null;
 
-  useConsolidationKeyboardNavigation({
+  useChartGridKeyboardNavigation({
     tickerGroups,
     selectedTicker,
     onTickerChange: handleSelectTicker,

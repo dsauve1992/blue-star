@@ -8,7 +8,9 @@ import {
 } from "src/global/design-system";
 import { AddClusterMemberForm } from "../components/AddClusterMemberForm";
 import { ClusterHeader } from "../components/ClusterHeader";
+import { ClusterMemberCharts } from "../components/ClusterMemberCharts";
 import { ClusterMembersTable } from "../components/ClusterMembersTable";
+import { ClusterProgressionChart } from "../components/ClusterProgressionChart";
 import { useCluster } from "../hooks/use-cluster";
 
 export function ClusterDetail() {
@@ -41,12 +43,24 @@ export function ClusterDetail() {
           <ClusterHeader cluster={cluster.data} />
           <section className="space-y-3">
             <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              Progression
+            </h2>
+            <ClusterProgressionChart days={cluster.data.dailyTierCounts} />
+          </section>
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
               Members
             </h2>
             {cluster.data.status === "tracking" && (
               <AddClusterMemberForm clusterId={cluster.data.id} />
             )}
             <ClusterMembersTable cluster={cluster.data} />
+          </section>
+          <section className="space-y-3">
+            <h2 className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+              Charts
+            </h2>
+            <ClusterMemberCharts members={cluster.data.members} />
           </section>
         </>
       )}

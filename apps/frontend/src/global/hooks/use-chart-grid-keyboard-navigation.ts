@@ -74,17 +74,17 @@ export function resolveNextTicker(
     : null;
 }
 
-interface UseConsolidationKeyboardNavigationParams {
+interface UseChartGridKeyboardNavigationParams {
   tickerGroups: string[][];
   selectedTicker: string | null;
   onTickerChange: (ticker: string) => void;
 }
 
-export function useConsolidationKeyboardNavigation({
+export function useChartGridKeyboardNavigation({
   tickerGroups,
   selectedTicker,
   onTickerChange,
-}: UseConsolidationKeyboardNavigationParams) {
+}: UseChartGridKeyboardNavigationParams) {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       const activeEl = document.activeElement;
