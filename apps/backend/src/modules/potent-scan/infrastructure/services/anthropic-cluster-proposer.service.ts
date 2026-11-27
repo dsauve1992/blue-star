@@ -11,11 +11,7 @@ import {
   ClusterProposalSet,
 } from '../../domain/value-objects/cluster-proposal';
 import type { AnthropicMessages } from './anthropic-messages.client';
-import {
-  CLAUDE_SONNET_5_5,
-  textOf,
-  usageOf,
-} from './anthropic-hit-researcher.service';
+import { CLAUDE_SONNET_5_5, textOf, usageOf } from './anthropic-pricing';
 
 export const CLUSTERING_MODEL = CLAUDE_SONNET_5_5;
 const MAX_OUTPUT_TOKENS = 16000;

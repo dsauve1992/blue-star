@@ -1,5 +1,6 @@
 import { Controller, Get, Logger, Param, Post } from '@nestjs/common';
 import { Public } from '../../auth/auth.module';
+import { ManualTrigger } from '../../../shared/decorators/manual-trigger.decorator';
 import {
   GetPotentScanResponseDto,
   GetPotentScanUseCase,
@@ -22,6 +23,26 @@ type ProposalsOutcome =
   | { status: 'succeeded'; proposalCount: number; costUsd: number }
   | { status: 'failed'; error: string }
   | { status: 'skipped' };
+
+interface RunScanApiResponseDto {
+  scanDate: string;
+  hitCount: number;
+  research: ResearchOutcome;
+  proposals: ProposalsOutcome;
+}
+
+interface ResearchScanApiResponseDto {
+  scanDate: string;
+  researchedCount: number;
+  costUsd: number;
+  proposals: ProposalsOutcome;
+}
+
+interface TrackTiersApiResponseDto {
+  sessionDate: string;
+  tierCount: number;
+  failures: string[];
+}
 
 @Controller('potent-scan')
 export class PotentScanController {
@@ -53,12 +74,8 @@ export class PotentScanController {
   }
 
   @Post('scans/run')
-  async runScan(): Promise<{
-    scanDate: string;
-    hitCount: number;
-    research: ResearchOutcome;
-    proposals: ProposalsOutcome;
-  }> {
+  @ManualTrigger()
+  async runScan(): Promise<RunScanApiResponseDto> {
     const { sessionDate, hitCount } = await this.runPotentScanUseCase.execute({
       replaceExisting: true,
     });
@@ -87,12 +104,10 @@ export class PotentScanController {
   }
 
   @Post('scans/:date/research')
-  async researchScan(@Param('date') date: string): Promise<{
-    scanDate: string;
-    researchedCount: number;
-    costUsd: number;
-    proposals: ProposalsOutcome;
-  }> {
+  @ManualTrigger()
+  async researchScan(
+    @Param('date') date: string,
+  ): Promise<ResearchScanApiResponseDto> {
     const { sessionDate, researchedCount, usage } =
       await this.researchPotentHitsUseCase.execute({
         sessionDate: SessionDate.of(date),
@@ -124,11 +139,8 @@ export class PotentScanController {
   }
 
   @Post('tiers/run')
-  async trackTiers(): Promise<{
-    sessionDate: string;
-    tierCount: number;
-    failures: string[];
-  }> {
+  @ManualTrigger()
+  async trackTiers(): Promise<TrackTiersApiResponseDto> {
     const { sessionDate, tierCount, failures } =
       await this.trackMemberTiersUseCase.execute();
     return { sessionDate: sessionDate.value, tierCount, failures };

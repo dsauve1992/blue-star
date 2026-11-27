@@ -79,10 +79,10 @@ export class PotentScanRepositoryImpl implements PotentScanRepository {
   }
 
   async exists(sessionDate: SessionDate): Promise<boolean> {
-    const result = (await this.databaseService.query(
+    const result = await this.databaseService.query(
       'SELECT 1 FROM potent_scans WHERE scan_date = $1',
       [sessionDate.value],
-    )) as { rows: unknown[] };
+    );
     return result.rows.length > 0;
   }
 
@@ -138,7 +138,7 @@ export class PotentScanRepositoryImpl implements PotentScanRepository {
     });
   }
 
-  private hitValues(hit: PotentScanHit): unknown[] {
+  private hitValues(hit: PotentScanHit): (string | number | null)[] {
     return [
       hit.symbol,
       hit.exchange,

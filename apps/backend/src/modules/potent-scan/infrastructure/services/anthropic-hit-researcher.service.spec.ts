@@ -1,13 +1,12 @@
 import Anthropic from '@anthropic-ai/sdk';
 import {
   AnthropicHitResearcher,
-  CLAUDE_HAIKU_5_5,
-  costOf,
   HEADLINE_RESEARCH_MODEL,
   MAX_PROMPT_TOKENS,
   UNEXPLAINED_HIT_RESEARCH_MODEL,
 } from './anthropic-hit-researcher.service';
 import { AnthropicMessages } from './anthropic-messages.client';
+import { CLAUDE_HAIKU_5_5, costOf } from './anthropic-pricing';
 import { HitResearchBatchError } from '../../domain/services/hit-researcher.service';
 import { ResearchSubject } from '../../domain/value-objects/hit-research';
 import { SessionDate } from '../../domain/value-objects/session-date';

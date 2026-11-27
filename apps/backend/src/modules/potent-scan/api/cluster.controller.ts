@@ -10,10 +10,13 @@ import {
   Query,
 } from '@nestjs/common';
 import { Public } from '../../auth/auth.module';
-import { Symbol } from '../../../shared/value-objects/symbol';
 import { ClusterId } from '../domain/value-objects/cluster-id';
 import { SessionDate } from '../domain/value-objects/session-date';
-import { ClusterStatus } from '../domain/entities/cluster';
+import {
+  CLUSTER_STATUSES,
+  ClusterStatus,
+  isClusterStatus,
+} from '../domain/entities/cluster';
 import { ClusterDetailDto } from '../use-cases/cluster.dto';
 import { CreateClusterUseCase } from '../use-cases/create-cluster.use-case';
 import {
@@ -25,31 +28,38 @@ import { AddClusterMemberUseCase } from '../use-cases/add-cluster-member.use-cas
 import { RemoveClusterMemberUseCase } from '../use-cases/remove-cluster-member.use-case';
 import { CloseClusterUseCase } from '../use-cases/close-cluster.use-case';
 import { UpdateClusterUseCase } from '../use-cases/update-cluster.use-case';
+import {
+  parseOptionalText,
+  parseText,
+  parseTicker,
+  parseTickers,
+} from './request-parsers';
 
-const STATUSES: ClusterStatus[] = ['tracking', 'closed'];
-
-function parseTicker(raw: unknown): Symbol {
-  if (typeof raw !== 'string') {
-    throw new BadRequestException('ticker must be a string');
-  }
-  try {
-    return Symbol.of(raw);
-  } catch (error) {
-    throw new BadRequestException(
-      error instanceof Error ? error.message : 'Invalid ticker',
-    );
-  }
+interface CreateClusterApiRequestDto {
+  name?: unknown;
+  description?: unknown;
+  tickers?: unknown;
+  sourceScanDate?: unknown;
 }
 
-function parseText(raw: unknown, field: string): string {
-  if (typeof raw !== 'string') {
-    throw new BadRequestException(`${field} must be a string`);
-  }
-  return raw;
+interface UpdateClusterApiRequestDto {
+  name?: unknown;
+  description?: unknown;
 }
 
-function parseOptionalText(raw: unknown, field: string): string | undefined {
-  return raw === undefined ? undefined : parseText(raw, field);
+interface AddClusterMemberApiRequestDto {
+  ticker?: unknown;
+}
+
+interface CreateClusterApiResponseDto {
+  clusterId: string;
+}
+
+function parseStatus(raw: string | undefined): ClusterStatus | undefined {
+  if (raw === undefined || isClusterStatus(raw)) return raw;
+  throw new BadRequestException(
+    `status must be one of ${CLUSTER_STATUSES.join(', ')}`,
+  );
 }
 
 @Controller('potent-scan/clusters')
@@ -66,21 +76,12 @@ export class ClusterController {
 
   @Post()
   async create(
-    @Body()
-    body: {
-      name?: unknown;
-      description?: unknown;
-      tickers?: unknown;
-      sourceScanDate?: unknown;
-    },
-  ): Promise<{ clusterId: string }> {
-    if (!Array.isArray(body.tickers)) {
-      throw new BadRequestException('tickers must be an array');
-    }
+    @Body() body: CreateClusterApiRequestDto,
+  ): Promise<CreateClusterApiResponseDto> {
     const { clusterId } = await this.createClusterUseCase.execute({
       name: parseText(body.name, 'name'),
       description: parseText(body.description, 'description'),
-      tickers: body.tickers.map(parseTicker),
+      tickers: parseTickers(body.tickers, 'tickers'),
       sourceScanDate: SessionDate.of(
         parseText(body.sourceScanDate, 'sourceScanDate'),
       ),
@@ -93,14 +94,7 @@ export class ClusterController {
   async list(
     @Query('status') status?: string,
   ): Promise<ListClustersResponseDto> {
-    if (status !== undefined && !STATUSES.includes(status as ClusterStatus)) {
-      throw new BadRequestException(
-        `status must be one of ${STATUSES.join(', ')}`,
-      );
-    }
-    return this.listClustersUseCase.execute({
-      status: status as ClusterStatus | undefined,
-    });
+    return this.listClustersUseCase.execute({ status: parseStatus(status) });
   }
 
   @Get(':id')
@@ -112,7 +106,7 @@ export class ClusterController {
   @Patch(':id')
   async update(
     @Param('id') id: string,
-    @Body() body: { name?: unknown; description?: unknown },
+    @Body() body: UpdateClusterApiRequestDto,
   ): Promise<void> {
     await this.updateClusterUseCase.execute({
       clusterId: ClusterId.of(id),
@@ -124,7 +118,7 @@ export class ClusterController {
   @Post(':id/members')
   async addMember(
     @Param('id') id: string,
-    @Body() body: { ticker?: unknown },
+    @Body() body: AddClusterMemberApiRequestDto,
   ): Promise<void> {
     await this.addClusterMemberUseCase.execute({
       clusterId: ClusterId.of(id),
