@@ -49,7 +49,14 @@ export class PythonHeadlineSource implements HeadlineSource {
       );
     }
 
-    const result = JSON.parse(jsonLine) as PythonResponse;
+    let result: PythonResponse;
+    try {
+      result = JSON.parse(jsonLine) as PythonResponse;
+    } catch {
+      throw new Error(
+        `Headline fetch returned invalid JSON. Output: ${stdout.substring(0, 200)}`,
+      );
+    }
     const headlines = symbols.map((symbol) => {
       const entry = result.headlines[symbol];
       return {

@@ -14,6 +14,7 @@ import {
   RunMarketBreadthResponseDto,
   RunMarketBreadthUseCase,
 } from '../use-cases/run-market-breadth.use-case';
+import { ManualTrigger } from '../../../shared/decorators/manual-trigger.decorator';
 
 const MAX_LIMIT = 10000;
 
@@ -48,6 +49,7 @@ export class MarketBreadthController {
   }
 
   @Post('run')
+  @ManualTrigger()
   async run(): Promise<RunMarketBreadthResponseDto> {
     return this.runMarketBreadthUseCase.execute();
   }

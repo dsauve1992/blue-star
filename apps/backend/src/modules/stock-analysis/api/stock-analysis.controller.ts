@@ -36,6 +36,7 @@ import {
   QueryMomentumLeadersResponseDto,
 } from '../use-cases/query-momentum-leaders.use-case';
 import { RunMomentumLeadersUseCase } from '../use-cases/run-momentum-leaders.use-case';
+import { ManualTrigger } from '../../../shared/decorators/manual-trigger.decorator';
 
 @Controller('stock-analysis')
 export class StockAnalysisController {
@@ -82,6 +83,7 @@ export class StockAnalysisController {
   }
 
   @Post('consolidations/run')
+  @ManualTrigger()
   async runConsolidationAnalysis(
     @Body() body: RunConsolidationAnalysisRequestDto,
   ): Promise<{ message: string }> {
@@ -136,6 +138,7 @@ export class StockAnalysisController {
   }
 
   @Post('rs-ratings/run')
+  @ManualTrigger()
   async runRsRatings(): Promise<{ message: string }> {
     await this.runRsRatingsUseCase.execute();
     // Intra-group is best-effort: market-wide ratings are already persisted,

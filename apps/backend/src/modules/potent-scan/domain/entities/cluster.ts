@@ -7,7 +7,11 @@ import { SessionDate } from '../value-objects/session-date';
 export const MAX_CLUSTER_NAME_LENGTH = 200;
 const MAX_TICKER_LENGTH = 20;
 
-export type ClusterStatus = 'tracking' | 'closed';
+export const CLUSTER_STATUSES = ['tracking', 'closed'] as const;
+export type ClusterStatus = (typeof CLUSTER_STATUSES)[number];
+
+export const isClusterStatus = (value: string): value is ClusterStatus =>
+  (CLUSTER_STATUSES as readonly string[]).includes(value);
 
 export interface ClusterMember {
   id: string;

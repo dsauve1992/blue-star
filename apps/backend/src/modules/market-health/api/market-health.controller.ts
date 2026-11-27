@@ -3,6 +3,7 @@ import { GetMarketHealthUseCase } from '../use-cases/get-market-health.use-case'
 import { MarketHealthApiMapper } from './market-health-api.mapper';
 import { ComputeMarketHealthUseCase } from '../use-cases/compute-market-health.use-case';
 import type { MarketHealthApiResponseDto } from './market-health-api.dto';
+import { ManualTrigger } from '../../../shared/decorators/manual-trigger.decorator';
 
 @Controller('market-health')
 export class MarketHealthController {
@@ -24,6 +25,7 @@ export class MarketHealthController {
   }
 
   @Post('compute')
+  @ManualTrigger()
   async triggerComputation(): Promise<MarketHealthApiResponseDto> {
     const marketHealth = await this.computeMarketHealthUseCase.execute();
 

@@ -7,6 +7,7 @@ import {
   Post,
 } from '@nestjs/common';
 import { Public } from '../../auth/auth.module';
+import { ManualTrigger } from '../../../shared/decorators/manual-trigger.decorator';
 import { Symbol } from '../../../shared/value-objects/symbol';
 import { ProposalId } from '../domain/value-objects/proposal-id';
 import { SessionDate } from '../domain/value-objects/session-date';
@@ -20,39 +21,35 @@ import {
 } from '../use-cases/accept-proposal.use-case';
 import { RejectProposalUseCase } from '../use-cases/reject-proposal.use-case';
 import { ProposeClustersUseCase } from '../use-cases/propose-clusters.use-case';
+import { parseOptionalText, parseTickers } from './request-parsers';
 
-interface EditBody {
+interface ProposalEditApiRequestDto {
   name?: unknown;
   description?: unknown;
   addTickers?: unknown;
   removeTickers?: unknown;
 }
 
-function parseOptionalText(raw: unknown, field: string): string | undefined {
-  if (raw === undefined) return undefined;
-  if (typeof raw !== 'string') {
-    throw new BadRequestException(`${field} must be a string`);
-  }
-  return raw;
+interface AcceptProposalApiRequestDto {
+  edit?: unknown;
+  alternativeIndex?: unknown;
 }
 
-function parseTickers(raw: unknown, field: string): Symbol[] {
-  if (raw === undefined) return [];
-  if (!Array.isArray(raw)) {
-    throw new BadRequestException(`${field} must be an array`);
-  }
-  return raw.map((ticker) => {
-    if (typeof ticker !== 'string') {
-      throw new BadRequestException(`${field} must contain strings`);
-    }
-    try {
-      return Symbol.of(ticker);
-    } catch (error) {
-      throw new BadRequestException(
-        error instanceof Error ? error.message : 'Invalid ticker',
-      );
-    }
-  });
+interface AcceptProposalApiResponseDto {
+  clusterIds: string[];
+}
+
+interface RunProposalsApiResponseDto {
+  scanDate: string;
+  newClusterCount: number;
+  additionCount: number;
+  unclusteredCount: number;
+  droppedCount: number;
+  costUsd: number;
+}
+
+function parseOptionalTickers(raw: unknown, field: string): Symbol[] {
+  return raw === undefined ? [] : parseTickers(raw, field);
 }
 
 function parseEdit(raw: unknown): ProposalEditDto | undefined {
@@ -60,12 +57,15 @@ function parseEdit(raw: unknown): ProposalEditDto | undefined {
   if (raw === null || typeof raw !== 'object') {
     throw new BadRequestException('edit must be an object');
   }
-  const edit = raw as EditBody;
+  const edit: ProposalEditApiRequestDto = raw;
   return {
     name: parseOptionalText(edit.name, 'edit.name'),
     description: parseOptionalText(edit.description, 'edit.description'),
-    addTickers: parseTickers(edit.addTickers, 'edit.addTickers'),
-    removeTickers: parseTickers(edit.removeTickers, 'edit.removeTickers'),
+    addTickers: parseOptionalTickers(edit.addTickers, 'edit.addTickers'),
+    removeTickers: parseOptionalTickers(
+      edit.removeTickers,
+      'edit.removeTickers',
+    ),
   };
 }
 
@@ -97,14 +97,8 @@ export class ProposalController {
   }
 
   @Post('scans/:date/proposals/run')
-  async run(@Param('date') date: string): Promise<{
-    scanDate: string;
-    newClusterCount: number;
-    additionCount: number;
-    unclusteredCount: number;
-    droppedCount: number;
-    costUsd: number;
-  }> {
+  @ManualTrigger()
+  async run(@Param('date') date: string): Promise<RunProposalsApiResponseDto> {
     const { sessionDate, usage, ...counts } =
       await this.proposeClustersUseCase.execute({
         sessionDate: SessionDate.of(date),
@@ -115,8 +109,8 @@ export class ProposalController {
   @Post('proposals/:id/accept')
   async accept(
     @Param('id') id: string,
-    @Body() body: { edit?: unknown; alternativeIndex?: unknown } = {},
-  ): Promise<{ clusterIds: string[] }> {
+    @Body() body: AcceptProposalApiRequestDto = {},
+  ): Promise<AcceptProposalApiResponseDto> {
     const { clusterIds } = await this.acceptProposalUseCase.execute({
       proposalId: ProposalId.of(id),
       edit: parseEdit(body.edit),

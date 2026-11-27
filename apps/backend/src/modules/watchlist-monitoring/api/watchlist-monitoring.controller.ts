@@ -25,6 +25,7 @@ import {
   GetMonitoringStatusUseCase,
 } from '../use-cases/get-monitoring-status.use-case';
 import { WatchlistMonitoringCronService } from '../infrastructure/services/watchlist-monitoring-cron.service';
+import { ManualTrigger } from '../../../shared/decorators/manual-trigger.decorator';
 
 @Controller('watchlist-monitoring')
 export class WatchlistMonitoringController {
@@ -37,6 +38,7 @@ export class WatchlistMonitoringController {
   ) {}
 
   @Post('run-gap-scan')
+  @ManualTrigger()
   async runGapScan(): Promise<{ status: string }> {
     await this.cronService.scanGaps();
     return { status: 'completed' };
