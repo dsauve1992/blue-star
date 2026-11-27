@@ -32,7 +32,7 @@ ENV VITE_KINDE_AUDIENCE=$VITE_KINDE_AUDIENCE
 RUN npm run build --workspace=frontend
 
 # Production stage - Nginx to serve static files
-FROM nginx:1.31.8-alpine AS production
+FROM nginx:1.31.9-alpine AS production
 
 # Install curl for reliable health checks
 RUN apk add --no-cache curl
