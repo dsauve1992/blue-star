@@ -4,6 +4,7 @@ import {
   AlertDescription,
   Badge,
   Button,
+  Card,
   Input,
   Label,
 } from "src/global/design-system";
@@ -118,14 +119,16 @@ export function ClusterHeader({ cluster }: { cluster: ClusterDetail }) {
   const isClosed = cluster.status === "closed";
 
   return (
-    <div className="space-y-4 rounded-md border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-900">
+    <div className="space-y-6">
       {renaming ? (
-        <RenameForm cluster={cluster} onDone={() => setRenaming(false)} />
+        <Card className="p-6">
+          <RenameForm cluster={cluster} onDone={() => setRenaming(false)} />
+        </Card>
       ) : (
         <div className="flex flex-wrap items-start justify-between gap-3">
-          <div className="space-y-1">
-            <div className="flex flex-wrap items-center gap-2">
-              <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">
+          <div>
+            <div className="flex flex-wrap items-center gap-3">
+              <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
                 {cluster.name}
               </h1>
               <Badge variant={isClosed ? "secondary" : "success"}>
@@ -133,52 +136,58 @@ export function ClusterHeader({ cluster }: { cluster: ClusterDetail }) {
               </Badge>
             </div>
             {cluster.description && (
-              <p className="text-sm text-slate-700 dark:text-slate-300">
+              <p className="mt-1 text-slate-600 dark:text-slate-300">
                 {cluster.description}
               </p>
             )}
           </div>
           <div className="flex flex-wrap items-center gap-2">
-            <Button variant="ghost" size="sm" onClick={() => setRenaming(true)}>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setRenaming(true)}
+            >
               Rename
             </Button>
             {!isClosed && <CloseClusterControl clusterId={cluster.id} />}
           </div>
         </div>
       )}
-      <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_minmax(0,1fr)]">
-        <dt className="text-slate-500 dark:text-slate-400">Catalyst</dt>
-        <dd className="text-slate-900 dark:text-slate-100">
-          {cluster.sharedCatalyst ?? "—"}
-        </dd>
-        <dt className="text-slate-500 dark:text-slate-400">Sources</dt>
-        <dd className="text-slate-900 dark:text-slate-100">
-          {cluster.sources.length === 0 ? (
-            "—"
-          ) : (
-            <ul className="space-y-0.5">
-              {cluster.sources.map((source) => (
-                <li key={source}>
-                  <SourceLink source={source} />
-                </li>
-              ))}
-            </ul>
-          )}
-        </dd>
-        <dt className="text-slate-500 dark:text-slate-400">Origin</dt>
-        <dd className="text-slate-900 dark:text-slate-100">
-          {cluster.origin === "manual"
-            ? "Manual"
-            : `AI proposal ${cluster.origin}`}{" "}
-          · scan of {formatSessionDate(cluster.sourceScanDate)}
-        </dd>
-        <dt className="text-slate-500 dark:text-slate-400">Created</dt>
-        <dd className="text-slate-900 dark:text-slate-100">
-          {formatTimestampDate(cluster.createdAt)}
-          {cluster.closedAt &&
-            ` · closed ${formatTimestampDate(cluster.closedAt)}`}
-        </dd>
-      </dl>
+      <Card className="p-6">
+        <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[max-content_minmax(0,1fr)]">
+          <dt className="text-slate-500 dark:text-slate-400">Catalyst</dt>
+          <dd className="text-slate-900 dark:text-slate-100">
+            {cluster.sharedCatalyst ?? "—"}
+          </dd>
+          <dt className="text-slate-500 dark:text-slate-400">Sources</dt>
+          <dd className="text-slate-900 dark:text-slate-100">
+            {cluster.sources.length === 0 ? (
+              "—"
+            ) : (
+              <ul className="space-y-0.5">
+                {cluster.sources.map((source) => (
+                  <li key={source}>
+                    <SourceLink source={source} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </dd>
+          <dt className="text-slate-500 dark:text-slate-400">Origin</dt>
+          <dd className="text-slate-900 dark:text-slate-100">
+            {cluster.origin === "manual"
+              ? "Manual"
+              : `AI proposal ${cluster.origin}`}{" "}
+            · scan of {formatSessionDate(cluster.sourceScanDate)}
+          </dd>
+          <dt className="text-slate-500 dark:text-slate-400">Created</dt>
+          <dd className="text-slate-900 dark:text-slate-100">
+            {formatTimestampDate(cluster.createdAt)}
+            {cluster.closedAt &&
+              ` · closed ${formatTimestampDate(cluster.closedAt)}`}
+          </dd>
+        </dl>
+      </Card>
     </div>
   );
 }

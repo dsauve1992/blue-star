@@ -36,7 +36,7 @@ export function CreateClusterForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4"
+      className="space-y-3 border-b border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40"
     >
       <p className="text-sm text-slate-600 dark:text-slate-400">
         New cluster from {tickers.length} hit{tickers.length === 1 ? "" : "s"}:{" "}

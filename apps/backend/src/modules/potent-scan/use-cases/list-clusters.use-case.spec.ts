@@ -44,7 +44,14 @@ describe('ListClustersUseCase', () => {
 
     expect(repository.findAll).toHaveBeenNthCalledWith(1, 'tracking');
     expect(result).toEqual({
-      clusters: [{ ...toClusterDto(cluster()), leadCount: 0, leadShare: [] }],
+      clusters: [
+        {
+          ...toClusterDto(cluster()),
+          leadCount: 0,
+          leadShare: [],
+          dailyTierCounts: [],
+        },
+      ],
     });
   });
 
@@ -123,10 +130,11 @@ describe('ListClustersUseCase', () => {
       [ClusterId.of(CLUSTER_ID), ClusterId.of(OTHER_ID)],
     );
     expect(
-      result.clusters.map(({ id, leadCount, leadShare }) => ({
+      result.clusters.map(({ id, leadCount, leadShare, dailyTierCounts }) => ({
         id,
         leadCount,
         leadShare,
+        dailyTierCounts,
       })),
     ).toEqual([
       {
@@ -136,8 +144,12 @@ describe('ListClustersUseCase', () => {
           { date: '2026-11-24', share: 0.25 },
           { date: '2026-11-25', share: 0.75 },
         ],
+        dailyTierCounts: [
+          { date: '2026-11-24', lead: 1, mediocre: 3, lag: 0 },
+          { date: '2026-11-25', lead: 3, mediocre: 0, lag: 1 },
+        ],
       },
-      { id: OTHER_ID, leadCount: 0, leadShare: [] },
+      { id: OTHER_ID, leadCount: 0, leadShare: [], dailyTierCounts: [] },
     ]);
   });
 });

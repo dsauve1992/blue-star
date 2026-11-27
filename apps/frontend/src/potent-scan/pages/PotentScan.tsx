@@ -18,10 +18,15 @@ export function PotentScan() {
     setSearchParams(tab === "scan" ? {} : { tab }, { replace: true });
 
   return (
-    <PageContainer fullWidth className="space-y-4">
-      <h1 className="text-xl font-bold text-slate-900 dark:text-slate-50">
-        Potent
-      </h1>
+    <PageContainer fullWidth className="space-y-6">
+      <div>
+        <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-50">
+          Potent
+        </h1>
+        <p className="mt-1 text-slate-600 dark:text-slate-300">
+          Each session's biggest gainers and the clusters they form
+        </p>
+      </div>
       <div
         role="tablist"
         className="flex gap-1 border-b border-slate-200 dark:border-slate-700"

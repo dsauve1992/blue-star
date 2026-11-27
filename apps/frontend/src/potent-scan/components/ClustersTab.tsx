@@ -3,56 +3,67 @@ import { Link, useNavigate } from "react-router";
 import {
   Alert,
   AlertDescription,
+  Card,
   LoadingSpinner,
-  cn,
 } from "src/global/design-system";
 import type { Cluster, ClusterStatus } from "../api/potent-scan.client";
 import { useClusters } from "../hooks/use-clusters";
+import { activeMembers } from "../utils/cluster-members";
 import { formatTimestampDate } from "../utils/format";
+import { ClusterCardGrid } from "./ClusterCardGrid";
 import { LeadShareSparkline } from "./LeadShareSparkline";
+import { SegmentedControl } from "./SegmentedControl";
 
 const STATUSES: { id: ClusterStatus; label: string }[] = [
   { id: "tracking", label: "Tracking" },
   { id: "closed", label: "Closed" },
 ];
 
-const HEADER_CLASS =
-  "p-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400";
+type ClustersView = "table" | "cards";
 
-const activeMemberCount = (cluster: Cluster) =>
-  cluster.members.filter((member) => member.removedAt === null).length;
+const VIEWS: { id: ClustersView; label: string }[] = [
+  { id: "table", label: "Table" },
+  { id: "cards", label: "Cards" },
+];
+
+const VIEW_STORAGE_KEY = "potent-scan.clusters-view";
+
+const storedView = (): ClustersView =>
+  localStorage.getItem(VIEW_STORAGE_KEY) === "cards" ? "cards" : "table";
+
+const HEADER_CLASS =
+  "px-4 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400";
+
+const activeMemberCount = (cluster: Cluster) => activeMembers(cluster).length;
 
 const removedMemberCount = (cluster: Cluster) =>
   cluster.members.length - activeMemberCount(cluster);
 
 export function ClustersTab() {
   const [status, setStatus] = useState<ClusterStatus>("tracking");
+  const [view, setView] = useState<ClustersView>(storedView);
   const clusters = useClusters(status);
   const navigate = useNavigate();
+  const changeView = (next: ClustersView) => {
+    localStorage.setItem(VIEW_STORAGE_KEY, next);
+    setView(next);
+  };
 
   return (
-    <div className="space-y-4">
-      <div
-        role="radiogroup"
-        aria-label="Cluster status"
-        className="inline-flex rounded-md border border-slate-200 p-0.5 dark:border-slate-700"
-      >
-        {STATUSES.map((option) => (
-          <button
-            key={option.id}
-            role="radio"
-            aria-checked={status === option.id}
-            onClick={() => setStatus(option.id)}
-            className={cn(
-              "rounded border-0 px-3 py-1 text-sm font-medium transition-colors duration-150",
-              status === option.id
-                ? "bg-slate-100 text-slate-900 dark:bg-slate-700 dark:text-slate-50"
-                : "bg-transparent text-slate-600 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100",
-            )}
-          >
-            {option.label}
-          </button>
-        ))}
+    <div className="space-y-6">
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <SegmentedControl
+          label="Cluster status"
+          options={STATUSES}
+          value={status}
+          onChange={setStatus}
+        />
+        <SegmentedControl
+          label="View"
+          options={VIEWS}
+          value={view}
+          onChange={changeView}
+        />
       </div>
 
       {clusters.isLoading && (
@@ -72,10 +83,13 @@ export function ClustersTab() {
           No {status === "tracking" ? "tracked" : "closed"} clusters.
         </p>
       )}
-      {clusters.data && clusters.data.length > 0 && (
-        <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-slate-700">
+      {clusters.data && clusters.data.length > 0 && view === "cards" && (
+        <ClusterCardGrid clusters={clusters.data} />
+      )}
+      {clusters.data && clusters.data.length > 0 && view === "table" && (
+        <Card className="overflow-x-auto">
           <table className="w-full text-sm text-slate-900 dark:text-slate-100">
-            <thead className="bg-slate-100 dark:bg-slate-800">
+            <thead className="bg-slate-50 dark:bg-slate-900/40">
               <tr>
                 <th className={`${HEADER_CLASS} text-left`}>Name</th>
                 <th className={`${HEADER_CLASS} text-left`}>Created</th>
@@ -97,9 +111,9 @@ export function ClustersTab() {
                   onClick={() =>
                     navigate(`/potent-scan/clusters/${cluster.id}`)
                   }
-                  className="cursor-pointer border-t border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-800/60"
+                  className="cursor-pointer border-t border-slate-200 hover:bg-slate-50 dark:border-slate-700 dark:hover:bg-slate-700/40"
                 >
-                  <td className="p-2 font-medium">
+                  <td className="px-4 py-2 font-medium">
                     <Link
                       to={`/potent-scan/clusters/${cluster.id}`}
                       onClick={(event) => event.stopPropagation()}
@@ -108,10 +122,10 @@ export function ClustersTab() {
                       {cluster.name}
                     </Link>
                   </td>
-                  <td className="p-2 text-slate-700 dark:text-slate-300">
+                  <td className="px-4 py-2 text-slate-700 dark:text-slate-300">
                     {formatTimestampDate(cluster.createdAt)}
                   </td>
-                  <td className="p-2 text-right font-mono tabular-nums">
+                  <td className="px-4 py-2 text-right font-mono tabular-nums">
                     {activeMemberCount(cluster)}
                     {removedMemberCount(cluster) > 0 && (
                       <span className="ml-1 text-xs text-slate-500 dark:text-slate-400">
@@ -119,20 +133,20 @@ export function ClustersTab() {
                       </span>
                     )}
                   </td>
-                  <td className="p-2 text-right font-mono tabular-nums">
+                  <td className="px-4 py-2 text-right font-mono tabular-nums">
                     {cluster.leadCount} / {activeMemberCount(cluster)}
                   </td>
-                  <td className="p-2">
+                  <td className="px-4 py-2">
                     <LeadShareSparkline points={cluster.leadShare} />
                   </td>
-                  <td className="p-2 text-right font-mono tabular-nums">
+                  <td className="px-4 py-2 text-right font-mono tabular-nums">
                     {cluster.leadShare.length}
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
-        </div>
+        </Card>
       )}
     </div>
   );

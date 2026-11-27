@@ -14,7 +14,7 @@ interface ProposalEditFormProps {
 }
 
 const SELECT_CLASS =
-  "rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500";
+  "h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm text-slate-900 dark:text-slate-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500";
 
 export function ProposalEditForm({
   proposal,
@@ -68,7 +68,7 @@ export function ProposalEditForm({
   return (
     <form
       onSubmit={handleSubmit}
-      className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-3 dark:border-slate-700 dark:bg-slate-800/40"
+      className="space-y-3 rounded-md border border-slate-200 bg-slate-50 p-4 dark:border-slate-700 dark:bg-slate-900/40"
     >
       <div className="grid gap-3 md:grid-cols-[minmax(0,1fr)_minmax(0,2fr)]">
         <div className="space-y-1">

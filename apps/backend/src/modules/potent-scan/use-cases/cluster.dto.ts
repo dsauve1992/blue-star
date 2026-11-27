@@ -80,7 +80,18 @@ export interface LeadSharePointDto {
 export interface ClusterSummaryDto extends ClusterDto {
   leadCount: number;
   leadShare: LeadSharePointDto[];
+  dailyTierCounts: DailyTierCountsDto[];
 }
+
+const toDailyTierCountsDtos = (
+  dailyCounts: DailyTierCounts[],
+): DailyTierCountsDto[] =>
+  dailyCounts.map((counts) => ({
+    date: counts.date.value,
+    lead: counts.lead,
+    mediocre: counts.mediocre,
+    lag: counts.lag,
+  }));
 
 export const toClusterDetailDto = (
   cluster: Cluster,
@@ -105,12 +116,7 @@ export const toClusterDetailDto = (
         adrPct: last?.adrPct ?? null,
       };
     }),
-    dailyTierCounts: dailyCounts.map((counts) => ({
-      date: counts.date.value,
-      lead: counts.lead,
-      mediocre: counts.mediocre,
-      lag: counts.lag,
-    })),
+    dailyTierCounts: toDailyTierCountsDtos(dailyCounts),
   };
 };
 
@@ -125,4 +131,5 @@ export const toClusterSummaryDto = (
     date: counts.date.value,
     share: counts.lead / (counts.lead + counts.mediocre + counts.lag),
   })),
+  dailyTierCounts: toDailyTierCountsDtos(dailyCounts),
 });

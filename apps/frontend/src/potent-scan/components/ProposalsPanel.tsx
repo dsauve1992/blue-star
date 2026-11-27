@@ -2,6 +2,7 @@ import { useMemo } from "react";
 import {
   Alert,
   AlertDescription,
+  Card,
   LoadingSpinner,
 } from "src/global/design-system";
 import type {
@@ -25,7 +26,7 @@ interface ProposalsPanelProps {
 }
 
 const SECTION_TITLE_CLASS =
-  "text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400";
+  "text-lg font-semibold text-slate-900 dark:text-slate-50";
 
 function createdClustersOf(
   proposal: NewClusterProposal,
@@ -136,9 +137,9 @@ export function ProposalsPanel({
   }
 
   return (
-    <section aria-label="Cluster proposals" className="space-y-4">
+    <section aria-label="Cluster proposals" className="space-y-6">
       {newClusters.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h2 className={SECTION_TITLE_CLASS}>
             New clusters ({newClusters.length})
           </h2>
@@ -156,40 +157,44 @@ export function ProposalsPanel({
       )}
 
       {additions.length > 0 && (
-        <div className="space-y-2">
+        <div className="space-y-3">
           <h2 className={SECTION_TITLE_CLASS}>
             Additions to tracked clusters ({additions.length})
           </h2>
-          <ul className="rounded-md border border-slate-200 bg-white px-4 py-1 dark:border-slate-700 dark:bg-slate-900">
-            {additions.map((addition) => (
-              <AdditionProposalRow
-                key={addition.id}
-                addition={addition}
-                tier={tierBySymbol.get(addition.ticker) ?? null}
-              />
-            ))}
-          </ul>
+          <Card className="px-6 py-2">
+            <ul>
+              {additions.map((addition) => (
+                <AdditionProposalRow
+                  key={addition.id}
+                  addition={addition}
+                  tier={tierBySymbol.get(addition.ticker) ?? null}
+                />
+              ))}
+            </ul>
+          </Card>
         </div>
       )}
 
       {unclustered.length > 0 && (
-        <details className="rounded-md border border-slate-200 bg-white px-4 py-2 dark:border-slate-700 dark:bg-slate-900">
-          <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300">
-            Unclustered hits ({unclustered.length})
-          </summary>
-          <ul className="mt-2 space-y-1 text-sm">
-            {unclustered.map((hit) => (
-              <li key={hit.ticker} className="flex gap-2">
-                <span className="w-16 shrink-0 font-mono font-semibold text-slate-900 dark:text-slate-100">
-                  {hit.ticker}
-                </span>
-                <span className="text-slate-700 dark:text-slate-300">
-                  {hit.reason}
-                </span>
-              </li>
-            ))}
-          </ul>
-        </details>
+        <Card>
+          <details className="px-6 py-4">
+            <summary className="cursor-pointer text-sm font-medium text-slate-700 dark:text-slate-300">
+              Unclustered hits ({unclustered.length})
+            </summary>
+            <ul className="mt-3 space-y-1 text-sm">
+              {unclustered.map((hit) => (
+                <li key={hit.ticker} className="flex gap-2">
+                  <span className="w-16 shrink-0 font-mono font-semibold text-slate-900 dark:text-slate-100">
+                    {hit.ticker}
+                  </span>
+                  <span className="text-slate-700 dark:text-slate-300">
+                    {hit.reason}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          </details>
+        </Card>
       )}
     </section>
   );

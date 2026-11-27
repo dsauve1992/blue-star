@@ -28,7 +28,7 @@ const formatMarketCap = (value: number | null) =>
       }).format(value);
 
 const HEADER_CLASS =
-  "p-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400";
+  "px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 dark:text-slate-400";
 
 export function ScanHitsTable({
   hits,
@@ -41,11 +41,11 @@ export function ScanHitsTable({
     hits.length > 0 && hits.every((hit) => selected.has(hit.symbol));
 
   return (
-    <div className="overflow-x-auto rounded-md border border-slate-200 dark:border-slate-700">
+    <div className="overflow-x-auto">
       <table className="w-full text-sm text-slate-900 dark:text-slate-100">
-        <thead className="bg-slate-100 dark:bg-slate-800">
+        <thead className="bg-slate-50 dark:bg-slate-900/40">
           <tr>
-            <th className="p-2 w-8">
+            <th className="w-8 py-2 pl-4 pr-1">
               <input
                 type="checkbox"
                 aria-label="Select all hits"
@@ -69,9 +69,9 @@ export function ScanHitsTable({
             return (
               <tr
                 key={hit.symbol}
-                className="border-t border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/60"
+                className="border-t border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700/40"
               >
-                <td className="p-2">
+                <td className="py-2 pl-4 pr-1">
                   <input
                     type="checkbox"
                     aria-label={`Select ${hit.symbol}`}
@@ -79,7 +79,7 @@ export function ScanHitsTable({
                     onChange={() => onToggle(hit.symbol)}
                   />
                 </td>
-                <td className="p-2 font-mono font-semibold">
+                <td className="px-3 py-2 font-mono font-semibold">
                   <span className="inline-flex items-center gap-1.5">
                     {hit.symbol}
                     {hit.isMomentumLeader && (
@@ -89,25 +89,25 @@ export function ScanHitsTable({
                     )}
                   </span>
                 </td>
-                <td className="p-2 text-right font-mono tabular-nums text-success-700 dark:text-success-400">
+                <td className="px-3 py-2 text-right font-mono tabular-nums text-success-700 dark:text-success-400">
                   +{hit.changePct.toFixed(1)}%
                 </td>
-                <td className="p-2">
+                <td className="px-3 py-2">
                   <TierBadge tier={hit.tier} />
                 </td>
-                <td className="p-2 text-right font-mono tabular-nums">
+                <td className="px-3 py-2 text-right font-mono tabular-nums">
                   {formatPercent(hit.adrPct)}
                 </td>
-                <td className="p-2 text-right font-mono tabular-nums">
+                <td className="px-3 py-2 text-right font-mono tabular-nums">
                   {formatMarketCap(hit.marketCap)}
                 </td>
-                <td className="p-2 text-right font-mono tabular-nums">
+                <td className="px-3 py-2 text-right font-mono tabular-nums">
                   {formatRelativeVolume(hit.relativeVolume)}
                 </td>
-                <td className="p-2 text-slate-700 dark:text-slate-300">
+                <td className="px-3 py-2 text-slate-700 dark:text-slate-300">
                   {hit.industry}
                 </td>
-                <td className="p-2">
+                <td className="px-3 py-2">
                   <span className="flex flex-wrap gap-1">
                     {clusters.map((cluster) => (
                       <Link
@@ -115,9 +115,9 @@ export function ScanHitsTable({
                         to={`/potent-scan/clusters/${cluster.id}`}
                       >
                         <Badge
-                          variant="secondary"
+                          variant="outline"
                           title={cluster.name}
-                          className="max-w-48 hover:bg-slate-200 dark:hover:bg-slate-700"
+                          className="max-w-48 hover:bg-slate-100 dark:hover:bg-slate-700"
                         >
                           <span className="truncate">{cluster.name}</span>
                         </Badge>

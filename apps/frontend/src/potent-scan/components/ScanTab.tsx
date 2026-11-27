@@ -3,6 +3,7 @@ import {
   Alert,
   AlertDescription,
   Button,
+  Card,
   LoadingSpinner,
 } from "src/global/design-system";
 import type { Cluster, PotentScanHit } from "../api/potent-scan.client";
@@ -139,7 +140,7 @@ export function ScanTab() {
   }
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <ScanDateNavigator
           scanDates={scanDates.data ?? []}
@@ -163,62 +164,70 @@ export function ScanTab() {
         />
       )}
 
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <ScanHitsFilters
-          values={filters}
-          industries={industries}
-          onChange={setFilters}
-        />
-        <Button
-          size="sm"
-          disabled={selectedTickers.length === 0}
-          onClick={() => setIsCreating(true)}
-        >
-          Create cluster
-          {selectedTickers.length > 0 && ` (${selectedTickers.length})`}
-        </Button>
-      </div>
+      <Card className="overflow-hidden">
+        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-200 p-4 dark:border-slate-700">
+          <ScanHitsFilters
+            values={filters}
+            industries={industries}
+            onChange={setFilters}
+          />
+          <Button
+            size="sm"
+            disabled={selectedTickers.length === 0}
+            onClick={() => setIsCreating(true)}
+          >
+            Create cluster
+            {selectedTickers.length > 0 && ` (${selectedTickers.length})`}
+          </Button>
+        </div>
 
-      {isCreating && selectedTickers.length > 0 && (
-        <CreateClusterForm
-          tickers={selectedTickers}
-          sourceScanDate={scanDate}
-          onCreated={resetSelection}
-          onCancel={() => setIsCreating(false)}
-        />
-      )}
+        {isCreating && selectedTickers.length > 0 && (
+          <CreateClusterForm
+            tickers={selectedTickers}
+            sourceScanDate={scanDate}
+            onCreated={resetSelection}
+            onCancel={() => setIsCreating(false)}
+          />
+        )}
 
-      {clusters.error && (
-        <Alert variant="warning">
-          <AlertDescription>
-            Couldn't load cluster membership: {clusters.error.message}
-          </AlertDescription>
-        </Alert>
-      )}
+        {clusters.error && (
+          <div className="border-b border-slate-200 p-4 dark:border-slate-700">
+            <Alert variant="warning">
+              <AlertDescription>
+                Couldn't load cluster membership: {clusters.error.message}
+              </AlertDescription>
+            </Alert>
+          </div>
+        )}
 
-      {scan.isLoading ? (
-        <LoadingSpinner label="Loading scan..." />
-      ) : scan.error ? (
-        <Alert variant="danger">
-          <AlertDescription>
-            Couldn't load the {scanDate} scan: {scan.error.message}
-          </AlertDescription>
-        </Alert>
-      ) : visibleHits.length === 0 ? (
-        <p className="text-sm text-slate-600 dark:text-slate-400">
-          {hits.length === 0
-            ? "This scan has no hits."
-            : "No hits match these filters."}
-        </p>
-      ) : (
-        <ScanHitsTable
-          hits={visibleHits}
-          clustersByTicker={clustersByTicker}
-          selected={selected}
-          onToggle={toggle}
-          onToggleAll={toggleAll}
-        />
-      )}
+        {scan.isLoading ? (
+          <div className="p-6">
+            <LoadingSpinner label="Loading scan..." />
+          </div>
+        ) : scan.error ? (
+          <div className="p-4">
+            <Alert variant="danger">
+              <AlertDescription>
+                Couldn't load the {scanDate} scan: {scan.error.message}
+              </AlertDescription>
+            </Alert>
+          </div>
+        ) : visibleHits.length === 0 ? (
+          <p className="p-6 text-sm text-slate-600 dark:text-slate-400">
+            {hits.length === 0
+              ? "This scan has no hits."
+              : "No hits match these filters."}
+          </p>
+        ) : (
+          <ScanHitsTable
+            hits={visibleHits}
+            clustersByTicker={clustersByTicker}
+            selected={selected}
+            onToggle={toggle}
+            onToggleAll={toggleAll}
+          />
+        )}
+      </Card>
     </div>
   );
 }

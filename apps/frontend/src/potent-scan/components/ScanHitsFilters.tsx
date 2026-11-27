@@ -25,7 +25,7 @@ const CLUSTER_OPTIONS: { value: ClusterFilter; label: string }[] = [
 ];
 
 const SELECT_CLASS =
-  "rounded-md border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-800 px-2 py-1 text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-primary-500";
+  "h-9 rounded-md border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 text-sm text-slate-900 dark:text-slate-50 shadow-sm focus:outline-none focus:ring-2 focus:ring-primary-500";
 
 const LABEL_CLASS =
   "flex items-center gap-1.5 text-sm text-slate-600 dark:text-slate-400";

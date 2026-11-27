@@ -13,7 +13,6 @@ function marketDate(timestamp: string): string {
 export function joinMarkers(
   candles: ChartCandleDto[],
   member: ClusterMemberDetail,
-  label?: string,
 ): SeriesMarker<Time>[] {
   const joinDate = member.tiers[0]?.date ?? marketDate(member.joinedAt);
   const joinCandle = candles
@@ -26,7 +25,6 @@ export function joinMarkers(
       position: "belowBar",
       shape: "arrowUp",
       color: "#38bdf8",
-      text: label,
     },
   ];
 }

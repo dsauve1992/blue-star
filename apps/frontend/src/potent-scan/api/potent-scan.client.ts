@@ -55,6 +55,7 @@ export interface LeadSharePoint {
 export interface Cluster extends ClusterBase<ClusterMember> {
   leadCount: number;
   leadShare: LeadSharePoint[];
+  dailyTierCounts: DailyTierCounts[];
 }
 
 export interface MemberTierPoint {
