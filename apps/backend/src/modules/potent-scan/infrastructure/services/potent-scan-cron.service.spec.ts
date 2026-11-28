@@ -172,7 +172,7 @@ describe('PotentScanCronService', () => {
     expect(notifications.notifyJobSuccess).toHaveBeenNthCalledWith(3, {
       ...proposalsJob,
       additionalData:
-        '2 clusters and 1 additions proposed (1 dropped) for $0.0700',
+        '2 clusters and 1 additions proposed (1 dropped) for $0.0700. Day total with research: $0.1751',
     });
   });
 

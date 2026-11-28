@@ -51,12 +51,13 @@ export class PotentScanCronService {
       return;
     }
 
-    if (await this.researchHits(scannedSession)) {
-      await this.proposeClusters(scannedSession);
+    const researchCostUsd = await this.researchHits(scannedSession);
+    if (researchCostUsd !== null) {
+      await this.proposeClusters(scannedSession, researchCostUsd);
     }
   }
 
-  private async researchHits(sessionDate: SessionDate): Promise<boolean> {
+  private async researchHits(sessionDate: SessionDate): Promise<number | null> {
     const job = {
       jobName: 'Potent Hit Research',
       jobType: 'potent-hit-research',
@@ -71,18 +72,21 @@ export class PotentScanCronService {
         ...job,
         additionalData: `${researchedCount} hits researched for $${usage.costUsd.toFixed(4)}`,
       });
-      return true;
+      return usage.costUsd;
     } catch (error) {
       const errorMessage =
         error instanceof Error ? error.message : 'Unknown error';
       this.logger.error(`Potent hit research failed: ${errorMessage}`);
 
       await this.cronJobNotificationService.notifyJobError(job, error);
-      return false;
+      return null;
     }
   }
 
-  private async proposeClusters(sessionDate: SessionDate) {
+  private async proposeClusters(
+    sessionDate: SessionDate,
+    researchCostUsd: number,
+  ) {
     const job = {
       jobName: 'Potent Cluster Proposals',
       jobType: 'potent-cluster-proposals',
@@ -97,7 +101,8 @@ export class PotentScanCronService {
         ...job,
         additionalData:
           `${newClusterCount} clusters and ${additionCount} additions proposed ` +
-          `(${droppedCount} dropped) for $${usage.costUsd.toFixed(4)}`,
+          `(${droppedCount} dropped) for $${usage.costUsd.toFixed(4)}. ` +
+          `Day total with research: $${(researchCostUsd + usage.costUsd).toFixed(4)}`,
       });
     } catch (error) {
       const errorMessage =
